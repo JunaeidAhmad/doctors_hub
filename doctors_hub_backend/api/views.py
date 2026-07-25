@@ -3,6 +3,7 @@ from rest_framework.response import Response
 from rest_framework.views import APIView
 from rest_framework_simplejwt.tokens import RefreshToken
 from .models import User, Specialty, PathologyTest, Chamber, Doctor, DoctorBooking, LabBooking
+from .permissions import IsAdminUserOrReadOnly
 from .serializers import (
     UserSerializer, UserProfileSerializer, RegisterSerializer, LoginSerializer,
     SpecialtySerializer, PathologyTestSerializer,
@@ -47,15 +48,15 @@ class UserProfileAPIView(generics.RetrieveUpdateAPIView):
     def get_object(self):
         return self.request.user
 
-class SpecialtyViewSet(viewsets.ReadOnlyModelViewSet):
+class SpecialtyViewSet(viewsets.ModelViewSet):
     queryset = Specialty.objects.all()
     serializer_class = SpecialtySerializer
-    permission_classes = (permissions.AllowAny,)
+    permission_classes = (IsAdminUserOrReadOnly,)
 
-class PathologyTestViewSet(viewsets.ReadOnlyModelViewSet):
+class PathologyTestViewSet(viewsets.ModelViewSet):
     queryset = PathologyTest.objects.all()
     serializer_class = PathologyTestSerializer
-    permission_classes = (permissions.AllowAny,)
+    permission_classes = (IsAdminUserOrReadOnly,)
     
     def get_queryset(self):
         queryset = PathologyTest.objects.all()
@@ -64,10 +65,10 @@ class PathologyTestViewSet(viewsets.ReadOnlyModelViewSet):
             queryset = queryset.filter(name__icontains=search)
         return queryset
 
-class ChamberViewSet(viewsets.ReadOnlyModelViewSet):
+class ChamberViewSet(viewsets.ModelViewSet):
     queryset = Chamber.objects.all()
     serializer_class = ChamberSerializer
-    permission_classes = (permissions.AllowAny,)
+    permission_classes = (IsAdminUserOrReadOnly,)
     
     def get_queryset(self):
         queryset = Chamber.objects.all()
@@ -76,10 +77,10 @@ class ChamberViewSet(viewsets.ReadOnlyModelViewSet):
             queryset = queryset.filter(city__icontains=location)
         return queryset
 
-class DoctorViewSet(viewsets.ReadOnlyModelViewSet):
+class DoctorViewSet(viewsets.ModelViewSet):
     queryset = Doctor.objects.all()
     serializer_class = DoctorSerializer
-    permission_classes = (permissions.AllowAny,)
+    permission_classes = (IsAdminUserOrReadOnly,)
 
     def get_queryset(self):
         queryset = Doctor.objects.all()
@@ -101,7 +102,9 @@ class DoctorBookingViewSet(viewsets.ModelViewSet):
     permission_classes = (permissions.IsAuthenticated,)
 
     def get_queryset(self):
-        return DoctorBooking.objects.filter(user=self.request.user)
+        if self.request.user.is_staff:
+            return DoctorBooking.objects.all().order_by('-created_at')
+        return DoctorBooking.objects.filter(user=self.request.user).order_by('-created_at')
 
     def perform_create(self, serializer):
         serializer.save(user=self.request.user)
@@ -111,7 +114,10 @@ class LabBookingViewSet(viewsets.ModelViewSet):
     permission_classes = (permissions.IsAuthenticated,)
 
     def get_queryset(self):
-        return LabBooking.objects.filter(user=self.request.user)
+        if self.request.user.is_staff:
+            return LabBooking.objects.all().order_by('-created_at')
+        return LabBooking.objects.filter(user=self.request.user).order_by('-created_at')
 
     def perform_create(self, serializer):
         serializer.save(user=self.request.user)
+

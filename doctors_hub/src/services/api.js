@@ -162,4 +162,143 @@ export const api = {
     });
     return handleResponse(res);
   },
+
+  // --- ADMIN MANAGEMENT METHODS ---
+
+  // Admin Doctor CRUD
+  async createDoctor(doctorData) {
+    const res = await fetch(`${BASE_URL}/doctors/`, {
+      method: 'POST',
+      headers: getHeaders(),
+      body: JSON.stringify(doctorData),
+    });
+    return handleResponse(res);
+  },
+
+  async updateDoctor(id, doctorData) {
+    const res = await fetch(`${BASE_URL}/doctors/${id}/`, {
+      method: 'PUT',
+      headers: getHeaders(),
+      body: JSON.stringify(doctorData),
+    });
+    return handleResponse(res);
+  },
+
+  async deleteDoctor(id) {
+    const res = await fetch(`${BASE_URL}/doctors/${id}/`, {
+      method: 'DELETE',
+      headers: getHeaders(),
+    });
+    if (res.status === 244 || res.status === 204) return true;
+    return handleResponse(res);
+  },
+
+  // Admin Chamber / Hospital CRUD
+  async createChamber(chamberData) {
+    const res = await fetch(`${BASE_URL}/chambers/`, {
+      method: 'POST',
+      headers: getHeaders(),
+      body: JSON.stringify(chamberData),
+    });
+    return handleResponse(res);
+  },
+
+  async updateChamber(id, chamberData) {
+    const res = await fetch(`${BASE_URL}/chambers/${id}/`, {
+      method: 'PUT',
+      headers: getHeaders(),
+      body: JSON.stringify(chamberData),
+    });
+    return handleResponse(res);
+  },
+
+  async deleteChamber(id) {
+    const res = await fetch(`${BASE_URL}/chambers/${id}/`, {
+      method: 'DELETE',
+      headers: getHeaders(),
+    });
+    if (res.status === 204) return true;
+    return handleResponse(res);
+  },
+
+  // Admin Pathology Test CRUD
+  async createTest(testData) {
+    const res = await fetch(`${BASE_URL}/tests/`, {
+      method: 'POST',
+      headers: getHeaders(),
+      body: JSON.stringify(testData),
+    });
+    return handleResponse(res);
+  },
+
+  async updateTest(id, testData) {
+    const res = await fetch(`${BASE_URL}/tests/${id}/`, {
+      method: 'PUT',
+      headers: getHeaders(),
+      body: JSON.stringify(testData),
+    });
+    return handleResponse(res);
+  },
+
+  async deleteTest(id) {
+    const res = await fetch(`${BASE_URL}/tests/${id}/`, {
+      method: 'DELETE',
+      headers: getHeaders(),
+    });
+    if (res.status === 204) return true;
+    return handleResponse(res);
+  },
+
+  // Admin Specialty CRUD
+  async createSpecialty(specialtyData) {
+    const res = await fetch(`${BASE_URL}/specialties/`, {
+      method: 'POST',
+      headers: getHeaders(),
+      body: JSON.stringify(specialtyData),
+    });
+    return handleResponse(res);
+  },
+
+  async deleteSpecialty(id) {
+    const res = await fetch(`${BASE_URL}/specialties/${id}/`, {
+      method: 'DELETE',
+      headers: getHeaders(),
+    });
+    if (res.status === 204) return true;
+    return handleResponse(res);
+  },
+
+  // Admin Bookings Management
+  async getDoctorBookings() {
+    const res = await fetch(`${BASE_URL}/bookings/doctor/`, {
+      headers: getHeaders(),
+    });
+    return handleResponse(res);
+  },
+
+  async updateDoctorBookingStatus(id, status) {
+    const res = await fetch(`${BASE_URL}/bookings/doctor/${id}/`, {
+      method: 'PATCH',
+      headers: getHeaders(),
+      body: JSON.stringify({ status }),
+    });
+    return handleResponse(res);
+  },
+
+  async getLabBookings() {
+    const res = await fetch(`${BASE_URL}/bookings/lab/`, {
+      headers: getHeaders(),
+    });
+    return handleResponse(res);
+  },
+
+  async updateLabBookingStatus(id, status) {
+    const res = await fetch(`${BASE_URL}/bookings/lab/${id}/`, {
+      method: 'PATCH',
+      headers: getHeaders(),
+      body: JSON.stringify({ status }),
+    });
+    return handleResponse(res);
+  },
 };
+

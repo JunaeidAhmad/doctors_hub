@@ -1,5 +1,5 @@
 import React, { useState, useRef, useEffect } from 'react';
-import { Stethoscope, Smartphone, LogIn, Menu, X, HeartPulse, ChevronDown, Settings, LogOut, User } from 'lucide-react';
+import { Stethoscope, Smartphone, LogIn, Menu, X, HeartPulse, ChevronDown, Settings, LogOut, User, LayoutDashboard } from 'lucide-react';
 
 export default function StickyNavbar({ activeTab, setActiveTab, user, onOpenLogin, onOpenSettings, onLogout, onOpenAppModal }) {
   const [mobileMenuOpen, setMobileMenuOpen] = useState(false);
@@ -92,6 +92,21 @@ export default function StickyNavbar({ activeTab, setActiveTab, user, onOpenLogi
 
         {/* Right CTA Group: App Indicator & Profile / Login Button */}
         <div className="hidden sm:flex items-center gap-3">
+          {/* Admin Portal Direct Button if is_staff */}
+          {user?.is_staff && (
+            <button
+              onClick={() => setActiveTab('admin')}
+              className={`flex items-center gap-2 px-3 py-2 rounded-lg text-xs font-bold transition-all shadow-xs ${
+                activeTab === 'admin'
+                  ? 'bg-slate-900 text-teal-400 border border-slate-700'
+                  : 'bg-slate-900/90 hover:bg-slate-900 text-slate-200 border border-slate-800'
+              }`}
+            >
+              <LayoutDashboard className="w-4 h-4 text-teal-400" />
+              <span>Admin Portal</span>
+            </button>
+          )}
+
           {/* App Download Indicator */}
           <button
             onClick={onOpenAppModal}
@@ -119,7 +134,9 @@ export default function StickyNavbar({ activeTab, setActiveTab, user, onOpenLogi
                   <div className="text-xs font-bold text-slate-800 leading-tight truncate max-w-[110px]">
                     {getUserDisplayName()}
                   </div>
-                  <div className="text-[10px] text-emerald-600 font-semibold leading-tight">Patient Account</div>
+                  <div className="text-[10px] text-emerald-600 font-semibold leading-tight">
+                    {user.is_staff ? 'Admin Staff' : 'Patient Account'}
+                  </div>
                 </div>
                 <ChevronDown className={`w-4 h-4 text-slate-500 transition-transform ${userDropdownOpen ? 'rotate-180' : ''}`} />
               </button>
@@ -133,6 +150,19 @@ export default function StickyNavbar({ activeTab, setActiveTab, user, onOpenLogi
                   </div>
 
                   <div className="py-1">
+                    {user.is_staff && (
+                      <button
+                        onClick={() => {
+                          setUserDropdownOpen(false);
+                          setActiveTab('admin');
+                        }}
+                        className="w-full text-left px-4 py-2.5 text-xs font-bold text-teal-700 bg-teal-50/70 hover:bg-teal-100 flex items-center gap-2.5 transition-colors border-b border-slate-100"
+                      >
+                        <LayoutDashboard className="w-4 h-4 text-teal-600" />
+                        <span>Admin Dashboard</span>
+                      </button>
+                    )}
+
                     <button
                       onClick={() => {
                         setUserDropdownOpen(false);
@@ -168,6 +198,7 @@ export default function StickyNavbar({ activeTab, setActiveTab, user, onOpenLogi
             </button>
           )}
         </div>
+
 
         {/* Mobile Hamburger Toggle */}
         <div className="flex lg:hidden items-center gap-2">

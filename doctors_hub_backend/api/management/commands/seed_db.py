@@ -1,5 +1,5 @@
 from django.core.management.base import BaseCommand
-from api.models import Specialty, PathologyTest, Chamber, Doctor
+from api.models import User, Specialty, PathologyTest, Chamber, Doctor
 
 class Command(BaseCommand):
     help = 'Seeds NeonDB database with mock data'
@@ -382,4 +382,23 @@ class Command(BaseCommand):
                 )
                 doctor_count += 1
 
+        # 4. ADMIN USER
+        admin_phone = '01700000000'
+        if not User.objects.filter(phone_number=admin_phone).exists():
+            admin_user = User.objects.create_superuser(
+                phone_number=admin_phone,
+                password='admin123456',
+                first_name='System',
+                last_name='Admin'
+            )
+            self.stdout.write(self.style.SUCCESS(f'Created default Admin user ({admin_phone})'))
+        else:
+            admin_user = User.objects.get(phone_number=admin_phone)
+            admin_user.is_staff = True
+            admin_user.is_superuser = True
+            admin_user.set_password('admin123456')
+            admin_user.save()
+            self.stdout.write(self.style.SUCCESS(f'Updated existing Admin user ({admin_phone})'))
+
         self.stdout.write(self.style.SUCCESS(f'Successfully seeded {chamber_count} chambers and {doctor_count} doctors into NeonDB.'))
+

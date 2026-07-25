@@ -6,6 +6,7 @@ import HomePage from './pages/HomePage';
 import OpdDoctorSearchPage from './pages/OpdDoctorSearchPage';
 import PathologySearchPage from './pages/PathologySearchPage';
 import DirectSearchPage from './pages/DirectSearchPage';
+import AdminDashboardPage from './pages/AdminDashboardPage';
 import BookingModal from './components/BookingModal';
 import LabBookingModal from './components/LabBookingModal';
 import LoginModal from './components/LoginModal';
@@ -15,6 +16,7 @@ import ToastNotification from './components/ToastNotification';
 import { api } from './services/api';
 
 function getPageFromPath(path) {
+  if (path === '/admin') return 'admin';
   if (path === '/opd-search') return 'opd-search';
   if (path === '/pathology-search') return 'pathology-search';
   if (path === '/direct-search') return 'direct-search';
@@ -30,6 +32,7 @@ export default function App() {
   // Nav highlight state
   const [activeTab, setActiveTab] = useState(() => {
     const path = location.pathname;
+    if (path === '/admin') return 'admin';
     if (path === '/opd-search') return 'opd-doctors';
     if (path === '/pathology-search') return 'pathology';
     return 'home';
@@ -45,7 +48,8 @@ export default function App() {
       isSectionScroll.current = false;
       return;
     }
-    if (currentPage === 'opd-search') setActiveTab('opd-doctors');
+    if (currentPage === 'admin') setActiveTab('admin');
+    else if (currentPage === 'opd-search') setActiveTab('opd-doctors');
     else if (currentPage === 'pathology-search') setActiveTab('pathology');
     else if (currentPage === 'direct-search') setActiveTab('home');
     else setActiveTab('home');
@@ -106,7 +110,9 @@ export default function App() {
 
   const handleNavClick = (tabId) => {
     setActiveTab(tabId);
-    if (tabId === 'home') {
+    if (tabId === 'admin') {
+      navigate('/admin');
+    } else if (tabId === 'home') {
       navigate('/');
     } else if (tabId === 'opd-doctors') {
       navigate('/opd-search');
@@ -141,28 +147,39 @@ export default function App() {
     <div className="min-h-screen bg-slate-50 flex flex-col font-sans text-slate-800 antialiased selection:bg-emerald-500 selection:text-white">
       
       {/* 1. TOP UTILITY STRIP */}
-      <TopUtilityStrip
-        selectedLocation={selectedLocation}
-        setSelectedLocation={setSelectedLocation}
-      />
+      {currentPage !== 'admin' && (
+        <TopUtilityStrip
+          selectedLocation={selectedLocation}
+          setSelectedLocation={setSelectedLocation}
+        />
+      )}
 
       {/* 2. STICKY NAVBAR */}
-      <StickyNavbar
-        activeTab={activeTab}
-        setActiveTab={handleNavClick}
-        user={user}
-        onOpenLogin={() => setLoginModalOpen(true)}
-        onOpenSettings={() => setUserSettingsModalOpen(true)}
-        onLogout={handleLogout}
-        onOpenAppModal={() => {
-          showToast("Scroll down to scan QR or click download APK!");
-          const el = document.getElementById("app-download");
-          if (el) el.scrollIntoView({ behavior: 'smooth' });
-        }}
-      />
+      {currentPage !== 'admin' && (
+        <StickyNavbar
+          activeTab={activeTab}
+          setActiveTab={handleNavClick}
+          user={user}
+          onOpenLogin={() => setLoginModalOpen(true)}
+          onOpenSettings={() => setUserSettingsModalOpen(true)}
+          onLogout={handleLogout}
+          onOpenAppModal={() => {
+            showToast("Scroll down to scan QR or click download APK!");
+            const el = document.getElementById("app-download");
+            if (el) el.scrollIntoView({ behavior: 'smooth' });
+          }}
+        />
+      )}
 
       {/* DYNAMIC PAGE ROUTING RENDER */}
       <main className="flex-1">
+        {currentPage === 'admin' && (
+          <AdminDashboardPage
+            currentUser={user}
+            onNavigate={handleNavClick}
+          />
+        )}
+
         {currentPage === 'home' && (
           <HomePage
             selectedSpecialty={selectedSpecialty}
@@ -210,11 +227,14 @@ export default function App() {
       </main>
 
       {/* FOOTER */}
-      <Footer onSelectLocation={(loc) => {
-        setSelectedLocation(loc);
-        navigate('/opd-search');
-        window.scrollTo({ top: 0, behavior: 'smooth' });
-      }} />
+      {currentPage !== 'admin' && (
+        <Footer onSelectLocation={(loc) => {
+          setSelectedLocation(loc);
+          navigate('/opd-search');
+          window.scrollTo({ top: 0, behavior: 'smooth' });
+        }} />
+      )}
+
 
       {/* MODALS */}
       {bookingDoctorState && (
