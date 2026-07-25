@@ -5,7 +5,7 @@ import {
   XCircle, Search, RefreshCw, AlertCircle, ShieldAlert, Sparkles 
 } from 'lucide-react';
 
-export default function AdminDashboardPage({ currentUser, onNavigate }) {
+export default function AdminDashboardPage({ currentUser, onNavigate, onAdminLoggedIn }) {
   const [activeTab, setActiveTab] = useState('overview');
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState('');
@@ -326,31 +326,113 @@ export default function AdminDashboardPage({ currentUser, onNavigate }) {
     }
   };
 
+  // Dedicated Admin Login State
+  const [adminPhone, setAdminPhone] = useState('01700000000');
+  const [adminPassword, setAdminPassword] = useState('admin123456');
+  const [loginLoading, setLoginLoading] = useState(false);
+  const [loginErr, setLoginErr] = useState('');
+
+  const handleAdminLoginSubmit = async (e) => {
+    e.preventDefault();
+    setLoginLoading(true);
+    setLoginErr('');
+    try {
+      const data = await api.login(adminPhone, adminPassword);
+      if (!data.user?.is_staff) {
+        setLoginErr('Account authenticated, but lacks Admin staff privileges (is_staff = False).');
+      } else {
+        if (onAdminLoggedIn) onAdminLoggedIn(data.user);
+        loadAllData();
+      }
+    } catch (err) {
+      setLoginErr(err.message || 'Invalid admin credentials.');
+    } finally {
+      setLoginLoading(false);
+    }
+  };
+
   if (!isStaff) {
     return (
-      <div className="min-h-screen bg-slate-900 text-white flex flex-col items-center justify-center p-6">
-        <div className="bg-slate-800 border border-red-500/30 rounded-2xl p-8 max-w-md w-full text-center shadow-2xl">
-          <ShieldAlert className="w-16 h-16 text-red-400 mx-auto mb-4 animate-bounce" />
-          <h2 className="text-2xl font-bold mb-2 text-red-400">Admin Privileges Required</h2>
-          <p className="text-slate-300 text-sm mb-6">
-            You are logged in as standard user <span className="font-semibold text-teal-400">{currentUser?.phone_number || 'Guest'}</span>. 
-            Only users with <code className="bg-slate-950 px-2 py-1 rounded text-teal-300">is_staff = True</code> can access the Admin Dashboard.
-          </p>
-          <div className="p-4 bg-slate-900/80 rounded-xl mb-6 text-left border border-slate-700 text-xs text-slate-300">
-            <p className="font-bold text-white mb-1">Pre-configured Admin Login:</p>
-            <p>• Phone: <span className="text-emerald-400 font-mono">01700000000</span></p>
-            <p>• Password: <span className="text-emerald-400 font-mono">admin123456</span></p>
+      <div className="min-h-screen bg-slate-950 text-white flex flex-col items-center justify-center p-6 relative overflow-hidden">
+        {/* Background glow effects */}
+        <div className="absolute -top-40 -left-40 w-96 h-96 bg-teal-500/10 rounded-full blur-3xl pointer-events-none"></div>
+        <div className="absolute -bottom-40 -right-40 w-96 h-96 bg-emerald-500/10 rounded-full blur-3xl pointer-events-none"></div>
+
+        <div className="max-w-md w-full bg-slate-900/90 backdrop-blur-xl border border-slate-800 rounded-3xl p-8 shadow-2xl relative z-10">
+          <div className="text-center mb-8">
+            <div className="w-16 h-16 rounded-2xl bg-gradient-to-tr from-teal-500 to-emerald-400 flex items-center justify-center mx-auto mb-4 shadow-lg shadow-teal-500/20 text-slate-950">
+              <ShieldAlert className="w-8 h-8" />
+            </div>
+            <h2 className="text-2xl font-black bg-gradient-to-r from-white via-slate-200 to-teal-300 bg-clip-text text-transparent">
+              Admin Portal Access
+            </h2>
+            <p className="text-xs text-slate-400 mt-1">
+              Restricted management console for DoctorsHub administrators
+            </p>
           </div>
-          <button
-            onClick={() => onNavigate('home')}
-            className="w-full bg-teal-600 hover:bg-teal-500 text-white font-bold py-3 rounded-xl transition"
-          >
-            Return to Homepage
-          </button>
+
+          {loginErr && (
+            <div className="mb-6 p-4 rounded-xl bg-rose-500/20 border border-rose-500/40 text-rose-300 text-xs flex items-center gap-2.5">
+              <AlertCircle className="w-4 h-4 text-rose-400 flex-shrink-0" />
+              <span>{loginErr}</span>
+            </div>
+          )}
+
+          <form onSubmit={handleAdminLoginSubmit} className="space-y-4 text-xs">
+            <div>
+              <label className="block text-slate-300 font-semibold mb-1.5">Admin Phone Number</label>
+              <div className="relative">
+                <input
+                  type="text"
+                  required
+                  placeholder="01700000000"
+                  value={adminPhone}
+                  onChange={e => setAdminPhone(e.target.value)}
+                  className="w-full bg-slate-950 border border-slate-800 rounded-xl px-4 py-3 text-sm text-white placeholder-slate-600 focus:outline-none focus:border-teal-500 font-mono transition"
+                />
+              </div>
+            </div>
+
+            <div>
+              <label className="block text-slate-300 font-semibold mb-1.5">Admin Password</label>
+              <input
+                type="password"
+                required
+                placeholder="••••••••"
+                value={adminPassword}
+                onChange={e => setAdminPassword(e.target.value)}
+                className="w-full bg-slate-950 border border-slate-800 rounded-xl px-4 py-3 text-sm text-white placeholder-slate-600 focus:outline-none focus:border-teal-500 font-mono transition"
+              />
+            </div>
+
+            <button
+              type="submit"
+              disabled={loginLoading}
+              className="w-full mt-2 bg-gradient-to-r from-teal-600 to-emerald-600 hover:from-teal-500 hover:to-emerald-500 text-white font-bold py-3.5 rounded-xl shadow-lg shadow-teal-600/30 transition transform active:scale-98 flex items-center justify-center gap-2 text-sm"
+            >
+              {loginLoading ? (
+                <>
+                  <RefreshCw className="w-4 h-4 animate-spin" /> Authenticating...
+                </>
+              ) : (
+                'Sign In to Admin Console'
+              )}
+            </button>
+          </form>
+
+          <div className="mt-8 pt-6 border-t border-slate-800/80 text-center">
+            <button
+              onClick={() => onNavigate('home')}
+              className="text-xs text-slate-400 hover:text-teal-300 font-medium transition"
+            >
+              &larr; Back to Public Patient View
+            </button>
+          </div>
         </div>
       </div>
     );
   }
+
 
   return (
     <div className="min-h-screen bg-slate-950 text-slate-100 font-sans pb-16">

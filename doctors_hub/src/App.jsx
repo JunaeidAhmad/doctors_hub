@@ -177,6 +177,7 @@ export default function App() {
           <AdminDashboardPage
             currentUser={user}
             onNavigate={handleNavClick}
+            onAdminLoggedIn={(loggedInUser) => setUser(loggedInUser)}
           />
         )}
 
