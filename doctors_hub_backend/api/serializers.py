@@ -5,12 +5,12 @@ from django.contrib.auth import authenticate
 class UserSerializer(serializers.ModelSerializer):
     class Meta:
         model = User
-        fields = ('id', 'phone_number', 'first_name', 'last_name')
+        fields = ('id', 'phone_number', 'first_name', 'last_name', 'is_staff', 'is_superuser')
 
 class UserProfileSerializer(serializers.ModelSerializer):
     class Meta:
         model = User
-        fields = ('id', 'phone_number', 'first_name', 'last_name')
+        fields = ('id', 'phone_number', 'first_name', 'last_name', 'is_staff', 'is_superuser')
 
     def validate_phone_number(self, value):
         user = self.instance
@@ -69,13 +69,19 @@ class ChamberSerializer(serializers.ModelSerializer):
         fields = '__all__'
 
 class DoctorBookingSerializer(serializers.ModelSerializer):
+    doctor_name = serializers.CharField(source='doctor.name', read_only=True)
+    chamber_name = serializers.CharField(source='chamber.name', read_only=True)
+
     class Meta:
         model = DoctorBooking
         fields = '__all__'
-        read_only_fields = ('user', 'created_at', 'status')
+        read_only_fields = ('user', 'created_at')
 
 class LabBookingSerializer(serializers.ModelSerializer):
+    test_name = serializers.CharField(source='test.name', read_only=True)
+
     class Meta:
         model = LabBooking
         fields = '__all__'
-        read_only_fields = ('user', 'created_at', 'status')
+        read_only_fields = ('user', 'created_at')
+
