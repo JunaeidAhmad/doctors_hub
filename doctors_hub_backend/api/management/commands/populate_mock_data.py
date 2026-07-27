@@ -1,6 +1,6 @@
 from django.core.management.base import BaseCommand
 from api.models import (
-    Hospital, Branch, Specialty, PathologyTest, BranchTest,
+    User, Hospital, Branch, Specialty, PathologyTest, BranchTest,
     Doctor, DoctorAffiliation, AffiliationSchedule
 )
 import datetime
@@ -18,6 +18,16 @@ class Command(BaseCommand):
         Specialty.objects.all().delete()
         Branch.objects.all().delete()
         Hospital.objects.all().delete()
+
+        self.stdout.write("Creating Default Admin User...")
+        if not User.objects.filter(phone_number='01700000000').exists():
+            User.objects.create_superuser(
+                phone_number='01700000000',
+                password='admin123',
+                first_name='Admin',
+                last_name='User'
+            )
+            self.stdout.write(self.style.SUCCESS("Admin user created: Phone 01700000000 / Password admin123"))
 
         self.stdout.write("Creating Hospitals...")
         h1 = Hospital.objects.create(
@@ -132,7 +142,6 @@ class Command(BaseCommand):
         )
 
         self.stdout.write("Linking Branch Tests...")
-        # Different pricing at different branches!
         BranchTest.objects.create(branch=b1, test=t_cbc, price=450, original_price=600, discount="25% OFF", report_time="Same Day (6 Hours)")
         BranchTest.objects.create(branch=b2, test=t_cbc, price=400, original_price=550, discount="27% OFF", report_time="Same Day (4 Hours)")
         BranchTest.objects.create(branch=b3, test=t_cbc, price=500, original_price=650, discount="23% OFF", report_time="8 Hours")
@@ -161,7 +170,7 @@ class Command(BaseCommand):
             qualification="MBBS, FCPS (Obstetrics & Gynecology), MS",
             experience="14+ Yrs Exp."
         )
-        d2.specialties.set([s_gyn, s_derm]) # Multiple specialties!
+        d2.specialties.set([s_gyn, s_derm])
 
         d3 = Doctor.objects.create(
             id="doc-3",
@@ -180,7 +189,6 @@ class Command(BaseCommand):
         d4.specialties.set([s_ortho])
 
         self.stdout.write("Creating Doctor Affiliations & Schedules...")
-        # Doctor 1: OPD at Dhanmondi, In-patient at Dhanmondi, OPD at Mirpur
         aff1 = DoctorAffiliation.objects.create(
             doctor=d1, branch=b1, consultation_type="OPD", fee=1200
         )
@@ -198,7 +206,6 @@ class Command(BaseCommand):
         )
         AffiliationSchedule.objects.create(affiliation=aff1_m, day_of_week="Tue", start_time=datetime.time(15, 0), end_time=datetime.time(18, 0))
 
-        # Doctor 2: OPD at Dhanmondi, In-patient at Panthapath
         aff2 = DoctorAffiliation.objects.create(
             doctor=d2, branch=b1, consultation_type="OPD", fee=1000
         )
@@ -210,14 +217,12 @@ class Command(BaseCommand):
         )
         AffiliationSchedule.objects.create(affiliation=aff2_inp, day_of_week="Everyday", start_time=datetime.time(10, 0), end_time=datetime.time(14, 0))
 
-        # Doctor 3: OPD at Panthapath
         aff3 = DoctorAffiliation.objects.create(
             doctor=d3, branch=b3, consultation_type="OPD", fee=1500
         )
         AffiliationSchedule.objects.create(affiliation=aff3, day_of_week="Sat", start_time=datetime.time(18, 0), end_time=datetime.time(21, 30))
         AffiliationSchedule.objects.create(affiliation=aff3, day_of_week="Mon", start_time=datetime.time(18, 0), end_time=datetime.time(21, 30))
 
-        # Doctor 4: OPD & In-patient at Chevron Chittagong
         aff4 = DoctorAffiliation.objects.create(
             doctor=d4, branch=b4, consultation_type="OPD", fee=1200
         )
@@ -229,4 +234,4 @@ class Command(BaseCommand):
         )
         AffiliationSchedule.objects.create(affiliation=aff4_inp, day_of_week="Everyday", start_time=datetime.time(8, 0), end_time=datetime.time(12, 0))
 
-        self.stdout.write(self.style.SUCCESS("Successfully populated mock data!"))
+        self.stdout.write(self.style.SUCCESS("Successfully populated mock data & default admin user!"))

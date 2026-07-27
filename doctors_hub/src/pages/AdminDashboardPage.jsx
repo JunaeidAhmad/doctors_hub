@@ -347,7 +347,7 @@ export default function AdminDashboardPage({ currentUser, onNavigate, onAdminLog
 
   // Dedicated Admin Login State
   const [adminPhone, setAdminPhone] = useState('01700000000');
-  const [adminPassword, setAdminPassword] = useState('admin123456');
+  const [adminPassword, setAdminPassword] = useState('admin123');
   const [loginLoading, setLoginLoading] = useState(false);
   const [loginErr, setLoginErr] = useState('');
 

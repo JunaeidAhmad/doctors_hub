@@ -14,7 +14,7 @@ export default function OpdDoctorSearchPage({
   const [specialty, setSpecialty] = useState(initialSpecialty);
   const [location, setLocation] = useState(initialLocation);
   const [keyword, setKeyword] = useState(initialKeyword);
-  const [maxFee, setMaxFee] = useState(2000);
+  const [maxFee, setMaxFee] = useState(2500);
   const [selectedDay, setSelectedDay] = useState('All');
 
   const [chambers, setChambers] = useState(MOCK_CHAMBERS);
@@ -28,7 +28,7 @@ export default function OpdDoctorSearchPage({
     // Fetch OPD doctors specifically
     api.getDoctors({ consultation_type: 'OPD' })
       .then((data) => {
-        if (isMounted && data && data.length > 0) {
+        if (isMounted && Array.isArray(data) && data.length > 0) {
           setDoctors(data);
         }
       })
@@ -36,7 +36,7 @@ export default function OpdDoctorSearchPage({
 
     api.getBranches({ location })
       .then((data) => {
-        if (isMounted && data && data.length > 0) {
+        if (isMounted && Array.isArray(data) && data.length > 0) {
           setChambers(data);
         }
       })
@@ -44,7 +44,7 @@ export default function OpdDoctorSearchPage({
 
     api.getSpecialties()
       .then((data) => {
-        if (isMounted && data && data.length > 0) setSpecialties(data);
+        if (isMounted && Array.isArray(data) && data.length > 0) setSpecialties(data);
       })
       .catch(() => {});
 
@@ -90,7 +90,23 @@ export default function OpdDoctorSearchPage({
       const list = Object.values(map);
       if (list.length > 0) return list;
     }
-    return chambers;
+
+    // Fallback: normalize mock chambers & doctors
+    return chambers.map((ch) => ({
+      ...ch,
+      doctors: (ch.doctors || []).map((doc) => {
+        const aff = (doc.affiliations || []).find(a => a.consultation_type === 'OPD') || (doc.affiliations && doc.affiliations[0]);
+        return {
+          ...doc,
+          fee: doc.fee || (aff ? aff.fee : 1000),
+          visitDays: doc.visitDays || doc.visit_days || (aff && aff.schedules ? aff.schedules.map(s => s.day_of_week).join(', ') : 'Sat, Mon, Wed'),
+          visitTime: doc.visitTime || doc.visit_time || (aff && aff.schedules && aff.schedules[0] ? `${aff.schedules[0].start_time} - ${aff.schedules[0].end_time}` : '05:00 PM - 09:00 PM'),
+          slots: Array.isArray(doc.slots) && doc.slots.length > 0 
+            ? doc.slots 
+            : ['05:00 PM', '05:30 PM', '06:00 PM', '06:30 PM', '07:00 PM']
+        };
+      })
+    }));
   }, [doctors, chambers]);
 
   // Filter logic
@@ -107,7 +123,8 @@ export default function OpdDoctorSearchPage({
         }
 
         // Fee match
-        if (doc.fee > maxFee) {
+        const docFee = doc.fee || 1000;
+        if (docFee > maxFee) {
           return false;
         }
 
@@ -248,7 +265,7 @@ export default function OpdDoctorSearchPage({
                       setLocation('All Bangladesh');
                       setKeyword('');
                       setSelectedDay('All');
-                      setMaxFee(2000);
+                      setMaxFee(2500);
                     }}
                     className="text-[11px] font-semibold text-rose-500 hover:underline"
                   >
@@ -339,7 +356,10 @@ export default function OpdDoctorSearchPage({
                         ? doc.specialties.map(s => s.name || s).join(', ')
                         : (doc.specialty || doc.specialty_details?.name || 'Specialist Doctor');
                       
-                      const selectedSlot = selectedSlots[doc.id] || doc.slots[0];
+                      const slotsList = Array.isArray(doc.slots) && doc.slots.length > 0 
+                        ? doc.slots 
+                        : ['05:00 PM', '05:30 PM', '06:00 PM', '06:30 PM', '07:00 PM'];
+                      const selectedSlot = selectedSlots[doc.id] || slotsList[0];
 
                       return (
                         <div key={doc.id} className="p-6 flex flex-col md:flex-row md:items-center justify-between gap-6 hover:bg-slate-50/60 transition-colors">
@@ -384,7 +404,7 @@ export default function OpdDoctorSearchPage({
                                 Select Visiting Slot:
                               </label>
                               <div className="flex flex-wrap gap-1.5">
-                                {doc.slots.map((slotTime) => (
+                                {slotsList.map((slotTime) => (
                                   <button
                                     key={slotTime}
                                     onClick={() => handleSelectSlot(doc.id, slotTime)}
@@ -409,9 +429,8 @@ export default function OpdDoctorSearchPage({
                             </div>
 
                             <button
-                              onClick={() => onBookDoctorSlot && onBookDoctorSlot({
-                                doctor: doc,
-                                chamber: chamber,
+                              onClick={() => onBookDoctorSlot && onBookDoctorSlot(chamber, {
+                                ...doc,
                                 slot: selectedSlot,
                                 fee: doc.fee
                               })}

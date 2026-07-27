@@ -5,6 +5,11 @@ const BASE_URL = import.meta.env.VITE_API_BASE_URL || 'https://doctors-hub.onren
  */
 async function handleResponse(response) {
   if (!response.ok) {
+    if (response.status === 401) {
+      localStorage.removeItem('access_token');
+      localStorage.removeItem('refresh_token');
+      localStorage.removeItem('user');
+    }
     let errorMessage = `HTTP Error ${response.status}`;
     try {
       const errorData = await response.json();
@@ -48,9 +53,12 @@ function getHeaders(token = null) {
 export const api = {
   // Auth
   async login(phone_number, password) {
+    localStorage.removeItem('access_token');
+    localStorage.removeItem('refresh_token');
+    localStorage.removeItem('user');
     const res = await fetch(`${BASE_URL}/auth/login/`, {
       method: 'POST',
-      headers: getHeaders(),
+      headers: { 'Content-Type': 'application/json' },
       body: JSON.stringify({ phone_number, password }),
     });
     const data = await handleResponse(res);
