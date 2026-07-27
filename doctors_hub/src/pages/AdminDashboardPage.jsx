@@ -2,7 +2,7 @@ import React, { useState, useEffect, useMemo } from 'react';
 import { api } from '../services/api';
 import { 
   Users, Building2, TestTube, Calendar, Plus, Edit, Trash2, CheckCircle, 
-  XCircle, Search, RefreshCw, AlertCircle, ShieldAlert, Sparkles, Clock, MapPin, Stethoscope, ChevronRight 
+  XCircle, Search, RefreshCw, AlertCircle, ShieldAlert, Sparkles, Clock, MapPin, Stethoscope, ChevronRight, Filter, Calculator 
 } from 'lucide-react';
 
 export const CITY_THANAS = {
@@ -47,6 +47,35 @@ export const CITY_THANAS = {
   ]
 };
 
+/**
+ * Helper to auto-calculate price based on original price and discount input
+ * Supports percentages (e.g. "20%", "25% OFF") or flat amounts (e.g. "200 BDT", "150")
+ */
+function calculateFinalPrice(origPriceStr, discountStr) {
+  const orig = parseFloat(origPriceStr);
+  if (isNaN(orig) || orig <= 0) return '';
+  if (!discountStr || !discountStr.trim()) return orig.toString();
+
+  const distTrim = discountStr.trim();
+  // Check if percentage (e.g. "20%", "25% OFF")
+  const pctMatch = distTrim.match(/^(\d+(?:\.\d+)?)\s*%/);
+  if (pctMatch) {
+    const pct = parseFloat(pctMatch[1]);
+    const finalPrice = Math.round(orig * (1 - pct / 100));
+    return (finalPrice >= 0 ? finalPrice : 0).toString();
+  }
+
+  // Check if flat amount (e.g. "200", "200 BDT")
+  const flatMatch = distTrim.match(/^(\d+(?:\.\d+)?)/);
+  if (flatMatch) {
+    const flat = parseFloat(flatMatch[1]);
+    const finalPrice = Math.round(orig - flat);
+    return (finalPrice >= 0 ? finalPrice : 0).toString();
+  }
+
+  return orig.toString();
+}
+
 export default function AdminDashboardPage({ currentUser, onNavigate, onAdminLoggedIn }) {
   const [activeTab, setActiveTab] = useState('overview'); // 'overview' | 'doctors' | 'chambers' | 'tests' | 'branch-tests' | 'doc-bookings' | 'lab-bookings'
   const [loading, setLoading] = useState(true);
@@ -62,6 +91,10 @@ export default function AdminDashboardPage({ currentUser, onNavigate, onAdminLog
   const [doctorBookings, setDoctorBookings] = useState([]);
   const [labBookings, setLabBookings] = useState([]);
 
+  // Branch Test Filters
+  const [branchTestBranchFilter, setBranchTestBranchFilter] = useState('');
+  const [branchTestTestFilter, setBranchTestTestFilter] = useState('');
+
   // Modals state
   const [showDoctorModal, setShowDoctorModal] = useState(false);
   const [editingDoctor, setEditingDoctor] = useState(null);
@@ -70,12 +103,14 @@ export default function AdminDashboardPage({ currentUser, onNavigate, onAdminLog
     name: '',
     qualification: '',
     experience: '10+ Yrs Exp.',
-    selectedSpecialties: [], // Array of specialty IDs
+    selectedSpecialties: [],
     affiliations: [
       {
         branch: '',
         consultation_type: 'OPD',
-        fee: 1000,
+        original_fee: '1500',
+        discount: '20% OFF',
+        fee: '1200',
         schedules: [
           { day_of_week: 'Sat', start_time: '17:00', end_time: '21:00' }
         ]
@@ -118,10 +153,11 @@ export default function AdminDashboardPage({ currentUser, onNavigate, onAdminLog
     id: '',
     branch: '',
     test: '',
-    price: 500,
-    original_price: 700,
+    original_price: '700',
     discount: '25% OFF',
-    report_time: 'Same Day (6 Hours)'
+    price: '525',
+    report_delivery_date: new Date().toISOString().split('T')[0],
+    report_time_slot: '05:00 PM - 09:00 PM'
   });
 
   // Dedicated Admin Login State
@@ -130,7 +166,7 @@ export default function AdminDashboardPage({ currentUser, onNavigate, onAdminLog
   const [loginLoading, setLoginLoading] = useState(false);
   const [loginErr, setLoginErr] = useState('');
 
-  // Search filter inside tables
+  // General Search filter inside tables
   const [searchTerm, setSearchTerm] = useState('');
 
   const isStaff = currentUser?.is_staff || false;
@@ -211,7 +247,9 @@ export default function AdminDashboardPage({ currentUser, onNavigate, onAdminLog
         ? doc.affiliations.map(a => ({
             branch: a.branch_id || a.branch || chambers[0]?.id || '',
             consultation_type: a.consultation_type || 'OPD',
-            fee: a.fee || 1000,
+            original_fee: a.original_fee || a.fee || '1500',
+            discount: a.discount || '20% OFF',
+            fee: a.fee || '1200',
             schedules: Array.isArray(a.schedules) && a.schedules.length > 0
               ? a.schedules.map(s => ({
                   day_of_week: s.day_of_week || 'Sat',
@@ -223,7 +261,9 @@ export default function AdminDashboardPage({ currentUser, onNavigate, onAdminLog
         : [{
             branch: chambers[0]?.id || '',
             consultation_type: 'OPD',
-            fee: 1000,
+            original_fee: '1500',
+            discount: '20% OFF',
+            fee: '1200',
             schedules: [{ day_of_week: 'Sat', start_time: '17:00', end_time: '21:00' }]
           }];
 
@@ -247,7 +287,9 @@ export default function AdminDashboardPage({ currentUser, onNavigate, onAdminLog
           {
             branch: chambers[0]?.id || '',
             consultation_type: 'OPD',
-            fee: 1000,
+            original_fee: '1500',
+            discount: '20% OFF',
+            fee: '1200',
             schedules: [{ day_of_week: 'Sat', start_time: '17:00', end_time: '21:00' }]
           }
         ]
@@ -274,7 +316,9 @@ export default function AdminDashboardPage({ currentUser, onNavigate, onAdminLog
         {
           branch: chambers[0]?.id || '',
           consultation_type: 'OPD',
-          fee: 1000,
+          original_fee: '1500',
+          discount: '20% OFF',
+          fee: '1200',
           schedules: [{ day_of_week: 'Sat', start_time: '17:00', end_time: '21:00' }]
         }
       ]
@@ -313,7 +357,10 @@ export default function AdminDashboardPage({ currentUser, onNavigate, onAdminLog
         qualification: doctorForm.qualification,
         experience: doctorForm.experience,
         specialty_ids: doctorForm.selectedSpecialties,
-        affiliations: doctorForm.affiliations
+        affiliations: doctorForm.affiliations.map(a => ({
+          ...a,
+          fee: parseFloat(a.fee) || 1000
+        }))
       };
 
       if (editingDoctor) {
@@ -500,16 +547,18 @@ export default function AdminDashboardPage({ currentUser, onNavigate, onAdminLog
 
   // --- BRANCH TEST PRICING CRUD HANDLERS ---
   const handleOpenBranchTestModal = (bt = null) => {
+    const todayStr = new Date().toISOString().split('T')[0];
     if (bt) {
       setEditingBranchTest(bt);
       setBranchTestForm({
         id: bt.id,
         branch: bt.branch?.id || bt.branch || chambers[0]?.id || '',
         test: bt.test?.id || bt.test || tests[0]?.id || '',
-        price: bt.price,
-        original_price: bt.original_price || '',
-        discount: bt.discount || '',
-        report_time: bt.report_time || 'Same Day'
+        original_price: bt.original_price ? bt.original_price.toString() : '700',
+        discount: bt.discount || '25% OFF',
+        price: bt.price ? bt.price.toString() : '525',
+        report_delivery_date: todayStr,
+        report_time_slot: '05:00 PM - 09:00 PM'
       });
     } else {
       setEditingBranchTest(null);
@@ -517,10 +566,11 @@ export default function AdminDashboardPage({ currentUser, onNavigate, onAdminLog
         id: '',
         branch: chambers[0]?.id || '',
         test: tests[0]?.id || '',
-        price: 500,
-        original_price: 700,
+        original_price: '700',
         discount: '25% OFF',
-        report_time: 'Same Day (6 Hours)'
+        price: '525',
+        report_delivery_date: todayStr,
+        report_time_slot: '05:00 PM - 09:00 PM'
       });
     }
     setShowBranchTestModal(true);
@@ -529,13 +579,15 @@ export default function AdminDashboardPage({ currentUser, onNavigate, onAdminLog
   const handleSaveBranchTest = async (e) => {
     e.preventDefault();
     try {
+      const formattedReportTime = `Delivery: ${branchTestForm.report_delivery_date} | Slot: ${branchTestForm.report_time_slot}`;
+      
       const payload = {
         branch: branchTestForm.branch,
         test: branchTestForm.test,
         price: parseFloat(branchTestForm.price) || 0,
         original_price: branchTestForm.original_price ? parseFloat(branchTestForm.original_price) : null,
         discount: branchTestForm.discount,
-        report_time: branchTestForm.report_time
+        report_time: formattedReportTime
       };
 
       await api.createBranchTest(payload);
@@ -558,26 +610,23 @@ export default function AdminDashboardPage({ currentUser, onNavigate, onAdminLog
     }
   };
 
-  // Status updates for bookings
-  const handleUpdateDoctorBookingStatus = async (id, newStatus) => {
-    try {
-      await api.updateDoctorBookingStatus(id, newStatus);
-      showNotification(`Booking #${id} status updated to ${newStatus}`);
-      loadAllData();
-    } catch (err) {
-      alert(`Failed to update booking status: ${err.message}`);
-    }
-  };
+  // Filtered Branch Tests for Tab 3
+  const filteredBranchTests = useMemo(() => {
+    return branchTests.filter(bt => {
+      const bHospitalName = bt.hospital_name || (bt.branch?.hospital_name) || (bt.branch?.hospital?.name) || '';
+      const bBranchName = bt.branch_name || (bt.branch?.name) || '';
+      const fullBranchDisplayName = bHospitalName ? `${bHospitalName} - ${bBranchName}` : bBranchName;
+      const tName = bt.test_details?.name || (bt.test?.name) || '';
 
-  const handleUpdateLabBookingStatus = async (id, newStatus) => {
-    try {
-      await api.updateLabBookingStatus(id, newStatus);
-      showNotification(`Lab Booking #${id} status updated to ${newStatus}`);
-      loadAllData();
-    } catch (err) {
-      alert(`Failed to update lab booking status: ${err.message}`);
-    }
-  };
+      if (branchTestBranchFilter && !fullBranchDisplayName.toLowerCase().includes(branchTestBranchFilter.toLowerCase())) {
+        return false;
+      }
+      if (branchTestTestFilter && !tName.toLowerCase().includes(branchTestTestFilter.toLowerCase())) {
+        return false;
+      }
+      return true;
+    });
+  }, [branchTests, branchTestBranchFilter, branchTestTestFilter]);
 
   if (!isStaff) {
     return (
@@ -686,7 +735,7 @@ export default function AdminDashboardPage({ currentUser, onNavigate, onAdminLog
       {/* Main Container */}
       <main className="max-w-7xl mx-auto px-6 pt-8 space-y-6">
 
-        {/* Success / Error Notification */}
+        {/* Notifications */}
         {successMsg && (
           <div className="bg-emerald-500/20 border border-emerald-500/40 text-emerald-300 p-4 rounded-2xl text-xs font-bold flex items-center gap-2">
             <CheckCircle className="w-4 h-4 text-emerald-400" />
@@ -730,8 +779,6 @@ export default function AdminDashboardPage({ currentUser, onNavigate, onAdminLog
             );
           })}
         </div>
-
-        {/* TAB CONTENTS */}
 
         {/* 1. HOSPITALS & BRANCHES TAB */}
         {activeTab === 'chambers' && (
@@ -943,13 +990,15 @@ export default function AdminDashboardPage({ currentUser, onNavigate, onAdminLog
           </div>
         )}
 
-        {/* 3. DIAGNOSTIC BRANCH TEST PRICING TAB */}
+        {/* 3. DIAGNOSTIC BRANCH TEST PRICING TAB (WITH TASKS 1, 2, 3 IMPLEMENTED) */}
         {activeTab === 'branch-tests' && (
-          <div className="bg-slate-900 border border-slate-800 rounded-2xl overflow-hidden shadow-xl">
+          <div className="bg-slate-900 border border-slate-800 rounded-2xl overflow-hidden shadow-xl space-y-4">
+            
+            {/* Header & Modal Action */}
             <div className="p-5 border-b border-slate-800 flex flex-wrap items-center justify-between gap-4">
               <div>
                 <h3 className="text-base font-bold text-white">Diagnostic Branch Test Pricing</h3>
-                <p className="text-xs text-slate-400">Assign pathology tests to specific branches with branch-specific prices</p>
+                <p className="text-xs text-slate-400">Assign pathology tests to specific hospital branches with auto-calculated discounts</p>
               </div>
               <button
                 onClick={() => handleOpenBranchTestModal()}
@@ -959,31 +1008,108 @@ export default function AdminDashboardPage({ currentUser, onNavigate, onAdminLog
               </button>
             </div>
 
+            {/* TASK 3: FILTER BAR FOR DIAGNOSTIC BRANCH & TEST NAME */}
+            <div className="px-5 flex flex-wrap items-center gap-3">
+              <div className="flex items-center gap-2 text-xs text-slate-400 font-bold">
+                <Filter className="w-4 h-4 text-teal-400" />
+                <span>Filters:</span>
+              </div>
+
+              {/* Diagnostic Branch Filter */}
+              <div className="flex-1 min-w-[200px]">
+                <select
+                  value={branchTestBranchFilter}
+                  onChange={(e) => setBranchTestBranchFilter(e.target.value)}
+                  className="w-full bg-slate-950 border border-slate-800 rounded-xl px-3 py-2 text-xs text-white focus:outline-none focus:border-teal-500 font-semibold"
+                >
+                  <option value="">All Diagnostic Branches</option>
+                  {chambers.map(c => {
+                    const full = c.hospital_name ? `${c.hospital_name} - ${c.name}` : c.name;
+                    return <option key={c.id} value={full}>{full}</option>;
+                  })}
+                </select>
+              </div>
+
+              {/* Test Name Filter */}
+              <div className="flex-1 min-w-[200px]">
+                <select
+                  value={branchTestTestFilter}
+                  onChange={(e) => setBranchTestTestFilter(e.target.value)}
+                  className="w-full bg-slate-950 border border-slate-800 rounded-xl px-3 py-2 text-xs text-white focus:outline-none focus:border-teal-500 font-semibold"
+                >
+                  <option value="">All Pathology Tests</option>
+                  {tests.map(t => (
+                    <option key={t.id} value={t.name}>{t.name}</option>
+                  ))}
+                </select>
+              </div>
+
+              {(branchTestBranchFilter || branchTestTestFilter) && (
+                <button
+                  onClick={() => {
+                    setBranchTestBranchFilter('');
+                    setBranchTestTestFilter('');
+                  }}
+                  className="text-xs text-rose-400 hover:underline font-bold px-2 py-1"
+                >
+                  Reset Filters
+                </button>
+              )}
+            </div>
+
+            {/* Table */}
             <div className="overflow-x-auto">
               <table className="w-full text-left text-xs text-slate-300">
                 <thead className="bg-slate-950 text-slate-400 text-[11px] uppercase tracking-wider border-b border-slate-800">
                   <tr>
-                    <th className="py-3.5 px-4">Diagnostic Branch</th>
+                    <th className="py-3.5 px-4">Hospital & Branch Name (Diagnostic Branch)</th>
                     <th className="py-3.5 px-4">Test Name</th>
-                    <th className="py-3.5 px-4">Branch Price</th>
-                    <th className="py-3.5 px-4">Report Time</th>
+                    <th className="py-3.5 px-4">Calculated Test Price</th>
+                    <th className="py-3.5 px-4">Report Delivery Calendar & Slot</th>
                     <th className="py-3.5 px-4 text-right">Actions</th>
                   </tr>
                 </thead>
                 <tbody className="divide-y divide-slate-800/60">
-                  {branchTests.map(bt => {
-                    const bName = bt.branch_name || (bt.branch?.name) || 'Diagnostic Center';
+                  {filteredBranchTests.map(bt => {
+                    {/* TASK 1: COMBINE HOSPITAL NAME + BRANCH NAME */}
+                    const bHospitalName = bt.hospital_name || (bt.branch?.hospital_name) || (bt.branch?.hospital?.name) || '';
+                    const bBranchName = bt.branch_name || (bt.branch?.name) || 'Diagnostic Center';
+                    const fullBranchDisplayName = bHospitalName ? `${bHospitalName} - ${bBranchName}` : bBranchName;
+                    
                     const tName = bt.test_details?.name || (bt.test?.name) || 'Pathology Test';
 
                     return (
                       <tr key={bt.id} className="hover:bg-slate-800/40 transition">
-                        <td className="py-4 px-4 font-bold text-emerald-400">{bName}</td>
-                        <td className="py-4 px-4 font-bold text-white">{tName}</td>
-                        <td className="py-4 px-4 font-mono font-bold text-teal-300">
-                          ৳{bt.price} {bt.original_price && <span className="line-through text-slate-500 text-[10px] ml-1">৳{bt.original_price}</span>}
+                        <td className="py-4 px-4 font-bold text-emerald-400">
+                          <div className="text-sm">{fullBranchDisplayName}</div>
                         </td>
-                        <td className="py-4 px-4 text-slate-300">{bt.report_time || 'Same Day'}</td>
+                        <td className="py-4 px-4 font-bold text-white">
+                          <div>{tName}</div>
+                          {bt.discount && (
+                            <span className="inline-block mt-0.5 px-2 py-0.5 rounded bg-emerald-500/20 text-emerald-300 border border-emerald-500/30 text-[10px] font-bold">
+                              {bt.discount}
+                            </span>
+                          )}
+                        </td>
+                        <td className="py-4 px-4 font-mono font-bold text-teal-300">
+                          <div className="text-base text-teal-300">৳{bt.price}</div>
+                          {bt.original_price && (
+                            <div className="line-through text-slate-500 text-xs">Original: ৳{bt.original_price}</div>
+                          )}
+                        </td>
+                        <td className="py-4 px-4 text-slate-300">
+                          <div className="inline-flex items-center gap-1.5 px-2.5 py-1 rounded-lg bg-slate-950 border border-slate-800 text-[11px] font-semibold text-slate-200">
+                            <Calendar className="w-3.5 h-3.5 text-teal-400" />
+                            <span>{bt.report_time || 'Same Day Delivery'}</span>
+                          </div>
+                        </td>
                         <td className="py-4 px-4 text-right space-x-2 whitespace-nowrap">
+                          <button
+                            onClick={() => handleOpenBranchTestModal(bt)}
+                            className="p-2 bg-slate-800 hover:bg-slate-700 text-slate-300 rounded-lg transition"
+                          >
+                            <Edit className="w-4 h-4" />
+                          </button>
                           <button
                             onClick={() => handleDeleteBranchTest(bt.id)}
                             className="p-2 bg-rose-500/20 hover:bg-rose-500/30 text-rose-400 rounded-lg transition"
@@ -994,9 +1120,11 @@ export default function AdminDashboardPage({ currentUser, onNavigate, onAdminLog
                       </tr>
                     );
                   })}
-                  {branchTests.length === 0 && (
+                  {filteredBranchTests.length === 0 && (
                     <tr>
-                      <td colSpan="5" className="py-8 text-center text-slate-500">No branch test pricing recorded yet. Click above to assign test prices.</td>
+                      <td colSpan="5" className="py-8 text-center text-slate-500">
+                        No diagnostic branch test offerings match your search criteria.
+                      </td>
                     </tr>
                   )}
                 </tbody>
@@ -1091,7 +1219,6 @@ export default function AdminDashboardPage({ currentUser, onNavigate, onAdminLog
             </h3>
             
             <form onSubmit={handleSaveChamber} className="space-y-4 text-xs">
-              {/* Separate Hospital Name & Branch Name */}
               <div>
                 <label className="block text-slate-300 font-bold mb-1">1. Hospital Group Name</label>
                 <input
@@ -1180,7 +1307,6 @@ export default function AdminDashboardPage({ currentUser, onNavigate, onAdminLog
                 />
               </div>
 
-              {/* Facility Types Multi Checkbox */}
               <div>
                 <label className="block text-slate-300 font-bold mb-1">Facility Capabilities</label>
                 <div className="flex items-center gap-4 text-xs">
@@ -1256,7 +1382,7 @@ export default function AdminDashboardPage({ currentUser, onNavigate, onAdminLog
         </div>
       )}
 
-      {/* --- DIAGNOSTIC BRANCH TEST MODAL --- */}
+      {/* --- DIAGNOSTIC BRANCH TEST MODAL (WITH TASK 2 CALENDAR/SLOT AND TASK 4 AUTO-CALCULATION) --- */}
       {showBranchTestModal && (
         <div className="fixed inset-0 z-50 bg-slate-950/80 backdrop-blur-sm flex items-center justify-center p-4">
           <div className="bg-slate-900 border border-slate-800 rounded-2xl max-w-lg w-full p-6 shadow-2xl space-y-4">
@@ -1291,49 +1417,97 @@ export default function AdminDashboardPage({ currentUser, onNavigate, onAdminLog
                 </select>
               </div>
 
-              <div className="grid grid-cols-2 gap-3">
+              {/* TASK 4: AUTO CALCULATED PRICE FROM ORIGINAL PRICE AND DISCOUNT */}
+              <div className="grid grid-cols-2 gap-3 bg-slate-950 p-3 rounded-xl border border-slate-800">
                 <div>
-                  <label className="block text-slate-300 font-bold mb-1">Branch Test Price (BDT)</label>
+                  <label className="block text-slate-300 font-bold mb-1">Original Price (BDT)</label>
                   <input
                     type="number"
                     required
-                    value={branchTestForm.price}
-                    onChange={e => setBranchTestForm({...branchTestForm, price: e.target.value})}
-                    className="w-full bg-slate-950 border border-slate-800 rounded-xl px-3 py-2 text-white font-mono"
+                    placeholder="700"
+                    value={branchTestForm.original_price}
+                    onChange={e => {
+                      const newOrig = e.target.value;
+                      const calculated = calculateFinalPrice(newOrig, branchTestForm.discount);
+                      setBranchTestForm({
+                        ...branchTestForm, 
+                        original_price: newOrig,
+                        price: calculated || branchTestForm.price
+                      });
+                    }}
+                    className="w-full bg-slate-900 border border-slate-800 rounded-xl px-3 py-2 text-white font-mono"
                   />
                 </div>
+
                 <div>
-                  <label className="block text-slate-400 mb-1">Original Price (BDT)</label>
+                  <label className="block text-slate-300 font-bold mb-1">Discount Tag (% or BDT)</label>
                   <input
-                    type="number"
-                    value={branchTestForm.original_price}
-                    onChange={e => setBranchTestForm({...branchTestForm, original_price: e.target.value})}
-                    className="w-full bg-slate-950 border border-slate-800 rounded-xl px-3 py-2 text-white font-mono"
+                    type="text"
+                    placeholder="25% OFF / 150 BDT"
+                    value={branchTestForm.discount}
+                    onChange={e => {
+                      const newDisc = e.target.value;
+                      const calculated = calculateFinalPrice(branchTestForm.original_price, newDisc);
+                      setBranchTestForm({
+                        ...branchTestForm, 
+                        discount: newDisc,
+                        price: calculated || branchTestForm.price
+                      });
+                    }}
+                    className="w-full bg-slate-900 border border-slate-800 rounded-xl px-3 py-2 text-white"
                   />
+                </div>
+
+                <div className="col-span-2 pt-2 border-t border-slate-800 flex items-center justify-between">
+                  <span className="text-slate-400 font-bold flex items-center gap-1.5">
+                    <Calculator className="w-4 h-4 text-teal-400" />
+                    Calculated Final Price:
+                  </span>
+                  <div className="flex items-center gap-2">
+                    <input
+                      type="number"
+                      required
+                      value={branchTestForm.price}
+                      onChange={e => setBranchTestForm({...branchTestForm, price: e.target.value})}
+                      className="w-28 bg-slate-900 border border-teal-500/50 rounded-xl px-3 py-1.5 text-teal-300 font-mono font-bold text-sm text-right focus:outline-none"
+                    />
+                    <span className="text-teal-400 font-bold">BDT</span>
+                  </div>
                 </div>
               </div>
 
-              <div className="grid grid-cols-2 gap-3">
+              {/* TASK 2: REPORT PROCESSING TIME CALENDAR & TIME SLOT */}
+              <div className="grid grid-cols-2 gap-3 bg-slate-950 p-3 rounded-xl border border-slate-800">
                 <div>
-                  <label className="block text-slate-400 mb-1">Discount Tag</label>
+                  <label className="block text-slate-300 font-bold mb-1 flex items-center gap-1">
+                    <Calendar className="w-3.5 h-3.5 text-teal-400" />
+                    Report Delivery Date
+                  </label>
                   <input
-                    type="text"
-                    placeholder="25% OFF"
-                    value={branchTestForm.discount}
-                    onChange={e => setBranchTestForm({...branchTestForm, discount: e.target.value})}
-                    className="w-full bg-slate-950 border border-slate-800 rounded-xl px-3 py-2 text-white"
+                    type="date"
+                    required
+                    value={branchTestForm.report_delivery_date}
+                    onChange={e => setBranchTestForm({...branchTestForm, report_delivery_date: e.target.value})}
+                    className="w-full bg-slate-900 border border-slate-800 rounded-xl px-3 py-2 text-white font-mono"
                   />
                 </div>
+
                 <div>
-                  <label className="block text-slate-400 mb-1">Report Processing Time</label>
-                  <input
-                    type="text"
-                    required
-                    placeholder="Same Day (6 Hours)"
-                    value={branchTestForm.report_time}
-                    onChange={e => setBranchTestForm({...branchTestForm, report_time: e.target.value})}
-                    className="w-full bg-slate-950 border border-slate-800 rounded-xl px-3 py-2 text-white"
-                  />
+                  <label className="block text-slate-300 font-bold mb-1 flex items-center gap-1">
+                    <Clock className="w-3.5 h-3.5 text-teal-400" />
+                    Time Slot
+                  </label>
+                  <select
+                    value={branchTestForm.report_time_slot}
+                    onChange={e => setBranchTestForm({...branchTestForm, report_time_slot: e.target.value})}
+                    className="w-full bg-slate-900 border border-slate-800 rounded-xl px-3 py-2 text-white font-semibold"
+                  >
+                    <option value="Same Day Morning (10:00 AM - 01:00 PM)">Morning (10:00 AM - 01:00 PM)</option>
+                    <option value="Same Day Afternoon (02:00 PM - 05:00 PM)">Afternoon (02:00 PM - 05:00 PM)</option>
+                    <option value="05:00 PM - 09:00 PM">Evening (05:00 PM - 09:00 PM)</option>
+                    <option value="Next Day Morning (10:00 AM)">Next Day Morning (10:00 AM)</option>
+                    <option value="Within 24 Hours">Within 24 Hours</option>
+                  </select>
                 </div>
               </div>
 
@@ -1357,7 +1531,7 @@ export default function AdminDashboardPage({ currentUser, onNavigate, onAdminLog
         </div>
       )}
 
-      {/* --- DOCTOR MODAL (MULTI-SPECIALTY & MULTI-CHAMBER SCHEDULES) --- */}
+      {/* --- DOCTOR MODAL (MULTI-SPECIALTY, MULTI-CHAMBER & TASK 4 AUTO-CALCULATED DOCTOR FEE) --- */}
       {showDoctorModal && (
         <div className="fixed inset-0 z-50 bg-slate-950/80 backdrop-blur-sm flex items-center justify-center p-4">
           <div className="bg-slate-900 border border-slate-800 rounded-2xl max-w-2xl w-full max-h-[90vh] overflow-y-auto p-6 shadow-2xl space-y-5">
@@ -1457,7 +1631,7 @@ export default function AdminDashboardPage({ currentUser, onNavigate, onAdminLog
                       )}
                     </div>
 
-                    <div className="grid grid-cols-1 sm:grid-cols-3 gap-3">
+                    <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
                       <div>
                         <label className="block text-slate-400 mb-1">Select Branch / Chamber</label>
                         <select
@@ -1470,7 +1644,7 @@ export default function AdminDashboardPage({ currentUser, onNavigate, onAdminLog
                               return { ...prev, affiliations: updated };
                             });
                           }}
-                          className="w-full bg-slate-900 border border-slate-800 rounded-lg px-2.5 py-1.5 text-white"
+                          className="w-full bg-slate-900 border border-slate-800 rounded-lg px-2.5 py-1.5 text-white font-semibold"
                         >
                           {chambers.map(c => (
                             <option key={c.id} value={c.id}>
@@ -1492,15 +1666,56 @@ export default function AdminDashboardPage({ currentUser, onNavigate, onAdminLog
                               return { ...prev, affiliations: updated };
                             });
                           }}
-                          className="w-full bg-slate-900 border border-slate-800 rounded-lg px-2.5 py-1.5 text-white"
+                          className="w-full bg-slate-900 border border-slate-800 rounded-lg px-2.5 py-1.5 text-white font-semibold"
                         >
                           <option value="OPD">OPD (Chamber Doctor)</option>
                           <option value="In-patient">In-patient (Hospital Doctor)</option>
                         </select>
                       </div>
+                    </div>
+
+                    {/* TASK 4: AUTO-CALCULATE DOCTOR CONSULTATION FEE */}
+                    <div className="grid grid-cols-3 gap-2 bg-slate-900/60 p-2.5 rounded-lg border border-slate-800/80">
+                      <div>
+                        <label className="block text-slate-400 text-[11px] mb-1">Original Fee</label>
+                        <input
+                          type="number"
+                          placeholder="1500"
+                          value={aff.original_fee || ''}
+                          onChange={e => {
+                            const val = e.target.value;
+                            setDoctorForm(prev => {
+                              const updated = [...prev.affiliations];
+                              updated[affIdx].original_fee = val;
+                              updated[affIdx].fee = calculateFinalPrice(val, updated[affIdx].discount) || updated[affIdx].fee;
+                              return { ...prev, affiliations: updated };
+                            });
+                          }}
+                          className="w-full bg-slate-950 border border-slate-800 rounded px-2 py-1 text-white font-mono"
+                        />
+                      </div>
 
                       <div>
-                        <label className="block text-slate-400 mb-1">Consultation Fee (BDT)</label>
+                        <label className="block text-slate-400 text-[11px] mb-1">Discount Tag</label>
+                        <input
+                          type="text"
+                          placeholder="20% OFF"
+                          value={aff.discount || ''}
+                          onChange={e => {
+                            const val = e.target.value;
+                            setDoctorForm(prev => {
+                              const updated = [...prev.affiliations];
+                              updated[affIdx].discount = val;
+                              updated[affIdx].fee = calculateFinalPrice(updated[affIdx].original_fee, val) || updated[affIdx].fee;
+                              return { ...prev, affiliations: updated };
+                            });
+                          }}
+                          className="w-full bg-slate-950 border border-slate-800 rounded px-2 py-1 text-white"
+                        />
+                      </div>
+
+                      <div>
+                        <label className="block text-teal-400 font-bold text-[11px] mb-1">Final Fee (BDT)</label>
                         <input
                           type="number"
                           required
@@ -1513,7 +1728,7 @@ export default function AdminDashboardPage({ currentUser, onNavigate, onAdminLog
                               return { ...prev, affiliations: updated };
                             });
                           }}
-                          className="w-full bg-slate-900 border border-slate-800 rounded-lg px-2.5 py-1.5 text-white font-mono"
+                          className="w-full bg-slate-950 border border-teal-500/50 rounded px-2 py-1 text-teal-300 font-mono font-bold"
                         />
                       </div>
                     </div>
