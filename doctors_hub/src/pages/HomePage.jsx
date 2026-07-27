@@ -20,6 +20,7 @@ export default function HomePage({
   onExecuteSearch,
   onBookDoctorSlot,
   onBookLabTest,
+  onSelectPartner,
   showToast
 }) {
   return (
@@ -77,6 +78,7 @@ export default function HomePage({
         <OpdMonitorGrid
           chambers={OPD_CHAMBERS}
           onBookDoctorSlot={onBookDoctorSlot}
+          onSelectPartner={onSelectPartner}
           selectedSpecialty={selectedSpecialty}
           searchKeyword={searchKeyword}
           selectedLocation={selectedLocation}

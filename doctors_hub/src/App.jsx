@@ -6,7 +6,8 @@ import HomePage from './pages/HomePage';
 import OpdDoctorSearchPage from './pages/OpdDoctorSearchPage';
 import PathologySearchPage from './pages/PathologySearchPage';
 import DirectSearchPage from './pages/DirectSearchPage';
-import AdminDashboardPage from './pages/AdminDashboardPage';
+import MedicalPartnerDetailPage from './pages/MedicalPartnerDetailPage';
+import MedicalPartnersPage from './pages/MedicalPartnersPage';
 import BookingModal from './components/BookingModal';
 import LabBookingModal from './components/LabBookingModal';
 import LoginModal from './components/LoginModal';
@@ -20,6 +21,8 @@ function getPageFromPath(path) {
   if (path === '/opd-search') return 'opd-search';
   if (path === '/pathology-search') return 'pathology-search';
   if (path === '/direct-search') return 'direct-search';
+  if (path === '/partners' || path === '/medical-partners') return 'partners';
+  if (path.startsWith('/partner/') || path.startsWith('/medical-partner/')) return 'partner-detail';
   return 'home';
 }
 
@@ -51,6 +54,7 @@ export default function App() {
     if (currentPage === 'admin') setActiveTab('admin');
     else if (currentPage === 'opd-search') setActiveTab('opd-doctors');
     else if (currentPage === 'pathology-search') setActiveTab('pathology');
+    else if (currentPage === 'partners' || currentPage === 'partner-detail') setActiveTab('partners');
     else if (currentPage === 'direct-search') setActiveTab('home');
     else setActiveTab('home');
   }, [currentPage]);
@@ -114,6 +118,8 @@ export default function App() {
       navigate('/admin');
     } else if (tabId === 'home') {
       navigate('/');
+    } else if (tabId === 'partners') {
+      navigate('/partners');
     } else if (tabId === 'opd-doctors') {
       navigate('/opd-search');
     } else if (tabId === 'pathology') {
@@ -126,6 +132,12 @@ export default function App() {
         if (el) el.scrollIntoView({ behavior: 'smooth' });
       }, 100);
     }
+    window.scrollTo({ top: 0, behavior: 'smooth' });
+  };
+
+  const handleSelectPartner = (partnerId) => {
+    setActiveTab('partners');
+    navigate(`/partner/${partnerId}`);
     window.scrollTo({ top: 0, behavior: 'smooth' });
   };
 
@@ -142,6 +154,11 @@ export default function App() {
       `Lab Booking Confirmed! Ref: ${labData.bookingRef} for ${labData.testName}. Pickup scheduled on ${labData.pickupDate}.`
     );
   };
+
+  // Helper to extract partner ID from URL path /partner/:id or /medical-partner/:id
+  const currentPartnerId = location.pathname.startsWith('/partner/')
+    ? location.pathname.replace('/partner/', '')
+    : location.pathname.replace('/medical-partner/', '');
 
   return (
     <div className="min-h-screen bg-slate-50 flex flex-col font-sans text-slate-800 antialiased selection:bg-emerald-500 selection:text-white">
@@ -195,7 +212,25 @@ export default function App() {
             onExecuteSearch={handleExecuteSearch}
             onBookDoctorSlot={(chamber, doctor) => setBookingDoctorState({ chamber, doctor })}
             onBookLabTest={(test) => setBookingLabState(test)}
+            onSelectPartner={handleSelectPartner}
             showToast={showToast}
+          />
+        )}
+
+        {currentPage === 'partners' && (
+          <MedicalPartnersPage
+            onSelectPartner={handleSelectPartner}
+            onNavigateHome={() => handleNavClick('home')}
+          />
+        )}
+
+        {currentPage === 'partner-detail' && (
+          <MedicalPartnerDetailPage
+            partnerId={currentPartnerId}
+            onBookDoctorSlot={(chamber, doctor) => setBookingDoctorState({ chamber, doctor })}
+            onBookLabTest={(test) => setBookingLabState(test)}
+            onNavigateHome={() => handleNavClick('home')}
+            onNavigatePartners={() => handleNavClick('partners')}
           />
         )}
 
@@ -205,6 +240,7 @@ export default function App() {
             initialLocation={selectedLocation}
             initialKeyword={searchKeyword}
             onBookDoctorSlot={(chamber, doctor) => setBookingDoctorState({ chamber, doctor })}
+            onSelectPartner={handleSelectPartner}
             onNavigateHome={() => handleNavClick('home')}
           />
         )}

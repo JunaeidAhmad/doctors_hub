@@ -68,6 +68,8 @@ class Chamber(models.Model):
     tagline = models.CharField(max_length=255, blank=True)
     badge = models.CharField(max_length=50, blank=True)
     image = models.URLField(max_length=500, blank=True)
+    services = models.JSONField(default=list)
+    description = models.TextField(blank=True)
 
     def __str__(self):
         return self.name

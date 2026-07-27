@@ -131,6 +131,11 @@ export const api = {
     return handleResponse(res);
   },
 
+  async getChamberById(id) {
+    const res = await fetch(`${BASE_URL}/chambers/${id}/`, { headers: getHeaders() });
+    return handleResponse(res);
+  },
+
   // Doctors
   async getDoctors({ specialty = '', location = '', search = '' } = {}) {
     const url = new URL(`${BASE_URL}/doctors/`);

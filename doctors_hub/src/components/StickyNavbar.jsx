@@ -19,10 +19,9 @@ export default function StickyNavbar({ activeTab, setActiveTab, user, onOpenLogi
 
   const navLinks = [
     { name: 'Home', id: 'home' },
-    { name: 'About', id: 'about' },
+    { name: 'Medical Partners', id: 'partners' },
     { name: 'OPD Doctors', id: 'opd-doctors' },
     { name: 'Test Pathology', id: 'pathology' },
-    { name: 'Blogs', id: 'blogs' },
     { name: 'Contact', id: 'contact' },
   ];
 

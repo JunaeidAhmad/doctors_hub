@@ -4,6 +4,7 @@ import { Building2, MapPin, Phone, Clock, ShieldCheck, Stethoscope, Calendar, Ch
 export default function OpdMonitorGrid({
   chambers,
   onBookDoctorSlot,
+  onSelectPartner,
   selectedSpecialty,
   searchKeyword,
   selectedLocation
@@ -54,11 +55,14 @@ export default function OpdMonitorGrid({
               >
                 {/* Top Chamber Banner & Information Header */}
                 <div>
-                  <div className="relative h-44 overflow-hidden bg-slate-900">
+                  <div 
+                    onClick={() => onSelectPartner && onSelectPartner(chamber.id)}
+                    className="relative h-44 overflow-hidden bg-slate-900 cursor-pointer group"
+                  >
                     <img
                       src={chamber.image}
                       alt={chamber.name}
-                      className="w-full h-full object-cover opacity-80 hover:scale-105 transition-transform duration-500"
+                      className="w-full h-full object-cover opacity-80 group-hover:scale-105 transition-transform duration-500"
                     />
                     <div className="absolute inset-0 bg-gradient-to-t from-slate-950 via-slate-950/40 to-transparent"></div>
 
@@ -70,20 +74,23 @@ export default function OpdMonitorGrid({
                       </div>
                       <div className="bg-slate-900/90 backdrop-blur-md text-amber-400 text-xs font-bold px-2.5 py-1 rounded-full border border-amber-500/30 flex items-center gap-1">
                         <Star className="w-3.5 h-3.5 fill-amber-400" />
-                        <span>{chamber.rating} ({chamber.reviewsCount})</span>
+                        <span>{chamber.rating} ({chamber.reviewsCount || chamber.reviews_count || 200})</span>
                       </div>
                     </div>
 
-                    {/* Bottom Chamber Title on Image */}
+                    {/* Bottom Chamber Title on Image - CLICKABLE PARTNER NAME */}
                     <div className="absolute bottom-3 left-4 right-4 text-white">
-                      <h3 className="text-xl font-extrabold text-white drop-shadow-sm flex items-center gap-2">
-                        <span>{chamber.name}</span>
+                      <h3 className="text-xl font-extrabold text-white drop-shadow-sm flex items-center gap-2 group-hover:text-emerald-300 transition-colors">
+                        <span className="hover:underline underline-offset-4">{chamber.name}</span>
                         {chamber.verified && (
                           <CheckCircle className="w-5 h-5 text-emerald-400 shrink-0" />
                         )}
                       </h3>
-                      <p className="text-xs text-slate-300 font-medium line-clamp-1">
-                        {chamber.tagline}
+                      <p className="text-xs text-slate-300 font-medium line-clamp-1 flex items-center justify-between">
+                        <span>{chamber.tagline}</span>
+                        <span className="text-[10px] font-bold text-emerald-400 bg-emerald-950/80 px-2 py-0.5 rounded border border-emerald-500/30 group-hover:bg-emerald-600 group-hover:text-white transition-all ml-2 shrink-0">
+                          View Partner Page &rarr;
+                        </span>
                       </p>
                     </div>
                   </div>

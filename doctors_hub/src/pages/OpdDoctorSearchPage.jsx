@@ -8,6 +8,7 @@ export default function OpdDoctorSearchPage({
   initialLocation = 'All Bangladesh',
   initialKeyword = '',
   onBookDoctorSlot,
+  onSelectPartner,
   onNavigateHome
 }) {
   const [specialty, setSpecialty] = useState(initialSpecialty);
@@ -346,8 +347,12 @@ export default function OpdDoctorSearchPage({
                   <div className="p-5 bg-slate-900 text-white flex flex-col sm:flex-row sm:items-center justify-between gap-4">
                     <div>
                       <div className="flex items-center gap-2 flex-wrap">
-                        <h2 className="text-xl font-extrabold text-white">
-                          {chamber.name}
+                        <h2 
+                          onClick={() => onSelectPartner && onSelectPartner(chamber.id)}
+                          className="text-xl font-extrabold text-white hover:text-emerald-400 cursor-pointer hover:underline transition-colors flex items-center gap-1.5"
+                        >
+                          <span>{chamber.name}</span>
+                          <span className="text-[10px] font-bold bg-emerald-500/20 text-emerald-300 border border-emerald-500/40 px-2 py-0.5 rounded-full">View Partner Page</span>
                         </h2>
                         {chamber.verified && (
                           <span className="bg-emerald-500/20 border border-emerald-400/40 text-emerald-400 text-[10px] font-extrabold px-2.5 py-0.5 rounded-full flex items-center gap-1">

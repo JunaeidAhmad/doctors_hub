@@ -109,6 +109,17 @@ export const OPD_CHAMBERS = [
     tagline: "Premier Multispecialty OPD & Diagnostic Center in Bangladesh",
     badge: "Super Partner",
     image: "https://images.unsplash.com/photo-1519494026892-80bbd2d6fd0d?auto=format&fit=crop&w=600&q=80",
+    description: "Ibn Sina Diagnostic & OPD Hub Dhanmondi is one of Bangladesh's premier healthcare and diagnostic facilities. Offering comprehensive OPD specialist consultations, high-end radiology, 24/7 emergency response, automated pathology lab testing, and home sample collection.",
+    services: [
+      "24/7 Specialist OPD Consultation",
+      "High-Resolution 128-Slice CT Scan",
+      "4D Ultrasonography & Color Doppler",
+      "Automated Clinical Pathology & Biochemistry",
+      "Digital X-Ray & Mammography",
+      "ECG, Echocardiography & TMT",
+      "Home Blood Sample Collection",
+      "Emergency Ambulance & Pharmacy Service"
+    ],
     doctors: [
       {
         id: "doc-1",
@@ -158,6 +169,15 @@ export const OPD_CHAMBERS = [
     tagline: "Nationwide Leading Diagnostic & Specialist Doctor OPD Network",
     badge: "Verified Partner",
     image: "https://images.unsplash.com/photo-1586773860418-d37222d8fce3?auto=format&fit=crop&w=600&q=80",
+    description: "Popular Diagnostic Centre is a nationwide healthcare pioneer providing state-of-the-art diagnostic imaging, high-accuracy pathological testing, specialist doctor chambers, and emergency medical services.",
+    services: [
+      "Specialist Visiting Doctor OPD",
+      "Advanced MRI & High-Speed CT Scan",
+      "Full Automated Pathology & Serology",
+      "Digital Radiology & Ultrasound",
+      "Dermatology & Skin Aesthetic Clinic",
+      "Cardiology Consultation & ECG"
+    ],
     doctors: [
       {
         id: "doc-4",
@@ -196,6 +216,15 @@ export const OPD_CHAMBERS = [
     tagline: "Chittagong's Most Trusted Multispecialty Consultation Center",
     badge: "Top Rated",
     image: "https://images.unsplash.com/photo-1629909613654-28e377c37b09?auto=format&fit=crop&w=600&q=80",
+    description: "Chevron Clinical Laboratory is Chittagong's premier medical hub offering round-the-clock OPD specialist doctor visits, advanced molecular diagnostics, orthopedic consultation, gastroenterology, and emergency support.",
+    services: [
+      "24/7 Emergency OPD & Clinical Lab",
+      "Orthopedic & Spine Specialty Clinic",
+      "Pediatric & Child Health Services",
+      "Endoscopy & Gastroenterology Lab",
+      "Digital X-Ray & Ultrasonography",
+      "Home Sample Collection Chittagong"
+    ],
     doctors: [
       {
         id: "doc-6",
@@ -245,6 +274,14 @@ export const OPD_CHAMBERS = [
     tagline: "Digital Diagnostic, Radiology & Visiting Doctor Chamber",
     badge: "Verified Partner",
     image: "https://images.unsplash.com/photo-1579684385127-1ef15d508118?auto=format&fit=crop&w=600&q=80",
+    description: "Mount Adora Hospital Zindabazar Sylhet brings world-class outpatient care, ENT surgery, pulmonology, high-precision radiology, and pathology services to the Sylhet division.",
+    services: [
+      "ENT Specialist Care & Endoscopy",
+      "Pulmonology & Respiratory Lab",
+      "Comprehensive Blood & Hormone Testing",
+      "4D Ultrasonography & X-Ray",
+      "Visiting Specialist Doctor Chamber"
+    ],
     doctors: [
       {
         id: "doc-9",
@@ -283,6 +320,14 @@ export const OPD_CHAMBERS = [
     tagline: "Super Specialist OPD Consultation & Clinical Lab",
     badge: "Super Partner",
     image: "https://images.unsplash.com/photo-1538108149393-fbbd81895907?auto=format&fit=crop&w=600&q=80",
+    description: "Labaid Diagnostic Laxmipur Rajshahi is Rajshahi's premier center for nephrology, gynecology, cardiology, digital diagnostic radiology, and home sample collection.",
+    services: [
+      "Nephrology & Dialysis Support",
+      "Gynecology & Maternal Health Clinic",
+      "High-Accuracy Pathology & Biochemistry",
+      "Color Doppler & USG Imaging",
+      "Home Blood Sample Collection"
+    ],
     doctors: [
       {
         id: "doc-11",
