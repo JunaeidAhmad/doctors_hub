@@ -2,12 +2,16 @@ from rest_framework import viewsets, generics, permissions, status
 from rest_framework.response import Response
 from rest_framework.views import APIView
 from rest_framework_simplejwt.tokens import RefreshToken
-from .models import User, Specialty, PathologyTest, Chamber, Doctor, DoctorBooking, LabBooking
+from .models import (
+    User, Hospital, Branch, Specialty, PathologyTest, BranchTest,
+    Doctor, DoctorAffiliation, AffiliationSchedule,
+    DoctorBooking, LabBooking
+)
 from .permissions import IsAdminUserOrReadOnly
 from .serializers import (
     UserSerializer, UserProfileSerializer, RegisterSerializer, LoginSerializer,
-    SpecialtySerializer, PathologyTestSerializer,
-    ChamberSerializer, DoctorSerializer,
+    HospitalSerializer, BranchSerializer, SpecialtySerializer, PathologyTestSerializer,
+    BranchTestSerializer, DoctorSerializer, DoctorAffiliationSerializer, AffiliationScheduleSerializer,
     DoctorBookingSerializer, LabBookingSerializer
 )
 
@@ -48,6 +52,30 @@ class UserProfileAPIView(generics.RetrieveUpdateAPIView):
     def get_object(self):
         return self.request.user
 
+class HospitalViewSet(viewsets.ModelViewSet):
+    queryset = Hospital.objects.all()
+    serializer_class = HospitalSerializer
+    permission_classes = (IsAdminUserOrReadOnly,)
+
+class BranchViewSet(viewsets.ModelViewSet):
+    queryset = Branch.objects.all()
+    serializer_class = BranchSerializer
+    permission_classes = (IsAdminUserOrReadOnly,)
+
+    def get_queryset(self):
+        queryset = Branch.objects.all()
+        location = self.request.query_params.get('location', None)
+        hospital = self.request.query_params.get('hospital', None)
+        facility_type = self.request.query_params.get('facility_type', None)
+
+        if location and location != 'All Bangladesh':
+            queryset = queryset.filter(city__icontains=location)
+        if hospital:
+            queryset = queryset.filter(hospital_id=hospital)
+        if facility_type:
+            queryset = queryset.filter(facility_types__contains=[facility_type])
+        return queryset
+
 class SpecialtyViewSet(viewsets.ModelViewSet):
     queryset = Specialty.objects.all()
     serializer_class = SpecialtySerializer
@@ -65,16 +93,19 @@ class PathologyTestViewSet(viewsets.ModelViewSet):
             queryset = queryset.filter(name__icontains=search)
         return queryset
 
-class ChamberViewSet(viewsets.ModelViewSet):
-    queryset = Chamber.objects.all()
-    serializer_class = ChamberSerializer
+class BranchTestViewSet(viewsets.ModelViewSet):
+    queryset = BranchTest.objects.all()
+    serializer_class = BranchTestSerializer
     permission_classes = (IsAdminUserOrReadOnly,)
-    
+
     def get_queryset(self):
-        queryset = Chamber.objects.all()
-        location = self.request.query_params.get('location', None)
-        if location and location != 'All Bangladesh':
-            queryset = queryset.filter(city__icontains=location)
+        queryset = BranchTest.objects.all()
+        branch = self.request.query_params.get('branch', None)
+        test = self.request.query_params.get('test', None)
+        if branch:
+            queryset = queryset.filter(branch_id=branch)
+        if test:
+            queryset = queryset.filter(test_id=test)
         return queryset
 
 class DoctorViewSet(viewsets.ModelViewSet):
@@ -83,18 +114,43 @@ class DoctorViewSet(viewsets.ModelViewSet):
     permission_classes = (IsAdminUserOrReadOnly,)
 
     def get_queryset(self):
-        queryset = Doctor.objects.all()
+        queryset = Doctor.objects.all().distinct()
         specialty = self.request.query_params.get('specialty', None)
         location = self.request.query_params.get('location', None)
         search = self.request.query_params.get('search', None)
+        consultation_type = self.request.query_params.get('consultation_type', None)
+        hospital = self.request.query_params.get('hospital', None)
         
         if specialty:
-            queryset = queryset.filter(specialty_id=specialty)
+            queryset = queryset.filter(specialties__id=specialty)
         if location and location != 'All Bangladesh':
-            queryset = queryset.filter(chamber__city__icontains=location)
+            queryset = queryset.filter(affiliations__branch__city__icontains=location)
         if search:
             queryset = queryset.filter(name__icontains=search)
+        if consultation_type:
+            queryset = queryset.filter(affiliations__consultation_type=consultation_type)
+        if hospital:
+            queryset = queryset.filter(affiliations__branch__hospital_id=hospital)
             
+        return queryset
+
+class DoctorAffiliationViewSet(viewsets.ModelViewSet):
+    queryset = DoctorAffiliation.objects.all()
+    serializer_class = DoctorAffiliationSerializer
+    permission_classes = (IsAdminUserOrReadOnly,)
+
+    def get_queryset(self):
+        queryset = DoctorAffiliation.objects.all()
+        consultation_type = self.request.query_params.get('consultation_type', None)
+        doctor = self.request.query_params.get('doctor', None)
+        branch = self.request.query_params.get('branch', None)
+
+        if consultation_type:
+            queryset = queryset.filter(consultation_type=consultation_type)
+        if doctor:
+            queryset = queryset.filter(doctor_id=doctor)
+        if branch:
+            queryset = queryset.filter(branch_id=branch)
         return queryset
 
 class DoctorBookingViewSet(viewsets.ModelViewSet):
@@ -120,4 +176,3 @@ class LabBookingViewSet(viewsets.ModelViewSet):
 
     def perform_create(self, serializer):
         serializer.save(user=self.request.user)
-

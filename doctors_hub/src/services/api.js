@@ -113,7 +113,7 @@ export const api = {
     return handleResponse(res);
   },
 
-  // Pathology Tests
+  // Pathology Base Tests
   async getTests(search = '') {
     const url = new URL(`${BASE_URL}/tests/`);
     if (search) url.searchParams.append('search', search);
@@ -121,29 +121,61 @@ export const api = {
     return handleResponse(res);
   },
 
-  // Chambers
-  async getChambers(location = '') {
-    const url = new URL(`${BASE_URL}/chambers/`);
-    if (location && location !== 'All Bangladesh') {
-      url.searchParams.append('location', location);
-    }
+  // Branch Tests (Diagnostic test prices)
+  async getBranchTests({ branch = '', test = '' } = {}) {
+    const url = new URL(`${BASE_URL}/branch-tests/`);
+    if (branch) url.searchParams.append('branch', branch);
+    if (test) url.searchParams.append('test', test);
     const res = await fetch(url, { headers: getHeaders() });
     return handleResponse(res);
   },
 
-  async getChamberById(id) {
-    const res = await fetch(`${BASE_URL}/chambers/${id}/`, { headers: getHeaders() });
+  // Hospitals & Branches
+  async getHospitals() {
+    const res = await fetch(`${BASE_URL}/hospitals/`, { headers: getHeaders() });
     return handleResponse(res);
   },
 
+  async getHospitalById(id) {
+    const res = await fetch(`${BASE_URL}/hospitals/${id}/`, { headers: getHeaders() });
+    return handleResponse(res);
+  },
+
+  async getBranches({ location = '', hospital = '', facility_type = '' } = {}) {
+    const url = new URL(`${BASE_URL}/branches/`);
+    if (location && location !== 'All Bangladesh') {
+      url.searchParams.append('location', location);
+    }
+    if (hospital) url.searchParams.append('hospital', hospital);
+    if (facility_type) url.searchParams.append('facility_type', facility_type);
+    const res = await fetch(url, { headers: getHeaders() });
+    return handleResponse(res);
+  },
+
+  async getBranchById(id) {
+    const res = await fetch(`${BASE_URL}/branches/${id}/`, { headers: getHeaders() });
+    return handleResponse(res);
+  },
+
+  // Backward compatibility alias for getBranches
+  async getChambers(location = '') {
+    return this.getBranches({ location });
+  },
+
+  async getChamberById(id) {
+    return this.getBranchById(id);
+  },
+
   // Doctors
-  async getDoctors({ specialty = '', location = '', search = '' } = {}) {
+  async getDoctors({ specialty = '', location = '', search = '', consultation_type = '', hospital = '' } = {}) {
     const url = new URL(`${BASE_URL}/doctors/`);
     if (specialty) url.searchParams.append('specialty', specialty);
     if (location && location !== 'All Bangladesh') {
       url.searchParams.append('location', location);
     }
     if (search) url.searchParams.append('search', search);
+    if (consultation_type) url.searchParams.append('consultation_type', consultation_type);
+    if (hospital) url.searchParams.append('hospital', hospital);
     const res = await fetch(url, { headers: getHeaders() });
     return handleResponse(res);
   },
@@ -170,6 +202,67 @@ export const api = {
 
   // --- ADMIN MANAGEMENT METHODS ---
 
+  // Admin Hospitals CRUD
+  async createHospital(data) {
+    const res = await fetch(`${BASE_URL}/hospitals/`, {
+      method: 'POST',
+      headers: getHeaders(),
+      body: JSON.stringify(data),
+    });
+    return handleResponse(res);
+  },
+
+  async updateHospital(id, data) {
+    const res = await fetch(`${BASE_URL}/hospitals/${id}/`, {
+      method: 'PUT',
+      headers: getHeaders(),
+      body: JSON.stringify(data),
+    });
+    return handleResponse(res);
+  },
+
+  async deleteHospital(id) {
+    const res = await fetch(`${BASE_URL}/hospitals/${id}/`, {
+      method: 'DELETE',
+      headers: getHeaders(),
+    });
+    if (res.status === 204) return true;
+    return handleResponse(res);
+  },
+
+  // Admin Branch CRUD
+  async createBranch(data) {
+    const res = await fetch(`${BASE_URL}/branches/`, {
+      method: 'POST',
+      headers: getHeaders(),
+      body: JSON.stringify(data),
+    });
+    return handleResponse(res);
+  },
+
+  async updateBranch(id, data) {
+    const res = await fetch(`${BASE_URL}/branches/${id}/`, {
+      method: 'PUT',
+      headers: getHeaders(),
+      body: JSON.stringify(data),
+    });
+    return handleResponse(res);
+  },
+
+  async deleteBranch(id) {
+    const res = await fetch(`${BASE_URL}/branches/${id}/`, {
+      method: 'DELETE',
+      headers: getHeaders(),
+    });
+    if (res.status === 204) return true;
+    return handleResponse(res);
+  },
+
+  // Backward compatibility alias for createChamber/updateChamber/deleteChamber
+  async createChamber(chamberData) { return this.createBranch(chamberData); },
+  async updateChamber(id, chamberData) { return this.updateBranch(id, chamberData); },
+  async deleteChamber(id) { return this.deleteBranch(id); },
+
   // Admin Doctor CRUD
   async createDoctor(doctorData) {
     const res = await fetch(`${BASE_URL}/doctors/`, {
@@ -194,31 +287,22 @@ export const api = {
       method: 'DELETE',
       headers: getHeaders(),
     });
-    if (res.status === 244 || res.status === 204) return true;
+    if (res.status === 204) return true;
     return handleResponse(res);
   },
 
-  // Admin Chamber / Hospital CRUD
-  async createChamber(chamberData) {
-    const res = await fetch(`${BASE_URL}/chambers/`, {
+  // Admin Branch Test CRUD
+  async createBranchTest(branchTestData) {
+    const res = await fetch(`${BASE_URL}/branch-tests/`, {
       method: 'POST',
       headers: getHeaders(),
-      body: JSON.stringify(chamberData),
+      body: JSON.stringify(branchTestData),
     });
     return handleResponse(res);
   },
 
-  async updateChamber(id, chamberData) {
-    const res = await fetch(`${BASE_URL}/chambers/${id}/`, {
-      method: 'PUT',
-      headers: getHeaders(),
-      body: JSON.stringify(chamberData),
-    });
-    return handleResponse(res);
-  },
-
-  async deleteChamber(id) {
-    const res = await fetch(`${BASE_URL}/chambers/${id}/`, {
+  async deleteBranchTest(id) {
+    const res = await fetch(`${BASE_URL}/branch-tests/${id}/`, {
       method: 'DELETE',
       headers: getHeaders(),
     });
@@ -306,4 +390,3 @@ export const api = {
     return handleResponse(res);
   },
 };
-

@@ -24,7 +24,8 @@ export default function AdminDashboardPage({ currentUser, onNavigate, onAdminLog
   const [editingDoctor, setEditingDoctor] = useState(null);
   const [doctorForm, setDoctorForm] = useState({
     id: '', name: '', specialty: '', chamber: '', qualification: '', 
-    experience: '', visit_days: '', visit_time: '', fee: '', slotsStr: ''
+    experience: '', visit_days: '', visit_time: '', fee: '', slotsStr: '',
+    consultation_type: 'OPD'
   });
 
   const [showChamberModal, setShowChamberModal] = useState(false);
@@ -33,7 +34,8 @@ export default function AdminDashboardPage({ currentUser, onNavigate, onAdminLog
     id: '', name: '', location: '', city: 'Dhaka', verified: true, 
     rating: 4.8, reviews_count: 50, open_timing: '08:00 AM - 08:00 PM', 
     contact_phone: '', tagline: '', badge: 'Verified Partner', image: '',
-    servicesStr: '', description: ''
+    servicesStr: '', description: '',
+    facility_types: ['Hospital', 'Diagnostic Center']
   });
 
   const [showTestModal, setShowTestModal] = useState(false);

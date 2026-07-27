@@ -32,32 +32,20 @@ class User(AbstractBaseUser, PermissionsMixin):
     def __str__(self):
         return self.phone_number
 
-class Specialty(models.Model):
-    id = models.CharField(max_length=50, primary_key=True)
-    name = models.CharField(max_length=100)
-    icon = models.CharField(max_length=50)
-    description = models.TextField(blank=True)
-    
-    def __str__(self):
-        return self.name
-
-class PathologyTest(models.Model):
-    id = models.CharField(max_length=50, primary_key=True)
-    name = models.CharField(max_length=150)
-    category = models.CharField(max_length=100)
-    price = models.DecimalField(max_digits=10, decimal_places=2)
-    original_price = models.DecimalField(max_digits=10, decimal_places=2, null=True, blank=True)
-    discount = models.CharField(max_length=50, blank=True)
-    fasting_required = models.BooleanField(default=False)
-    report_time = models.CharField(max_length=100)
-    description = models.TextField(blank=True)
-
-    def __str__(self):
-        return self.name
-
-class Chamber(models.Model):
+class Hospital(models.Model):
     id = models.CharField(max_length=100, primary_key=True)
     name = models.CharField(max_length=200)
+    description = models.TextField(blank=True)
+    logo = models.URLField(max_length=500, blank=True)
+
+    def __str__(self):
+        return self.name
+
+class Branch(models.Model):
+    id = models.CharField(max_length=100, primary_key=True)
+    hospital = models.ForeignKey(Hospital, on_delete=models.CASCADE, related_name='branches', null=True, blank=True)
+    name = models.CharField(max_length=200)
+    facility_types = models.JSONField(default=list) # e.g. ["Hospital", "Diagnostic Center"]
     location = models.CharField(max_length=255)
     city = models.CharField(max_length=100)
     verified = models.BooleanField(default=False)
@@ -72,27 +60,73 @@ class Chamber(models.Model):
     description = models.TextField(blank=True)
 
     def __str__(self):
+        return f"{self.name} ({self.city})"
+
+class Specialty(models.Model):
+    id = models.CharField(max_length=50, primary_key=True)
+    name = models.CharField(max_length=100)
+    icon = models.CharField(max_length=50)
+    description = models.TextField(blank=True)
+    
+    def __str__(self):
         return self.name
 
-class Doctor(models.Model):
+class PathologyTest(models.Model):
     id = models.CharField(max_length=50, primary_key=True)
-    name = models.CharField(max_length=200)
-    specialty = models.ForeignKey(Specialty, on_delete=models.SET_NULL, null=True, related_name='doctors')
-    chamber = models.ForeignKey(Chamber, on_delete=models.CASCADE, related_name='doctors')
-    qualification = models.TextField()
-    experience = models.CharField(max_length=50)
-    visit_days = models.CharField(max_length=100)
-    visit_time = models.CharField(max_length=100)
-    fee = models.DecimalField(max_digits=8, decimal_places=2)
-    slots = models.JSONField(default=list)  # storing array of strings
+    name = models.CharField(max_length=150)
+    category = models.CharField(max_length=100)
+    fasting_required = models.BooleanField(default=False)
+    description = models.TextField(blank=True)
 
     def __str__(self):
         return self.name
 
+class BranchTest(models.Model):
+    branch = models.ForeignKey(Branch, on_delete=models.CASCADE, related_name='offered_tests')
+    test = models.ForeignKey(PathologyTest, on_delete=models.CASCADE, related_name='offered_at')
+    price = models.DecimalField(max_digits=10, decimal_places=2)
+    original_price = models.DecimalField(max_digits=10, decimal_places=2, null=True, blank=True)
+    discount = models.CharField(max_length=50, blank=True)
+    report_time = models.CharField(max_length=100, blank=True)
+
+    def __str__(self):
+        return f"{self.test.name} @ {self.branch.name} - {self.price} BDT"
+
+class Doctor(models.Model):
+    id = models.CharField(max_length=50, primary_key=True)
+    name = models.CharField(max_length=200)
+    specialties = models.ManyToManyField(Specialty, related_name='doctors')
+    qualification = models.TextField()
+    experience = models.CharField(max_length=50)
+
+    def __str__(self):
+        return self.name
+
+class DoctorAffiliation(models.Model):
+    CONSULTATION_TYPES = [
+        ('OPD', 'OPD'),
+        ('In-patient', 'In-patient'),
+    ]
+    doctor = models.ForeignKey(Doctor, on_delete=models.CASCADE, related_name='affiliations')
+    branch = models.ForeignKey(Branch, on_delete=models.CASCADE, related_name='affiliated_doctors')
+    consultation_type = models.CharField(max_length=50, choices=CONSULTATION_TYPES, default='OPD')
+    fee = models.DecimalField(max_digits=8, decimal_places=2)
+
+    def __str__(self):
+        return f"{self.doctor.name} at {self.branch.name} ({self.consultation_type})"
+
+class AffiliationSchedule(models.Model):
+    affiliation = models.ForeignKey(DoctorAffiliation, on_delete=models.CASCADE, related_name='schedules')
+    day_of_week = models.CharField(max_length=20) # e.g. "Sat", "Mon", "Everyday"
+    start_time = models.TimeField()
+    end_time = models.TimeField()
+
+    def __str__(self):
+        return f"{self.affiliation.doctor.name} - {self.day_of_week} ({self.start_time} - {self.end_time})"
+
 class DoctorBooking(models.Model):
     user = models.ForeignKey(User, on_delete=models.CASCADE, related_name='doctor_bookings')
-    doctor = models.ForeignKey(Doctor, on_delete=models.CASCADE)
-    chamber = models.ForeignKey(Chamber, on_delete=models.CASCADE)
+    affiliation = models.ForeignKey(DoctorAffiliation, on_delete=models.CASCADE, related_name='bookings')
     date = models.DateField()
     slot = models.CharField(max_length=50)
     patient_name = models.CharField(max_length=100)
@@ -101,7 +135,7 @@ class DoctorBooking(models.Model):
 
 class LabBooking(models.Model):
     user = models.ForeignKey(User, on_delete=models.CASCADE, related_name='lab_bookings')
-    test = models.ForeignKey(PathologyTest, on_delete=models.CASCADE)
+    branch_test = models.ForeignKey(BranchTest, on_delete=models.CASCADE, related_name='bookings')
     pickup_date = models.DateField()
     patient_name = models.CharField(max_length=100)
     patient_phone = models.CharField(max_length=20)

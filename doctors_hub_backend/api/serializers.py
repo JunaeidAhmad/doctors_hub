@@ -1,5 +1,9 @@
 from rest_framework import serializers
-from .models import User, Specialty, PathologyTest, Chamber, Doctor, DoctorBooking, LabBooking
+from .models import (
+    User, Hospital, Branch, Specialty, PathologyTest, BranchTest,
+    Doctor, DoctorAffiliation, AffiliationSchedule,
+    DoctorBooking, LabBooking
+)
 from django.contrib.auth import authenticate
 
 class UserSerializer(serializers.ModelSerializer):
@@ -17,7 +21,6 @@ class UserProfileSerializer(serializers.ModelSerializer):
         if User.objects.filter(phone_number=value).exclude(pk=user.pk if user else None).exists():
             raise serializers.ValidationError("A user with this phone number already exists.")
         return value
-
 
 class RegisterSerializer(serializers.ModelSerializer):
     password = serializers.CharField(write_only=True)
@@ -54,23 +57,63 @@ class PathologyTestSerializer(serializers.ModelSerializer):
         model = PathologyTest
         fields = '__all__'
 
+class BranchTestSerializer(serializers.ModelSerializer):
+    test_details = PathologyTestSerializer(source='test', read_only=True)
+    branch_name = serializers.CharField(source='branch.name', read_only=True)
+
+    class Meta:
+        model = BranchTest
+        fields = '__all__'
+
+class AffiliationScheduleSerializer(serializers.ModelSerializer):
+    class Meta:
+        model = AffiliationSchedule
+        fields = '__all__'
+
+class DoctorAffiliationSerializer(serializers.ModelSerializer):
+    branch_id = serializers.CharField(source='branch.id', read_only=True)
+    branch_name = serializers.CharField(source='branch.name', read_only=True)
+    hospital_name = serializers.CharField(source='branch.hospital.name', read_only=True, default='')
+    city = serializers.CharField(source='branch.city', read_only=True)
+    schedules = AffiliationScheduleSerializer(many=True, read_only=True)
+    doctor_name = serializers.CharField(source='doctor.name', read_only=True)
+    qualification = serializers.CharField(source='doctor.qualification', read_only=True)
+
+    class Meta:
+        model = DoctorAffiliation
+        fields = '__all__'
+
 class DoctorSerializer(serializers.ModelSerializer):
-    specialty_details = SpecialtySerializer(source='specialty', read_only=True)
-    
+    specialties = SpecialtySerializer(many=True, read_only=True)
+    specialty_ids = serializers.PrimaryKeyRelatedField(
+        queryset=Specialty.objects.all(), many=True, write_only=True, source='specialties'
+    )
+    affiliations = DoctorAffiliationSerializer(many=True, read_only=True)
+
     class Meta:
         model = Doctor
         fields = '__all__'
 
-class ChamberSerializer(serializers.ModelSerializer):
-    doctors = DoctorSerializer(many=True, read_only=True)
-    
+class BranchSerializer(serializers.ModelSerializer):
+    offered_tests = BranchTestSerializer(many=True, read_only=True)
+    affiliated_doctors = DoctorAffiliationSerializer(many=True, read_only=True)
+    hospital_name = serializers.CharField(source='hospital.name', read_only=True, default='')
+
     class Meta:
-        model = Chamber
+        model = Branch
+        fields = '__all__'
+
+class HospitalSerializer(serializers.ModelSerializer):
+    branches = BranchSerializer(many=True, read_only=True)
+
+    class Meta:
+        model = Hospital
         fields = '__all__'
 
 class DoctorBookingSerializer(serializers.ModelSerializer):
-    doctor_name = serializers.CharField(source='doctor.name', read_only=True)
-    chamber_name = serializers.CharField(source='chamber.name', read_only=True)
+    doctor_name = serializers.CharField(source='affiliation.doctor.name', read_only=True)
+    branch_name = serializers.CharField(source='affiliation.branch.name', read_only=True)
+    consultation_type = serializers.CharField(source='affiliation.consultation_type', read_only=True)
 
     class Meta:
         model = DoctorBooking
@@ -78,10 +121,11 @@ class DoctorBookingSerializer(serializers.ModelSerializer):
         read_only_fields = ('user', 'created_at')
 
 class LabBookingSerializer(serializers.ModelSerializer):
-    test_name = serializers.CharField(source='test.name', read_only=True)
+    test_name = serializers.CharField(source='branch_test.test.name', read_only=True)
+    branch_name = serializers.CharField(source='branch_test.branch.name', read_only=True)
+    price = serializers.DecimalField(source='branch_test.price', max_digits=10, decimal_places=2, read_only=True)
 
     class Meta:
         model = LabBooking
         fields = '__all__'
         read_only_fields = ('user', 'created_at')
-

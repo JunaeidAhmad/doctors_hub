@@ -17,7 +17,7 @@ export default function LandingHubPortal() {
             <span>Patient Healthcare Portal</span>
           </div>
           <h1 className="text-3xl sm:text-4xl lg:text-5xl font-black text-white tracking-tight leading-tight">
-            Book OPD Doctors & Diagnostic Tests Across <span className="text-transparent bg-clip-text bg-gradient-to-r from-emerald-400 to-teal-300">Bangladesh</span>
+            Book Doctors & Diagnostic Tests Across <span className="text-transparent bg-clip-text bg-gradient-to-r from-emerald-400 to-teal-300">Bangladesh</span>
           </h1>
           <p className="mt-3 text-slate-300 text-sm sm:text-base font-normal">
             Search doctor schedules, secure instant serial tickets, and request home sample collection from top diagnostic labs nationwide.
