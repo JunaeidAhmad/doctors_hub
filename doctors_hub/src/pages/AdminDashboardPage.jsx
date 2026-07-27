@@ -1,12 +1,54 @@
-import React, { useState, useEffect } from 'react';
+import React, { useState, useEffect, useMemo } from 'react';
 import { api } from '../services/api';
 import { 
   Users, Building2, TestTube, Calendar, Plus, Edit, Trash2, CheckCircle, 
-  XCircle, Search, RefreshCw, AlertCircle, ShieldAlert, Sparkles 
+  XCircle, Search, RefreshCw, AlertCircle, ShieldAlert, Sparkles, Clock, MapPin, Stethoscope, ChevronRight 
 } from 'lucide-react';
 
+export const CITY_THANAS = {
+  "Dhaka": [
+    "Dhanmondi", "Mirpur", "Uttara", "Gulshan", "Banani", "Panthapath", 
+    "Motijheel", "Mohammadpur", "Badda", "Savar", "Farmgate", "Tejgaon", 
+    "Malibagh", "Shyamoli", "Rampura", "Jatrabari", "Lalbagh", "Khilgaon", 
+    "Keraniganj", "Gazipur", "Narayanganj"
+  ],
+  "Chittagong": [
+    "Panchlaish", "Agrabad", "GEC Circle", "Halishahar", "Nasirabad", 
+    "Chawkbazar", "Pahartali", "Khulshi", "Kotwali", "Patenga", 
+    "Sitakunda", "Hathazari"
+  ],
+  "Sylhet": [
+    "Zindabazar", "Nayasarak", "Amberkhana", "Chauhatta", "Subidbazar", 
+    "Tilagarh", "Shibganj", "Kadamtali", "Shahjalal Uposahar"
+  ],
+  "Rajshahi": [
+    "Laxmipur", "Kazla", "Motihar", "Boalia", "Rajputra", 
+    "Shaheb Bazar", "New Market", "Upashahar"
+  ],
+  "Khulna": [
+    "KDA Avenue", "Sonadanga", "Boyra", "Khalishpur", "Daulatpur", 
+    "Rupsha", "Gollamari", "Khan Jahan Ali"
+  ],
+  "Barisal": [
+    "Sadar Road", "Rupatali", "Natun Bazar", "C&B Road", "Alekanda", 
+    "Jordan Road", "Kashipur"
+  ],
+  "Rangpur": [
+    "Park More", "Medical East Gate", "Jahaj Company More", "Dhap", 
+    "Carmel Road", "Pairaband"
+  ],
+  "Mymensingh": [
+    "Charpara", "Ganginarpar", "Town Hall", "Maskanda", "Akua", 
+    "Kewatkhali", "Patuakhali Road"
+  ],
+  "Comilla": [
+    "Kandirpar", "Jhawtala", "Badurtala", "Tomsom Bridge", "Ramghat", 
+    "Bagichagaon", "Dharmpur"
+  ]
+};
+
 export default function AdminDashboardPage({ currentUser, onNavigate, onAdminLoggedIn }) {
-  const [activeTab, setActiveTab] = useState('overview');
+  const [activeTab, setActiveTab] = useState('overview'); // 'overview' | 'doctors' | 'chambers' | 'tests' | 'branch-tests' | 'doc-bookings' | 'lab-bookings'
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState('');
   const [successMsg, setSuccessMsg] = useState('');
@@ -15,6 +57,7 @@ export default function AdminDashboardPage({ currentUser, onNavigate, onAdminLog
   const [doctors, setDoctors] = useState([]);
   const [chambers, setChambers] = useState([]);
   const [tests, setTests] = useState([]);
+  const [branchTests, setBranchTests] = useState([]);
   const [specialties, setSpecialties] = useState([]);
   const [doctorBookings, setDoctorBookings] = useState([]);
   const [labBookings, setLabBookings] = useState([]);
@@ -23,28 +66,69 @@ export default function AdminDashboardPage({ currentUser, onNavigate, onAdminLog
   const [showDoctorModal, setShowDoctorModal] = useState(false);
   const [editingDoctor, setEditingDoctor] = useState(null);
   const [doctorForm, setDoctorForm] = useState({
-    id: '', name: '', specialty: '', chamber: '', qualification: '', 
-    experience: '', visit_days: '', visit_time: '', fee: '', slotsStr: '',
-    consultation_type: 'OPD'
+    id: '',
+    name: '',
+    qualification: '',
+    experience: '10+ Yrs Exp.',
+    selectedSpecialties: [], // Array of specialty IDs
+    affiliations: [
+      {
+        branch: '',
+        consultation_type: 'OPD',
+        fee: 1000,
+        schedules: [
+          { day_of_week: 'Sat', start_time: '17:00', end_time: '21:00' }
+        ]
+      }
+    ]
   });
 
   const [showChamberModal, setShowChamberModal] = useState(false);
   const [editingChamber, setEditingChamber] = useState(null);
   const [chamberForm, setChamberForm] = useState({
-    id: '', name: '', location: '', city: 'Dhaka', verified: true, 
-    rating: 4.8, reviews_count: 50, open_timing: '08:00 AM - 08:00 PM', 
-    contact_phone: '', tagline: '', badge: 'Verified Partner', image: '',
-    servicesStr: '', description: '',
+    id: '',
+    hospital_name: 'Ibn Sina Healthcare Group',
+    branch_name: 'Dhanmondi Branch',
+    isCustomBranch: false,
+    customBranchName: '',
+    city: 'Dhaka',
+    location: '',
+    verified: true,
+    rating: 4.8,
+    reviews_count: 50,
+    open_timing: '08:00 AM - 08:00 PM',
+    contact_phone: '+880 1700-000000',
+    tagline: 'Leading Healthcare & Diagnostic Hub',
+    badge: 'Verified Partner',
+    image: 'https://images.unsplash.com/photo-1519494026892-80bbd2d6fd0d?auto=format&fit=crop&w=600&q=80',
+    servicesStr: '24/7 Specialist OPD Consultation, Digital Radiology & X-Ray, 4D Ultrasonography, CT Scan',
+    description: 'Premier multispecialty OPD and clinical diagnostic center.',
     facility_types: ['Hospital', 'Diagnostic Center']
   });
 
   const [showTestModal, setShowTestModal] = useState(false);
   const [editingTest, setEditingTest] = useState(null);
   const [testForm, setTestForm] = useState({
-    id: '', name: '', category: 'Routine Blood Profiles', price: '', 
-    original_price: '', discount: '', fasting_required: false, 
-    report_time: 'Same Day', description: ''
+    id: '', name: '', category: 'Routine Blood Profiles', fasting_required: false, description: ''
   });
+
+  const [showBranchTestModal, setShowBranchTestModal] = useState(false);
+  const [editingBranchTest, setEditingBranchTest] = useState(null);
+  const [branchTestForm, setBranchTestForm] = useState({
+    id: '',
+    branch: '',
+    test: '',
+    price: 500,
+    original_price: 700,
+    discount: '25% OFF',
+    report_time: 'Same Day (6 Hours)'
+  });
+
+  // Dedicated Admin Login State
+  const [adminPhone, setAdminPhone] = useState('01700000000');
+  const [adminPassword, setAdminPassword] = useState('admin123');
+  const [loginLoading, setLoginLoading] = useState(false);
+  const [loginErr, setLoginErr] = useState('');
 
   // Search filter inside tables
   const [searchTerm, setSearchTerm] = useState('');
@@ -59,16 +143,18 @@ export default function AdminDashboardPage({ currentUser, onNavigate, onAdminLog
     setLoading(true);
     setError('');
     try {
-      const [docsData, chambsData, testsData, specsData] = await Promise.all([
+      const [docsData, chambsData, testsData, specsData, branchTestsData] = await Promise.all([
         api.getDoctors(),
-        api.getChambers(),
+        api.getBranches(),
         api.getTests(),
-        api.getSpecialties()
+        api.getSpecialties(),
+        api.getBranchTests().catch(() => [])
       ]);
-      setDoctors(docsData);
-      setChambers(chambsData);
-      setTests(testsData);
-      setSpecialties(specsData);
+      setDoctors(docsData || []);
+      setChambers(chambsData || []);
+      setTests(testsData || []);
+      setSpecialties(specsData || []);
+      setBranchTests(branchTestsData || []);
 
       if (isStaff) {
         try {
@@ -76,8 +162,8 @@ export default function AdminDashboardPage({ currentUser, onNavigate, onAdminLog
             api.getDoctorBookings(),
             api.getLabBookings()
           ]);
-          setDoctorBookings(docBks);
-          setLabBookings(labBks);
+          setDoctorBookings(docBks || []);
+          setLabBookings(labBks || []);
         } catch (bErr) {
           console.warn("Could not load bookings:", bErr);
         }
@@ -94,55 +180,140 @@ export default function AdminDashboardPage({ currentUser, onNavigate, onAdminLog
     setTimeout(() => setSuccessMsg(''), 4000);
   };
 
-  // --- DOCTOR CRUD ---
+  const handleAdminLoginSubmit = async (e) => {
+    e.preventDefault();
+    setLoginLoading(true);
+    setLoginErr('');
+    try {
+      const data = await api.login(adminPhone, adminPassword);
+      if (!data.user?.is_staff) {
+        setLoginErr('Account authenticated, but lacks Admin staff privileges (is_staff = False).');
+      } else {
+        if (onAdminLoggedIn) onAdminLoggedIn(data.user);
+        loadAllData();
+      }
+    } catch (err) {
+      setLoginErr(err.message || 'Invalid admin credentials.');
+    } finally {
+      setLoginLoading(false);
+    }
+  };
+
+  // --- DOCTOR CRUD HANDLERS ---
   const handleOpenDoctorModal = (doc = null) => {
     if (doc) {
       setEditingDoctor(doc);
+      const specIds = Array.isArray(doc.specialties) 
+        ? doc.specialties.map(s => s.id || s)
+        : (doc.specialty ? [doc.specialty.id || doc.specialty] : []);
+
+      const affs = Array.isArray(doc.affiliations) && doc.affiliations.length > 0
+        ? doc.affiliations.map(a => ({
+            branch: a.branch_id || a.branch || chambers[0]?.id || '',
+            consultation_type: a.consultation_type || 'OPD',
+            fee: a.fee || 1000,
+            schedules: Array.isArray(a.schedules) && a.schedules.length > 0
+              ? a.schedules.map(s => ({
+                  day_of_week: s.day_of_week || 'Sat',
+                  start_time: s.start_time || '17:00',
+                  end_time: s.end_time || '21:00'
+                }))
+              : [{ day_of_week: 'Sat', start_time: '17:00', end_time: '21:00' }]
+          }))
+        : [{
+            branch: chambers[0]?.id || '',
+            consultation_type: 'OPD',
+            fee: 1000,
+            schedules: [{ day_of_week: 'Sat', start_time: '17:00', end_time: '21:00' }]
+          }];
+
       setDoctorForm({
         id: doc.id,
         name: doc.name,
-        specialty: doc.specialty?.id || doc.specialty || '',
-        chamber: doc.chamber?.id || doc.chamber || '',
         qualification: doc.qualification,
         experience: doc.experience,
-        visit_days: doc.visit_days,
-        visit_time: doc.visit_time,
-        fee: doc.fee,
-        slotsStr: Array.isArray(doc.slots) ? doc.slots.join(', ') : ''
+        selectedSpecialties: specIds,
+        affiliations: affs
       });
     } else {
       setEditingDoctor(null);
       setDoctorForm({
         id: `doc-${Date.now()}`,
         name: '',
-        specialty: specialties[0]?.id || '',
-        chamber: chambers[0]?.id || '',
-        qualification: 'MBBS, FCPS',
-        experience: '5+ Yrs Exp.',
-        visit_days: 'Sat, Mon, Wed',
-        visit_time: '05:00 PM - 09:00 PM',
-        fee: '1000',
-        slotsStr: '05:00 PM, 06:00 PM, 07:00 PM'
+        qualification: 'MBBS, FCPS (Medicine)',
+        experience: '12+ Yrs Exp.',
+        selectedSpecialties: specialties[0] ? [specialties[0].id] : [],
+        affiliations: [
+          {
+            branch: chambers[0]?.id || '',
+            consultation_type: 'OPD',
+            fee: 1000,
+            schedules: [{ day_of_week: 'Sat', start_time: '17:00', end_time: '21:00' }]
+          }
+        ]
       });
     }
     setShowDoctorModal(true);
   };
 
+  const handleToggleSpecialty = (specId) => {
+    setDoctorForm(prev => {
+      const exists = prev.selectedSpecialties.includes(specId);
+      const updated = exists 
+        ? prev.selectedSpecialties.filter(id => id !== specId)
+        : [...prev.selectedSpecialties, specId];
+      return { ...prev, selectedSpecialties: updated };
+    });
+  };
+
+  const handleAddAffiliation = () => {
+    setDoctorForm(prev => ({
+      ...prev,
+      affiliations: [
+        ...prev.affiliations,
+        {
+          branch: chambers[0]?.id || '',
+          consultation_type: 'OPD',
+          fee: 1000,
+          schedules: [{ day_of_week: 'Sat', start_time: '17:00', end_time: '21:00' }]
+        }
+      ]
+    }));
+  };
+
+  const handleRemoveAffiliation = (index) => {
+    setDoctorForm(prev => ({
+      ...prev,
+      affiliations: prev.affiliations.filter((_, i) => i !== index)
+    }));
+  };
+
+  const handleAddScheduleRow = (affIndex) => {
+    setDoctorForm(prev => {
+      const updatedAffs = [...prev.affiliations];
+      updatedAffs[affIndex].schedules.push({ day_of_week: 'Mon', start_time: '17:00', end_time: '21:00' });
+      return { ...prev, affiliations: updatedAffs };
+    });
+  };
+
+  const handleRemoveScheduleRow = (affIndex, schIndex) => {
+    setDoctorForm(prev => {
+      const updatedAffs = [...prev.affiliations];
+      updatedAffs[affIndex].schedules = updatedAffs[affIndex].schedules.filter((_, i) => i !== schIndex);
+      return { ...prev, affiliations: updatedAffs };
+    });
+  };
+
   const handleSaveDoctor = async (e) => {
     e.preventDefault();
     try {
-      const slots = doctorForm.slotsStr.split(',').map(s => s.trim()).filter(Boolean);
       const payload = {
         id: doctorForm.id,
         name: doctorForm.name,
-        specialty: doctorForm.specialty,
-        chamber: doctorForm.chamber,
         qualification: doctorForm.qualification,
         experience: doctorForm.experience,
-        visit_days: doctorForm.visit_days,
-        visit_time: doctorForm.visit_time,
-        fee: parseFloat(doctorForm.fee) || 0,
-        slots: slots
+        specialty_ids: doctorForm.selectedSpecialties,
+        affiliations: doctorForm.affiliations
       };
 
       if (editingDoctor) {
@@ -170,43 +341,55 @@ export default function AdminDashboardPage({ currentUser, onNavigate, onAdminLog
     }
   };
 
-  // --- CHAMBER / MEDICAL PARTNER CRUD ---
+  // --- CHAMBER / HOSPITAL CRUD HANDLERS ---
   const handleOpenChamberModal = (ch = null) => {
     if (ch) {
       setEditingChamber(ch);
+      const cityName = ch.city || 'Dhaka';
+      const cityThanasList = CITY_THANAS[cityName] || CITY_THANAS["Dhaka"];
+      const isCustom = !cityThanasList.includes(ch.name);
+
       setChamberForm({
         id: ch.id,
-        name: ch.name,
+        hospital_name: ch.hospital_name || (ch.hospital?.name) || 'Medical Group',
+        branch_name: isCustom ? 'Other' : ch.name,
+        isCustomBranch: isCustom,
+        customBranchName: isCustom ? ch.name : '',
+        city: cityName,
         location: ch.location,
-        city: ch.city,
         verified: ch.verified,
-        rating: ch.rating,
+        rating: ch.rating || 4.8,
         reviews_count: ch.reviews_count || ch.reviewsCount || 50,
-        open_timing: ch.open_timing || ch.openTiming || '',
+        open_timing: ch.open_timing || ch.openTiming || '08:00 AM - 08:00 PM',
         contact_phone: ch.contact_phone || ch.contactPhone || '',
         tagline: ch.tagline || '',
-        badge: ch.badge || '',
-        image: ch.image || '',
+        badge: ch.badge || 'Verified Partner',
+        image: ch.image || 'https://images.unsplash.com/photo-1519494026892-80bbd2d6fd0d?auto=format&fit=crop&w=600&q=80',
         servicesStr: Array.isArray(ch.services) ? ch.services.join(', ') : (ch.services || ''),
-        description: ch.description || ''
+        description: ch.description || '',
+        facility_types: ch.facility_types && ch.facility_types.length > 0 ? ch.facility_types : ['Hospital', 'Diagnostic Center']
       });
     } else {
       setEditingChamber(null);
       setChamberForm({
-        id: `chamber-${Date.now()}`,
-        name: '',
-        location: '',
+        id: `branch-${Date.now()}`,
+        hospital_name: 'Ibn Sina Healthcare Group',
+        branch_name: CITY_THANAS["Dhaka"][0],
+        isCustomBranch: false,
+        customBranchName: '',
         city: 'Dhaka',
+        location: 'House 48, Road 9/A, Dhanmondi',
         verified: true,
         rating: 4.8,
         reviews_count: 50,
-        open_timing: '08:00 AM - 09:00 PM',
-        contact_phone: '+880 1700-000000',
-        tagline: 'Leading Healthcare & Diagnostic Hub',
+        open_timing: '07:30 AM - 10:30 PM',
+        contact_phone: '+880 9610-010615',
+        tagline: 'Premier Multispecialty Healthcare Hub',
         badge: 'Verified Partner',
         image: 'https://images.unsplash.com/photo-1519494026892-80bbd2d6fd0d?auto=format&fit=crop&w=600&q=80',
-        servicesStr: '24/7 Specialist OPD Consultation, Digital Radiology & X-Ray, 4D Ultrasonography & Color Doppler, Automated Pathology & Biochemistry',
-        description: 'Premier multispecialty OPD and clinical diagnostic center offering high-quality specialist doctor chambers, radiology, and lab tests.'
+        servicesStr: '24/7 Specialist OPD Consultation, Digital Radiology & X-Ray, 4D Ultrasonography, CT Scan',
+        description: 'Multispecialty healthcare and clinical diagnostic facility.',
+        facility_types: ['Hospital', 'Diagnostic Center']
       });
     }
     setShowChamberModal(true);
@@ -215,10 +398,14 @@ export default function AdminDashboardPage({ currentUser, onNavigate, onAdminLog
   const handleSaveChamber = async (e) => {
     e.preventDefault();
     try {
+      const finalBranchName = chamberForm.isCustomBranch ? chamberForm.customBranchName : chamberForm.branch_name;
       const services = chamberForm.servicesStr.split(',').map(s => s.trim()).filter(Boolean);
+      
       const payload = {
         id: chamberForm.id,
-        name: chamberForm.name,
+        hospital_name: chamberForm.hospital_name,
+        name: finalBranchName,
+        facility_types: chamberForm.facility_types,
         location: chamberForm.location,
         city: chamberForm.city,
         verified: chamberForm.verified,
@@ -234,31 +421,31 @@ export default function AdminDashboardPage({ currentUser, onNavigate, onAdminLog
       };
 
       if (editingChamber) {
-        await api.updateChamber(editingChamber.id, payload);
-        showNotification(`Medical Partner "${payload.name}" updated successfully!`);
+        await api.updateBranch(editingChamber.id, payload);
+        showNotification(`Branch "${payload.hospital_name} - ${payload.name}" updated successfully!`);
       } else {
-        await api.createChamber(payload);
-        showNotification(`Medical Partner "${payload.name}" added successfully!`);
+        await api.createBranch(payload);
+        showNotification(`Branch "${payload.hospital_name} - ${payload.name}" added successfully!`);
       }
       setShowChamberModal(false);
       loadAllData();
     } catch (err) {
-      alert(`Error saving medical partner: ${err.message}`);
+      alert(`Error saving hospital branch: ${err.message}`);
     }
   };
 
   const handleDeleteChamber = async (id, name) => {
-    if (!window.confirm(`Are you sure you want to remove hospital "${name}"?`)) return;
+    if (!window.confirm(`Are you sure you want to remove hospital branch "${name}"?`)) return;
     try {
-      await api.deleteChamber(id);
-      showNotification(`Hospital "${name}" removed.`);
+      await api.deleteBranch(id);
+      showNotification(`Branch "${name}" removed.`);
       loadAllData();
     } catch (err) {
-      alert(`Failed to delete hospital: ${err.message}`);
+      alert(`Failed to delete branch: ${err.message}`);
     }
   };
 
-  // --- PATHOLOGY TEST CRUD ---
+  // --- PATHOLOGY BASE TEST CRUD ---
   const handleOpenTestModal = (t = null) => {
     if (t) {
       setEditingTest(t);
@@ -266,11 +453,7 @@ export default function AdminDashboardPage({ currentUser, onNavigate, onAdminLog
         id: t.id,
         name: t.name,
         category: t.category,
-        price: t.price,
-        original_price: t.original_price || '',
-        discount: t.discount || '',
         fasting_required: t.fasting_required,
-        report_time: t.report_time,
         description: t.description || ''
       });
     } else {
@@ -279,12 +462,8 @@ export default function AdminDashboardPage({ currentUser, onNavigate, onAdminLog
         id: `test-${Date.now()}`,
         name: '',
         category: 'Routine Blood Profiles',
-        price: '500',
-        original_price: '700',
-        discount: '25% OFF',
         fasting_required: false,
-        report_time: 'Same Day (6 Hours)',
-        description: 'Comprehensive diagnostic test panel.'
+        description: 'Comprehensive diagnostic test profile.'
       });
     }
     setShowTestModal(true);
@@ -293,18 +472,13 @@ export default function AdminDashboardPage({ currentUser, onNavigate, onAdminLog
   const handleSaveTest = async (e) => {
     e.preventDefault();
     try {
-      const payload = {
-        ...testForm,
-        price: parseFloat(testForm.price) || 0,
-        original_price: testForm.original_price ? parseFloat(testForm.original_price) : null
-      };
-
+      const payload = { ...testForm };
       if (editingTest) {
         await api.updateTest(editingTest.id, payload);
-        showNotification(`Test "${payload.name}" updated successfully!`);
+        showNotification(`Pathology Test "${payload.name}" updated.`);
       } else {
         await api.createTest(payload);
-        showNotification(`Test "${payload.name}" added successfully!`);
+        showNotification(`Pathology Test "${payload.name}" created.`);
       }
       setShowTestModal(false);
       loadAllData();
@@ -314,69 +488,100 @@ export default function AdminDashboardPage({ currentUser, onNavigate, onAdminLog
   };
 
   const handleDeleteTest = async (id, name) => {
-    if (!window.confirm(`Are you sure you want to remove test "${name}"?`)) return;
+    if (!window.confirm(`Delete pathology test "${name}"?`)) return;
     try {
       await api.deleteTest(id);
-      showNotification(`Test "${name}" removed.`);
+      showNotification(`Test "${name}" deleted.`);
       loadAllData();
     } catch (err) {
       alert(`Failed to delete test: ${err.message}`);
     }
   };
 
-  // --- BOOKING STATUS UPDATES ---
-  const handleUpdateDoctorBookingStatus = async (id, status) => {
+  // --- BRANCH TEST PRICING CRUD HANDLERS ---
+  const handleOpenBranchTestModal = (bt = null) => {
+    if (bt) {
+      setEditingBranchTest(bt);
+      setBranchTestForm({
+        id: bt.id,
+        branch: bt.branch?.id || bt.branch || chambers[0]?.id || '',
+        test: bt.test?.id || bt.test || tests[0]?.id || '',
+        price: bt.price,
+        original_price: bt.original_price || '',
+        discount: bt.discount || '',
+        report_time: bt.report_time || 'Same Day'
+      });
+    } else {
+      setEditingBranchTest(null);
+      setBranchTestForm({
+        id: '',
+        branch: chambers[0]?.id || '',
+        test: tests[0]?.id || '',
+        price: 500,
+        original_price: 700,
+        discount: '25% OFF',
+        report_time: 'Same Day (6 Hours)'
+      });
+    }
+    setShowBranchTestModal(true);
+  };
+
+  const handleSaveBranchTest = async (e) => {
+    e.preventDefault();
     try {
-      await api.updateDoctorBookingStatus(id, status);
-      showNotification(`Booking #${id} status changed to ${status}`);
+      const payload = {
+        branch: branchTestForm.branch,
+        test: branchTestForm.test,
+        price: parseFloat(branchTestForm.price) || 0,
+        original_price: branchTestForm.original_price ? parseFloat(branchTestForm.original_price) : null,
+        discount: branchTestForm.discount,
+        report_time: branchTestForm.report_time
+      };
+
+      await api.createBranchTest(payload);
+      showNotification("Diagnostic Branch Test pricing updated!");
+      setShowBranchTestModal(false);
+      loadAllData();
+    } catch (err) {
+      alert(`Error saving branch test: ${err.message}`);
+    }
+  };
+
+  const handleDeleteBranchTest = async (id) => {
+    if (!window.confirm("Remove this diagnostic test offering?")) return;
+    try {
+      await api.deleteBranchTest(id);
+      showNotification("Diagnostic test offering removed.");
+      loadAllData();
+    } catch (err) {
+      alert(`Failed to remove: ${err.message}`);
+    }
+  };
+
+  // Status updates for bookings
+  const handleUpdateDoctorBookingStatus = async (id, newStatus) => {
+    try {
+      await api.updateDoctorBookingStatus(id, newStatus);
+      showNotification(`Booking #${id} status updated to ${newStatus}`);
       loadAllData();
     } catch (err) {
       alert(`Failed to update booking status: ${err.message}`);
     }
   };
 
-  const handleUpdateLabBookingStatus = async (id, status) => {
+  const handleUpdateLabBookingStatus = async (id, newStatus) => {
     try {
-      await api.updateLabBookingStatus(id, status);
-      showNotification(`Lab Booking #${id} status changed to ${status}`);
+      await api.updateLabBookingStatus(id, newStatus);
+      showNotification(`Lab Booking #${id} status updated to ${newStatus}`);
       loadAllData();
     } catch (err) {
       alert(`Failed to update lab booking status: ${err.message}`);
     }
   };
 
-  // Dedicated Admin Login State
-  const [adminPhone, setAdminPhone] = useState('01700000000');
-  const [adminPassword, setAdminPassword] = useState('admin123');
-  const [loginLoading, setLoginLoading] = useState(false);
-  const [loginErr, setLoginErr] = useState('');
-
-  const handleAdminLoginSubmit = async (e) => {
-    e.preventDefault();
-    setLoginLoading(true);
-    setLoginErr('');
-    try {
-      const data = await api.login(adminPhone, adminPassword);
-      if (!data.user?.is_staff) {
-        setLoginErr('Account authenticated, but lacks Admin staff privileges (is_staff = False).');
-      } else {
-        if (onAdminLoggedIn) onAdminLoggedIn(data.user);
-        loadAllData();
-      }
-    } catch (err) {
-      setLoginErr(err.message || 'Invalid admin credentials.');
-    } finally {
-      setLoginLoading(false);
-    }
-  };
-
   if (!isStaff) {
     return (
       <div className="min-h-screen bg-slate-950 text-white flex flex-col items-center justify-center p-6 relative overflow-hidden">
-        {/* Background glow effects */}
-        <div className="absolute -top-40 -left-40 w-96 h-96 bg-teal-500/10 rounded-full blur-3xl pointer-events-none"></div>
-        <div className="absolute -bottom-40 -right-40 w-96 h-96 bg-emerald-500/10 rounded-full blur-3xl pointer-events-none"></div>
-
         <div className="max-w-md w-full bg-slate-900/90 backdrop-blur-xl border border-slate-800 rounded-3xl p-8 shadow-2xl relative z-10">
           <div className="text-center mb-8">
             <div className="w-16 h-16 rounded-2xl bg-gradient-to-tr from-teal-500 to-emerald-400 flex items-center justify-center mx-auto mb-4 shadow-lg shadow-teal-500/20 text-slate-950">
@@ -400,16 +605,14 @@ export default function AdminDashboardPage({ currentUser, onNavigate, onAdminLog
           <form onSubmit={handleAdminLoginSubmit} className="space-y-4 text-xs">
             <div>
               <label className="block text-slate-300 font-semibold mb-1.5">Admin Phone Number</label>
-              <div className="relative">
-                <input
-                  type="text"
-                  required
-                  placeholder="01700000000"
-                  value={adminPhone}
-                  onChange={e => setAdminPhone(e.target.value)}
-                  className="w-full bg-slate-950 border border-slate-800 rounded-xl px-4 py-3 text-sm text-white placeholder-slate-600 focus:outline-none focus:border-teal-500 font-mono transition"
-                />
-              </div>
+              <input
+                type="text"
+                required
+                placeholder="01700000000"
+                value={adminPhone}
+                onChange={e => setAdminPhone(e.target.value)}
+                className="w-full bg-slate-950 border border-slate-800 rounded-xl px-4 py-3 text-sm text-white focus:outline-none focus:border-teal-500 font-mono"
+              />
             </div>
 
             <div>
@@ -420,22 +623,16 @@ export default function AdminDashboardPage({ currentUser, onNavigate, onAdminLog
                 placeholder="••••••••"
                 value={adminPassword}
                 onChange={e => setAdminPassword(e.target.value)}
-                className="w-full bg-slate-950 border border-slate-800 rounded-xl px-4 py-3 text-sm text-white placeholder-slate-600 focus:outline-none focus:border-teal-500 font-mono transition"
+                className="w-full bg-slate-950 border border-slate-800 rounded-xl px-4 py-3 text-sm text-white focus:outline-none focus:border-teal-500 font-mono"
               />
             </div>
 
             <button
               type="submit"
               disabled={loginLoading}
-              className="w-full mt-2 bg-gradient-to-r from-teal-600 to-emerald-600 hover:from-teal-500 hover:to-emerald-500 text-white font-bold py-3.5 rounded-xl shadow-lg shadow-teal-600/30 transition transform active:scale-98 flex items-center justify-center gap-2 text-sm"
+              className="w-full mt-2 bg-gradient-to-r from-teal-600 to-emerald-600 hover:from-teal-500 hover:to-emerald-500 text-white font-bold py-3.5 rounded-xl shadow-lg shadow-teal-600/30 transition flex items-center justify-center gap-2 text-sm"
             >
-              {loginLoading ? (
-                <>
-                  <RefreshCw className="w-4 h-4 animate-spin" /> Authenticating...
-                </>
-              ) : (
-                'Sign In to Admin Console'
-              )}
+              {loginLoading ? <RefreshCw className="w-4 h-4 animate-spin" /> : 'Sign In to Admin Console'}
             </button>
           </form>
 
@@ -452,951 +649,606 @@ export default function AdminDashboardPage({ currentUser, onNavigate, onAdminLog
     );
   }
 
-
   return (
-    <div className="min-h-screen bg-slate-950 text-slate-100 font-sans pb-16">
-      {/* Header */}
-      <header className="bg-slate-900/90 backdrop-blur-md border-b border-slate-800 sticky top-0 z-30">
-        <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-4 flex flex-wrap items-center justify-between gap-4">
+    <div className="min-h-screen bg-slate-950 text-slate-100 pb-20">
+      
+      {/* Top Header */}
+      <header className="bg-slate-900 border-b border-slate-800 py-4 px-6 sticky top-0 z-30">
+        <div className="max-w-7xl mx-auto flex items-center justify-between">
           <div className="flex items-center gap-3">
-            <div className="w-10 h-10 rounded-xl bg-gradient-to-tr from-teal-500 to-emerald-400 flex items-center justify-center font-black text-slate-950 text-xl shadow-lg shadow-teal-500/20">
-              A
+            <div className="p-2 rounded-xl bg-teal-500/10 border border-teal-500/20 text-teal-400">
+              <ShieldAlert className="w-5 h-5" />
             </div>
             <div>
-              <h1 className="text-xl font-bold bg-gradient-to-r from-white via-slate-200 to-teal-300 bg-clip-text text-transparent flex items-center gap-2">
-                DoctorsHub Admin Portal
-                <span className="text-xs font-normal px-2.5 py-0.5 rounded-full bg-teal-500/20 text-teal-400 border border-teal-500/30">
-                  Staff Verified
-                </span>
-              </h1>
-              <p className="text-xs text-slate-400">Control & management console for doctors, hospitals, lab tests & bookings</p>
+              <h1 className="font-extrabold text-white text-lg">DoctorsHub Admin Management Console</h1>
+              <p className="text-xs text-slate-400">Manage Hospitals, Diagnostic Test Pricing, Doctors & Schedules</p>
             </div>
           </div>
 
           <div className="flex items-center gap-3">
             <button
               onClick={loadAllData}
-              className="flex items-center gap-1.5 px-3 py-1.5 text-xs bg-slate-800 hover:bg-slate-700 text-slate-300 rounded-lg border border-slate-700 transition"
-              title="Refresh Data"
+              className="p-2 bg-slate-800 hover:bg-slate-700 text-slate-300 rounded-xl text-xs font-semibold flex items-center gap-1.5 border border-slate-700"
             >
               <RefreshCw className={`w-3.5 h-3.5 ${loading ? 'animate-spin' : ''}`} />
-              Refresh
+              <span>Refresh</span>
             </button>
-            <div className="px-3 py-1.5 bg-slate-800 border border-slate-700 rounded-lg text-xs flex items-center gap-2">
-              <span className="w-2 h-2 rounded-full bg-emerald-400 animate-pulse"></span>
-              <span className="text-slate-300">{currentUser?.phone_number}</span>
-            </div>
             <button
               onClick={() => onNavigate('home')}
-              className="px-3 py-1.5 text-xs bg-teal-600/30 hover:bg-teal-600/50 text-teal-300 rounded-lg border border-teal-500/40 transition font-medium"
+              className="px-3.5 py-2 bg-emerald-600 hover:bg-emerald-500 text-white rounded-xl text-xs font-bold transition shadow-xs"
             >
-              Exit to Patient View
+              Exit Console
             </button>
           </div>
         </div>
       </header>
 
       {/* Main Container */}
-      <main className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 pt-6">
-        {/* Success notification banner */}
+      <main className="max-w-7xl mx-auto px-6 pt-8 space-y-6">
+
+        {/* Success / Error Notification */}
         {successMsg && (
-          <div className="mb-6 p-4 rounded-xl bg-emerald-500/20 border border-emerald-500/40 text-emerald-300 flex items-center justify-between animate-fadeIn">
-            <div className="flex items-center gap-2">
-              <CheckCircle className="w-5 h-5 text-emerald-400 flex-shrink-0" />
-              <span className="text-sm font-medium">{successMsg}</span>
-            </div>
-            <button onClick={() => setSuccessMsg('')} className="text-emerald-400 hover:text-white">
-              <XCircle className="w-4 h-4" />
-            </button>
+          <div className="bg-emerald-500/20 border border-emerald-500/40 text-emerald-300 p-4 rounded-2xl text-xs font-bold flex items-center gap-2">
+            <CheckCircle className="w-4 h-4 text-emerald-400" />
+            <span>{successMsg}</span>
           </div>
         )}
 
         {error && (
-          <div className="mb-6 p-4 rounded-xl bg-rose-500/20 border border-rose-500/40 text-rose-300 flex items-center gap-2">
-            <AlertCircle className="w-5 h-5 text-rose-400 flex-shrink-0" />
-            <span className="text-sm">{error}</span>
+          <div className="bg-rose-500/20 border border-rose-500/40 text-rose-300 p-4 rounded-2xl text-xs font-bold flex items-center gap-2">
+            <AlertCircle className="w-4 h-4 text-rose-400" />
+            <span>{error}</span>
           </div>
         )}
 
         {/* Navigation Tabs */}
-        <div className="flex overflow-x-auto gap-2 p-1.5 bg-slate-900 border border-slate-800 rounded-2xl mb-8 scrollbar-none">
+        <div className="flex items-center gap-2 border-b border-slate-800 overflow-x-auto pb-1 text-xs">
           {[
-            { id: 'overview', label: 'Overview', icon: Sparkles },
-            { id: 'doctors', label: `Doctors (${doctors.length})`, icon: Users },
-            { id: 'hospitals', label: `Medical Partners (${chambers.length})`, icon: Building2 },
-            { id: 'tests', label: `Lab Tests (${tests.length})`, icon: TestTube },
+            { id: 'overview', label: 'Overview', icon: Users },
+            { id: 'chambers', label: `Hospitals & Branches (${chambers.length})`, icon: Building2 },
+            { id: 'doctors', label: `Specialist Doctors (${doctors.length})`, icon: Stethoscope },
+            { id: 'tests', label: `Pathology Base Tests (${tests.length})`, icon: TestTube },
+            { id: 'branch-tests', label: `Diagnostic Test Prices (${branchTests.length})`, icon: TestTube },
             { id: 'doc-bookings', label: `Doctor Bookings (${doctorBookings.length})`, icon: Calendar },
-            { id: 'lab-bookings', label: `Lab Bookings (${labBookings.length})`, icon: TestTube },
+            { id: 'lab-bookings', label: `Lab Bookings (${labBookings.length})`, icon: Calendar },
           ].map(tab => {
             const Icon = tab.icon;
-            const active = activeTab === tab.id;
+            const isActive = activeTab === tab.id;
             return (
               <button
                 key={tab.id}
                 onClick={() => { setActiveTab(tab.id); setSearchTerm(''); }}
-                className={`flex items-center gap-2 px-4 py-2.5 rounded-xl text-sm font-medium whitespace-nowrap transition-all ${
-                  active
-                    ? 'bg-gradient-to-r from-teal-600 to-emerald-600 text-white shadow-lg shadow-teal-600/30'
-                    : 'text-slate-400 hover:text-slate-200 hover:bg-slate-800/60'
+                className={`px-4 py-3 font-bold rounded-t-xl border-b-2 flex items-center gap-2 transition-all whitespace-nowrap ${
+                  isActive 
+                    ? 'border-teal-400 text-teal-400 bg-slate-900' 
+                    : 'border-transparent text-slate-400 hover:text-slate-200 hover:bg-slate-900/50'
                 }`}
               >
                 <Icon className="w-4 h-4" />
-                {tab.label}
+                <span>{tab.label}</span>
               </button>
             );
           })}
         </div>
 
-        {loading && (
-          <div className="py-20 text-center text-slate-400">
-            <RefreshCw className="w-8 h-8 mx-auto animate-spin text-teal-400 mb-3" />
-            <p className="text-sm">Loading admin data from database...</p>
+        {/* TAB CONTENTS */}
+
+        {/* 1. HOSPITALS & BRANCHES TAB */}
+        {activeTab === 'chambers' && (
+          <div className="bg-slate-900 border border-slate-800 rounded-2xl overflow-hidden shadow-xl">
+            <div className="p-5 border-b border-slate-800 flex flex-wrap items-center justify-between gap-4">
+              <div className="relative flex-1 min-w-[240px]">
+                <Search className="w-4 h-4 absolute left-3 top-3 text-slate-400" />
+                <input
+                  type="text"
+                  placeholder="Search hospital name, branch or city..."
+                  value={searchTerm}
+                  onChange={(e) => setSearchTerm(e.target.value)}
+                  className="w-full bg-slate-950 border border-slate-800 rounded-xl pl-9 pr-4 py-2 text-xs text-white placeholder-slate-500 focus:outline-none focus:border-teal-500"
+                />
+              </div>
+              <button
+                onClick={() => handleOpenChamberModal()}
+                className="flex items-center gap-2 px-4 py-2.5 bg-emerald-600 hover:bg-emerald-500 text-white font-bold text-xs rounded-xl transition shadow-lg shadow-emerald-600/20"
+              >
+                <Plus className="w-4 h-4" /> Add New Hospital Branch
+              </button>
+            </div>
+
+            <div className="overflow-x-auto">
+              <table className="w-full text-left text-xs text-slate-300">
+                <thead className="bg-slate-950 text-slate-400 text-[11px] uppercase tracking-wider border-b border-slate-800">
+                  <tr>
+                    <th className="py-3.5 px-4">Hospital & Branch Name</th>
+                    <th className="py-3.5 px-4">Facility Types</th>
+                    <th className="py-3.5 px-4">Location & City</th>
+                    <th className="py-3.5 px-4">Contact Phone</th>
+                    <th className="py-3.5 px-4 text-right">Actions</th>
+                  </tr>
+                </thead>
+                <tbody className="divide-y divide-slate-800/60">
+                  {chambers
+                    .filter(c => {
+                      const fullStr = `${c.hospital_name || ''} ${c.name} ${c.city} ${c.location}`.toLowerCase();
+                      return fullStr.includes(searchTerm.toLowerCase());
+                    })
+                    .map(ch => {
+                      const displayName = ch.hospital_name ? `${ch.hospital_name} - ${ch.name}` : ch.name;
+                      const facilities = ch.facility_types && ch.facility_types.length > 0 ? ch.facility_types : ['Hospital', 'Diagnostic Center'];
+
+                      return (
+                        <tr key={ch.id} className="hover:bg-slate-800/40 transition">
+                          <td className="py-4 px-4 font-bold text-white">
+                            <div className="text-sm text-emerald-400">{displayName}</div>
+                            <div className="text-slate-400 text-[11px] font-normal">{ch.tagline}</div>
+                          </td>
+                          <td className="py-4 px-4">
+                            <div className="flex flex-wrap gap-1">
+                              {facilities.map(f => (
+                                <span key={f} className="px-2 py-0.5 bg-teal-500/20 text-teal-300 border border-teal-500/30 rounded text-[10px] font-bold">
+                                  {f}
+                                </span>
+                              ))}
+                            </div>
+                          </td>
+                          <td className="py-4 px-4">
+                            <div className="text-slate-200">{ch.location}</div>
+                            <div className="text-slate-400 font-bold">{ch.city}</div>
+                          </td>
+                          <td className="py-4 px-4 font-mono text-slate-300">
+                            {ch.contact_phone}
+                          </td>
+                          <td className="py-4 px-4 text-right space-x-2 whitespace-nowrap">
+                            <button
+                              onClick={() => handleOpenChamberModal(ch)}
+                              className="p-2 bg-slate-800 hover:bg-slate-700 text-slate-300 rounded-lg transition"
+                              title="Edit Branch"
+                            >
+                              <Edit className="w-4 h-4" />
+                            </button>
+                            <button
+                              onClick={() => handleDeleteChamber(ch.id, displayName)}
+                              className="p-2 bg-rose-500/20 hover:bg-rose-500/30 text-rose-400 rounded-lg transition"
+                              title="Delete Branch"
+                            >
+                              <Trash2 className="w-4 h-4" />
+                            </button>
+                          </td>
+                        </tr>
+                      );
+                    })}
+                  {chambers.length === 0 && (
+                    <tr>
+                      <td colSpan="5" className="py-8 text-center text-slate-500">No branches added yet.</td>
+                    </tr>
+                  )}
+                </tbody>
+              </table>
+            </div>
           </div>
         )}
 
-        {!loading && (
-          <>
-            {/* OVERVIEW TAB */}
-            {activeTab === 'overview' && (
-              <div className="space-y-8">
-                {/* Stats Grid */}
-                <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-5">
-                  <div className="bg-slate-900/80 border border-slate-800 rounded-2xl p-6 relative overflow-hidden group hover:border-teal-500/50 transition">
-                    <div className="flex items-center justify-between">
-                      <div>
-                        <p className="text-xs uppercase tracking-wider font-semibold text-slate-400 mb-1">Total Doctors</p>
-                        <h3 className="text-3xl font-extrabold text-white">{doctors.length}</h3>
-                      </div>
-                      <div className="w-12 h-12 rounded-xl bg-teal-500/10 border border-teal-500/30 flex items-center justify-center text-teal-400">
-                        <Users className="w-6 h-6" />
-                      </div>
-                    </div>
-                    <button 
-                      onClick={() => setActiveTab('doctors')}
-                      className="mt-4 text-xs font-semibold text-teal-400 hover:text-teal-300 flex items-center gap-1"
-                    >
-                      Manage Doctors &rarr;
-                    </button>
-                  </div>
-
-                  <div className="bg-slate-900/80 border border-slate-800 rounded-2xl p-6 relative overflow-hidden group hover:border-emerald-500/50 transition">
-                    <div className="flex items-center justify-between">
-                      <div>
-                        <p className="text-xs uppercase tracking-wider font-semibold text-slate-400 mb-1">Hospitals / Chambers</p>
-                        <h3 className="text-3xl font-extrabold text-white">{chambers.length}</h3>
-                      </div>
-                      <div className="w-12 h-12 rounded-xl bg-emerald-500/10 border border-emerald-500/30 flex items-center justify-center text-emerald-400">
-                        <Building2 className="w-6 h-6" />
-                      </div>
-                    </div>
-                    <button 
-                      onClick={() => setActiveTab('hospitals')}
-                      className="mt-4 text-xs font-semibold text-emerald-400 hover:text-emerald-300 flex items-center gap-1"
-                    >
-                      Manage Hospitals &rarr;
-                    </button>
-                  </div>
-
-                  <div className="bg-slate-900/80 border border-slate-800 rounded-2xl p-6 relative overflow-hidden group hover:border-cyan-500/50 transition">
-                    <div className="flex items-center justify-between">
-                      <div>
-                        <p className="text-xs uppercase tracking-wider font-semibold text-slate-400 mb-1">Pathology Tests</p>
-                        <h3 className="text-3xl font-extrabold text-white">{tests.length}</h3>
-                      </div>
-                      <div className="w-12 h-12 rounded-xl bg-cyan-500/10 border border-cyan-500/30 flex items-center justify-center text-cyan-400">
-                        <TestTube className="w-6 h-6" />
-                      </div>
-                    </div>
-                    <button 
-                      onClick={() => setActiveTab('tests')}
-                      className="mt-4 text-xs font-semibold text-cyan-400 hover:text-cyan-300 flex items-center gap-1"
-                    >
-                      Manage Tests &rarr;
-                    </button>
-                  </div>
-
-                  <div className="bg-slate-900/80 border border-slate-800 rounded-2xl p-6 relative overflow-hidden group hover:border-amber-500/50 transition">
-                    <div className="flex items-center justify-between">
-                      <div>
-                        <p className="text-xs uppercase tracking-wider font-semibold text-slate-400 mb-1">Total Patient Bookings</p>
-                        <h3 className="text-3xl font-extrabold text-white">{doctorBookings.length + labBookings.length}</h3>
-                      </div>
-                      <div className="w-12 h-12 rounded-xl bg-amber-500/10 border border-amber-500/30 flex items-center justify-center text-amber-400">
-                        <Calendar className="w-6 h-6" />
-                      </div>
-                    </div>
-                    <button 
-                      onClick={() => setActiveTab('doc-bookings')}
-                      className="mt-4 text-xs font-semibold text-amber-400 hover:text-amber-300 flex items-center gap-1"
-                    >
-                      View Bookings &rarr;
-                    </button>
-                  </div>
-                </div>
-
-                {/* Quick Add Section */}
-                <div className="bg-slate-900/60 border border-slate-800 rounded-2xl p-6">
-                  <h3 className="text-base font-bold text-white mb-4 flex items-center gap-2">
-                    <Plus className="w-5 h-5 text-teal-400" />
-                    Quick Actions
-                  </h3>
-                  <div className="grid grid-cols-1 sm:grid-cols-3 gap-4">
-                    <button
-                      onClick={() => handleOpenDoctorModal()}
-                      className="p-4 bg-slate-800 hover:bg-slate-700/80 border border-slate-700 rounded-xl flex items-center gap-3 transition text-left group"
-                    >
-                      <div className="w-10 h-10 rounded-lg bg-teal-500/20 text-teal-400 flex items-center justify-center group-hover:scale-110 transition">
-                        <Users className="w-5 h-5" />
-                      </div>
-                      <div>
-                        <div className="font-bold text-slate-200 text-sm">Add New Doctor</div>
-                        <div className="text-xs text-slate-400">Register specialist physician</div>
-                      </div>
-                    </button>
-
-                    <button
-                      onClick={() => handleOpenChamberModal()}
-                      className="p-4 bg-slate-800 hover:bg-slate-700/80 border border-slate-700 rounded-xl flex items-center gap-3 transition text-left group"
-                    >
-                      <div className="w-10 h-10 rounded-lg bg-emerald-500/20 text-emerald-400 flex items-center justify-center group-hover:scale-110 transition">
-                        <Building2 className="w-5 h-5" />
-                      </div>
-                      <div>
-                        <div className="font-bold text-slate-200 text-sm">Add Hospital / Chamber</div>
-                        <div className="text-xs text-slate-400">Add medical center or hub</div>
-                      </div>
-                    </button>
-
-                    <button
-                      onClick={() => handleOpenTestModal()}
-                      className="p-4 bg-slate-800 hover:bg-slate-700/80 border border-slate-700 rounded-xl flex items-center gap-3 transition text-left group"
-                    >
-                      <div className="w-10 h-10 rounded-lg bg-cyan-500/20 text-cyan-400 flex items-center justify-center group-hover:scale-110 transition">
-                        <TestTube className="w-5 h-5" />
-                      </div>
-                      <div>
-                        <div className="font-bold text-slate-200 text-sm">Add Pathology Test</div>
-                        <div className="text-xs text-slate-400">Add diagnostic lab test</div>
-                      </div>
-                    </button>
-                  </div>
-                </div>
-
-                {/* System Summary Info */}
-                <div className="bg-slate-900/60 border border-slate-800 rounded-2xl p-6">
-                  <h3 className="text-base font-bold text-white mb-2">Connected Database Specs</h3>
-                  <p className="text-xs text-slate-400 mb-4">Real-time status of PostgreSQL models and viewsets</p>
-                  <div className="grid grid-cols-2 sm:grid-cols-4 gap-4 text-xs">
-                    <div className="bg-slate-950 p-3 rounded-xl border border-slate-800">
-                      <span className="text-slate-400 block">Specialties Count</span>
-                      <span className="font-bold text-white text-base">{specialties.length} Specialties</span>
-                    </div>
-                    <div className="bg-slate-950 p-3 rounded-xl border border-slate-800">
-                      <span className="text-slate-400 block">Doctor Bookings</span>
-                      <span className="font-bold text-white text-base">{doctorBookings.length} Bookings</span>
-                    </div>
-                    <div className="bg-slate-950 p-3 rounded-xl border border-slate-800">
-                      <span className="text-slate-400 block">Lab Test Bookings</span>
-                      <span className="font-bold text-white text-base">{labBookings.length} Bookings</span>
-                    </div>
-                    <div className="bg-slate-950 p-3 rounded-xl border border-slate-800">
-                      <span className="text-slate-400 block">REST Auth API</span>
-                      <span className="font-bold text-emerald-400 text-base">SimpleJWT Active</span>
-                    </div>
-                  </div>
-                </div>
+        {/* 2. DOCTORS TAB */}
+        {activeTab === 'doctors' && (
+          <div className="bg-slate-900 border border-slate-800 rounded-2xl overflow-hidden shadow-xl">
+            <div className="p-5 border-b border-slate-800 flex flex-wrap items-center justify-between gap-4">
+              <div className="relative flex-1 min-w-[240px]">
+                <Search className="w-4 h-4 absolute left-3 top-3 text-slate-400" />
+                <input
+                  type="text"
+                  placeholder="Search doctor name or specialty..."
+                  value={searchTerm}
+                  onChange={(e) => setSearchTerm(e.target.value)}
+                  className="w-full bg-slate-950 border border-slate-800 rounded-xl pl-9 pr-4 py-2 text-xs text-white placeholder-slate-500 focus:outline-none focus:border-teal-500"
+                />
               </div>
-            )}
+              <button
+                onClick={() => handleOpenDoctorModal()}
+                className="flex items-center gap-2 px-4 py-2.5 bg-teal-600 hover:bg-teal-500 text-white font-bold text-xs rounded-xl transition shadow-lg shadow-teal-600/20"
+              >
+                <Plus className="w-4 h-4" /> Add Doctor (With Multi-Chamber & Schedules)
+              </button>
+            </div>
 
-            {/* DOCTORS TAB */}
-            {activeTab === 'doctors' && (
-              <div className="bg-slate-900 border border-slate-800 rounded-2xl overflow-hidden">
-                <div className="p-5 border-b border-slate-800 flex flex-wrap items-center justify-between gap-4">
-                  <div className="relative flex-1 min-w-[240px]">
-                    <Search className="w-4 h-4 absolute left-3 top-3 text-slate-400" />
-                    <input
-                      type="text"
-                      placeholder="Search doctor by name or qualification..."
-                      value={searchTerm}
-                      onChange={(e) => setSearchTerm(e.target.value)}
-                      className="w-full bg-slate-950 border border-slate-800 rounded-xl pl-9 pr-4 py-2 text-sm text-white placeholder-slate-500 focus:outline-none focus:border-teal-500"
-                    />
-                  </div>
-                  <button
-                    onClick={() => handleOpenDoctorModal()}
-                    className="flex items-center gap-2 px-4 py-2 bg-teal-600 hover:bg-teal-500 text-white font-medium text-sm rounded-xl transition shadow-lg shadow-teal-600/20"
-                  >
-                    <Plus className="w-4 h-4" /> Add Doctor
-                  </button>
-                </div>
+            <div className="overflow-x-auto">
+              <table className="w-full text-left text-xs text-slate-300">
+                <thead className="bg-slate-950 text-slate-400 text-[11px] uppercase tracking-wider border-b border-slate-800">
+                  <tr>
+                    <th className="py-3.5 px-4">Doctor Profile</th>
+                    <th className="py-3.5 px-4">Specialties</th>
+                    <th className="py-3.5 px-4">Chamber Affiliations & Schedules</th>
+                    <th className="py-3.5 px-4 text-right">Actions</th>
+                  </tr>
+                </thead>
+                <tbody className="divide-y divide-slate-800/60">
+                  {doctors
+                    .filter(d => {
+                      const specNames = Array.isArray(d.specialties) ? d.specialties.map(s=>s.name||s).join(' ') : (d.specialty || '');
+                      return `${d.name} ${specNames}`.toLowerCase().includes(searchTerm.toLowerCase());
+                    })
+                    .map(doc => {
+                      const specs = Array.isArray(doc.specialties) 
+                        ? doc.specialties.map(s => s.name || s)
+                        : [doc.specialty || doc.specialty_details?.name || 'General Physician'];
+                      const affs = doc.affiliations || [];
 
-                <div className="overflow-x-auto">
-                  <table className="w-full text-left text-sm text-slate-300">
-                    <thead className="bg-slate-950 text-slate-400 text-xs uppercase tracking-wider border-b border-slate-800">
-                      <tr>
-                        <th className="py-3.5 px-4">Doctor Name</th>
-                        <th className="py-3.5 px-4">Specialty</th>
-                        <th className="py-3.5 px-4">Chamber / Hospital</th>
-                        <th className="py-3.5 px-4">Visit Schedule</th>
-                        <th className="py-3.5 px-4">Fee</th>
-                        <th className="py-3.5 px-4 text-right">Actions</th>
-                      </tr>
-                    </thead>
-                    <tbody className="divide-y divide-slate-800/60">
-                      {doctors
-                        .filter(d => d.name.toLowerCase().includes(searchTerm.toLowerCase()) || d.qualification.toLowerCase().includes(searchTerm.toLowerCase()))
-                        .map(doc => (
-                          <tr key={doc.id} className="hover:bg-slate-800/40 transition">
-                            <td className="py-4 px-4 font-semibold text-white">
-                              <div>{doc.name}</div>
-                              <div className="text-xs text-slate-400 font-normal">{doc.qualification}</div>
-                            </td>
-                            <td className="py-4 px-4">
-                              <span className="px-2.5 py-1 bg-teal-500/10 text-teal-400 rounded-md border border-teal-500/20 text-xs">
-                                {doc.specialty_name || doc.specialty?.name || doc.specialty}
-                              </span>
-                            </td>
-                            <td className="py-4 px-4">
-                              <div className="text-slate-200 text-xs font-medium">{doc.chamber_name || doc.chamber?.name || doc.chamber}</div>
-                              <div className="text-[11px] text-slate-400">{doc.chamber?.city}</div>
-                            </td>
-                            <td className="py-4 px-4 text-xs">
-                              <div className="text-slate-200">{doc.visit_days}</div>
-                              <div className="text-slate-400">{doc.visit_time}</div>
-                            </td>
-                            <td className="py-4 px-4 font-mono text-emerald-400 font-bold text-xs">
-                              ৳{doc.fee}
-                            </td>
-                            <td className="py-4 px-4 text-right space-x-2 whitespace-nowrap">
-                              <button
-                                onClick={() => handleOpenDoctorModal(doc)}
-                                className="p-2 bg-slate-800 hover:bg-slate-700 text-slate-300 rounded-lg transition"
-                                title="Edit Doctor"
-                              >
-                                <Edit className="w-4 h-4" />
-                              </button>
-                              <button
-                                onClick={() => handleDeleteDoctor(doc.id, doc.name)}
-                                className="p-2 bg-rose-500/20 hover:bg-rose-500/30 text-rose-400 rounded-lg transition"
-                                title="Delete Doctor"
-                              >
-                                <Trash2 className="w-4 h-4" />
-                              </button>
-                            </td>
-                          </tr>
-                        ))}
-                      {doctors.length === 0 && (
-                        <tr>
-                          <td colSpan="6" className="py-8 text-center text-slate-500">No doctors registered yet.</td>
-                        </tr>
-                      )}
-                    </tbody>
-                  </table>
-                </div>
-              </div>
-            )}
-
-            {/* HOSPITALS / CHAMBERS TAB */}
-            {activeTab === 'hospitals' && (
-              <div className="bg-slate-900 border border-slate-800 rounded-2xl overflow-hidden">
-                <div className="p-5 border-b border-slate-800 flex flex-wrap items-center justify-between gap-4">
-                  <div className="relative flex-1 min-w-[240px]">
-                    <Search className="w-4 h-4 absolute left-3 top-3 text-slate-400" />
-                    <input
-                      type="text"
-                      placeholder="Search hospital or city..."
-                      value={searchTerm}
-                      onChange={(e) => setSearchTerm(e.target.value)}
-                      className="w-full bg-slate-950 border border-slate-800 rounded-xl pl-9 pr-4 py-2 text-sm text-white placeholder-slate-500 focus:outline-none focus:border-emerald-500"
-                    />
-                  </div>
-                  <button
-                    onClick={() => handleOpenChamberModal()}
-                    className="flex items-center gap-2 px-4 py-2 bg-emerald-600 hover:bg-emerald-500 text-white font-medium text-sm rounded-xl transition shadow-lg shadow-emerald-600/20"
-                  >
-                    <Plus className="w-4 h-4" /> Add Hospital / Chamber
-                  </button>
-                </div>
-
-                <div className="overflow-x-auto">
-                  <table className="w-full text-left text-sm text-slate-300">
-                    <thead className="bg-slate-950 text-slate-400 text-xs uppercase tracking-wider border-b border-slate-800">
-                      <tr>
-                        <th className="py-3.5 px-4">Hospital / Chamber Name</th>
-                        <th className="py-3.5 px-4">Location & City</th>
-                        <th className="py-3.5 px-4">Contact Phone</th>
-                        <th className="py-3.5 px-4">Rating</th>
-                        <th className="py-3.5 px-4">Status</th>
-                        <th className="py-3.5 px-4 text-right">Actions</th>
-                      </tr>
-                    </thead>
-                    <tbody className="divide-y divide-slate-800/60">
-                      {chambers
-                        .filter(c => c.name.toLowerCase().includes(searchTerm.toLowerCase()) || c.city.toLowerCase().includes(searchTerm.toLowerCase()))
-                        .map(ch => (
-                          <tr key={ch.id} className="hover:bg-slate-800/40 transition">
-                            <td className="py-4 px-4 font-semibold text-white">
-                              <div>{ch.name}</div>
-                              <div className="text-xs text-slate-400 font-normal">{ch.tagline}</div>
-                            </td>
-                            <td className="py-4 px-4 text-xs">
-                              <div className="text-slate-200">{ch.location}</div>
-                              <div className="text-slate-400 font-medium">{ch.city}</div>
-                            </td>
-                            <td className="py-4 px-4 font-mono text-xs text-slate-300">
-                              {ch.contact_phone}
-                            </td>
-                            <td className="py-4 px-4 text-xs font-bold text-amber-400">
-                              ⭐ {ch.rating} ({ch.reviews_count})
-                            </td>
-                            <td className="py-4 px-4">
-                              {ch.verified ? (
-                                <span className="px-2 py-0.5 bg-emerald-500/20 text-emerald-400 border border-emerald-500/30 rounded text-[11px] font-semibold">Verified</span>
-                              ) : (
-                                <span className="px-2 py-0.5 bg-slate-800 text-slate-400 rounded text-[11px]">Standard</span>
-                              )}
-                            </td>
-                            <td className="py-4 px-4 text-right space-x-2 whitespace-nowrap">
-                              <button
-                                onClick={() => window.open(`/partner/${ch.id}`, '_blank')}
-                                className="px-2.5 py-1.5 bg-emerald-500/20 hover:bg-emerald-500/30 text-emerald-400 font-bold text-xs rounded-lg transition border border-emerald-500/30"
-                                title="View Public Medical Partner Page"
-                              >
-                                View Partner Page ↗
-                              </button>
-                              <button
-                                onClick={() => handleOpenChamberModal(ch)}
-                                className="p-2 bg-slate-800 hover:bg-slate-700 text-slate-300 rounded-lg transition"
-                                title="Edit Partner Details & Services"
-                              >
-                                <Edit className="w-4 h-4" />
-                              </button>
-                              <button
-                                onClick={() => handleDeleteChamber(ch.id, ch.name)}
-                                className="p-2 bg-rose-500/20 hover:bg-rose-500/30 text-rose-400 rounded-lg transition"
-                                title="Delete Hospital"
-                              >
-                                <Trash2 className="w-4 h-4" />
-                              </button>
-                            </td>
-                          </tr>
-                        ))}
-                      {chambers.length === 0 && (
-                        <tr>
-                          <td colSpan="6" className="py-8 text-center text-slate-500">No chambers recorded yet.</td>
-                        </tr>
-                      )}
-                    </tbody>
-                  </table>
-                </div>
-              </div>
-            )}
-
-            {/* LAB TESTS TAB */}
-            {activeTab === 'tests' && (
-              <div className="bg-slate-900 border border-slate-800 rounded-2xl overflow-hidden">
-                <div className="p-5 border-b border-slate-800 flex flex-wrap items-center justify-between gap-4">
-                  <div className="relative flex-1 min-w-[240px]">
-                    <Search className="w-4 h-4 absolute left-3 top-3 text-slate-400" />
-                    <input
-                      type="text"
-                      placeholder="Search pathology test name..."
-                      value={searchTerm}
-                      onChange={(e) => setSearchTerm(e.target.value)}
-                      className="w-full bg-slate-950 border border-slate-800 rounded-xl pl-9 pr-4 py-2 text-sm text-white placeholder-slate-500 focus:outline-none focus:border-cyan-500"
-                    />
-                  </div>
-                  <button
-                    onClick={() => handleOpenTestModal()}
-                    className="flex items-center gap-2 px-4 py-2 bg-cyan-600 hover:bg-cyan-500 text-white font-medium text-sm rounded-xl transition shadow-lg shadow-cyan-600/20"
-                  >
-                    <Plus className="w-4 h-4" /> Add Pathology Test
-                  </button>
-                </div>
-
-                <div className="overflow-x-auto">
-                  <table className="w-full text-left text-sm text-slate-300">
-                    <thead className="bg-slate-950 text-slate-400 text-xs uppercase tracking-wider border-b border-slate-800">
-                      <tr>
-                        <th className="py-3.5 px-4">Test Name</th>
-                        <th className="py-3.5 px-4">Category</th>
-                        <th className="py-3.5 px-4">Price</th>
-                        <th className="py-3.5 px-4">Report Time</th>
-                        <th className="py-3.5 px-4">Fasting Required</th>
-                        <th className="py-3.5 px-4 text-right">Actions</th>
-                      </tr>
-                    </thead>
-                    <tbody className="divide-y divide-slate-800/60">
-                      {tests
-                        .filter(t => t.name.toLowerCase().includes(searchTerm.toLowerCase()))
-                        .map(t => (
-                          <tr key={t.id} className="hover:bg-slate-800/40 transition">
-                            <td className="py-4 px-4 font-semibold text-white">
-                              <div>{t.name}</div>
-                              <div className="text-xs text-slate-400 font-normal">{t.description}</div>
-                            </td>
-                            <td className="py-4 px-4 text-xs text-slate-300">
-                              <span className="px-2.5 py-1 bg-cyan-500/10 text-cyan-400 rounded-md border border-cyan-500/20">
-                                {t.category}
-                              </span>
-                            </td>
-                            <td className="py-4 px-4 text-xs">
-                              <span className="font-mono text-emerald-400 font-bold text-sm">৳{t.price}</span>
-                              {t.original_price && (
-                                <span className="line-through text-slate-500 ml-2 text-xs">৳{t.original_price}</span>
-                              )}
-                              {t.discount && (
-                                <span className="ml-2 text-[10px] text-amber-400 font-bold bg-amber-400/10 px-1.5 py-0.5 rounded">{t.discount}</span>
-                              )}
-                            </td>
-                            <td className="py-4 px-4 text-xs text-slate-300">
-                              {t.report_time}
-                            </td>
-                            <td className="py-4 px-4 text-xs">
-                              {t.fasting_required ? (
-                                <span className="text-amber-400 font-medium">Fasting Req.</span>
-                              ) : (
-                                <span className="text-slate-400">No Fasting</span>
-                              )}
-                            </td>
-                            <td className="py-4 px-4 text-right space-x-2 whitespace-nowrap">
-                              <button
-                                onClick={() => handleOpenTestModal(t)}
-                                className="p-2 bg-slate-800 hover:bg-slate-700 text-slate-300 rounded-lg transition"
-                                title="Edit Test"
-                              >
-                                <Edit className="w-4 h-4" />
-                              </button>
-                              <button
-                                onClick={() => handleDeleteTest(t.id, t.name)}
-                                className="p-2 bg-rose-500/20 hover:bg-rose-500/30 text-rose-400 rounded-lg transition"
-                                title="Delete Test"
-                              >
-                                <Trash2 className="w-4 h-4" />
-                              </button>
-                            </td>
-                          </tr>
-                        ))}
-                      {tests.length === 0 && (
-                        <tr>
-                          <td colSpan="6" className="py-8 text-center text-slate-500">No lab tests added.</td>
-                        </tr>
-                      )}
-                    </tbody>
-                  </table>
-                </div>
-              </div>
-            )}
-
-            {/* DOCTOR BOOKINGS TAB */}
-            {activeTab === 'doc-bookings' && (
-              <div className="bg-slate-900 border border-slate-800 rounded-2xl overflow-hidden">
-                <div className="p-5 border-b border-slate-800">
-                  <h3 className="text-base font-bold text-white">Patient Doctor Consultation Bookings</h3>
-                  <p className="text-xs text-slate-400">Manage OPD appointments and change status</p>
-                </div>
-                <div className="overflow-x-auto">
-                  <table className="w-full text-left text-sm text-slate-300">
-                    <thead className="bg-slate-950 text-slate-400 text-xs uppercase tracking-wider border-b border-slate-800">
-                      <tr>
-                        <th className="py-3.5 px-4">Booking ID</th>
-                        <th className="py-3.5 px-4">Patient Name</th>
-                        <th className="py-3.5 px-4">Doctor & Chamber</th>
-                        <th className="py-3.5 px-4">Appointment Date & Slot</th>
-                        <th className="py-3.5 px-4">Status</th>
-                      </tr>
-                    </thead>
-                    <tbody className="divide-y divide-slate-800/60">
-                      {doctorBookings.map(b => (
-                        <tr key={b.id} className="hover:bg-slate-800/40 transition">
-                          <td className="py-4 px-4 font-mono text-xs text-slate-400">#{b.id}</td>
-                          <td className="py-4 px-4 font-semibold text-white">{b.patient_name}</td>
-                          <td className="py-4 px-4 text-xs">
-                            <div className="font-semibold text-teal-300">{b.doctor_name || `Doctor ID: ${b.doctor}`}</div>
-                            <div className="text-slate-400">{b.chamber_name || `Chamber ID: ${b.chamber}`}</div>
-                          </td>
-                          <td className="py-4 px-4 text-xs">
-                            <div className="font-medium text-white">{b.date}</div>
-                            <div className="text-emerald-400 font-mono">{b.slot}</div>
+                      return (
+                        <tr key={doc.id} className="hover:bg-slate-800/40 transition">
+                          <td className="py-4 px-4 font-bold text-white">
+                            <div className="text-sm text-teal-300">{doc.name}</div>
+                            <div className="text-slate-400 text-[11px] font-normal">{doc.qualification}</div>
+                            <div className="text-[10px] text-slate-500 font-semibold">{doc.experience}</div>
                           </td>
                           <td className="py-4 px-4">
-                            <select
-                              value={b.status}
-                              onChange={(e) => handleUpdateDoctorBookingStatus(b.id, e.target.value)}
-                              className="bg-slate-950 border border-slate-700 text-xs text-white rounded-lg px-2.5 py-1.5 focus:outline-none focus:border-teal-500"
+                            <div className="flex flex-wrap gap-1">
+                              {specs.map(s => (
+                                <span key={s} className="px-2 py-0.5 bg-emerald-500/20 text-emerald-400 border border-emerald-500/30 rounded text-[10px] font-bold">
+                                  {s}
+                                </span>
+                              ))}
+                            </div>
+                          </td>
+                          <td className="py-4 px-4">
+                            {affs.length > 0 ? (
+                              <div className="space-y-1.5">
+                                {affs.map((a, i) => (
+                                  <div key={i} className="bg-slate-950 p-2 rounded-lg border border-slate-800 text-[11px]">
+                                    <div className="flex items-center justify-between font-bold text-slate-200">
+                                      <span>{a.branch_name || 'Medical Branch'}</span>
+                                      <span className={`px-1.5 py-0.5 rounded text-[10px] ${a.consultation_type === 'In-patient' ? 'bg-purple-500/20 text-purple-300' : 'bg-emerald-500/20 text-emerald-300'}`}>
+                                        {a.consultation_type} (৳{a.fee})
+                                      </span>
+                                    </div>
+                                    {a.schedules && a.schedules.length > 0 && (
+                                      <div className="text-[10px] text-slate-400 mt-1 flex flex-wrap gap-2">
+                                        {a.schedules.map((sch, sIdx) => (
+                                          <span key={sIdx}>• {sch.day_of_week} ({sch.start_time}-{sch.end_time})</span>
+                                        ))}
+                                      </div>
+                                    )}
+                                  </div>
+                                ))}
+                              </div>
+                            ) : (
+                              <span className="text-slate-500 italic">No affiliations set</span>
+                            )}
+                          </td>
+                          <td className="py-4 px-4 text-right space-x-2 whitespace-nowrap">
+                            <button
+                              onClick={() => handleOpenDoctorModal(doc)}
+                              className="p-2 bg-slate-800 hover:bg-slate-700 text-slate-300 rounded-lg transition"
+                              title="Edit Doctor & Affiliations"
                             >
-                              <option value="Confirmed">Confirmed</option>
-                              <option value="Completed">Completed</option>
-                              <option value="Cancelled">Cancelled</option>
-                            </select>
-                          </td>
-                        </tr>
-                      ))}
-                      {doctorBookings.length === 0 && (
-                        <tr>
-                          <td colSpan="5" className="py-8 text-center text-slate-500">No doctor bookings recorded yet.</td>
-                        </tr>
-                      )}
-                    </tbody>
-                  </table>
-                </div>
-              </div>
-            )}
-
-            {/* LAB BOOKINGS TAB */}
-            {activeTab === 'lab-bookings' && (
-              <div className="bg-slate-900 border border-slate-800 rounded-2xl overflow-hidden">
-                <div className="p-5 border-b border-slate-800">
-                  <h3 className="text-base font-bold text-white">Home Sample Pickup Lab Bookings</h3>
-                  <p className="text-xs text-slate-400">View diagnostic requests and dispatch status</p>
-                </div>
-                <div className="overflow-x-auto">
-                  <table className="w-full text-left text-sm text-slate-300">
-                    <thead className="bg-slate-950 text-slate-400 text-xs uppercase tracking-wider border-b border-slate-800">
-                      <tr>
-                        <th className="py-3.5 px-4">Booking ID</th>
-                        <th className="py-3.5 px-4">Patient Name & Phone</th>
-                        <th className="py-3.5 px-4">Test Name</th>
-                        <th className="py-3.5 px-4">Pickup Address & Date</th>
-                        <th className="py-3.5 px-4">Status</th>
-                      </tr>
-                    </thead>
-                    <tbody className="divide-y divide-slate-800/60">
-                      {labBookings.map(b => (
-                        <tr key={b.id} className="hover:bg-slate-800/40 transition">
-                          <td className="py-4 px-4 font-mono text-xs text-slate-400">#{b.id}</td>
-                          <td className="py-4 px-4">
-                            <div className="font-semibold text-white">{b.patient_name}</div>
-                            <div className="text-xs font-mono text-slate-400">{b.patient_phone}</div>
-                          </td>
-                          <td className="py-4 px-4 text-xs font-semibold text-cyan-300">
-                            {b.test_name || `Test ID: ${b.test}`}
-                          </td>
-                          <td className="py-4 px-4 text-xs">
-                            <div className="text-white font-medium">{b.pickup_date}</div>
-                            <div className="text-slate-400 text-[11px] max-w-xs line-clamp-1">{b.address}</div>
-                          </td>
-                          <td className="py-4 px-4">
-                            <select
-                              value={b.status}
-                              onChange={(e) => handleUpdateLabBookingStatus(b.id, e.target.value)}
-                              className="bg-slate-950 border border-slate-700 text-xs text-white rounded-lg px-2.5 py-1.5 focus:outline-none focus:border-cyan-500"
+                              <Edit className="w-4 h-4" />
+                            </button>
+                            <button
+                              onClick={() => handleDeleteDoctor(doc.id, doc.name)}
+                              className="p-2 bg-rose-500/20 hover:bg-rose-500/30 text-rose-400 rounded-lg transition"
+                              title="Delete Doctor"
                             >
-                              <option value="Confirmed">Confirmed</option>
-                              <option value="Sample Collected">Sample Collected</option>
-                              <option value="Completed">Completed</option>
-                              <option value="Cancelled">Cancelled</option>
-                            </select>
+                              <Trash2 className="w-4 h-4" />
+                            </button>
                           </td>
                         </tr>
-                      ))}
-                      {labBookings.length === 0 && (
-                        <tr>
-                          <td colSpan="5" className="py-8 text-center text-slate-500">No lab test bookings recorded yet.</td>
-                        </tr>
-                      )}
-                    </tbody>
-                  </table>
-                </div>
-              </div>
-            )}
-          </>
+                      );
+                    })}
+                  {doctors.length === 0 && (
+                    <tr>
+                      <td colSpan="4" className="py-8 text-center text-slate-500">No doctors added.</td>
+                    </tr>
+                  )}
+                </tbody>
+              </table>
+            </div>
+          </div>
         )}
+
+        {/* 3. DIAGNOSTIC BRANCH TEST PRICING TAB */}
+        {activeTab === 'branch-tests' && (
+          <div className="bg-slate-900 border border-slate-800 rounded-2xl overflow-hidden shadow-xl">
+            <div className="p-5 border-b border-slate-800 flex flex-wrap items-center justify-between gap-4">
+              <div>
+                <h3 className="text-base font-bold text-white">Diagnostic Branch Test Pricing</h3>
+                <p className="text-xs text-slate-400">Assign pathology tests to specific branches with branch-specific prices</p>
+              </div>
+              <button
+                onClick={() => handleOpenBranchTestModal()}
+                className="flex items-center gap-2 px-4 py-2.5 bg-teal-600 hover:bg-teal-500 text-white font-bold text-xs rounded-xl transition shadow-lg shadow-teal-600/20"
+              >
+                <Plus className="w-4 h-4" /> Assign Test Pricing To Branch
+              </button>
+            </div>
+
+            <div className="overflow-x-auto">
+              <table className="w-full text-left text-xs text-slate-300">
+                <thead className="bg-slate-950 text-slate-400 text-[11px] uppercase tracking-wider border-b border-slate-800">
+                  <tr>
+                    <th className="py-3.5 px-4">Diagnostic Branch</th>
+                    <th className="py-3.5 px-4">Test Name</th>
+                    <th className="py-3.5 px-4">Branch Price</th>
+                    <th className="py-3.5 px-4">Report Time</th>
+                    <th className="py-3.5 px-4 text-right">Actions</th>
+                  </tr>
+                </thead>
+                <tbody className="divide-y divide-slate-800/60">
+                  {branchTests.map(bt => {
+                    const bName = bt.branch_name || (bt.branch?.name) || 'Diagnostic Center';
+                    const tName = bt.test_details?.name || (bt.test?.name) || 'Pathology Test';
+
+                    return (
+                      <tr key={bt.id} className="hover:bg-slate-800/40 transition">
+                        <td className="py-4 px-4 font-bold text-emerald-400">{bName}</td>
+                        <td className="py-4 px-4 font-bold text-white">{tName}</td>
+                        <td className="py-4 px-4 font-mono font-bold text-teal-300">
+                          ৳{bt.price} {bt.original_price && <span className="line-through text-slate-500 text-[10px] ml-1">৳{bt.original_price}</span>}
+                        </td>
+                        <td className="py-4 px-4 text-slate-300">{bt.report_time || 'Same Day'}</td>
+                        <td className="py-4 px-4 text-right space-x-2 whitespace-nowrap">
+                          <button
+                            onClick={() => handleDeleteBranchTest(bt.id)}
+                            className="p-2 bg-rose-500/20 hover:bg-rose-500/30 text-rose-400 rounded-lg transition"
+                          >
+                            <Trash2 className="w-4 h-4" />
+                          </button>
+                        </td>
+                      </tr>
+                    );
+                  })}
+                  {branchTests.length === 0 && (
+                    <tr>
+                      <td colSpan="5" className="py-8 text-center text-slate-500">No branch test pricing recorded yet. Click above to assign test prices.</td>
+                    </tr>
+                  )}
+                </tbody>
+              </table>
+            </div>
+          </div>
+        )}
+
+        {/* 4. PATHOLOGY BASE TESTS TAB */}
+        {activeTab === 'tests' && (
+          <div className="bg-slate-900 border border-slate-800 rounded-2xl overflow-hidden shadow-xl">
+            <div className="p-5 border-b border-slate-800 flex flex-wrap items-center justify-between gap-4">
+              <div className="relative flex-1 min-w-[240px]">
+                <Search className="w-4 h-4 absolute left-3 top-3 text-slate-400" />
+                <input
+                  type="text"
+                  placeholder="Search test name..."
+                  value={searchTerm}
+                  onChange={(e) => setSearchTerm(e.target.value)}
+                  className="w-full bg-slate-950 border border-slate-800 rounded-xl pl-9 pr-4 py-2 text-xs text-white placeholder-slate-500 focus:outline-none focus:border-teal-500"
+                />
+              </div>
+              <button
+                onClick={() => handleOpenTestModal()}
+                className="flex items-center gap-2 px-4 py-2.5 bg-teal-600 hover:bg-teal-500 text-white font-bold text-xs rounded-xl transition shadow-lg shadow-teal-600/20"
+              >
+                <Plus className="w-4 h-4" /> Add Pathology Base Test
+              </button>
+            </div>
+
+            <div className="overflow-x-auto">
+              <table className="w-full text-left text-xs text-slate-300">
+                <thead className="bg-slate-950 text-slate-400 text-[11px] uppercase tracking-wider border-b border-slate-800">
+                  <tr>
+                    <th className="py-3.5 px-4">Test Name</th>
+                    <th className="py-3.5 px-4">Category</th>
+                    <th className="py-3.5 px-4">Fasting Required</th>
+                    <th className="py-3.5 px-4 text-right">Actions</th>
+                  </tr>
+                </thead>
+                <tbody className="divide-y divide-slate-800/60">
+                  {tests
+                    .filter(t => t.name.toLowerCase().includes(searchTerm.toLowerCase()))
+                    .map(t => (
+                      <tr key={t.id} className="hover:bg-slate-800/40 transition">
+                        <td className="py-4 px-4 font-bold text-white">
+                          <div>{t.name}</div>
+                          <div className="text-[11px] text-slate-400 font-normal">{t.description}</div>
+                        </td>
+                        <td className="py-4 px-4">
+                          <span className="px-2.5 py-1 bg-teal-500/10 text-teal-400 rounded-md border border-teal-500/20 font-bold">
+                            {t.category}
+                          </span>
+                        </td>
+                        <td className="py-4 px-4">
+                          {t.fasting_required ? (
+                            <span className="text-amber-400 font-semibold">Fasting Required</span>
+                          ) : (
+                            <span className="text-slate-400">No Fasting</span>
+                          )}
+                        </td>
+                        <td className="py-4 px-4 text-right space-x-2 whitespace-nowrap">
+                          <button
+                            onClick={() => handleOpenTestModal(t)}
+                            className="p-2 bg-slate-800 hover:bg-slate-700 text-slate-300 rounded-lg transition"
+                          >
+                            <Edit className="w-4 h-4" />
+                          </button>
+                          <button
+                            onClick={() => handleDeleteTest(t.id, t.name)}
+                            className="p-2 bg-rose-500/20 hover:bg-rose-500/30 text-rose-400 rounded-lg transition"
+                          >
+                            <Trash2 className="w-4 h-4" />
+                          </button>
+                        </td>
+                      </tr>
+                    ))}
+                </tbody>
+              </table>
+            </div>
+          </div>
+        )}
+
       </main>
 
-      {/* --- DOCTOR MODAL --- */}
-      {showDoctorModal && (
-        <div className="fixed inset-0 z-50 bg-slate-950/80 backdrop-blur-sm flex items-center justify-center p-4">
-          <div className="bg-slate-900 border border-slate-800 rounded-2xl max-w-lg w-full max-h-[90vh] overflow-y-auto p-6 shadow-2xl">
-            <h3 className="text-lg font-bold text-white mb-4">
-              {editingDoctor ? 'Edit Doctor Details' : 'Add New Doctor'}
-            </h3>
-            <form onSubmit={handleSaveDoctor} className="space-y-4 text-xs">
-              <div>
-                <label className="block text-slate-400 mb-1">Doctor Name</label>
-                <input
-                  type="text"
-                  required
-                  placeholder="e.g. Prof. Dr. Farhan Ahmed"
-                  value={doctorForm.name}
-                  onChange={e => setDoctorForm({...doctorForm, name: e.target.value})}
-                  className="w-full bg-slate-950 border border-slate-800 rounded-xl px-3 py-2 text-white focus:outline-none focus:border-teal-500"
-                />
-              </div>
-
-              <div className="grid grid-cols-2 gap-3">
-                <div>
-                  <label className="block text-slate-400 mb-1">Specialty</label>
-                  <select
-                    value={doctorForm.specialty}
-                    onChange={e => setDoctorForm({...doctorForm, specialty: e.target.value})}
-                    className="w-full bg-slate-950 border border-slate-800 rounded-xl px-3 py-2 text-white focus:outline-none focus:border-teal-500"
-                  >
-                    {specialties.map(s => (
-                      <option key={s.id} value={s.id}>{s.name}</option>
-                    ))}
-                  </select>
-                </div>
-                <div>
-                  <label className="block text-slate-400 mb-1">Chamber / Hospital</label>
-                  <select
-                    value={doctorForm.chamber}
-                    onChange={e => setDoctorForm({...doctorForm, chamber: e.target.value})}
-                    className="w-full bg-slate-950 border border-slate-800 rounded-xl px-3 py-2 text-white focus:outline-none focus:border-teal-500"
-                  >
-                    {chambers.map(c => (
-                      <option key={c.id} value={c.id}>{c.name}</option>
-                    ))}
-                  </select>
-                </div>
-              </div>
-
-              <div>
-                <label className="block text-slate-400 mb-1">Qualifications & Degrees</label>
-                <input
-                  type="text"
-                  required
-                  placeholder="e.g. MBBS, FCPS (Medicine), MD (Cardiology)"
-                  value={doctorForm.qualification}
-                  onChange={e => setDoctorForm({...doctorForm, qualification: e.target.value})}
-                  className="w-full bg-slate-950 border border-slate-800 rounded-xl px-3 py-2 text-white focus:outline-none focus:border-teal-500"
-                />
-              </div>
-
-              <div className="grid grid-cols-2 gap-3">
-                <div>
-                  <label className="block text-slate-400 mb-1">Experience</label>
-                  <input
-                    type="text"
-                    required
-                    placeholder="e.g. 15+ Yrs Exp."
-                    value={doctorForm.experience}
-                    onChange={e => setDoctorForm({...doctorForm, experience: e.target.value})}
-                    className="w-full bg-slate-950 border border-slate-800 rounded-xl px-3 py-2 text-white focus:outline-none focus:border-teal-500"
-                  />
-                </div>
-                <div>
-                  <label className="block text-slate-400 mb-1">Consultation Fee (BDT)</label>
-                  <input
-                    type="number"
-                    required
-                    placeholder="1200"
-                    value={doctorForm.fee}
-                    onChange={e => setDoctorForm({...doctorForm, fee: e.target.value})}
-                    className="w-full bg-slate-950 border border-slate-800 rounded-xl px-3 py-2 text-white focus:outline-none focus:border-teal-500 font-mono"
-                  />
-                </div>
-              </div>
-
-              <div className="grid grid-cols-2 gap-3">
-                <div>
-                  <label className="block text-slate-400 mb-1">Visit Days</label>
-                  <input
-                    type="text"
-                    required
-                    placeholder="Sat, Mon, Wed"
-                    value={doctorForm.visit_days}
-                    onChange={e => setDoctorForm({...doctorForm, visit_days: e.target.value})}
-                    className="w-full bg-slate-950 border border-slate-800 rounded-xl px-3 py-2 text-white focus:outline-none focus:border-teal-500"
-                  />
-                </div>
-                <div>
-                  <label className="block text-slate-400 mb-1">Visit Time</label>
-                  <input
-                    type="text"
-                    required
-                    placeholder="05:00 PM - 09:00 PM"
-                    value={doctorForm.visit_time}
-                    onChange={e => setDoctorForm({...doctorForm, visit_time: e.target.value})}
-                    className="w-full bg-slate-950 border border-slate-800 rounded-xl px-3 py-2 text-white focus:outline-none focus:border-teal-500"
-                  />
-                </div>
-              </div>
-
-              <div>
-                <label className="block text-slate-400 mb-1">Available Slots (Comma Separated)</label>
-                <input
-                  type="text"
-                  placeholder="05:15 PM, 06:00 PM, 07:00 PM"
-                  value={doctorForm.slotsStr}
-                  onChange={e => setDoctorForm({...doctorForm, slotsStr: e.target.value})}
-                  className="w-full bg-slate-950 border border-slate-800 rounded-xl px-3 py-2 text-white focus:outline-none focus:border-teal-500 font-mono"
-                />
-              </div>
-
-              <div className="flex justify-end gap-3 pt-4 border-t border-slate-800">
-                <button
-                  type="button"
-                  onClick={() => setShowDoctorModal(false)}
-                  className="px-4 py-2 bg-slate-800 text-slate-300 rounded-xl hover:bg-slate-700 transition"
-                >
-                  Cancel
-                </button>
-                <button
-                  type="submit"
-                  className="px-5 py-2 bg-teal-600 hover:bg-teal-500 text-white font-semibold rounded-xl transition shadow-lg shadow-teal-600/30"
-                >
-                  Save Doctor
-                </button>
-              </div>
-            </form>
-          </div>
-        </div>
-      )}
-
-      {/* --- CHAMBER MODAL --- */}
+      {/* --- HOSPITAL / BRANCH MODAL --- */}
       {showChamberModal && (
         <div className="fixed inset-0 z-50 bg-slate-950/80 backdrop-blur-sm flex items-center justify-center p-4">
-          <div className="bg-slate-900 border border-slate-800 rounded-2xl max-w-lg w-full max-h-[90vh] overflow-y-auto p-6 shadow-2xl">
-            <h3 className="text-lg font-bold text-white mb-4">
-              {editingChamber ? 'Edit Hospital / Chamber' : 'Add New Hospital / Chamber'}
+          <div className="bg-slate-900 border border-slate-800 rounded-2xl max-w-lg w-full max-h-[90vh] overflow-y-auto p-6 shadow-2xl space-y-4">
+            <h3 className="text-lg font-bold text-white">
+              {editingChamber ? 'Edit Hospital Branch' : 'Add New Hospital Branch'}
             </h3>
+            
             <form onSubmit={handleSaveChamber} className="space-y-4 text-xs">
+              {/* Separate Hospital Name & Branch Name */}
               <div>
-                <label className="block text-slate-400 mb-1">Hospital / Chamber Name</label>
+                <label className="block text-slate-300 font-bold mb-1">1. Hospital Group Name</label>
                 <input
                   type="text"
                   required
-                  placeholder="e.g. Square Hospital OPD Hub"
-                  value={chamberForm.name}
-                  onChange={e => setChamberForm({...chamberForm, name: e.target.value})}
-                  className="w-full bg-slate-950 border border-slate-800 rounded-xl px-3 py-2 text-white focus:outline-none focus:border-emerald-500"
+                  placeholder="e.g. Ibn Sina Healthcare Group / Square Hospital"
+                  value={chamberForm.hospital_name}
+                  onChange={e => setChamberForm({...chamberForm, hospital_name: e.target.value})}
+                  className="w-full bg-slate-950 border border-slate-800 rounded-xl px-3.5 py-2.5 text-white focus:outline-none focus:border-teal-500 font-semibold"
                 />
               </div>
 
               <div className="grid grid-cols-2 gap-3">
                 <div>
-                  <label className="block text-slate-400 mb-1">City</label>
+                  <label className="block text-slate-300 font-bold mb-1">2. City Location</label>
                   <select
                     value={chamberForm.city}
-                    onChange={e => setChamberForm({...chamberForm, city: e.target.value})}
-                    className="w-full bg-slate-950 border border-slate-800 rounded-xl px-3 py-2 text-white focus:outline-none focus:border-emerald-500"
+                    onChange={e => {
+                      const newCity = e.target.value;
+                      const defaultBranch = CITY_THANAS[newCity] ? CITY_THANAS[newCity][0] : 'Main Branch';
+                      setChamberForm({
+                        ...chamberForm, 
+                        city: newCity,
+                        branch_name: defaultBranch,
+                        isCustomBranch: false
+                      });
+                    }}
+                    className="w-full bg-slate-950 border border-slate-800 rounded-xl px-3 py-2.5 text-white focus:outline-none focus:border-teal-500 font-semibold"
                   >
-                    <option value="Dhaka">Dhaka</option>
-                    <option value="Chittagong">Chittagong</option>
-                    <option value="Sylhet">Sylhet</option>
-                    <option value="Rajshahi">Rajshahi</option>
-                    <option value="Khulna">Khulna</option>
-                    <option value="Barisal">Barisal</option>
+                    {Object.keys(CITY_THANAS).map(c => (
+                      <option key={c} value={c}>{c}</option>
+                    ))}
                   </select>
                 </div>
+
+                <div>
+                  <label className="block text-slate-300 font-bold mb-1">3. Branch Thana / Area</label>
+                  {!chamberForm.isCustomBranch ? (
+                    <select
+                      value={chamberForm.branch_name}
+                      onChange={e => {
+                        if (e.target.value === '__custom__') {
+                          setChamberForm({...chamberForm, isCustomBranch: true, customBranchName: ''});
+                        } else {
+                          setChamberForm({...chamberForm, branch_name: e.target.value});
+                        }
+                      }}
+                      className="w-full bg-slate-950 border border-slate-800 rounded-xl px-3 py-2.5 text-white focus:outline-none focus:border-teal-500 font-semibold"
+                    >
+                      {(CITY_THANAS[chamberForm.city] || []).map(t => (
+                        <option key={t} value={`${t} Branch`}>{t} Branch</option>
+                      ))}
+                      <option value="__custom__">+ Enter Custom Branch Name...</option>
+                    </select>
+                  ) : (
+                    <div className="flex items-center gap-1">
+                      <input
+                        type="text"
+                        required
+                        placeholder="e.g. South City Branch"
+                        value={chamberForm.customBranchName}
+                        onChange={e => setChamberForm({...chamberForm, customBranchName: e.target.value})}
+                        className="w-full bg-slate-950 border border-slate-800 rounded-xl px-3 py-2 text-white focus:outline-none focus:border-teal-500"
+                      />
+                      <button
+                        type="button"
+                        onClick={() => setChamberForm({...chamberForm, isCustomBranch: false})}
+                        className="text-[10px] text-teal-400 underline shrink-0"
+                      >
+                        List
+                      </button>
+                    </div>
+                  )}
+                </div>
+              </div>
+
+              <div>
+                <label className="block text-slate-300 font-bold mb-1">Street Address Location</label>
+                <input
+                  type="text"
+                  required
+                  placeholder="House 48, Road 9/A, Dhanmondi, Dhaka"
+                  value={chamberForm.location}
+                  onChange={e => setChamberForm({...chamberForm, location: e.target.value})}
+                  className="w-full bg-slate-950 border border-slate-800 rounded-xl px-3 py-2 text-white focus:outline-none focus:border-teal-500"
+                />
+              </div>
+
+              {/* Facility Types Multi Checkbox */}
+              <div>
+                <label className="block text-slate-300 font-bold mb-1">Facility Capabilities</label>
+                <div className="flex items-center gap-4 text-xs">
+                  {['Hospital', 'Diagnostic Center', 'Standalone Chamber'].map(fType => (
+                    <label key={fType} className="flex items-center gap-1.5 text-slate-300 cursor-pointer">
+                      <input
+                        type="checkbox"
+                        checked={chamberForm.facility_types.includes(fType)}
+                        onChange={e => {
+                          const updated = e.target.checked
+                            ? [...chamberForm.facility_types, fType]
+                            : chamberForm.facility_types.filter(t => t !== fType);
+                          setChamberForm({...chamberForm, facility_types: updated});
+                        }}
+                        className="rounded text-teal-500 focus:ring-teal-500"
+                      />
+                      <span>{fType}</span>
+                    </label>
+                  ))}
+                </div>
+              </div>
+
+              <div className="grid grid-cols-2 gap-3">
                 <div>
                   <label className="block text-slate-400 mb-1">Contact Phone</label>
                   <input
                     type="text"
                     required
-                    placeholder="+880 1700-000000"
                     value={chamberForm.contact_phone}
                     onChange={e => setChamberForm({...chamberForm, contact_phone: e.target.value})}
-                    className="w-full bg-slate-950 border border-slate-800 rounded-xl px-3 py-2 text-white focus:outline-none focus:border-emerald-500"
+                    className="w-full bg-slate-950 border border-slate-800 rounded-xl px-3 py-2 text-white"
                   />
                 </div>
-              </div>
-
-              <div>
-                <label className="block text-slate-400 mb-1">Detailed Address Location</label>
-                <input
-                  type="text"
-                  required
-                  placeholder="House 18, Road 2, Dhanmondi, Dhaka"
-                  value={chamberForm.location}
-                  onChange={e => setChamberForm({...chamberForm, location: e.target.value})}
-                  className="w-full bg-slate-950 border border-slate-800 rounded-xl px-3 py-2 text-white focus:outline-none focus:border-emerald-500"
-                />
-              </div>
-
-              <div className="grid grid-cols-2 gap-3">
                 <div>
                   <label className="block text-slate-400 mb-1">Opening Hours</label>
                   <input
                     type="text"
                     required
-                    placeholder="07:00 AM - 10:30 PM"
                     value={chamberForm.open_timing}
                     onChange={e => setChamberForm({...chamberForm, open_timing: e.target.value})}
-                    className="w-full bg-slate-950 border border-slate-800 rounded-xl px-3 py-2 text-white focus:outline-none focus:border-emerald-500"
-                  />
-                </div>
-                <div>
-                  <label className="block text-slate-400 mb-1">Badge Tag</label>
-                  <input
-                    type="text"
-                    placeholder="Super Partner / Top Rated"
-                    value={chamberForm.badge}
-                    onChange={e => setChamberForm({...chamberForm, badge: e.target.value})}
-                    className="w-full bg-slate-950 border border-slate-800 rounded-xl px-3 py-2 text-white focus:outline-none focus:border-emerald-500"
+                    className="w-full bg-slate-950 border border-slate-800 rounded-xl px-3 py-2 text-white"
                   />
                 </div>
               </div>
 
               <div>
-                <label className="block text-slate-400 mb-1">Tagline</label>
+                <label className="block text-slate-400 mb-1">Services & Facilities (Comma Separated)</label>
                 <input
                   type="text"
-                  placeholder="Premier OPD & Diagnostic Center"
-                  value={chamberForm.tagline}
-                  onChange={e => setChamberForm({...chamberForm, tagline: e.target.value})}
-                  className="w-full bg-slate-950 border border-slate-800 rounded-xl px-3 py-2 text-white focus:outline-none focus:border-emerald-500"
-                />
-              </div>
-
-              <div>
-                <label className="block text-slate-400 mb-1">Image URL</label>
-                <input
-                  type="text"
-                  placeholder="https://images.unsplash.com/..."
-                  value={chamberForm.image}
-                  onChange={e => setChamberForm({...chamberForm, image: e.target.value})}
-                  className="w-full bg-slate-950 border border-slate-800 rounded-xl px-3 py-2 text-white focus:outline-none focus:border-emerald-500"
-                />
-              </div>
-
-              <div>
-                <label className="block text-slate-400 mb-1">Medical Services & Facilities (Comma Separated)</label>
-                <input
-                  type="text"
-                  placeholder="e.g. 24/7 OPD Consultation, Digital X-Ray, 4D Ultrasonography, CT Scan"
                   value={chamberForm.servicesStr}
                   onChange={e => setChamberForm({...chamberForm, servicesStr: e.target.value})}
-                  className="w-full bg-slate-950 border border-slate-800 rounded-xl px-3 py-2 text-white focus:outline-none focus:border-emerald-500 font-mono"
+                  className="w-full bg-slate-950 border border-slate-800 rounded-xl px-3 py-2 text-white font-mono"
                 />
-              </div>
-
-              <div>
-                <label className="block text-slate-400 mb-1">Partner Overview & Description</label>
-                <textarea
-                  rows="3"
-                  placeholder="Detailed background summary of the medical center facility..."
-                  value={chamberForm.description}
-                  onChange={e => setChamberForm({...chamberForm, description: e.target.value})}
-                  className="w-full bg-slate-950 border border-slate-800 rounded-xl px-3 py-2 text-white focus:outline-none focus:border-emerald-500"
-                ></textarea>
-              </div>
-
-              <div className="flex items-center gap-2 pt-2">
-                <input
-                  type="checkbox"
-                  id="ch-ver"
-                  checked={chamberForm.verified}
-                  onChange={e => setChamberForm({...chamberForm, verified: e.target.checked})}
-                  className="w-4 h-4 rounded text-emerald-500 focus:ring-emerald-500"
-                />
-                <label htmlFor="ch-ver" className="text-slate-300 font-semibold">Verified Medical Partner</label>
               </div>
 
               <div className="flex justify-end gap-3 pt-4 border-t border-slate-800">
                 <button
                   type="button"
                   onClick={() => setShowChamberModal(false)}
-                  className="px-4 py-2 bg-slate-800 text-slate-300 rounded-xl hover:bg-slate-700 transition"
+                  className="px-4 py-2 bg-slate-800 text-slate-300 rounded-xl hover:bg-slate-700"
                 >
                   Cancel
                 </button>
                 <button
                   type="submit"
-                  className="px-5 py-2 bg-emerald-600 hover:bg-emerald-500 text-white font-semibold rounded-xl transition shadow-lg shadow-emerald-600/30"
+                  className="px-5 py-2 bg-emerald-600 hover:bg-emerald-500 text-white font-bold rounded-xl"
                 >
-                  Save Medical Partner
+                  Save Branch
                 </button>
               </div>
             </form>
@@ -1404,118 +1256,435 @@ export default function AdminDashboardPage({ currentUser, onNavigate, onAdminLog
         </div>
       )}
 
-      {/* --- TEST MODAL --- */}
+      {/* --- DIAGNOSTIC BRANCH TEST MODAL --- */}
+      {showBranchTestModal && (
+        <div className="fixed inset-0 z-50 bg-slate-950/80 backdrop-blur-sm flex items-center justify-center p-4">
+          <div className="bg-slate-900 border border-slate-800 rounded-2xl max-w-lg w-full p-6 shadow-2xl space-y-4">
+            <h3 className="text-lg font-bold text-white">Assign Test Pricing To Diagnostic Branch</h3>
+            
+            <form onSubmit={handleSaveBranchTest} className="space-y-4 text-xs">
+              <div>
+                <label className="block text-slate-300 font-bold mb-1">Select Diagnostic Branch</label>
+                <select
+                  value={branchTestForm.branch}
+                  onChange={e => setBranchTestForm({...branchTestForm, branch: e.target.value})}
+                  className="w-full bg-slate-950 border border-slate-800 rounded-xl px-3.5 py-2.5 text-white font-semibold"
+                >
+                  {chambers.map(c => (
+                    <option key={c.id} value={c.id}>
+                      {c.hospital_name ? `${c.hospital_name} - ${c.name}` : c.name} ({c.city})
+                    </option>
+                  ))}
+                </select>
+              </div>
+
+              <div>
+                <label className="block text-slate-300 font-bold mb-1">Select Pathology Test</label>
+                <select
+                  value={branchTestForm.test}
+                  onChange={e => setBranchTestForm({...branchTestForm, test: e.target.value})}
+                  className="w-full bg-slate-950 border border-slate-800 rounded-xl px-3.5 py-2.5 text-white font-semibold"
+                >
+                  {tests.map(t => (
+                    <option key={t.id} value={t.id}>{t.name} ({t.category})</option>
+                  ))}
+                </select>
+              </div>
+
+              <div className="grid grid-cols-2 gap-3">
+                <div>
+                  <label className="block text-slate-300 font-bold mb-1">Branch Test Price (BDT)</label>
+                  <input
+                    type="number"
+                    required
+                    value={branchTestForm.price}
+                    onChange={e => setBranchTestForm({...branchTestForm, price: e.target.value})}
+                    className="w-full bg-slate-950 border border-slate-800 rounded-xl px-3 py-2 text-white font-mono"
+                  />
+                </div>
+                <div>
+                  <label className="block text-slate-400 mb-1">Original Price (BDT)</label>
+                  <input
+                    type="number"
+                    value={branchTestForm.original_price}
+                    onChange={e => setBranchTestForm({...branchTestForm, original_price: e.target.value})}
+                    className="w-full bg-slate-950 border border-slate-800 rounded-xl px-3 py-2 text-white font-mono"
+                  />
+                </div>
+              </div>
+
+              <div className="grid grid-cols-2 gap-3">
+                <div>
+                  <label className="block text-slate-400 mb-1">Discount Tag</label>
+                  <input
+                    type="text"
+                    placeholder="25% OFF"
+                    value={branchTestForm.discount}
+                    onChange={e => setBranchTestForm({...branchTestForm, discount: e.target.value})}
+                    className="w-full bg-slate-950 border border-slate-800 rounded-xl px-3 py-2 text-white"
+                  />
+                </div>
+                <div>
+                  <label className="block text-slate-400 mb-1">Report Processing Time</label>
+                  <input
+                    type="text"
+                    required
+                    placeholder="Same Day (6 Hours)"
+                    value={branchTestForm.report_time}
+                    onChange={e => setBranchTestForm({...branchTestForm, report_time: e.target.value})}
+                    className="w-full bg-slate-950 border border-slate-800 rounded-xl px-3 py-2 text-white"
+                  />
+                </div>
+              </div>
+
+              <div className="flex justify-end gap-3 pt-4 border-t border-slate-800">
+                <button
+                  type="button"
+                  onClick={() => setShowBranchTestModal(false)}
+                  className="px-4 py-2 bg-slate-800 text-slate-300 rounded-xl hover:bg-slate-700"
+                >
+                  Cancel
+                </button>
+                <button
+                  type="submit"
+                  className="px-5 py-2 bg-teal-600 hover:bg-teal-500 text-white font-bold rounded-xl"
+                >
+                  Save Test Pricing
+                </button>
+              </div>
+            </form>
+          </div>
+        </div>
+      )}
+
+      {/* --- DOCTOR MODAL (MULTI-SPECIALTY & MULTI-CHAMBER SCHEDULES) --- */}
+      {showDoctorModal && (
+        <div className="fixed inset-0 z-50 bg-slate-950/80 backdrop-blur-sm flex items-center justify-center p-4">
+          <div className="bg-slate-900 border border-slate-800 rounded-2xl max-w-2xl w-full max-h-[90vh] overflow-y-auto p-6 shadow-2xl space-y-5">
+            <h3 className="text-lg font-bold text-white">
+              {editingDoctor ? 'Edit Doctor & Multi-Chamber Schedules' : 'Add New Doctor (Multi-Specialty & Multi-Chamber)'}
+            </h3>
+
+            <form onSubmit={handleSaveDoctor} className="space-y-5 text-xs">
+              
+              <div>
+                <label className="block text-slate-300 font-bold mb-1">Doctor Name</label>
+                <input
+                  type="text"
+                  required
+                  placeholder="e.g. Prof. Dr. A. K. M. Fazlul Haque"
+                  value={doctorForm.name}
+                  onChange={e => setDoctorForm({...doctorForm, name: e.target.value})}
+                  className="w-full bg-slate-950 border border-slate-800 rounded-xl px-3.5 py-2.5 text-white font-semibold"
+                />
+              </div>
+
+              <div className="grid grid-cols-2 gap-3">
+                <div>
+                  <label className="block text-slate-300 font-bold mb-1">Qualifications</label>
+                  <input
+                    type="text"
+                    required
+                    placeholder="MBBS, FCPS (Medicine), MD (Cardiology)"
+                    value={doctorForm.qualification}
+                    onChange={e => setDoctorForm({...doctorForm, qualification: e.target.value})}
+                    className="w-full bg-slate-950 border border-slate-800 rounded-xl px-3 py-2 text-white"
+                  />
+                </div>
+                <div>
+                  <label className="block text-slate-300 font-bold mb-1">Experience</label>
+                  <input
+                    type="text"
+                    required
+                    placeholder="15+ Yrs Exp."
+                    value={doctorForm.experience}
+                    onChange={e => setDoctorForm({...doctorForm, experience: e.target.value})}
+                    className="w-full bg-slate-950 border border-slate-800 rounded-xl px-3 py-2 text-white"
+                  />
+                </div>
+              </div>
+
+              {/* Multi Specialties Checkbox Selection */}
+              <div>
+                <label className="block text-slate-300 font-bold mb-2">
+                  Doctor Specialties (Select Multiple):
+                </label>
+                <div className="grid grid-cols-2 sm:grid-cols-3 gap-2 bg-slate-950 p-3 rounded-xl border border-slate-800 max-h-36 overflow-y-auto">
+                  {specialties.map(s => {
+                    const isChecked = doctorForm.selectedSpecialties.includes(s.id);
+                    return (
+                      <label key={s.id} className="flex items-center gap-2 text-slate-300 hover:text-white cursor-pointer select-none">
+                        <input
+                          type="checkbox"
+                          checked={isChecked}
+                          onChange={() => handleToggleSpecialty(s.id)}
+                          className="rounded text-teal-500 focus:ring-teal-500"
+                        />
+                        <span className="font-semibold">{s.name}</span>
+                      </label>
+                    );
+                  })}
+                </div>
+              </div>
+
+              {/* Chamber Affiliations & Schedules List */}
+              <div className="space-y-3">
+                <div className="flex items-center justify-between">
+                  <label className="block text-slate-300 font-bold">
+                    Chamber Affiliations & Specific Visiting Schedules:
+                  </label>
+                  <button
+                    type="button"
+                    onClick={handleAddAffiliation}
+                    className="text-xs text-teal-400 font-bold hover:underline flex items-center gap-1"
+                  >
+                    <Plus className="w-3.5 h-3.5" /> Add Chamber Location
+                  </button>
+                </div>
+
+                {doctorForm.affiliations.map((aff, affIdx) => (
+                  <div key={affIdx} className="bg-slate-950 p-4 rounded-xl border border-slate-800 space-y-3">
+                    <div className="flex items-center justify-between border-b border-slate-800 pb-2">
+                      <span className="font-bold text-teal-400">Chamber Affiliation #{affIdx + 1}</span>
+                      {doctorForm.affiliations.length > 1 && (
+                        <button
+                          type="button"
+                          onClick={() => handleRemoveAffiliation(affIdx)}
+                          className="text-rose-400 text-xs font-semibold hover:underline"
+                        >
+                          Remove Chamber
+                        </button>
+                      )}
+                    </div>
+
+                    <div className="grid grid-cols-1 sm:grid-cols-3 gap-3">
+                      <div>
+                        <label className="block text-slate-400 mb-1">Select Branch / Chamber</label>
+                        <select
+                          value={aff.branch}
+                          onChange={e => {
+                            const val = e.target.value;
+                            setDoctorForm(prev => {
+                              const updated = [...prev.affiliations];
+                              updated[affIdx].branch = val;
+                              return { ...prev, affiliations: updated };
+                            });
+                          }}
+                          className="w-full bg-slate-900 border border-slate-800 rounded-lg px-2.5 py-1.5 text-white"
+                        >
+                          {chambers.map(c => (
+                            <option key={c.id} value={c.id}>
+                              {c.hospital_name ? `${c.hospital_name} - ${c.name}` : c.name} ({c.city})
+                            </option>
+                          ))}
+                        </select>
+                      </div>
+
+                      <div>
+                        <label className="block text-slate-400 mb-1">Consultation Tag</label>
+                        <select
+                          value={aff.consultation_type}
+                          onChange={e => {
+                            const val = e.target.value;
+                            setDoctorForm(prev => {
+                              const updated = [...prev.affiliations];
+                              updated[affIdx].consultation_type = val;
+                              return { ...prev, affiliations: updated };
+                            });
+                          }}
+                          className="w-full bg-slate-900 border border-slate-800 rounded-lg px-2.5 py-1.5 text-white"
+                        >
+                          <option value="OPD">OPD (Chamber Doctor)</option>
+                          <option value="In-patient">In-patient (Hospital Doctor)</option>
+                        </select>
+                      </div>
+
+                      <div>
+                        <label className="block text-slate-400 mb-1">Consultation Fee (BDT)</label>
+                        <input
+                          type="number"
+                          required
+                          value={aff.fee}
+                          onChange={e => {
+                            const val = e.target.value;
+                            setDoctorForm(prev => {
+                              const updated = [...prev.affiliations];
+                              updated[affIdx].fee = val;
+                              return { ...prev, affiliations: updated };
+                            });
+                          }}
+                          className="w-full bg-slate-900 border border-slate-800 rounded-lg px-2.5 py-1.5 text-white font-mono"
+                        />
+                      </div>
+                    </div>
+
+                    {/* Schedules inside Affiliation */}
+                    <div>
+                      <div className="flex items-center justify-between mb-1.5">
+                        <span className="text-[11px] font-bold text-slate-400">Visiting Days & Hours Schedule:</span>
+                        <button
+                          type="button"
+                          onClick={() => handleAddScheduleRow(affIdx)}
+                          className="text-[11px] text-teal-400 font-semibold hover:underline"
+                        >
+                          + Add Schedule Day
+                        </button>
+                      </div>
+
+                      <div className="space-y-1.5">
+                        {aff.schedules.map((sch, schIdx) => (
+                          <div key={schIdx} className="flex items-center gap-2">
+                            <select
+                              value={sch.day_of_week}
+                              onChange={e => {
+                                const val = e.target.value;
+                                setDoctorForm(prev => {
+                                  const updated = [...prev.affiliations];
+                                  updated[affIdx].schedules[schIdx].day_of_week = val;
+                                  return { ...prev, affiliations: updated };
+                                });
+                              }}
+                              className="bg-slate-900 border border-slate-800 rounded px-2 py-1 text-slate-200 text-xs"
+                            >
+                              {['Sat', 'Sun', 'Mon', 'Tue', 'Wed', 'Thu', 'Fri', 'Everyday'].map(d => (
+                                <option key={d} value={d}>{d}</option>
+                              ))}
+                            </select>
+
+                            <input
+                              type="text"
+                              placeholder="17:00"
+                              value={sch.start_time}
+                              onChange={e => {
+                                const val = e.target.value;
+                                setDoctorForm(prev => {
+                                  const updated = [...prev.affiliations];
+                                  updated[affIdx].schedules[schIdx].start_time = val;
+                                  return { ...prev, affiliations: updated };
+                                });
+                              }}
+                              className="w-20 bg-slate-900 border border-slate-800 rounded px-2 py-1 text-white font-mono text-xs"
+                            />
+
+                            <span className="text-slate-500 text-xs">to</span>
+
+                            <input
+                              type="text"
+                              placeholder="21:00"
+                              value={sch.end_time}
+                              onChange={e => {
+                                const val = e.target.value;
+                                setDoctorForm(prev => {
+                                  const updated = [...prev.affiliations];
+                                  updated[affIdx].schedules[schIdx].end_time = val;
+                                  return { ...prev, affiliations: updated };
+                                });
+                              }}
+                              className="w-20 bg-slate-900 border border-slate-800 rounded px-2 py-1 text-white font-mono text-xs"
+                            />
+
+                            {aff.schedules.length > 1 && (
+                              <button
+                                type="button"
+                                onClick={() => handleRemoveScheduleRow(affIdx, schIdx)}
+                                className="text-rose-400 hover:text-rose-300 text-xs px-1"
+                              >
+                                &times;
+                              </button>
+                            )}
+                          </div>
+                        ))}
+                      </div>
+                    </div>
+                  </div>
+                ))}
+              </div>
+
+              <div className="flex justify-end gap-3 pt-4 border-t border-slate-800">
+                <button
+                  type="button"
+                  onClick={() => setShowDoctorModal(false)}
+                  className="px-4 py-2 bg-slate-800 text-slate-300 rounded-xl hover:bg-slate-700"
+                >
+                  Cancel
+                </button>
+                <button
+                  type="submit"
+                  className="px-5 py-2 bg-teal-600 hover:bg-teal-500 text-white font-bold rounded-xl"
+                >
+                  Save Doctor Profile
+                </button>
+              </div>
+            </form>
+          </div>
+        </div>
+      )}
+
+      {/* --- BASE PATHOLOGY TEST MODAL --- */}
       {showTestModal && (
         <div className="fixed inset-0 z-50 bg-slate-950/80 backdrop-blur-sm flex items-center justify-center p-4">
-          <div className="bg-slate-900 border border-slate-800 rounded-2xl max-w-lg w-full max-h-[90vh] overflow-y-auto p-6 shadow-2xl">
-            <h3 className="text-lg font-bold text-white mb-4">
-              {editingTest ? 'Edit Pathology Test' : 'Add New Pathology Test'}
+          <div className="bg-slate-900 border border-slate-800 rounded-2xl max-w-lg w-full p-6 shadow-2xl space-y-4">
+            <h3 className="text-lg font-bold text-white">
+              {editingTest ? 'Edit Pathology Base Test' : 'Add New Pathology Base Test'}
             </h3>
+            
             <form onSubmit={handleSaveTest} className="space-y-4 text-xs">
               <div>
-                <label className="block text-slate-400 mb-1">Test Name</label>
+                <label className="block text-slate-300 font-bold mb-1">Test Name</label>
                 <input
                   type="text"
                   required
                   placeholder="e.g. Complete Blood Count (CBC)"
                   value={testForm.name}
                   onChange={e => setTestForm({...testForm, name: e.target.value})}
-                  className="w-full bg-slate-950 border border-slate-800 rounded-xl px-3 py-2 text-white focus:outline-none focus:border-cyan-500"
+                  className="w-full bg-slate-950 border border-slate-800 rounded-xl px-3 py-2 text-white"
                 />
-              </div>
-
-              <div className="grid grid-cols-2 gap-3">
-                <div>
-                  <label className="block text-slate-400 mb-1">Category</label>
-                  <input
-                    type="text"
-                    required
-                    placeholder="Routine Blood Profiles"
-                    value={testForm.category}
-                    onChange={e => setTestForm({...testForm, category: e.target.value})}
-                    className="w-full bg-slate-950 border border-slate-800 rounded-xl px-3 py-2 text-white focus:outline-none focus:border-cyan-500"
-                  />
-                </div>
-                <div>
-                  <label className="block text-slate-400 mb-1">Report Delivery Time</label>
-                  <input
-                    type="text"
-                    required
-                    placeholder="Same Day (6 Hours)"
-                    value={testForm.report_time}
-                    onChange={e => setTestForm({...testForm, report_time: e.target.value})}
-                    className="w-full bg-slate-950 border border-slate-800 rounded-xl px-3 py-2 text-white focus:outline-none focus:border-cyan-500"
-                  />
-                </div>
-              </div>
-
-              <div className="grid grid-cols-3 gap-3">
-                <div>
-                  <label className="block text-slate-400 mb-1">Discount Price (BDT)</label>
-                  <input
-                    type="number"
-                    required
-                    placeholder="450"
-                    value={testForm.price}
-                    onChange={e => setTestForm({...testForm, price: e.target.value})}
-                    className="w-full bg-slate-950 border border-slate-800 rounded-xl px-3 py-2 text-white focus:outline-none focus:border-cyan-500 font-mono"
-                  />
-                </div>
-                <div>
-                  <label className="block text-slate-400 mb-1">Original Price</label>
-                  <input
-                    type="number"
-                    placeholder="600"
-                    value={testForm.original_price}
-                    onChange={e => setTestForm({...testForm, original_price: e.target.value})}
-                    className="w-full bg-slate-950 border border-slate-800 rounded-xl px-3 py-2 text-white focus:outline-none focus:border-cyan-500 font-mono"
-                  />
-                </div>
-                <div>
-                  <label className="block text-slate-400 mb-1">Discount Badge</label>
-                  <input
-                    type="text"
-                    placeholder="25% OFF"
-                    value={testForm.discount}
-                    onChange={e => setTestForm({...testForm, discount: e.target.value})}
-                    className="w-full bg-slate-950 border border-slate-800 rounded-xl px-3 py-2 text-white focus:outline-none focus:border-cyan-500"
-                  />
-                </div>
               </div>
 
               <div>
-                <label className="block text-slate-400 mb-1">Description</label>
+                <label className="block text-slate-300 font-bold mb-1">Category</label>
+                <input
+                  type="text"
+                  required
+                  placeholder="Routine Blood Profiles"
+                  value={testForm.category}
+                  onChange={e => setTestForm({...testForm, category: e.target.value})}
+                  className="w-full bg-slate-950 border border-slate-800 rounded-xl px-3 py-2 text-white"
+                />
+              </div>
+
+              <div>
+                <label className="block text-slate-300 font-bold mb-1">Description</label>
                 <textarea
-                  rows="2"
-                  placeholder="Test measures RBC, WBC, Platelets..."
+                  rows="3"
                   value={testForm.description}
                   onChange={e => setTestForm({...testForm, description: e.target.value})}
-                  className="w-full bg-slate-950 border border-slate-800 rounded-xl px-3 py-2 text-white focus:outline-none focus:border-cyan-500"
+                  className="w-full bg-slate-950 border border-slate-800 rounded-xl px-3 py-2 text-white"
                 ></textarea>
               </div>
 
-              <div className="flex items-center gap-2 pt-1">
+              <div className="flex items-center gap-2">
                 <input
                   type="checkbox"
-                  id="t-fasting"
+                  id="f-req"
                   checked={testForm.fasting_required}
                   onChange={e => setTestForm({...testForm, fasting_required: e.target.checked})}
-                  className="w-4 h-4 rounded text-cyan-500 focus:ring-cyan-500"
+                  className="rounded text-teal-500"
                 />
-                <label htmlFor="t-fasting" className="text-slate-300">Overnight Fasting Required (8-12 hrs)</label>
+                <label htmlFor="f-req" className="text-slate-300 font-semibold">Fasting Required Before Test</label>
               </div>
 
               <div className="flex justify-end gap-3 pt-4 border-t border-slate-800">
                 <button
                   type="button"
                   onClick={() => setShowTestModal(false)}
-                  className="px-4 py-2 bg-slate-800 text-slate-300 rounded-xl hover:bg-slate-700 transition"
+                  className="px-4 py-2 bg-slate-800 text-slate-300 rounded-xl hover:bg-slate-700"
                 >
                   Cancel
                 </button>
                 <button
                   type="submit"
-                  className="px-5 py-2 bg-cyan-600 hover:bg-cyan-500 text-white font-semibold rounded-xl transition shadow-lg shadow-cyan-600/30"
+                  className="px-5 py-2 bg-teal-600 hover:bg-teal-500 text-white font-bold rounded-xl"
                 >
                   Save Test
                 </button>
@@ -1524,6 +1693,7 @@ export default function AdminDashboardPage({ currentUser, onNavigate, onAdminLog
           </div>
         </div>
       )}
+
     </div>
   );
 }

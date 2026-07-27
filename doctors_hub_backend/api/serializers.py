@@ -60,44 +60,102 @@ class PathologyTestSerializer(serializers.ModelSerializer):
 class BranchTestSerializer(serializers.ModelSerializer):
     test_details = PathologyTestSerializer(source='test', read_only=True)
     branch_name = serializers.CharField(source='branch.name', read_only=True)
+    hospital_name = serializers.CharField(source='branch.hospital_name', read_only=True, default='')
 
     class Meta:
         model = BranchTest
         fields = '__all__'
 
 class AffiliationScheduleSerializer(serializers.ModelSerializer):
+    id = serializers.IntegerField(required=False)
+
     class Meta:
         model = AffiliationSchedule
         fields = '__all__'
+        extra_kwargs = {
+            'affiliation': {'required': False}
+        }
 
 class DoctorAffiliationSerializer(serializers.ModelSerializer):
     branch_id = serializers.CharField(source='branch.id', read_only=True)
     branch_name = serializers.CharField(source='branch.name', read_only=True)
-    hospital_name = serializers.CharField(source='branch.hospital.name', read_only=True, default='')
+    hospital_name = serializers.CharField(source='branch.hospital_name', read_only=True, default='')
     city = serializers.CharField(source='branch.city', read_only=True)
-    schedules = AffiliationScheduleSerializer(many=True, read_only=True)
+    schedules = AffiliationScheduleSerializer(many=True, required=False)
     doctor_name = serializers.CharField(source='doctor.name', read_only=True)
-    qualification = serializers.CharField(source='doctor.qualification', read_only=True)
 
     class Meta:
         model = DoctorAffiliation
         fields = '__all__'
+        extra_kwargs = {
+            'doctor': {'required': False}
+        }
+
+    def create(self, validated_data):
+        schedules_data = validated_data.pop('schedules', [])
+        affiliation = DoctorAffiliation.objects.create(**validated_data)
+        for sch in schedules_data:
+            AffiliationSchedule.objects.create(affiliation=affiliation, **sch)
+        return affiliation
+
+    def update(self, instance, validated_data):
+        schedules_data = validated_data.pop('schedules', None)
+        for attr, value in validated_data.items():
+            setattr(instance, attr, value)
+        instance.save()
+        if schedules_data is not None:
+            instance.schedules.all().delete()
+            for sch in schedules_data:
+                AffiliationSchedule.objects.create(affiliation=instance, **sch)
+        return instance
 
 class DoctorSerializer(serializers.ModelSerializer):
     specialties = SpecialtySerializer(many=True, read_only=True)
     specialty_ids = serializers.PrimaryKeyRelatedField(
-        queryset=Specialty.objects.all(), many=True, write_only=True, source='specialties'
+        queryset=Specialty.objects.all(), many=True, write_only=True, source='specialties', required=False
     )
-    affiliations = DoctorAffiliationSerializer(many=True, read_only=True)
+    affiliations = DoctorAffiliationSerializer(many=True, required=False)
 
     class Meta:
         model = Doctor
         fields = '__all__'
 
+    def create(self, validated_data):
+        specialties_data = validated_data.pop('specialties', [])
+        affiliations_data = validated_data.pop('affiliations', [])
+        doctor = Doctor.objects.create(**validated_data)
+        if specialties_data:
+            doctor.specialties.set(specialties_data)
+        for aff_data in affiliations_data:
+            schedules_data = aff_data.pop('schedules', [])
+            affiliation = DoctorAffiliation.objects.create(doctor=doctor, **aff_data)
+            for sch in schedules_data:
+                AffiliationSchedule.objects.create(affiliation=affiliation, **sch)
+        return doctor
+
+    def update(self, instance, validated_data):
+        specialties_data = validated_data.pop('specialties', None)
+        affiliations_data = validated_data.pop('affiliations', None)
+        for attr, value in validated_data.items():
+            setattr(instance, attr, value)
+        instance.save()
+
+        if specialties_data is not None:
+            instance.specialties.set(specialties_data)
+
+        if affiliations_data is not None:
+            instance.affiliations.all().delete()
+            for aff_data in affiliations_data:
+                schedules_data = aff_data.pop('schedules', [])
+                affiliation = DoctorAffiliation.objects.create(doctor=instance, **aff_data)
+                for sch in schedules_data:
+                    AffiliationSchedule.objects.create(affiliation=affiliation, **sch)
+
+        return instance
+
 class BranchSerializer(serializers.ModelSerializer):
     offered_tests = BranchTestSerializer(many=True, read_only=True)
     affiliated_doctors = DoctorAffiliationSerializer(many=True, read_only=True)
-    hospital_name = serializers.CharField(source='hospital.name', read_only=True, default='')
 
     class Meta:
         model = Branch

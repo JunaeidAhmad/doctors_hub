@@ -44,7 +44,8 @@ class Hospital(models.Model):
 class Branch(models.Model):
     id = models.CharField(max_length=100, primary_key=True)
     hospital = models.ForeignKey(Hospital, on_delete=models.CASCADE, related_name='branches', null=True, blank=True)
-    name = models.CharField(max_length=200)
+    hospital_name = models.CharField(max_length=200, blank=True)
+    name = models.CharField(max_length=200) # e.g. "Dhanmondi Branch"
     facility_types = models.JSONField(default=list) # e.g. ["Hospital", "Diagnostic Center"]
     location = models.CharField(max_length=255)
     city = models.CharField(max_length=100)
@@ -60,7 +61,8 @@ class Branch(models.Model):
     description = models.TextField(blank=True)
 
     def __str__(self):
-        return f"{self.name} ({self.city})"
+        h_prefix = f"{self.hospital_name} - " if self.hospital_name else ""
+        return f"{h_prefix}{self.name} ({self.city})"
 
 class Specialty(models.Model):
     id = models.CharField(max_length=50, primary_key=True)

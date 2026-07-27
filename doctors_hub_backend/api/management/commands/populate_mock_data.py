@@ -47,7 +47,8 @@ class Command(BaseCommand):
         b1 = Branch.objects.create(
             id="ibn-sina-dhanmondi",
             hospital=h1,
-            name="Ibn Sina Hospital & Diagnostic - Dhanmondi Branch",
+            hospital_name="Ibn Sina Healthcare Group",
+            name="Dhanmondi Branch",
             facility_types=["Hospital", "Diagnostic Center"],
             location="House 48, Road 9/A, Dhanmondi, Dhaka",
             city="Dhaka",
@@ -66,7 +67,8 @@ class Command(BaseCommand):
         b2 = Branch.objects.create(
             id="ibn-sina-mirpur",
             hospital=h1,
-            name="Ibn Sina Diagnostic Center - Mirpur Branch",
+            hospital_name="Ibn Sina Healthcare Group",
+            name="Mirpur Branch",
             facility_types=["Diagnostic Center"],
             location="Plot 11, Avenue 1, Block A, Mirpur 10, Dhaka",
             city="Dhaka",
@@ -85,7 +87,8 @@ class Command(BaseCommand):
         b3 = Branch.objects.create(
             id="popular-panthapath",
             hospital=h2,
-            name="Popular Medical Center & Super Clinic - Panthapath",
+            hospital_name="Popular Diagnostic & Medical Center",
+            name="Panthapath Branch",
             facility_types=["Hospital", "Diagnostic Center"],
             location="House 16, Road 2, Dhanmondi / Panthapath, Dhaka",
             city="Dhaka",
@@ -104,7 +107,8 @@ class Command(BaseCommand):
         b4 = Branch.objects.create(
             id="chevron-chittagong",
             hospital=None,
-            name="Chevron Clinical Laboratory & OPD Hub",
+            hospital_name="Chevron Healthcare",
+            name="Panchlaish Branch",
             facility_types=["Diagnostic Center", "Chamber"],
             location="12/12 O.R. Nizam Road, Panchlaish, Chittagong",
             city="Chittagong",
