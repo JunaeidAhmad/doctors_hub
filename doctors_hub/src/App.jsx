@@ -6,6 +6,7 @@ import HomePage from './pages/HomePage';
 import OpdDoctorSearchPage from './pages/OpdDoctorSearchPage';
 import PathologySearchPage from './pages/PathologySearchPage';
 import DirectSearchPage from './pages/DirectSearchPage';
+import AdminDashboardPage from './pages/AdminDashboardPage';
 import MedicalPartnerDetailPage from './pages/MedicalPartnerDetailPage';
 import MedicalPartnersPage from './pages/MedicalPartnersPage';
 import BookingModal from './components/BookingModal';

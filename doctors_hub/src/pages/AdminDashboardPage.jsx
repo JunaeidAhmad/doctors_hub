@@ -32,7 +32,8 @@ export default function AdminDashboardPage({ currentUser, onNavigate, onAdminLog
   const [chamberForm, setChamberForm] = useState({
     id: '', name: '', location: '', city: 'Dhaka', verified: true, 
     rating: 4.8, reviews_count: 50, open_timing: '08:00 AM - 08:00 PM', 
-    contact_phone: '', tagline: '', badge: 'Verified Partner', image: ''
+    contact_phone: '', tagline: '', badge: 'Verified Partner', image: '',
+    servicesStr: '', description: ''
   });
 
   const [showTestModal, setShowTestModal] = useState(false);
@@ -167,7 +168,7 @@ export default function AdminDashboardPage({ currentUser, onNavigate, onAdminLog
     }
   };
 
-  // --- CHAMBER / HOSPITAL CRUD ---
+  // --- CHAMBER / MEDICAL PARTNER CRUD ---
   const handleOpenChamberModal = (ch = null) => {
     if (ch) {
       setEditingChamber(ch);
@@ -178,12 +179,14 @@ export default function AdminDashboardPage({ currentUser, onNavigate, onAdminLog
         city: ch.city,
         verified: ch.verified,
         rating: ch.rating,
-        reviews_count: ch.reviews_count,
-        open_timing: ch.open_timing,
-        contact_phone: ch.contact_phone,
+        reviews_count: ch.reviews_count || ch.reviewsCount || 50,
+        open_timing: ch.open_timing || ch.openTiming || '',
+        contact_phone: ch.contact_phone || ch.contactPhone || '',
         tagline: ch.tagline || '',
         badge: ch.badge || '',
-        image: ch.image || ''
+        image: ch.image || '',
+        servicesStr: Array.isArray(ch.services) ? ch.services.join(', ') : (ch.services || ''),
+        description: ch.description || ''
       });
     } else {
       setEditingChamber(null);
@@ -194,12 +197,14 @@ export default function AdminDashboardPage({ currentUser, onNavigate, onAdminLog
         city: 'Dhaka',
         verified: true,
         rating: 4.8,
-        reviews_count: 10,
+        reviews_count: 50,
         open_timing: '08:00 AM - 09:00 PM',
         contact_phone: '+880 1700-000000',
         tagline: 'Leading Healthcare & Diagnostic Hub',
         badge: 'Verified Partner',
-        image: 'https://images.unsplash.com/photo-1519494026892-80bbd2d6fd0d?auto=format&fit=crop&w=600&q=80'
+        image: 'https://images.unsplash.com/photo-1519494026892-80bbd2d6fd0d?auto=format&fit=crop&w=600&q=80',
+        servicesStr: '24/7 Specialist OPD Consultation, Digital Radiology & X-Ray, 4D Ultrasonography & Color Doppler, Automated Pathology & Biochemistry',
+        description: 'Premier multispecialty OPD and clinical diagnostic center offering high-quality specialist doctor chambers, radiology, and lab tests.'
       });
     }
     setShowChamberModal(true);
@@ -208,23 +213,35 @@ export default function AdminDashboardPage({ currentUser, onNavigate, onAdminLog
   const handleSaveChamber = async (e) => {
     e.preventDefault();
     try {
+      const services = chamberForm.servicesStr.split(',').map(s => s.trim()).filter(Boolean);
       const payload = {
-        ...chamberForm,
+        id: chamberForm.id,
+        name: chamberForm.name,
+        location: chamberForm.location,
+        city: chamberForm.city,
+        verified: chamberForm.verified,
         rating: parseFloat(chamberForm.rating) || 0,
-        reviews_count: parseInt(chamberForm.reviews_count, 10) || 0
+        reviews_count: parseInt(chamberForm.reviews_count, 10) || 0,
+        open_timing: chamberForm.open_timing,
+        contact_phone: chamberForm.contact_phone,
+        tagline: chamberForm.tagline,
+        badge: chamberForm.badge,
+        image: chamberForm.image,
+        services: services,
+        description: chamberForm.description
       };
 
       if (editingChamber) {
         await api.updateChamber(editingChamber.id, payload);
-        showNotification(`Hospital "${payload.name}" updated successfully!`);
+        showNotification(`Medical Partner "${payload.name}" updated successfully!`);
       } else {
         await api.createChamber(payload);
-        showNotification(`Hospital "${payload.name}" added successfully!`);
+        showNotification(`Medical Partner "${payload.name}" added successfully!`);
       }
       setShowChamberModal(false);
       loadAllData();
     } catch (err) {
-      alert(`Error saving hospital/chamber: ${err.message}`);
+      alert(`Error saving medical partner: ${err.message}`);
     }
   };
 
@@ -504,7 +521,7 @@ export default function AdminDashboardPage({ currentUser, onNavigate, onAdminLog
           {[
             { id: 'overview', label: 'Overview', icon: Sparkles },
             { id: 'doctors', label: `Doctors (${doctors.length})`, icon: Users },
-            { id: 'hospitals', label: `Hospitals (${chambers.length})`, icon: Building2 },
+            { id: 'hospitals', label: `Medical Partners (${chambers.length})`, icon: Building2 },
             { id: 'tests', label: `Lab Tests (${tests.length})`, icon: TestTube },
             { id: 'doc-bookings', label: `Doctor Bookings (${doctorBookings.length})`, icon: Calendar },
             { id: 'lab-bookings', label: `Lab Bookings (${labBookings.length})`, icon: TestTube },
@@ -839,9 +856,16 @@ export default function AdminDashboardPage({ currentUser, onNavigate, onAdminLog
                             </td>
                             <td className="py-4 px-4 text-right space-x-2 whitespace-nowrap">
                               <button
+                                onClick={() => window.open(`/partner/${ch.id}`, '_blank')}
+                                className="px-2.5 py-1.5 bg-emerald-500/20 hover:bg-emerald-500/30 text-emerald-400 font-bold text-xs rounded-lg transition border border-emerald-500/30"
+                                title="View Public Medical Partner Page"
+                              >
+                                View Partner Page ↗
+                              </button>
+                              <button
                                 onClick={() => handleOpenChamberModal(ch)}
                                 className="p-2 bg-slate-800 hover:bg-slate-700 text-slate-300 rounded-lg transition"
-                                title="Edit Hospital"
+                                title="Edit Partner Details & Services"
                               >
                                 <Edit className="w-4 h-4" />
                               </button>
@@ -1325,6 +1349,28 @@ export default function AdminDashboardPage({ currentUser, onNavigate, onAdminLog
                 />
               </div>
 
+              <div>
+                <label className="block text-slate-400 mb-1">Medical Services & Facilities (Comma Separated)</label>
+                <input
+                  type="text"
+                  placeholder="e.g. 24/7 OPD Consultation, Digital X-Ray, 4D Ultrasonography, CT Scan"
+                  value={chamberForm.servicesStr}
+                  onChange={e => setChamberForm({...chamberForm, servicesStr: e.target.value})}
+                  className="w-full bg-slate-950 border border-slate-800 rounded-xl px-3 py-2 text-white focus:outline-none focus:border-emerald-500 font-mono"
+                />
+              </div>
+
+              <div>
+                <label className="block text-slate-400 mb-1">Partner Overview & Description</label>
+                <textarea
+                  rows="3"
+                  placeholder="Detailed background summary of the medical center facility..."
+                  value={chamberForm.description}
+                  onChange={e => setChamberForm({...chamberForm, description: e.target.value})}
+                  className="w-full bg-slate-950 border border-slate-800 rounded-xl px-3 py-2 text-white focus:outline-none focus:border-emerald-500"
+                ></textarea>
+              </div>
+
               <div className="flex items-center gap-2 pt-2">
                 <input
                   type="checkbox"
@@ -1333,7 +1379,7 @@ export default function AdminDashboardPage({ currentUser, onNavigate, onAdminLog
                   onChange={e => setChamberForm({...chamberForm, verified: e.target.checked})}
                   className="w-4 h-4 rounded text-emerald-500 focus:ring-emerald-500"
                 />
-                <label htmlFor="ch-ver" className="text-slate-300">Verified Health Partner</label>
+                <label htmlFor="ch-ver" className="text-slate-300 font-semibold">Verified Medical Partner</label>
               </div>
 
               <div className="flex justify-end gap-3 pt-4 border-t border-slate-800">
@@ -1348,7 +1394,7 @@ export default function AdminDashboardPage({ currentUser, onNavigate, onAdminLog
                   type="submit"
                   className="px-5 py-2 bg-emerald-600 hover:bg-emerald-500 text-white font-semibold rounded-xl transition shadow-lg shadow-emerald-600/30"
                 >
-                  Save Hospital
+                  Save Medical Partner
                 </button>
               </div>
             </form>
