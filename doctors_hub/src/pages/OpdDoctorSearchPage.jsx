@@ -1,6 +1,6 @@
 import React, { useState, useMemo, useEffect } from 'react';
 import { Stethoscope, MapPin, Filter, ArrowLeft, Building2, ShieldCheck, Calendar, Clock, ArrowRight, X, Heart, Award } from 'lucide-react';
-import { SPECIALTIES as MOCK_SPECIALTIES, LOCATIONS, OPD_CHAMBERS as MOCK_CHAMBERS } from '../data/mockData';
+import { SPECIALTIES as MOCK_SPECIALTIES, LOCATIONS, OPD_CHAMBERS as MOCK_CHAMBERS, CITY_THANAS } from '../data/mockData';
 import { api } from '../services/api';
 
 export default function OpdDoctorSearchPage({
@@ -13,6 +13,7 @@ export default function OpdDoctorSearchPage({
 }) {
   const [specialty, setSpecialty] = useState(initialSpecialty);
   const [location, setLocation] = useState(initialLocation);
+  const [area, setArea] = useState('All Areas');
   const [keyword, setKeyword] = useState(initialKeyword);
   const [maxFee, setMaxFee] = useState(2500);
   const [selectedDay, setSelectedDay] = useState('All');
@@ -148,8 +149,15 @@ export default function OpdDoctorSearchPage({
         return true;
       });
 
-      if (location !== 'All Bangladesh' && chamber.city !== location) {
+      if (location !== 'All Bangladesh' && chamber.city && chamber.city.toLowerCase() !== location.toLowerCase()) {
         return null;
+      }
+
+      if (location !== 'All Bangladesh' && area && area !== 'All Areas') {
+        const chamberLocText = `${chamber.location || ''} ${chamber.name || ''}`.toLowerCase();
+        if (!chamberLocText.includes(area.toLowerCase())) {
+          return null;
+        }
       }
 
       if ((specialty || keyword) && matchingDoctors.length === 0) {
@@ -161,7 +169,7 @@ export default function OpdDoctorSearchPage({
         doctors: matchingDoctors
       };
     }).filter(Boolean);
-  }, [opdChambersList, specialty, location, keyword, maxFee, selectedDay]);
+  }, [opdChambersList, specialty, location, area, keyword, maxFee, selectedDay]);
 
   const totalMatchingDoctors = useMemo(() => {
     return filteredChambers.reduce((acc, c) => acc + c.doctors.length, 0);
@@ -221,7 +229,10 @@ export default function OpdDoctorSearchPage({
               <div className="relative flex-1 min-w-[130px]">
                 <select
                   value={location}
-                  onChange={(e) => setLocation(e.target.value)}
+                  onChange={(e) => {
+                    setLocation(e.target.value);
+                    setArea('All Areas');
+                  }}
                   className="w-full bg-slate-900 text-white text-xs font-semibold border border-slate-700 rounded-xl px-3 py-2.5 focus:outline-none focus:border-emerald-500"
                 >
                   {LOCATIONS.map((loc) => (
@@ -229,6 +240,22 @@ export default function OpdDoctorSearchPage({
                   ))}
                 </select>
               </div>
+
+              {/* Area / Thana Filter (Only visible when city != 'All Bangladesh') */}
+              {location !== 'All Bangladesh' && (
+                <div className="relative flex-1 min-w-[130px]">
+                  <select
+                    value={area}
+                    onChange={(e) => setArea(e.target.value)}
+                    className="w-full bg-slate-900 text-emerald-400 text-xs font-bold border border-emerald-500/80 rounded-xl px-3 py-2.5 focus:outline-none focus:border-emerald-400"
+                  >
+                    <option value="All Areas">All Areas in {location}</option>
+                    {(CITY_THANAS[location] || []).map((th) => (
+                      <option key={th} value={th}>{th}</option>
+                    ))}
+                  </select>
+                </div>
+              )}
 
               <div className="w-full sm:w-auto">
                 <input
@@ -258,11 +285,12 @@ export default function OpdDoctorSearchPage({
                   <Filter className="w-4 h-4 text-emerald-600" />
                   Refine Search
                 </h3>
-                {(specialty || location !== 'All Bangladesh' || keyword || selectedDay !== 'All') && (
+                {(specialty || location !== 'All Bangladesh' || area !== 'All Areas' || keyword || selectedDay !== 'All') && (
                   <button
                     onClick={() => {
                       setSpecialty('');
                       setLocation('All Bangladesh');
+                      setArea('All Areas');
                       setKeyword('');
                       setSelectedDay('All');
                       setMaxFee(2500);
@@ -273,6 +301,25 @@ export default function OpdDoctorSearchPage({
                   </button>
                 )}
               </div>
+
+              {/* Area filter (Sidebar view) */}
+              {location !== 'All Bangladesh' && (
+                <div>
+                  <label className="block text-xs font-bold text-emerald-700 mb-1">
+                    Area / Thana ({location})
+                  </label>
+                  <select
+                    value={area}
+                    onChange={(e) => setArea(e.target.value)}
+                    className="w-full bg-emerald-50 border border-emerald-300 rounded-xl px-3 py-2 text-xs font-bold text-emerald-900 focus:outline-none focus:border-emerald-500"
+                  >
+                    <option value="All Areas">All Areas in {location}</option>
+                    {(CITY_THANAS[location] || []).map((th) => (
+                      <option key={th} value={th}>{th}</option>
+                    ))}
+                  </select>
+                </div>
+              )}
 
               {/* Day filter */}
               <div>

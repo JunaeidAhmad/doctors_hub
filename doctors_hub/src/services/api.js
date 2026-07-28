@@ -113,11 +113,99 @@ export const api = {
     return updatedUser;
   },
 
-  // Specialties
+  // Doctor Specialties
   async getSpecialties() {
     const res = await fetch(`${BASE_URL}/specialties/`, {
       headers: getHeaders(),
     });
+    return handleResponse(res);
+  },
+  async createSpecialty(data) {
+    const res = await fetch(`${BASE_URL}/specialties/`, {
+      method: 'POST',
+      headers: getHeaders(),
+      body: JSON.stringify(data),
+    });
+    return handleResponse(res);
+  },
+  async updateSpecialty(id, data) {
+    const res = await fetch(`${BASE_URL}/specialties/${id}/`, {
+      method: 'PUT',
+      headers: getHeaders(),
+      body: JSON.stringify(data),
+    });
+    return handleResponse(res);
+  },
+  async deleteSpecialty(id) {
+    const res = await fetch(`${BASE_URL}/specialties/${id}/`, {
+      method: 'DELETE',
+      headers: getHeaders(),
+    });
+    if (res.status === 24 || res.status === 200 || res.status === 204) return true;
+    return handleResponse(res);
+  },
+
+  // Hospital Specialties / Categories
+  async getHospitalSpecialties() {
+    const res = await fetch(`${BASE_URL}/hospital-specialties/`, {
+      headers: getHeaders(),
+    });
+    return handleResponse(res);
+  },
+  async createHospitalSpecialty(data) {
+    const res = await fetch(`${BASE_URL}/hospital-specialties/`, {
+      method: 'POST',
+      headers: getHeaders(),
+      body: JSON.stringify(data),
+    });
+    return handleResponse(res);
+  },
+  async updateHospitalSpecialty(id, data) {
+    const res = await fetch(`${BASE_URL}/hospital-specialties/${id}/`, {
+      method: 'PUT',
+      headers: getHeaders(),
+      body: JSON.stringify(data),
+    });
+    return handleResponse(res);
+  },
+  async deleteHospitalSpecialty(id) {
+    const res = await fetch(`${BASE_URL}/hospital-specialties/${id}/`, {
+      method: 'DELETE',
+      headers: getHeaders(),
+    });
+    if (res.status === 204 || res.status === 200) return true;
+    return handleResponse(res);
+  },
+
+  // Test Categories
+  async getTestCategories() {
+    const res = await fetch(`${BASE_URL}/test-categories/`, {
+      headers: getHeaders(),
+    });
+    return handleResponse(res);
+  },
+  async createTestCategory(data) {
+    const res = await fetch(`${BASE_URL}/test-categories/`, {
+      method: 'POST',
+      headers: getHeaders(),
+      body: JSON.stringify(data),
+    });
+    return handleResponse(res);
+  },
+  async updateTestCategory(id, data) {
+    const res = await fetch(`${BASE_URL}/test-categories/${id}/`, {
+      method: 'PUT',
+      headers: getHeaders(),
+      body: JSON.stringify(data),
+    });
+    return handleResponse(res);
+  },
+  async deleteTestCategory(id) {
+    const res = await fetch(`${BASE_URL}/test-categories/${id}/`, {
+      method: 'DELETE',
+      headers: getHeaders(),
+    });
+    if (res.status === 204 || res.status === 200) return true;
     return handleResponse(res);
   },
 

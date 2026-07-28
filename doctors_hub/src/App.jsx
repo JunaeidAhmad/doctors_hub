@@ -97,18 +97,25 @@ export default function App() {
 
   // Execute Search Navigation Handler
   const handleExecuteSearch = (mode, param) => {
-    if (mode === 'doctor' || selectedSpecialty || param) {
+    if (mode === 'doctor') {
       if (param) setSelectedSpecialty(param);
       navigate('/opd-search');
       setActiveTab('opd-doctors');
-    } else if (mode === 'pathology' || selectedTest) {
+    } else if (mode === 'pathology') {
+      if (param) setSelectedTest(param); // Or we could use setSearchKeyword if tests use it
       navigate('/pathology-search');
       setActiveTab('pathology');
-    } else if (searchKeyword.trim() !== '') {
-      navigate('/direct-search');
+    } else if (mode === 'hospital') {
+      if (param) setSearchKeyword(param);
+      navigate('/partners');
+      setActiveTab('partners');
     } else {
-      navigate('/opd-search');
-      setActiveTab('opd-doctors');
+      if (searchKeyword.trim() !== '') {
+        navigate('/direct-search');
+      } else {
+        navigate('/opd-search');
+        setActiveTab('opd-doctors');
+      }
     }
     window.scrollTo({ top: 0, behavior: 'smooth' });
   };
@@ -208,6 +215,7 @@ export default function App() {
             searchKeyword={searchKeyword}
             setSearchKeyword={setSearchKeyword}
             selectedLocation={selectedLocation}
+            setSelectedLocation={setSelectedLocation}
             activeEngineTab={activeEngineTab}
             setActiveEngineTab={setActiveEngineTab}
             onExecuteSearch={handleExecuteSearch}
@@ -220,6 +228,7 @@ export default function App() {
 
         {currentPage === 'partners' && (
           <MedicalPartnersPage
+            initialKeyword={searchKeyword}
             onSelectPartner={handleSelectPartner}
             onNavigateHome={() => handleNavClick('home')}
           />

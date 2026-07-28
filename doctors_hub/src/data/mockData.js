@@ -1,3 +1,45 @@
+export const CITY_THANAS = {
+  "Dhaka": [
+    "Dhanmondi", "Mirpur", "Uttara", "Gulshan", "Banani", "Panthapath", 
+    "Motijheel", "Mohammadpur", "Badda", "Savar", "Farmgate", "Tejgaon", 
+    "Malibagh", "Shyamoli", "Rampura", "Jatrabari", "Lalbagh", "Khilgaon", 
+    "Keraniganj", "Gazipur", "Narayanganj"
+  ],
+  "Chittagong": [
+    "Panchlaish", "Agrabad", "GEC Circle", "Halishahar", "Nasirabad", 
+    "Chawkbazar", "Pahartali", "Khulshi", "Kotwali", "Patenga", 
+    "Sitakunda", "Hathazari"
+  ],
+  "Sylhet": [
+    "Zindabazar", "Nayasarak", "Amberkhana", "Chauhatta", "Subidbazar", 
+    "Tilagarh", "Shibganj", "Kadamtali", "Shahjalal Uposahar"
+  ],
+  "Rajshahi": [
+    "Laxmipur", "Kazla", "Motihar", "Boalia", "Rajputra", 
+    "Shaheb Bazar", "New Market", "Upashahar"
+  ],
+  "Khulna": [
+    "KDA Avenue", "Sonadanga", "Boyra", "Khalishpur", "Daulatpur", 
+    "Rupsha", "Gollamari", "Khan Jahan Ali"
+  ],
+  "Barisal": [
+    "Sadar Road", "Rupatali", "Natun Bazar", "C&B Road", "Alekanda", 
+    "Jordan Road", "Kashipur"
+  ],
+  "Rangpur": [
+    "Park More", "Medical East Gate", "Jahaj Company More", "Dhap", 
+    "Carmel Road", "Pairaband"
+  ],
+  "Mymensingh": [
+    "Charpara", "Ganginarpar", "Town Hall", "Maskanda", "Akua", 
+    "Kewatkhali", "Patuakhali Road"
+  ],
+  "Comilla": [
+    "Kandirpar", "Jhawtala", "Badurtala", "Tomsom Bridge", "Ramghat", 
+    "Bagichagaon", "Dharmpur"
+  ]
+};
+
 export const LOCATIONS = [
   "All Bangladesh",
   "Dhaka",
@@ -26,6 +68,23 @@ export const SPECIALTIES = [
   { id: "nephrology", name: "Nephrologist", icon: "Droplet", description: "Kidney Care & Dialysis", count: 20 }
 ];
 
+export const HOSPITAL_SPECIALTIES = [
+  { id: "all", name: "All Partners", icon: "Building2", description: "Show All Hospitals & Labs", count: 24 },
+  { id: "cardiac", name: "Cardiac Hospitals", icon: "Heart", description: "Specialized Heart Institutes", count: 6 },
+  { id: "eye", name: "Eye Hospitals", icon: "Sparkles", description: "Ophthalmology & Vision Care", count: 5 },
+  { id: "multispecialty", name: "Multi-Specialty", icon: "Building2", description: "General & In-Patient Hubs", count: 8 },
+  { id: "diagnostic", name: "Diagnostic Centers", icon: "FlaskConical", description: "Pathology & Imaging Labs", count: 12 },
+  { id: "orthopedic", name: "Orthopedic Centers", icon: "Activity", description: "Bone, Joint & Spine Care", count: 4 }
+];
+
+export const PATHOLOGY_CATEGORIES = [
+  { id: "all", name: "All Packages", icon: "FlaskConical", description: "All Tests & Health Profiles", count: 18 },
+  { id: "blood", name: "Blood Tests", icon: "Droplet", description: "CBC, Hemoglobin & Serology", count: 8 },
+  { id: "radiology", name: "Radiology & Scans", icon: "FileText", description: "CT Scan, MRI & X-Ray", count: 5 },
+  { id: "usg", name: "Ultrasonography", icon: "Activity", description: "4D Ultrasound & Doppler", count: 4 },
+  { id: "cardiac_profile", name: "Cardiac Profiles", icon: "Heart", description: "Lipid, ECG & Troponin-I", count: 3 }
+];
+
 export const HOSPITALS = [
   {
     id: "ibn-sina",
@@ -46,28 +105,48 @@ export const PATHOLOGY_TESTS = [
     id: "cbc",
     name: "Blood Test (CBC)",
     category: "Routine Blood Profiles",
+    categoryGroup: "blood",
     fastingRequired: false,
+    price: 450,
+    originalPrice: 600,
+    discount: "25% OFF",
+    reportTime: "Same Day (6 Hours)",
     description: "Complete Blood Count measuring RBC, WBC, ESR, Platelets, and Hemoglobin."
   },
   {
     id: "ct-scan",
     name: "CT Scan (Brain / Chest)",
     category: "Advanced Radiology",
+    categoryGroup: "radiology",
     fastingRequired: true,
+    price: 4500,
+    originalPrice: 6000,
+    discount: "25% OFF",
+    reportTime: "24 Hours",
     description: "High-resolution computed tomography scan for detailed internal organ imaging."
   },
   {
     id: "usg",
     name: "USG (Ultrasound Abdomen)",
     category: "Sonography",
+    categoryGroup: "usg",
     fastingRequired: true,
+    price: 1500,
+    originalPrice: 2000,
+    discount: "25% OFF",
+    reportTime: "4 Hours",
     description: "Full abdominal 4D ultrasonography for liver, kidney, and pelvic examination."
   },
   {
     id: "lipid",
     name: "Lipid Profile (Cholesterol)",
     category: "Cardiac Risk",
+    categoryGroup: "cardiac_profile",
     fastingRequired: true,
+    price: 1200,
+    originalPrice: 1600,
+    discount: "25% OFF",
+    reportTime: "12 Hours",
     description: "Measures Total Cholesterol, HDL, LDL, Triglycerides, and Cardiac Risk Index."
   }
 ];
@@ -132,10 +211,75 @@ export const BRANCH_TESTS = [
 
 export const OPD_CHAMBERS = [
   {
+    id: "national-heart-institute",
+    hospital_id: "nhf",
+    hospital_name: "National Heart Foundation",
+    name: "National Heart Foundation & Research Institute",
+    specialtyCategory: "cardiac",
+    facility_types: ["Hospital", "Cardiac Center"],
+    location: "Mirpur-2, Dhaka",
+    city: "Dhaka",
+    verified: true,
+    rating: 4.95,
+    reviewsCount: 520,
+    openTiming: "24/7 Emergency & OPD",
+    contactPhone: "+880 2-9006970",
+    tagline: "Premier Specialized Cardiac & Cardiovascular Hospital in Bangladesh",
+    badge: "Cardiac Center",
+    image: "https://images.unsplash.com/photo-1519494026892-80bbd2d6fd0d?auto=format&fit=crop&w=600&q=80",
+    description: "Specialized cardiac care hospital equipped with catheterization labs and cardiac surgery suites.",
+    services: ["Coronary Angiogram", "Bypass Surgery", "Echocardiogram", "24/7 Cardiac Emergency"],
+    doctors: [
+      {
+        id: "doc-cardiac-1",
+        name: "Prof. Dr. M. A. Zaman",
+        specialty: "Cardiologist",
+        qualification: "MBBS, FCPS (Medicine), MD (Cardiology), FACC",
+        experience: "25+ Yrs Exp.",
+        visitDays: "Sat, Mon, Wed",
+        visitTime: "05:00 PM - 09:00 PM",
+        fee: 1500
+      }
+    ]
+  },
+  {
+    id: "islamia-eye-hospital",
+    hospital_id: "islamia-eye",
+    hospital_name: "Ispahani Islamia Eye Institute",
+    name: "Ispahani Islamia Eye Institute & Hospital",
+    specialtyCategory: "eye",
+    facility_types: ["Hospital", "Eye Specialty"],
+    location: "Farmgate, Sher-e-Bangla Nagar, Dhaka",
+    city: "Dhaka",
+    verified: true,
+    rating: 4.9,
+    reviewsCount: 480,
+    openTiming: "08:00 AM - 08:00 PM",
+    contactPhone: "+880 9610-008080",
+    tagline: "Largest Pioneer Ophthalmic Care & Eye Hospital in Bangladesh",
+    badge: "Eye Center",
+    image: "https://images.unsplash.com/photo-1579684385127-1ef15d508118?auto=format&fit=crop&w=600&q=80",
+    description: "Premier eye hospital providing cataract, cornea, retina, and pediatric ophthalmology care.",
+    services: ["Phaco Cataract Surgery", "Lasik Vision Correction", "Retina Surgery", "Glaucoma Care"],
+    doctors: [
+      {
+        id: "doc-eye-1",
+        name: "Prof. Dr. Nazrul Islam",
+        specialty: "Eye Specialist",
+        qualification: "MBBS, FCPS (Ophthalmology), DO",
+        experience: "20+ Yrs Exp.",
+        visitDays: "Sun, Tue, Thu",
+        visitTime: "04:00 PM - 08:00 PM",
+        fee: 1200
+      }
+    ]
+  },
+  {
     id: "ibn-sina-dhanmondi",
     hospital_id: "ibn-sina",
     hospital_name: "Ibn Sina Healthcare Group",
     name: "Ibn Sina Hospital & Diagnostic - Dhanmondi",
+    specialtyCategory: "multispecialty",
     facility_types: ["Hospital", "Diagnostic Center"],
     location: "House 48, Road 9/A, Dhanmondi, Dhaka",
     city: "Dhaka",
@@ -159,56 +303,22 @@ export const OPD_CHAMBERS = [
       {
         id: "doc-1",
         name: "Prof. Dr. A. K. M. Fazlul Haque",
-        specialties: [{ id: "cardiology", name: "Cardiologist" }],
+        specialty: "Cardiologist",
         qualification: "MBBS, FCPS (Medicine), MD (Cardiology), FACC (USA)",
         experience: "22+ Yrs Exp.",
-        affiliations: [
-          {
-            id: 1,
-            consultation_type: "OPD",
-            branch_id: "ibn-sina-dhanmondi",
-            branch_name: "Ibn Sina Hospital - Dhanmondi",
-            city: "Dhaka",
-            fee: 1200,
-            schedules: [
-              { id: 1, day_of_week: "Sat", start_time: "17:00", end_time: "21:00" },
-              { id: 2, day_of_week: "Mon", start_time: "17:00", end_time: "21:00" },
-              { id: 3, day_of_week: "Wed", start_time: "17:00", end_time: "21:00" }
-            ]
-          },
-          {
-            id: 2,
-            consultation_type: "In-patient",
-            branch_id: "ibn-sina-dhanmondi",
-            branch_name: "Ibn Sina Hospital - Dhanmondi",
-            city: "Dhaka",
-            fee: 2000,
-            schedules: [
-              { id: 4, day_of_week: "Everyday", start_time: "09:00", end_time: "13:00" }
-            ]
-          }
-        ]
+        visitDays: "Sat, Mon, Wed",
+        visitTime: "05:00 PM - 09:00 PM",
+        fee: 1200
       },
       {
         id: "doc-2",
         name: "Dr. Sharmin Sultana",
-        specialties: [{ id: "gynecology", name: "Gynecologist" }, { id: "dermatology", name: "Dermatologist" }],
+        specialty: "Gynecologist",
         qualification: "MBBS, FCPS (Obstetrics & Gynecology), MS",
         experience: "14+ Yrs Exp.",
-        affiliations: [
-          {
-            id: 3,
-            consultation_type: "OPD",
-            branch_id: "ibn-sina-dhanmondi",
-            branch_name: "Ibn Sina Hospital - Dhanmondi",
-            city: "Dhaka",
-            fee: 1000,
-            schedules: [
-              { id: 5, day_of_week: "Sun", start_time: "16:00", end_time: "20:00" },
-              { id: 6, day_of_week: "Thu", start_time: "16:00", end_time: "20:00" }
-            ]
-          }
-        ]
+        visitDays: "Sun, Thu",
+        visitTime: "04:00 PM - 08:00 PM",
+        fee: 1000
       }
     ]
   },
@@ -217,6 +327,7 @@ export const OPD_CHAMBERS = [
     hospital_id: "popular",
     hospital_name: "Popular Diagnostic & Medical Center",
     name: "Popular Diagnostic Centre & Super Clinic",
+    specialtyCategory: "diagnostic",
     facility_types: ["Hospital", "Diagnostic Center"],
     location: "House 16, Road 2, Dhanmondi / Panthapath, Dhaka",
     city: "Dhaka",
@@ -238,23 +349,12 @@ export const OPD_CHAMBERS = [
       {
         id: "doc-3",
         name: "Prof. Dr. Syed Atiqul Haq",
-        specialties: [{ id: "neurology", name: "Neurologist" }],
+        specialty: "Neurologist",
         qualification: "MBBS, FCPS (Medicine), MD (Neurology), FRCP",
         experience: "25+ Yrs Exp.",
-        affiliations: [
-          {
-            id: 4,
-            consultation_type: "In-patient",
-            branch_id: "popular-panthapath",
-            branch_name: "Popular Diagnostic - Panthapath",
-            city: "Dhaka",
-            fee: 1500,
-            schedules: [
-              { id: 7, day_of_week: "Sat", start_time: "18:00", end_time: "21:30" },
-              { id: 8, day_of_week: "Mon", start_time: "18:00", end_time: "21:30" }
-            ]
-          }
-        ]
+        visitDays: "Sat, Mon",
+        visitTime: "06:00 PM - 09:30 PM",
+        fee: 1500
       }
     ]
   }

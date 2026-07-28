@@ -59,17 +59,53 @@ class Branch(models.Model):
     image = models.URLField(max_length=500, blank=True)
     services = models.JSONField(default=list)
     description = models.TextField(blank=True)
+    specialty_category = models.CharField(max_length=100, blank=True)
 
     def __str__(self):
         h_prefix = f"{self.hospital_name} - " if self.hospital_name else ""
         return f"{h_prefix}{self.name} ({self.city})"
 
 class Specialty(models.Model):
+    """Doctor Specialty"""
     id = models.CharField(max_length=50, primary_key=True)
     name = models.CharField(max_length=100)
-    icon = models.CharField(max_length=50)
+    icon = models.CharField(max_length=50, default='Stethoscope')
     description = models.TextField(blank=True)
     
+    class Meta:
+        verbose_name_plural = "Doctor Specialties"
+
+    def __str__(self):
+        return self.name
+
+# Alias for clarity
+DoctorSpecialty = Specialty
+
+class HospitalSpecialty(models.Model):
+    """Hospital Specialty / Category"""
+    id = models.CharField(max_length=50, primary_key=True)
+    name = models.CharField(max_length=100)
+    icon = models.CharField(max_length=50, default='Building2')
+    description = models.TextField(blank=True)
+    count = models.IntegerField(default=0)
+
+    class Meta:
+        verbose_name_plural = "Hospital Specialties"
+
+    def __str__(self):
+        return self.name
+
+class TestCategory(models.Model):
+    """Pathology Test Category"""
+    id = models.CharField(max_length=50, primary_key=True)
+    name = models.CharField(max_length=100)
+    icon = models.CharField(max_length=50, default='FlaskConical')
+    description = models.TextField(blank=True)
+    count = models.IntegerField(default=0)
+
+    class Meta:
+        verbose_name_plural = "Test Categories"
+
     def __str__(self):
         return self.name
 
@@ -77,6 +113,7 @@ class PathologyTest(models.Model):
     id = models.CharField(max_length=50, primary_key=True)
     name = models.CharField(max_length=150)
     category = models.CharField(max_length=100)
+    test_category = models.ForeignKey(TestCategory, on_delete=models.SET_NULL, null=True, blank=True, related_name='tests')
     fasting_required = models.BooleanField(default=False)
     description = models.TextField(blank=True)
 

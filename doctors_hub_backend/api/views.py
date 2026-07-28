@@ -3,14 +3,14 @@ from rest_framework.response import Response
 from rest_framework.views import APIView
 from rest_framework_simplejwt.tokens import RefreshToken
 from .models import (
-    User, Hospital, Branch, Specialty, PathologyTest, BranchTest,
+    User, Hospital, Branch, Specialty, HospitalSpecialty, TestCategory, PathologyTest, BranchTest,
     Doctor, DoctorAffiliation, AffiliationSchedule,
     DoctorBooking, LabBooking
 )
 from .permissions import IsAdminUserOrReadOnly
 from .serializers import (
     UserSerializer, UserProfileSerializer, RegisterSerializer, LoginSerializer,
-    HospitalSerializer, BranchSerializer, SpecialtySerializer, PathologyTestSerializer,
+    HospitalSerializer, BranchSerializer, SpecialtySerializer, HospitalSpecialtySerializer, TestCategorySerializer, PathologyTestSerializer,
     BranchTestSerializer, DoctorSerializer, DoctorAffiliationSerializer, AffiliationScheduleSerializer,
     DoctorBookingSerializer, LabBookingSerializer
 )
@@ -79,6 +79,18 @@ class BranchViewSet(viewsets.ModelViewSet):
 class SpecialtyViewSet(viewsets.ModelViewSet):
     queryset = Specialty.objects.all()
     serializer_class = SpecialtySerializer
+    permission_classes = (IsAdminUserOrReadOnly,)
+
+DoctorSpecialtyViewSet = SpecialtyViewSet
+
+class HospitalSpecialtyViewSet(viewsets.ModelViewSet):
+    queryset = HospitalSpecialty.objects.all()
+    serializer_class = HospitalSpecialtySerializer
+    permission_classes = (IsAdminUserOrReadOnly,)
+
+class TestCategoryViewSet(viewsets.ModelViewSet):
+    queryset = TestCategory.objects.all()
+    serializer_class = TestCategorySerializer
     permission_classes = (IsAdminUserOrReadOnly,)
 
 class PathologyTestViewSet(viewsets.ModelViewSet):

@@ -19,9 +19,9 @@ export default function StickyNavbar({ activeTab, setActiveTab, user, onOpenLogi
 
   const navLinks = [
     { name: 'Home', id: 'home' },
-    { name: 'Medical Partners', id: 'partners' },
-    { name: 'OPD Doctors', id: 'opd-doctors' },
-    { name: 'Test Pathology', id: 'pathology' },
+    { name: 'Doctors', id: 'opd-doctors' },
+    { name: 'Diagnostics', id: 'pathology' },
+    { name: 'Hospitals', id: 'partners' },
     { name: 'Contact', id: 'contact' },
   ];
 
@@ -60,7 +60,7 @@ export default function StickyNavbar({ activeTab, setActiveTab, user, onOpenLogi
               <span className="text-[10px] bg-emerald-100 text-emerald-800 font-bold px-1.5 py-0.5 rounded uppercase tracking-wider">.bd</span>
             </div>
             <p className="text-[11px] text-slate-500 font-medium tracking-wide">
-              Healthcare OPD & Diagnostics Portal Bangladesh
+              Doctors & Diagnostics Portal Bangladesh
             </p>
           </div>
         </div>
@@ -187,15 +187,7 @@ export default function StickyNavbar({ activeTab, setActiveTab, user, onOpenLogi
                 </div>
               )}
             </div>
-          ) : (
-            <button
-              onClick={onOpenLogin}
-              className="flex items-center gap-2 px-4 py-2.5 rounded-xl bg-gradient-to-r from-emerald-600 to-teal-600 text-white font-bold text-sm shadow-md shadow-emerald-600/25 hover:from-emerald-500 hover:to-teal-500 active:scale-95 transition-all duration-200"
-            >
-              <LogIn className="w-4 h-4" />
-              <span>Patient Login</span>
-            </button>
-          )}
+          ) : null}
         </div>
 
 
@@ -269,7 +261,7 @@ export default function StickyNavbar({ activeTab, setActiveTab, user, onOpenLogi
               <span>Download DoctorHub App</span>
             </button>
 
-            {user ? (
+            {user && (
               <button
                 onClick={() => {
                   setMobileMenuOpen(false);
@@ -279,17 +271,6 @@ export default function StickyNavbar({ activeTab, setActiveTab, user, onOpenLogi
               >
                 <LogOut className="w-4 h-4" />
                 <span>Sign Out</span>
-              </button>
-            ) : (
-              <button
-                onClick={() => {
-                  onOpenLogin();
-                  setMobileMenuOpen(false);
-                }}
-                className="flex items-center justify-center gap-2 w-full py-2.5 rounded-lg bg-gradient-to-r from-emerald-600 to-teal-600 text-white font-bold text-sm shadow-md"
-              >
-                <LogIn className="w-4 h-4" />
-                <span>Patient Login</span>
               </button>
             )}
           </div>

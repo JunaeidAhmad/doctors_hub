@@ -1,25 +1,40 @@
 import React, { useState, useEffect } from 'react';
 import { 
   Building2, MapPin, Phone, Clock, ShieldCheck, CheckCircle, 
-  Star, ArrowRight, Search, UserCheck, Activity, ChevronRight 
+  Star, ArrowRight, Search, UserCheck, Activity, ChevronRight, Filter, Sparkles 
 } from 'lucide-react';
 import { api } from '../services/api';
-import { OPD_CHAMBERS, LOCATIONS } from '../data/mockData';
+import { OPD_CHAMBERS, LOCATIONS, HOSPITAL_SPECIALTIES, CITY_THANAS } from '../data/mockData';
 
-export default function MedicalPartnersPage({ onSelectPartner, onNavigateHome }) {
+export default function MedicalPartnersPage({ initialKeyword = '', onSelectPartner, onNavigateHome }) {
   const [chambers, setChambers] = useState([]);
+  const [hospitalCategories, setHospitalCategories] = useState(HOSPITAL_SPECIALTIES);
   const [loading, setLoading] = useState(true);
+  
+  // Filter states
   const [selectedLocation, setSelectedLocation] = useState('All Bangladesh');
-  const [searchKeyword, setSearchKeyword] = useState('');
+  const [selectedArea, setSelectedArea] = useState('All Areas');
+  const [selectedCategory, setSelectedCategory] = useState('all');
+  const [searchKeyword, setSearchKeyword] = useState(initialKeyword);
 
   useEffect(() => {
     let isMounted = true;
-    async function loadChambers() {
+    async function loadData() {
       setLoading(true);
       try {
-        const data = await api.getChambers(selectedLocation);
-        if (isMounted && Array.isArray(data) && data.length > 0) {
-          setChambers(data);
+        const [chambData, catData] = await Promise.all([
+          api.getChambers(selectedLocation),
+          api.getHospitalSpecialties().catch(() => [])
+        ]);
+        if (isMounted) {
+          if (Array.isArray(chambData) && chambData.length > 0) {
+            setChambers(chambData);
+          } else {
+            setChambers(OPD_CHAMBERS);
+          }
+          if (Array.isArray(catData) && catData.length > 0) {
+            setHospitalCategories(catData);
+          }
           setLoading(false);
           return;
         }
@@ -27,28 +42,66 @@ export default function MedicalPartnersPage({ onSelectPartner, onNavigateHome })
         // Fallback
       }
 
-      let filteredMock = OPD_CHAMBERS;
-      if (selectedLocation && selectedLocation !== 'All Bangladesh') {
-        filteredMock = filteredMock.filter(c => c.city.toLowerCase() === selectedLocation.toLowerCase());
-      }
       if (isMounted) {
-        setChambers(filteredMock);
+        setChambers(OPD_CHAMBERS);
         setLoading(false);
       }
     }
 
-    loadChambers();
+    loadData();
   }, [selectedLocation]);
 
+  // Reset area filter when location switches to "All Bangladesh"
+  const handleLocationChange = (loc) => {
+    setSelectedLocation(loc);
+    setSelectedArea('All Areas');
+  };
+
   const filteredChambers = chambers.filter(c => {
-    if (!searchKeyword.trim()) return true;
-    const kw = searchKeyword.toLowerCase();
-    return (
-      c.name.toLowerCase().includes(kw) ||
-      c.location.toLowerCase().includes(kw) ||
-      c.city.toLowerCase().includes(kw) ||
-      (c.tagline && c.tagline.toLowerCase().includes(kw))
-    );
+    // 1. Location (City) filter
+    if (selectedLocation && selectedLocation !== 'All Bangladesh') {
+      if (c.city && c.city.toLowerCase() !== selectedLocation.toLowerCase()) {
+        return false;
+      }
+    }
+
+    // 2. Area / Thana filter (visible and active when location !== 'All Bangladesh')
+    if (selectedLocation !== 'All Bangladesh' && selectedArea && selectedArea !== 'All Areas') {
+      const locText = `${c.location || ''} ${c.name || ''}`.toLowerCase();
+      if (!locText.includes(selectedArea.toLowerCase())) {
+        return false;
+      }
+    }
+
+    // 3. Hospital Category filter
+    if (selectedCategory && selectedCategory !== 'all' && selectedCategory !== 'All Categories') {
+      const catKw = selectedCategory.toLowerCase();
+      const matchesCategoryProp = c.specialtyCategory && c.specialtyCategory.toLowerCase() === catKw;
+      const matchesNameOrTag = c.name.toLowerCase().includes(catKw) || (c.tagline && c.tagline.toLowerCase().includes(catKw));
+      let keywordMatch = false;
+
+      if (catKw === 'cardiac') keywordMatch = c.name.toLowerCase().includes('heart') || c.name.toLowerCase().includes('cardiac');
+      if (catKw === 'eye') keywordMatch = c.name.toLowerCase().includes('eye') || c.name.toLowerCase().includes('ophthalmology');
+      if (catKw === 'diagnostic') keywordMatch = c.facility_types?.includes('Diagnostic Center') || c.name.toLowerCase().includes('diagnostic');
+      if (catKw === 'orthopedic') keywordMatch = c.name.toLowerCase().includes('ortho') || c.name.toLowerCase().includes('bone');
+      if (catKw === 'multispecialty') keywordMatch = c.facility_types?.includes('Hospital');
+
+      if (!matchesCategoryProp && !matchesNameOrTag && !keywordMatch) {
+        return false;
+      }
+    }
+
+    // 4. Keyword search
+    if (searchKeyword.trim()) {
+      const kw = searchKeyword.toLowerCase();
+      const matchName = c.name.toLowerCase().includes(kw);
+      const matchLoc = (c.location && c.location.toLowerCase().includes(kw));
+      const matchCity = (c.city && c.city.toLowerCase().includes(kw));
+      const matchTag = (c.tagline && c.tagline.toLowerCase().includes(kw));
+      if (!matchName && !matchLoc && !matchCity && !matchTag) return false;
+    }
+
+    return true;
   });
 
   return (
@@ -62,7 +115,7 @@ export default function MedicalPartnersPage({ onSelectPartner, onNavigateHome })
               Home
             </button>
             <ChevronRight className="w-3.5 h-3.5" />
-            <span className="text-emerald-400 font-bold">Medical Partners</span>
+            <span className="text-emerald-400 font-bold">Hospitals & Diagnostic Centers</span>
           </div>
 
           <div className="flex flex-col md:flex-row md:items-end justify-between gap-6">
@@ -72,7 +125,7 @@ export default function MedicalPartnersPage({ onSelectPartner, onNavigateHome })
                 <span>Verified Diagnostic & OPD Network</span>
               </div>
               <h1 className="text-3xl sm:text-4xl lg:text-5xl font-black tracking-tight text-white">
-                Active Medical Partners
+                Hospital & Diagnostic Partner
               </h1>
               <p className="mt-2 text-slate-300 text-sm sm:text-base max-w-2xl">
                 Explore Bangladesh's top diagnostic centers, super clinics, and visiting doctor chambers. Click any medical partner to view complete visiting doctors roster, services, and diagnostic tests.
@@ -82,35 +135,99 @@ export default function MedicalPartnersPage({ onSelectPartner, onNavigateHome })
             <div className="bg-slate-800/80 backdrop-blur-md p-3.5 rounded-2xl border border-slate-700 text-xs flex items-center gap-3 shrink-0">
               <div className="w-3 h-3 rounded-full bg-emerald-400 animate-ping"></div>
               <div>
-                <div className="font-extrabold text-white">{chambers.length} Active Partners</div>
-                <div className="text-slate-400">Across Bangladesh Divisions</div>
+                <div className="font-extrabold text-white">{filteredChambers.length} Active Partners</div>
+                <div className="text-slate-400">Filtered Medical Network</div>
               </div>
             </div>
           </div>
 
-          {/* SEARCH & LOCATION FILTER STRIP */}
-          <div className="grid grid-cols-1 sm:grid-cols-3 gap-3 pt-2">
-            <div className="relative sm:col-span-2">
-              <Search className="w-4 h-4 text-slate-400 absolute left-3.5 top-1/2 -translate-y-1/2" />
-              <input
-                type="text"
-                placeholder="Search partner hospital or diagnostic name, location..."
-                value={searchKeyword}
-                onChange={(e) => setSearchKeyword(e.target.value)}
-                className="w-full bg-slate-800 border border-slate-700 rounded-xl pl-10 pr-4 py-3 text-sm text-white placeholder-slate-400 focus:outline-none focus:border-emerald-500"
-              />
+          {/* SEARCH & FILTER CONTROLS BAR (OPD STYLE FILTERING) */}
+          <div className="bg-slate-800/90 border border-slate-700/80 rounded-2xl p-4 sm:p-5 shadow-xl space-y-4">
+            <div className="flex items-center justify-between text-xs font-extrabold uppercase tracking-wider text-slate-400 pb-2 border-b border-slate-700/60">
+              <div className="flex items-center gap-2">
+                <Filter className="w-4 h-4 text-emerald-400" />
+                <span>Hospital & Diagnostic Search Filters</span>
+              </div>
+              {(selectedCategory !== 'all' || selectedLocation !== 'All Bangladesh' || selectedArea !== 'All Areas' || searchKeyword) && (
+                <button
+                  onClick={() => {
+                    setSelectedCategory('all');
+                    setSelectedLocation('All Bangladesh');
+                    setSelectedArea('All Areas');
+                    setSearchKeyword('');
+                  }}
+                  className="text-emerald-400 hover:underline font-bold"
+                >
+                  Reset All Filters
+                </button>
+              )}
             </div>
 
-            <div>
-              <select
-                value={selectedLocation}
-                onChange={(e) => setSelectedLocation(e.target.value)}
-                className="w-full bg-slate-800 border border-slate-700 rounded-xl px-4 py-3 text-sm text-white focus:outline-none focus:border-emerald-500 font-bold"
-              >
-                {LOCATIONS.map(loc => (
-                  <option key={loc} value={loc}>{loc}</option>
-                ))}
-              </select>
+            <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-3">
+              
+              {/* Search Keyword */}
+              <div className="relative">
+                <label className="block text-[11px] font-bold text-slate-400 mb-1">Keyword Search</label>
+                <div className="relative">
+                  <Search className="w-4 h-4 text-slate-400 absolute left-3 top-1/2 -translate-y-1/2" />
+                  <input
+                    type="text"
+                    placeholder="Search hospital or diagnostic..."
+                    value={searchKeyword}
+                    onChange={(e) => setSearchKeyword(e.target.value)}
+                    className="w-full bg-slate-900 border border-slate-700 rounded-xl pl-9 pr-3 py-2.5 text-xs text-white placeholder-slate-400 focus:outline-none focus:border-emerald-500 font-medium"
+                  />
+                </div>
+              </div>
+
+              {/* City / Location */}
+              <div>
+                <label className="block text-[11px] font-bold text-slate-400 mb-1">City Location</label>
+                <select
+                  value={selectedLocation}
+                  onChange={(e) => handleLocationChange(e.target.value)}
+                  className="w-full bg-slate-900 border border-slate-700 rounded-xl px-3 py-2.5 text-xs text-white focus:outline-none focus:border-emerald-500 font-bold"
+                >
+                  {LOCATIONS.map(loc => (
+                    <option key={loc} value={loc}>{loc}</option>
+                  ))}
+                </select>
+              </div>
+
+              {/* Area / Thana Filter (Only visible when city selected != 'All Bangladesh') */}
+              {selectedLocation !== 'All Bangladesh' ? (
+                <div>
+                  <label className="block text-[11px] font-bold text-emerald-400 mb-1">Area / Thana ({selectedLocation})</label>
+                  <select
+                    value={selectedArea}
+                    onChange={(e) => setSelectedArea(e.target.value)}
+                    className="w-full bg-slate-900 border border-emerald-500/80 rounded-xl px-3 py-2.5 text-xs text-white focus:outline-none focus:border-emerald-400 font-bold"
+                  >
+                    <option value="All Areas">All Areas in {selectedLocation}</option>
+                    {(CITY_THANAS[selectedLocation] || []).map(th => (
+                      <option key={th} value={th}>{th}</option>
+                    ))}
+                  </select>
+                </div>
+              ) : (
+                <div className="hidden lg:block"></div>
+              )}
+
+              {/* Hospital Specialty / Category Filter */}
+              <div>
+                <label className="block text-[11px] font-bold text-slate-400 mb-1">Hospital Category</label>
+                <select
+                  value={selectedCategory}
+                  onChange={(e) => setSelectedCategory(e.target.value)}
+                  className="w-full bg-slate-900 border border-slate-700 rounded-xl px-3 py-2.5 text-xs text-white focus:outline-none focus:border-emerald-500 font-bold"
+                >
+                  <option value="all">All Hospital Categories</option>
+                  {hospitalCategories.map(cat => (
+                    <option key={cat.id} value={cat.id}>{cat.name}</option>
+                  ))}
+                </select>
+              </div>
+
             </div>
           </div>
 

@@ -36,6 +36,7 @@ export default function TopUtilityStrip({ selectedLocation, setSelectedLocation 
 
         {/* Right side: Location selector & Verified Portal Tag */}
         <div className="flex items-center gap-4">
+          {/* Location selector commented out as requested
           <div className="flex items-center gap-1.5 text-slate-400">
             <MapPin className="w-3.5 h-3.5 text-emerald-400" />
             <select
@@ -50,6 +51,7 @@ export default function TopUtilityStrip({ selectedLocation, setSelectedLocation 
               ))}
             </select>
           </div>
+          */}
 
           <div className="hidden lg:flex items-center gap-1 text-emerald-400 font-medium">
             <ShieldCheck className="w-3.5 h-3.5" />

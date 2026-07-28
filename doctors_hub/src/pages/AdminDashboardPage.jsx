@@ -1,51 +1,12 @@
 import React, { useState, useEffect, useMemo } from 'react';
 import { api } from '../services/api';
+import { SPECIALTIES, HOSPITAL_SPECIALTIES, PATHOLOGY_CATEGORIES, CITY_THANAS } from '../data/mockData';
 import { 
   Users, Building2, TestTube, Calendar, Plus, Edit, Trash2, CheckCircle, 
   XCircle, Search, RefreshCw, AlertCircle, ShieldAlert, Sparkles, Clock, MapPin, Stethoscope, ChevronRight, Filter, Calculator 
 } from 'lucide-react';
 
-export const CITY_THANAS = {
-  "Dhaka": [
-    "Dhanmondi", "Mirpur", "Uttara", "Gulshan", "Banani", "Panthapath", 
-    "Motijheel", "Mohammadpur", "Badda", "Savar", "Farmgate", "Tejgaon", 
-    "Malibagh", "Shyamoli", "Rampura", "Jatrabari", "Lalbagh", "Khilgaon", 
-    "Keraniganj", "Gazipur", "Narayanganj"
-  ],
-  "Chittagong": [
-    "Panchlaish", "Agrabad", "GEC Circle", "Halishahar", "Nasirabad", 
-    "Chawkbazar", "Pahartali", "Khulshi", "Kotwali", "Patenga", 
-    "Sitakunda", "Hathazari"
-  ],
-  "Sylhet": [
-    "Zindabazar", "Nayasarak", "Amberkhana", "Chauhatta", "Subidbazar", 
-    "Tilagarh", "Shibganj", "Kadamtali", "Shahjalal Uposahar"
-  ],
-  "Rajshahi": [
-    "Laxmipur", "Kazla", "Motihar", "Boalia", "Rajputra", 
-    "Shaheb Bazar", "New Market", "Upashahar"
-  ],
-  "Khulna": [
-    "KDA Avenue", "Sonadanga", "Boyra", "Khalishpur", "Daulatpur", 
-    "Rupsha", "Gollamari", "Khan Jahan Ali"
-  ],
-  "Barisal": [
-    "Sadar Road", "Rupatali", "Natun Bazar", "C&B Road", "Alekanda", 
-    "Jordan Road", "Kashipur"
-  ],
-  "Rangpur": [
-    "Park More", "Medical East Gate", "Jahaj Company More", "Dhap", 
-    "Carmel Road", "Pairaband"
-  ],
-  "Mymensingh": [
-    "Charpara", "Ganginarpar", "Town Hall", "Maskanda", "Akua", 
-    "Kewatkhali", "Patuakhali Road"
-  ],
-  "Comilla": [
-    "Kandirpar", "Jhawtala", "Badurtala", "Tomsom Bridge", "Ramghat", 
-    "Bagichagaon", "Dharmpur"
-  ]
-};
+
 
 /**
  * Helper to auto-calculate price based on original price and discount input
@@ -88,8 +49,24 @@ export default function AdminDashboardPage({ currentUser, onNavigate, onAdminLog
   const [tests, setTests] = useState([]);
   const [branchTests, setBranchTests] = useState([]);
   const [specialties, setSpecialties] = useState([]);
+  const [doctorSpecialties, setDoctorSpecialties] = useState(SPECIALTIES);
+  const [hospitalSpecialties, setHospitalSpecialties] = useState(HOSPITAL_SPECIALTIES);
+  const [testCategories, setTestCategories] = useState(PATHOLOGY_CATEGORIES);
   const [doctorBookings, setDoctorBookings] = useState([]);
   const [labBookings, setLabBookings] = useState([]);
+
+  // Category & Specialty CRUD Modals State
+  const [showDoctorSpecModal, setShowDoctorSpecModal] = useState(false);
+  const [editingDoctorSpec, setEditingDoctorSpec] = useState(null);
+  const [doctorSpecForm, setDoctorSpecForm] = useState({ id: '', name: '', icon: 'Stethoscope', description: '' });
+
+  const [showHospitalSpecModal, setShowHospitalSpecModal] = useState(false);
+  const [editingHospitalSpec, setEditingHospitalSpec] = useState(null);
+  const [hospitalSpecForm, setHospitalSpecForm] = useState({ id: '', name: '', icon: 'Building2', description: '', count: 0 });
+
+  const [showTestCatModal, setShowTestCatModal] = useState(false);
+  const [editingTestCat, setEditingTestCat] = useState(null);
+  const [testCatForm, setTestCatForm] = useState({ id: '', name: '', icon: 'FlaskConical', description: '', count: 0 });
 
   // Branch Test Filters
   const [branchTestBranchFilter, setBranchTestBranchFilter] = useState('');
@@ -126,6 +103,7 @@ export default function AdminDashboardPage({ currentUser, onNavigate, onAdminLog
     branch_name: 'Dhanmondi Branch',
     isCustomBranch: false,
     customBranchName: '',
+    specialtyCategory: 'multispecialty',
     city: 'Dhaka',
     location: '',
     verified: true,
@@ -144,7 +122,7 @@ export default function AdminDashboardPage({ currentUser, onNavigate, onAdminLog
   const [showTestModal, setShowTestModal] = useState(false);
   const [editingTest, setEditingTest] = useState(null);
   const [testForm, setTestForm] = useState({
-    id: '', name: '', category: 'Routine Blood Profiles', fasting_required: false, description: ''
+    id: '', name: '', category: 'Routine Blood Profiles', categoryGroup: 'blood', fasting_required: false, description: ''
   });
 
   const [showBranchTestModal, setShowBranchTestModal] = useState(false);
@@ -179,18 +157,23 @@ export default function AdminDashboardPage({ currentUser, onNavigate, onAdminLog
     setLoading(true);
     setError('');
     try {
-      const [docsData, chambsData, testsData, specsData, branchTestsData] = await Promise.all([
+      const [docsData, chambsData, testsData, specsData, branchTestsData, hospSpecsData, testCatsData] = await Promise.all([
         api.getDoctors(),
         api.getBranches(),
         api.getTests(),
         api.getSpecialties(),
-        api.getBranchTests().catch(() => [])
+        api.getBranchTests().catch(() => []),
+        api.getHospitalSpecialties().catch(() => []),
+        api.getTestCategories().catch(() => [])
       ]);
       setDoctors(docsData || []);
       setChambers(chambsData || []);
       setTests(testsData || []);
       setSpecialties(specsData || []);
+      if (Array.isArray(specsData) && specsData.length > 0) setDoctorSpecialties(specsData);
       setBranchTests(branchTestsData || []);
+      if (Array.isArray(hospSpecsData) && hospSpecsData.length > 0) setHospitalSpecialties(hospSpecsData);
+      if (Array.isArray(testCatsData) && testCatsData.length > 0) setTestCategories(testCatsData);
 
       if (isStaff) {
         try {
@@ -545,6 +528,129 @@ export default function AdminDashboardPage({ currentUser, onNavigate, onAdminLog
     }
   };
 
+  // --- DOCTOR SPECIALTY CRUD HANDLERS ---
+  const handleOpenDoctorSpecModal = (s = null) => {
+    if (s) {
+      setEditingDoctorSpec(s);
+      setDoctorSpecForm({ id: s.id, name: s.name, icon: s.icon || 'Stethoscope', description: s.description || '' });
+    } else {
+      setEditingDoctorSpec(null);
+      setDoctorSpecForm({ id: `doc-spec-${Date.now()}`, name: '', icon: 'Stethoscope', description: '' });
+    }
+    setShowDoctorSpecModal(true);
+  };
+
+  const handleSaveDoctorSpec = async (e) => {
+    e.preventDefault();
+    try {
+      if (editingDoctorSpec) {
+        await api.updateSpecialty(editingDoctorSpec.id, doctorSpecForm).catch(() => {});
+        setDoctorSpecialties(prev => prev.map(item => item.id === editingDoctorSpec.id ? doctorSpecForm : item));
+        showNotification(`Doctor Specialty "${doctorSpecForm.name}" updated.`);
+      } else {
+        await api.createSpecialty(doctorSpecForm).catch(() => {});
+        setDoctorSpecialties(prev => [...prev, doctorSpecForm]);
+        showNotification(`Doctor Specialty "${doctorSpecForm.name}" created.`);
+      }
+      setShowDoctorSpecModal(false);
+    } catch (err) {
+      alert(`Error saving doctor specialty: ${err.message}`);
+    }
+  };
+
+  const handleDeleteDoctorSpec = async (id, name) => {
+    if (!window.confirm(`Delete Doctor Specialty "${name}"?`)) return;
+    try {
+      await api.deleteSpecialty(id).catch(() => {});
+      setDoctorSpecialties(prev => prev.filter(s => s.id !== id));
+      showNotification(`Doctor Specialty "${name}" removed.`);
+    } catch (err) {
+      alert(`Error deleting specialty: ${err.message}`);
+    }
+  };
+
+  // --- HOSPITAL SPECIALTY CRUD HANDLERS ---
+  const handleOpenHospitalSpecModal = (hs = null) => {
+    if (hs) {
+      setEditingHospitalSpec(hs);
+      setHospitalSpecForm({ id: hs.id, name: hs.name, icon: hs.icon || 'Building2', description: hs.description || '', count: hs.count || 0 });
+    } else {
+      setEditingHospitalSpec(null);
+      setHospitalSpecForm({ id: `hosp-spec-${Date.now()}`, name: '', icon: 'Building2', description: '', count: 0 });
+    }
+    setShowHospitalSpecModal(true);
+  };
+
+  const handleSaveHospitalSpec = async (e) => {
+    e.preventDefault();
+    try {
+      if (editingHospitalSpec) {
+        await api.updateHospitalSpecialty(editingHospitalSpec.id, hospitalSpecForm).catch(() => {});
+        setHospitalSpecialties(prev => prev.map(item => item.id === editingHospitalSpec.id ? hospitalSpecForm : item));
+        showNotification(`Hospital Specialty "${hospitalSpecForm.name}" updated.`);
+      } else {
+        await api.createHospitalSpecialty(hospitalSpecForm).catch(() => {});
+        setHospitalSpecialties(prev => [...prev, hospitalSpecForm]);
+        showNotification(`Hospital Specialty "${hospitalSpecForm.name}" created.`);
+      }
+      setShowHospitalSpecModal(false);
+    } catch (err) {
+      alert(`Error saving hospital specialty: ${err.message}`);
+    }
+  };
+
+  const handleDeleteHospitalSpec = async (id, name) => {
+    if (!window.confirm(`Delete Hospital Specialty "${name}"?`)) return;
+    try {
+      await api.deleteHospitalSpecialty(id).catch(() => {});
+      setHospitalSpecialties(prev => prev.filter(hs => hs.id !== id));
+      showNotification(`Hospital Specialty "${name}" removed.`);
+    } catch (err) {
+      alert(`Error deleting specialty: ${err.message}`);
+    }
+  };
+
+  // --- TEST CATEGORY CRUD HANDLERS ---
+  const handleOpenTestCatModal = (tc = null) => {
+    if (tc) {
+      setEditingTestCat(tc);
+      setTestCatForm({ id: tc.id, name: tc.name, icon: tc.icon || 'FlaskConical', description: tc.description || '', count: tc.count || 0 });
+    } else {
+      setEditingTestCat(null);
+      setTestCatForm({ id: `test-cat-${Date.now()}`, name: '', icon: 'FlaskConical', description: '', count: 0 });
+    }
+    setShowTestCatModal(true);
+  };
+
+  const handleSaveTestCat = async (e) => {
+    e.preventDefault();
+    try {
+      if (editingTestCat) {
+        await api.updateTestCategory(editingTestCat.id, testCatForm).catch(() => {});
+        setTestCategories(prev => prev.map(item => item.id === editingTestCat.id ? testCatForm : item));
+        showNotification(`Test Category "${testCatForm.name}" updated.`);
+      } else {
+        await api.createTestCategory(testCatForm).catch(() => {});
+        setTestCategories(prev => [...prev, testCatForm]);
+        showNotification(`Test Category "${testCatForm.name}" created.`);
+      }
+      setShowTestCatModal(false);
+    } catch (err) {
+      alert(`Error saving test category: ${err.message}`);
+    }
+  };
+
+  const handleDeleteTestCat = async (id, name) => {
+    if (!window.confirm(`Delete Test Category "${name}"?`)) return;
+    try {
+      await api.deleteTestCategory(id).catch(() => {});
+      setTestCategories(prev => prev.filter(tc => tc.id !== id));
+      showNotification(`Test Category "${name}" removed.`);
+    } catch (err) {
+      alert(`Error deleting category: ${err.message}`);
+    }
+  };
+
   // --- BRANCH TEST PRICING CRUD HANDLERS ---
   const handleOpenBranchTestModal = (bt = null) => {
     const todayStr = new Date().toISOString().split('T')[0];
@@ -756,8 +862,11 @@ export default function AdminDashboardPage({ currentUser, onNavigate, onAdminLog
             { id: 'overview', label: 'Overview', icon: Users },
             { id: 'chambers', label: `Hospitals & Branches (${chambers.length})`, icon: Building2 },
             { id: 'doctors', label: `Specialist Doctors (${doctors.length})`, icon: Stethoscope },
+            { id: 'doctor-specs', label: `Doctor Specialties (${doctorSpecialties.length})`, icon: Stethoscope },
+            { id: 'hospital-specs', label: `Hospital Specialties (${hospitalSpecialties.length})`, icon: Building2 },
             { id: 'tests', label: `Pathology Base Tests (${tests.length})`, icon: TestTube },
-            { id: 'branch-tests', label: `Diagnostic Test Prices (${branchTests.length})`, icon: TestTube },
+            { id: 'test-cats', label: `Test Categories (${testCategories.length})`, icon: TestTube },
+            { id: 'branch-tests', label: `Diagnostic Test Prices (${branchTests.length})`, icon: Calculator },
             { id: 'doc-bookings', label: `Doctor Bookings (${doctorBookings.length})`, icon: Calendar },
             { id: 'lab-bookings', label: `Lab Bookings (${labBookings.length})`, icon: Calendar },
           ].map(tab => {
@@ -779,6 +888,249 @@ export default function AdminDashboardPage({ currentUser, onNavigate, onAdminLog
             );
           })}
         </div>
+
+        {/* 0. OVERVIEW DASHBOARD TAB */}
+        {activeTab === 'overview' && (
+          <div className="space-y-6">
+            
+            {/* Header Banner & Quick Actions */}
+            <div className="bg-gradient-to-r from-slate-900 via-teal-950/40 to-slate-900 border border-slate-800 rounded-2xl p-6 flex flex-col md:flex-row md:items-center justify-between gap-6">
+              <div>
+                <div className="inline-flex items-center gap-2 px-3 py-1 rounded-full bg-teal-500/20 border border-teal-500/30 text-teal-400 text-xs font-bold uppercase tracking-wider mb-2">
+                  <Sparkles className="w-3.5 h-3.5" />
+                  <span>Admin Operations Command</span>
+                </div>
+                <h2 className="text-2xl font-black text-white">Healthcare System Overview</h2>
+                <p className="text-xs text-slate-400 mt-1">Real-time stats across partner hospital branches, doctor rosters, pathology base tests, pricing, and user bookings.</p>
+              </div>
+
+              <div className="flex flex-wrap items-center gap-2.5">
+                <button
+                  onClick={() => handleOpenDoctorModal()}
+                  className="px-3.5 py-2 bg-teal-600 hover:bg-teal-500 text-white font-bold text-xs rounded-xl flex items-center gap-1.5 shadow-md"
+                >
+                  <Plus className="w-3.5 h-3.5" /> Add Doctor
+                </button>
+                <button
+                  onClick={() => handleOpenChamberModal()}
+                  className="px-3.5 py-2 bg-emerald-600 hover:bg-emerald-500 text-white font-bold text-xs rounded-xl flex items-center gap-1.5 shadow-md"
+                >
+                  <Plus className="w-3.5 h-3.5" /> Add Hospital Branch
+                </button>
+                <button
+                  onClick={() => handleOpenTestModal()}
+                  className="px-3.5 py-2 bg-cyan-600 hover:bg-cyan-500 text-white font-bold text-xs rounded-xl flex items-center gap-1.5 shadow-md"
+                >
+                  <Plus className="w-3.5 h-3.5" /> Add Test
+                </button>
+              </div>
+            </div>
+
+            {/* Metrics Overview Cards */}
+            <div className="grid grid-cols-2 sm:grid-cols-3 lg:grid-cols-6 gap-4">
+              <div className="bg-slate-900 border border-slate-800 p-4 rounded-2xl">
+                <div className="flex items-center justify-between text-emerald-400 mb-2">
+                  <Building2 className="w-5 h-5" />
+                  <span className="text-[10px] font-bold bg-emerald-500/20 text-emerald-300 px-2 py-0.5 rounded border border-emerald-500/30">Hospitals</span>
+                </div>
+                <div className="text-2xl font-black text-white">{chambers.length}</div>
+                <div className="text-xs text-slate-400 font-semibold mt-1">Hospital Branches</div>
+              </div>
+
+              <div className="bg-slate-900 border border-slate-800 p-4 rounded-2xl">
+                <div className="flex items-center justify-between text-teal-400 mb-2">
+                  <Stethoscope className="w-5 h-5" />
+                  <span className="text-[10px] font-bold bg-teal-500/20 text-teal-300 px-2 py-0.5 rounded border border-teal-500/30">Doctors</span>
+                </div>
+                <div className="text-2xl font-black text-white">{doctors.length}</div>
+                <div className="text-xs text-slate-400 font-semibold mt-1">Specialist Doctors</div>
+              </div>
+
+              <div className="bg-slate-900 border border-slate-800 p-4 rounded-2xl">
+                <div className="flex items-center justify-between text-cyan-400 mb-2">
+                  <TestTube className="w-5 h-5" />
+                  <span className="text-[10px] font-bold bg-cyan-500/20 text-cyan-300 px-2 py-0.5 rounded border border-cyan-500/30">Tests</span>
+                </div>
+                <div className="text-2xl font-black text-white">{tests.length}</div>
+                <div className="text-xs text-slate-400 font-semibold mt-1">Pathology Tests</div>
+              </div>
+
+              <div className="bg-slate-900 border border-slate-800 p-4 rounded-2xl">
+                <div className="flex items-center justify-between text-amber-400 mb-2">
+                  <Calculator className="w-5 h-5" />
+                  <span className="text-[10px] font-bold bg-amber-500/20 text-amber-300 px-2 py-0.5 rounded border border-amber-500/30">Quotes</span>
+                </div>
+                <div className="text-2xl font-black text-white">{branchTests.length}</div>
+                <div className="text-xs text-slate-400 font-semibold mt-1">Diagnostic Prices</div>
+              </div>
+
+              <div className="bg-slate-900 border border-slate-800 p-4 rounded-2xl">
+                <div className="flex items-center justify-between text-indigo-400 mb-2">
+                  <Calendar className="w-5 h-5" />
+                  <span className="text-[10px] font-bold bg-indigo-500/20 text-indigo-300 px-2 py-0.5 rounded border border-indigo-500/30">Doctor Bks</span>
+                </div>
+                <div className="text-2xl font-black text-white">{doctorBookings.length}</div>
+                <div className="text-xs text-slate-400 font-semibold mt-1">Doctor Serials</div>
+              </div>
+
+              <div className="bg-slate-900 border border-slate-800 p-4 rounded-2xl">
+                <div className="flex items-center justify-between text-purple-400 mb-2">
+                  <Calendar className="w-5 h-5" />
+                  <span className="text-[10px] font-bold bg-purple-500/20 text-purple-300 px-2 py-0.5 rounded border border-purple-500/30">Lab Bks</span>
+                </div>
+                <div className="text-2xl font-black text-white">{labBookings.length}</div>
+                <div className="text-xs text-slate-400 font-semibold mt-1">Lab Pickups</div>
+              </div>
+            </div>
+
+            {/* Categories & Specialties Summary Cards */}
+            <div className="grid grid-cols-1 md:grid-cols-3 gap-6">
+              
+              {/* Doctor Specialties Card */}
+              <div className="bg-slate-900 border border-slate-800 rounded-2xl p-5 space-y-3">
+                <div className="flex items-center justify-between border-b border-slate-800 pb-3">
+                  <div className="flex items-center gap-2 font-bold text-white text-sm">
+                    <Stethoscope className="w-4 h-4 text-teal-400" />
+                    <span>Doctor Specialties ({doctorSpecialties.length})</span>
+                  </div>
+                  <button
+                    onClick={() => handleOpenDoctorSpecModal()}
+                    className="text-[11px] font-bold text-teal-400 hover:underline flex items-center gap-1"
+                  >
+                    <Plus className="w-3 h-3" /> Add
+                  </button>
+                </div>
+                <div className="flex flex-wrap gap-1.5 max-h-36 overflow-y-auto pr-1">
+                  {doctorSpecialties.map(s => (
+                    <span key={s.id} className="text-[11px] bg-slate-800 text-slate-300 px-2.5 py-1 rounded-lg border border-slate-700 font-medium flex items-center gap-1">
+                      <span>{s.name}</span>
+                      <button onClick={() => handleOpenDoctorSpecModal(s)} className="text-slate-400 hover:text-teal-400 ml-1">
+                        <Edit className="w-3 h-3" />
+                      </button>
+                    </span>
+                  ))}
+                </div>
+              </div>
+
+              {/* Hospital Categories Card */}
+              <div className="bg-slate-900 border border-slate-800 rounded-2xl p-5 space-y-3">
+                <div className="flex items-center justify-between border-b border-slate-800 pb-3">
+                  <div className="flex items-center gap-2 font-bold text-white text-sm">
+                    <Building2 className="w-4 h-4 text-emerald-400" />
+                    <span>Hospital Specialties ({hospitalSpecialties.length})</span>
+                  </div>
+                  <button
+                    onClick={() => handleOpenHospitalSpecModal()}
+                    className="text-[11px] font-bold text-emerald-400 hover:underline flex items-center gap-1"
+                  >
+                    <Plus className="w-3 h-3" /> Add
+                  </button>
+                </div>
+                <div className="flex flex-wrap gap-1.5 max-h-36 overflow-y-auto pr-1">
+                  {hospitalSpecialties.map(hs => (
+                    <span key={hs.id} className="text-[11px] bg-slate-800 text-slate-300 px-2.5 py-1 rounded-lg border border-slate-700 font-medium flex items-center gap-1">
+                      <span>{hs.name}</span>
+                      <button onClick={() => handleOpenHospitalSpecModal(hs)} className="text-slate-400 hover:text-emerald-400 ml-1">
+                        <Edit className="w-3 h-3" />
+                      </button>
+                    </span>
+                  ))}
+                </div>
+              </div>
+
+              {/* Test Categories Card */}
+              <div className="bg-slate-900 border border-slate-800 rounded-2xl p-5 space-y-3">
+                <div className="flex items-center justify-between border-b border-slate-800 pb-3">
+                  <div className="flex items-center gap-2 font-bold text-white text-sm">
+                    <TestTube className="w-4 h-4 text-cyan-400" />
+                    <span>Test Categories ({testCategories.length})</span>
+                  </div>
+                  <button
+                    onClick={() => handleOpenTestCatModal()}
+                    className="text-[11px] font-bold text-cyan-400 hover:underline flex items-center gap-1"
+                  >
+                    <Plus className="w-3 h-3" /> Add
+                  </button>
+                </div>
+                <div className="flex flex-wrap gap-1.5 max-h-36 overflow-y-auto pr-1">
+                  {testCategories.map(tc => (
+                    <span key={tc.id} className="text-[11px] bg-slate-800 text-slate-300 px-2.5 py-1 rounded-lg border border-slate-700 font-medium flex items-center gap-1">
+                      <span>{tc.name}</span>
+                      <button onClick={() => handleOpenTestCatModal(tc)} className="text-slate-400 hover:text-cyan-400 ml-1">
+                        <Edit className="w-3 h-3" />
+                      </button>
+                    </span>
+                  ))}
+                </div>
+              </div>
+
+            </div>
+
+            {/* Quick Preview Tables */}
+            <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
+              
+              {/* Doctor Bookings Table Preview */}
+              <div className="bg-slate-900 border border-slate-800 rounded-2xl p-5 space-y-3">
+                <div className="flex items-center justify-between pb-2 border-b border-slate-800">
+                  <h3 className="font-bold text-white text-sm flex items-center gap-2">
+                    <Calendar className="w-4 h-4 text-teal-400" /> Recent Doctor Bookings
+                  </h3>
+                  <button onClick={() => setActiveTab('doc-bookings')} className="text-xs font-bold text-teal-400 hover:underline">
+                    View All &rarr;
+                  </button>
+                </div>
+                {doctorBookings.length === 0 ? (
+                  <p className="text-xs text-slate-500 py-4 text-center">No doctor bookings recorded yet.</p>
+                ) : (
+                  <div className="space-y-2">
+                    {doctorBookings.slice(0, 4).map(b => (
+                      <div key={b.id} className="p-3 bg-slate-950 border border-slate-800 rounded-xl flex items-center justify-between text-xs">
+                        <div>
+                          <div className="font-bold text-white">{b.patient_name}</div>
+                          <div className="text-[10px] text-slate-400">{b.date} • {b.slot}</div>
+                        </div>
+                        <span className="px-2 py-0.5 bg-emerald-500/20 text-emerald-400 border border-emerald-500/30 rounded text-[10px] font-bold">
+                          {b.status || 'Confirmed'}
+                        </span>
+                      </div>
+                    ))}
+                  </div>
+                )}
+              </div>
+
+              {/* Lab Bookings Table Preview */}
+              <div className="bg-slate-900 border border-slate-800 rounded-2xl p-5 space-y-3">
+                <div className="flex items-center justify-between pb-2 border-b border-slate-800">
+                  <h3 className="font-bold text-white text-sm flex items-center gap-2">
+                    <TestTube className="w-4 h-4 text-cyan-400" /> Recent Home Lab Pickups
+                  </h3>
+                  <button onClick={() => setActiveTab('lab-bookings')} className="text-xs font-bold text-cyan-400 hover:underline">
+                    View All &rarr;
+                  </button>
+                </div>
+                {labBookings.length === 0 ? (
+                  <p className="text-xs text-slate-500 py-4 text-center">No lab bookings recorded yet.</p>
+                ) : (
+                  <div className="space-y-2">
+                    {labBookings.slice(0, 4).map(b => (
+                      <div key={b.id} className="p-3 bg-slate-950 border border-slate-800 rounded-xl flex items-center justify-between text-xs">
+                        <div>
+                          <div className="font-bold text-white">{b.patient_name} (+880 {b.patient_phone})</div>
+                          <div className="text-[10px] text-slate-400">Pickup: {b.pickup_date}</div>
+                        </div>
+                        <span className="px-2 py-0.5 bg-cyan-500/20 text-cyan-400 border border-cyan-500/30 rounded text-[10px] font-bold">
+                          {b.status || 'Confirmed'}
+                        </span>
+                      </div>
+                    ))}
+                  </div>
+                )}
+              </div>
+
+            </div>
+
+          </div>
+        )}
 
         {/* 1. HOSPITALS & BRANCHES TAB */}
         {activeTab === 'chambers' && (
@@ -1208,6 +1560,174 @@ export default function AdminDashboardPage({ currentUser, onNavigate, onAdminLog
           </div>
         )}
 
+        {/* 5. DOCTOR SPECIALTIES TAB */}
+        {activeTab === 'doctor-specs' && (
+          <div className="bg-slate-900 border border-slate-800 rounded-2xl overflow-hidden shadow-xl">
+            <div className="p-5 border-b border-slate-800 flex flex-wrap items-center justify-between gap-4">
+              <div>
+                <h3 className="text-base font-bold text-white">Doctor Specialties Management</h3>
+                <p className="text-xs text-slate-400">Clinical disciplines for filtering visiting doctors across OPD chambers</p>
+              </div>
+              <button
+                onClick={() => handleOpenDoctorSpecModal()}
+                className="flex items-center gap-2 px-4 py-2.5 bg-teal-600 hover:bg-teal-500 text-white font-bold text-xs rounded-xl transition shadow-lg shadow-teal-600/20"
+              >
+                <Plus className="w-4 h-4" /> Add Doctor Specialty
+              </button>
+            </div>
+
+            <div className="overflow-x-auto">
+              <table className="w-full text-left text-xs text-slate-300">
+                <thead className="bg-slate-950 text-slate-400 text-[11px] uppercase tracking-wider border-b border-slate-800">
+                  <tr>
+                    <th className="py-3.5 px-4">Specialty ID</th>
+                    <th className="py-3.5 px-4">Specialty Name</th>
+                    <th className="py-3.5 px-4">Icon Token</th>
+                    <th className="py-3.5 px-4">Description</th>
+                    <th className="py-3.5 px-4 text-right">Actions</th>
+                  </tr>
+                </thead>
+                <tbody className="divide-y divide-slate-800/60">
+                  {doctorSpecialties.map(s => (
+                    <tr key={s.id} className="hover:bg-slate-800/40 transition">
+                      <td className="py-3.5 px-4 font-mono text-teal-400 font-bold">{s.id}</td>
+                      <td className="py-3.5 px-4 font-bold text-white">{s.name}</td>
+                      <td className="py-3.5 px-4 font-mono text-slate-400">{s.icon || 'Stethoscope'}</td>
+                      <td className="py-3.5 px-4 text-slate-400">{s.description}</td>
+                      <td className="py-3.5 px-4 text-right space-x-2 whitespace-nowrap">
+                        <button
+                          onClick={() => handleOpenDoctorSpecModal(s)}
+                          className="p-2 bg-slate-800 hover:bg-slate-700 text-slate-300 rounded-lg transition"
+                        >
+                          <Edit className="w-4 h-4" />
+                        </button>
+                        <button
+                          onClick={() => handleDeleteDoctorSpec(s.id, s.name)}
+                          className="p-2 bg-rose-500/20 hover:bg-rose-500/30 text-rose-400 rounded-lg transition"
+                        >
+                          <Trash2 className="w-4 h-4" />
+                        </button>
+                      </td>
+                    </tr>
+                  ))}
+                </tbody>
+              </table>
+            </div>
+          </div>
+        )}
+
+        {/* 6. HOSPITAL SPECIALTIES TAB */}
+        {activeTab === 'hospital-specs' && (
+          <div className="bg-slate-900 border border-slate-800 rounded-2xl overflow-hidden shadow-xl">
+            <div className="p-5 border-b border-slate-800 flex flex-wrap items-center justify-between gap-4">
+              <div>
+                <h3 className="text-base font-bold text-white">Hospital Specialties & Categories</h3>
+                <p className="text-xs text-slate-400">Categories for filtering partner hospital and diagnostic center networks</p>
+              </div>
+              <button
+                onClick={() => handleOpenHospitalSpecModal()}
+                className="flex items-center gap-2 px-4 py-2.5 bg-emerald-600 hover:bg-emerald-500 text-white font-bold text-xs rounded-xl transition shadow-lg shadow-emerald-600/20"
+              >
+                <Plus className="w-4 h-4" /> Add Hospital Category
+              </button>
+            </div>
+
+            <div className="overflow-x-auto">
+              <table className="w-full text-left text-xs text-slate-300">
+                <thead className="bg-slate-950 text-slate-400 text-[11px] uppercase tracking-wider border-b border-slate-800">
+                  <tr>
+                    <th className="py-3.5 px-4">Category ID</th>
+                    <th className="py-3.5 px-4">Category Name</th>
+                    <th className="py-3.5 px-4">Icon Token</th>
+                    <th className="py-3.5 px-4">Description</th>
+                    <th className="py-3.5 px-4 text-right">Actions</th>
+                  </tr>
+                </thead>
+                <tbody className="divide-y divide-slate-800/60">
+                  {hospitalSpecialties.map(hs => (
+                    <tr key={hs.id} className="hover:bg-slate-800/40 transition">
+                      <td className="py-3.5 px-4 font-mono text-emerald-400 font-bold">{hs.id}</td>
+                      <td className="py-3.5 px-4 font-bold text-white">{hs.name}</td>
+                      <td className="py-3.5 px-4 font-mono text-slate-400">{hs.icon || 'Building2'}</td>
+                      <td className="py-3.5 px-4 text-slate-400">{hs.description}</td>
+                      <td className="py-3.5 px-4 text-right space-x-2 whitespace-nowrap">
+                        <button
+                          onClick={() => handleOpenHospitalSpecModal(hs)}
+                          className="p-2 bg-slate-800 hover:bg-slate-700 text-slate-300 rounded-lg transition"
+                        >
+                          <Edit className="w-4 h-4" />
+                        </button>
+                        <button
+                          onClick={() => handleDeleteHospitalSpec(hs.id, hs.name)}
+                          className="p-2 bg-rose-500/20 hover:bg-rose-500/30 text-rose-400 rounded-lg transition"
+                        >
+                          <Trash2 className="w-4 h-4" />
+                        </button>
+                      </td>
+                    </tr>
+                  ))}
+                </tbody>
+              </table>
+            </div>
+          </div>
+        )}
+
+        {/* 7. TEST CATEGORIES TAB */}
+        {activeTab === 'test-cats' && (
+          <div className="bg-slate-900 border border-slate-800 rounded-2xl overflow-hidden shadow-xl">
+            <div className="p-5 border-b border-slate-800 flex flex-wrap items-center justify-between gap-4">
+              <div>
+                <h3 className="text-base font-bold text-white">Pathology Test Categories</h3>
+                <p className="text-xs text-slate-400">Grouping categories for diagnostic & pathology lab test packages</p>
+              </div>
+              <button
+                onClick={() => handleOpenTestCatModal()}
+                className="flex items-center gap-2 px-4 py-2.5 bg-cyan-600 hover:bg-cyan-500 text-white font-bold text-xs rounded-xl transition shadow-lg shadow-cyan-600/20"
+              >
+                <Plus className="w-4 h-4" /> Add Test Category
+              </button>
+            </div>
+
+            <div className="overflow-x-auto">
+              <table className="w-full text-left text-xs text-slate-300">
+                <thead className="bg-slate-950 text-slate-400 text-[11px] uppercase tracking-wider border-b border-slate-800">
+                  <tr>
+                    <th className="py-3.5 px-4">Category ID</th>
+                    <th className="py-3.5 px-4">Category Name</th>
+                    <th className="py-3.5 px-4">Icon Token</th>
+                    <th className="py-3.5 px-4">Description</th>
+                    <th className="py-3.5 px-4 text-right">Actions</th>
+                  </tr>
+                </thead>
+                <tbody className="divide-y divide-slate-800/60">
+                  {testCategories.map(tc => (
+                    <tr key={tc.id} className="hover:bg-slate-800/40 transition">
+                      <td className="py-3.5 px-4 font-mono text-cyan-400 font-bold">{tc.id}</td>
+                      <td className="py-3.5 px-4 font-bold text-white">{tc.name}</td>
+                      <td className="py-3.5 px-4 font-mono text-slate-400">{tc.icon || 'FlaskConical'}</td>
+                      <td className="py-3.5 px-4 text-slate-400">{tc.description}</td>
+                      <td className="py-3.5 px-4 text-right space-x-2 whitespace-nowrap">
+                        <button
+                          onClick={() => handleOpenTestCatModal(tc)}
+                          className="p-2 bg-slate-800 hover:bg-slate-700 text-slate-300 rounded-lg transition"
+                        >
+                          <Edit className="w-4 h-4" />
+                        </button>
+                        <button
+                          onClick={() => handleDeleteTestCat(tc.id, tc.name)}
+                          className="p-2 bg-rose-500/20 hover:bg-rose-500/30 text-rose-400 rounded-lg transition"
+                        >
+                          <Trash2 className="w-4 h-4" />
+                        </button>
+                      </td>
+                    </tr>
+                  ))}
+                </tbody>
+              </table>
+            </div>
+          </div>
+        )}
+
       </main>
 
       {/* --- HOSPITAL / BRANCH MODAL --- */}
@@ -1229,6 +1749,19 @@ export default function AdminDashboardPage({ currentUser, onNavigate, onAdminLog
                   onChange={e => setChamberForm({...chamberForm, hospital_name: e.target.value})}
                   className="w-full bg-slate-950 border border-slate-800 rounded-xl px-3.5 py-2.5 text-white focus:outline-none focus:border-teal-500 font-semibold"
                 />
+              </div>
+
+              <div>
+                <label className="block text-slate-300 font-bold mb-1">Hospital Specialty / Category</label>
+                <select
+                  value={chamberForm.specialtyCategory || 'multispecialty'}
+                  onChange={e => setChamberForm({...chamberForm, specialtyCategory: e.target.value})}
+                  className="w-full bg-slate-950 border border-slate-800 rounded-xl px-3.5 py-2.5 text-white focus:outline-none focus:border-emerald-500 font-semibold"
+                >
+                  {hospitalSpecialties.map(hs => (
+                    <option key={hs.id} value={hs.id}>{hs.name}</option>
+                  ))}
+                </select>
               </div>
 
               <div className="grid grid-cols-2 gap-3">
@@ -1857,7 +2390,27 @@ export default function AdminDashboardPage({ currentUser, onNavigate, onAdminLog
               </div>
 
               <div>
-                <label className="block text-slate-300 font-bold mb-1">Category</label>
+                <label className="block text-slate-300 font-bold mb-1">Test Category Group</label>
+                <select
+                  value={testForm.categoryGroup || 'blood'}
+                  onChange={e => {
+                    const catObj = testCategories.find(tc => tc.id === e.target.value);
+                    setTestForm({
+                      ...testForm, 
+                      categoryGroup: e.target.value,
+                      category: catObj ? catObj.name : e.target.value
+                    });
+                  }}
+                  className="w-full bg-slate-950 border border-slate-800 rounded-xl px-3 py-2 text-white font-semibold"
+                >
+                  {testCategories.map(tc => (
+                    <option key={tc.id} value={tc.id}>{tc.name}</option>
+                  ))}
+                </select>
+              </div>
+
+              <div>
+                <label className="block text-slate-300 font-bold mb-1">Display Category Name</label>
                 <input
                   type="text"
                   required
@@ -1902,6 +2455,195 @@ export default function AdminDashboardPage({ currentUser, onNavigate, onAdminLog
                   className="px-5 py-2 bg-teal-600 hover:bg-teal-500 text-white font-bold rounded-xl"
                 >
                   Save Test
+                </button>
+              </div>
+            </form>
+          </div>
+        </div>
+      )}
+
+      {/* --- DOCTOR SPECIALTY MODAL --- */}
+      {showDoctorSpecModal && (
+        <div className="fixed inset-0 z-50 bg-slate-950/80 backdrop-blur-sm flex items-center justify-center p-4">
+          <div className="bg-slate-900 border border-slate-800 rounded-2xl max-w-md w-full p-6 shadow-2xl space-y-4">
+            <h3 className="text-lg font-bold text-white">
+              {editingDoctorSpec ? 'Edit Doctor Specialty' : 'Add New Doctor Specialty'}
+            </h3>
+            
+            <form onSubmit={handleSaveDoctorSpec} className="space-y-4 text-xs">
+              <div>
+                <label className="block text-slate-300 font-bold mb-1">Specialty Name</label>
+                <input
+                  type="text"
+                  required
+                  placeholder="e.g. Cardiologist / Neurologist"
+                  value={doctorSpecForm.name}
+                  onChange={e => setDoctorSpecForm({...doctorSpecForm, name: e.target.value, id: doctorSpecForm.id || e.target.value.toLowerCase().replace(/\s+/g, '-')})}
+                  className="w-full bg-slate-950 border border-slate-800 rounded-xl px-3 py-2 text-white font-semibold"
+                />
+              </div>
+
+              <div>
+                <label className="block text-slate-300 font-bold mb-1">Lucide Icon Name</label>
+                <input
+                  type="text"
+                  placeholder="e.g. Heart, Brain, Baby, Stethoscope"
+                  value={doctorSpecForm.icon}
+                  onChange={e => setDoctorSpecForm({...doctorSpecForm, icon: e.target.value})}
+                  className="w-full bg-slate-950 border border-slate-800 rounded-xl px-3 py-2 text-white font-mono"
+                />
+              </div>
+
+              <div>
+                <label className="block text-slate-300 font-bold mb-1">Description</label>
+                <input
+                  type="text"
+                  placeholder="e.g. Heart & Vascular Care"
+                  value={doctorSpecForm.description}
+                  onChange={e => setDoctorSpecForm({...doctorSpecForm, description: e.target.value})}
+                  className="w-full bg-slate-950 border border-slate-800 rounded-xl px-3 py-2 text-white"
+                />
+              </div>
+
+              <div className="flex justify-end gap-3 pt-4 border-t border-slate-800">
+                <button
+                  type="button"
+                  onClick={() => setShowDoctorSpecModal(false)}
+                  className="px-4 py-2 bg-slate-800 text-slate-300 rounded-xl hover:bg-slate-700 font-semibold"
+                >
+                  Cancel
+                </button>
+                <button
+                  type="submit"
+                  className="px-5 py-2 bg-teal-600 hover:bg-teal-500 text-white font-bold rounded-xl"
+                >
+                  Save Specialty
+                </button>
+              </div>
+            </form>
+          </div>
+        </div>
+      )}
+
+      {/* --- HOSPITAL SPECIALTY MODAL --- */}
+      {showHospitalSpecModal && (
+        <div className="fixed inset-0 z-50 bg-slate-950/80 backdrop-blur-sm flex items-center justify-center p-4">
+          <div className="bg-slate-900 border border-slate-800 rounded-2xl max-w-md w-full p-6 shadow-2xl space-y-4">
+            <h3 className="text-lg font-bold text-white">
+              {editingHospitalSpec ? 'Edit Hospital Specialty / Category' : 'Add New Hospital Category'}
+            </h3>
+            
+            <form onSubmit={handleSaveHospitalSpec} className="space-y-4 text-xs">
+              <div>
+                <label className="block text-slate-300 font-bold mb-1">Category Name</label>
+                <input
+                  type="text"
+                  required
+                  placeholder="e.g. Cardiac Hospitals / Eye Hospitals"
+                  value={hospitalSpecForm.name}
+                  onChange={e => setHospitalSpecForm({...hospitalSpecForm, name: e.target.value, id: hospitalSpecForm.id || e.target.value.toLowerCase().replace(/\s+/g, '-')})}
+                  className="w-full bg-slate-950 border border-slate-800 rounded-xl px-3 py-2 text-white font-semibold"
+                />
+              </div>
+
+              <div>
+                <label className="block text-slate-300 font-bold mb-1">Lucide Icon Name</label>
+                <input
+                  type="text"
+                  placeholder="e.g. Building2, Heart, Sparkles, Activity"
+                  value={hospitalSpecForm.icon}
+                  onChange={e => setHospitalSpecForm({...hospitalSpecForm, icon: e.target.value})}
+                  className="w-full bg-slate-950 border border-slate-800 rounded-xl px-3 py-2 text-white font-mono"
+                />
+              </div>
+
+              <div>
+                <label className="block text-slate-300 font-bold mb-1">Description</label>
+                <input
+                  type="text"
+                  placeholder="e.g. Specialized Heart Institutes"
+                  value={hospitalSpecForm.description}
+                  onChange={e => setHospitalSpecForm({...hospitalSpecForm, description: e.target.value})}
+                  className="w-full bg-slate-950 border border-slate-800 rounded-xl px-3 py-2 text-white"
+                />
+              </div>
+
+              <div className="flex justify-end gap-3 pt-4 border-t border-slate-800">
+                <button
+                  type="button"
+                  onClick={() => setShowHospitalSpecModal(false)}
+                  className="px-4 py-2 bg-slate-800 text-slate-300 rounded-xl hover:bg-slate-700 font-semibold"
+                >
+                  Cancel
+                </button>
+                <button
+                  type="submit"
+                  className="px-5 py-2 bg-emerald-600 hover:bg-emerald-500 text-white font-bold rounded-xl"
+                >
+                  Save Category
+                </button>
+              </div>
+            </form>
+          </div>
+        </div>
+      )}
+
+      {/* --- TEST CATEGORY MODAL --- */}
+      {showTestCatModal && (
+        <div className="fixed inset-0 z-50 bg-slate-950/80 backdrop-blur-sm flex items-center justify-center p-4">
+          <div className="bg-slate-900 border border-slate-800 rounded-2xl max-w-md w-full p-6 shadow-2xl space-y-4">
+            <h3 className="text-lg font-bold text-white">
+              {editingTestCat ? 'Edit Test Category' : 'Add New Test Category'}
+            </h3>
+            
+            <form onSubmit={handleSaveTestCat} className="space-y-4 text-xs">
+              <div>
+                <label className="block text-slate-300 font-bold mb-1">Category Name</label>
+                <input
+                  type="text"
+                  required
+                  placeholder="e.g. Blood Tests / Radiology & Scans"
+                  value={testCatForm.name}
+                  onChange={e => setTestCatForm({...testCatForm, name: e.target.value, id: testCatForm.id || e.target.value.toLowerCase().replace(/\s+/g, '-')})}
+                  className="w-full bg-slate-950 border border-slate-800 rounded-xl px-3 py-2 text-white font-semibold"
+                />
+              </div>
+
+              <div>
+                <label className="block text-slate-300 font-bold mb-1">Lucide Icon Name</label>
+                <input
+                  type="text"
+                  placeholder="e.g. FlaskConical, Droplet, FileText, Heart"
+                  value={testCatForm.icon}
+                  onChange={e => setTestCatForm({...testCatForm, icon: e.target.value})}
+                  className="w-full bg-slate-950 border border-slate-800 rounded-xl px-3 py-2 text-white font-mono"
+                />
+              </div>
+
+              <div>
+                <label className="block text-slate-300 font-bold mb-1">Description</label>
+                <input
+                  type="text"
+                  placeholder="e.g. CBC, Hemoglobin & Serology"
+                  value={testCatForm.description}
+                  onChange={e => setTestCatForm({...testCatForm, description: e.target.value})}
+                  className="w-full bg-slate-950 border border-slate-800 rounded-xl px-3 py-2 text-white"
+                />
+              </div>
+
+              <div className="flex justify-end gap-3 pt-4 border-t border-slate-800">
+                <button
+                  type="button"
+                  onClick={() => setShowTestCatModal(false)}
+                  className="px-4 py-2 bg-slate-800 text-slate-300 rounded-xl hover:bg-slate-700 font-semibold"
+                >
+                  Cancel
+                </button>
+                <button
+                  type="submit"
+                  className="px-5 py-2 bg-cyan-600 hover:bg-cyan-500 text-white font-bold rounded-xl"
+                >
+                  Save Category
                 </button>
               </div>
             </form>

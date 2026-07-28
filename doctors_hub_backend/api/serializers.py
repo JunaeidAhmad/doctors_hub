@@ -1,6 +1,6 @@
 from rest_framework import serializers
 from .models import (
-    User, Hospital, Branch, Specialty, PathologyTest, BranchTest,
+    User, Hospital, Branch, Specialty, HospitalSpecialty, TestCategory, PathologyTest, BranchTest,
     Doctor, DoctorAffiliation, AffiliationSchedule,
     DoctorBooking, LabBooking
 )
@@ -50,6 +50,18 @@ class LoginSerializer(serializers.Serializer):
 class SpecialtySerializer(serializers.ModelSerializer):
     class Meta:
         model = Specialty
+        fields = '__all__'
+
+DoctorSpecialtySerializer = SpecialtySerializer
+
+class HospitalSpecialtySerializer(serializers.ModelSerializer):
+    class Meta:
+        model = HospitalSpecialty
+        fields = '__all__'
+
+class TestCategorySerializer(serializers.ModelSerializer):
+    class Meta:
+        model = TestCategory
         fields = '__all__'
 
 class PathologyTestSerializer(serializers.ModelSerializer):
