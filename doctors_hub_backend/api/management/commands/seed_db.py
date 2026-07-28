@@ -1,5 +1,5 @@
 from django.core.management.base import BaseCommand
-from api.models import User, Specialty, PathologyTest, Chamber, Doctor
+from api.models import User, DoctorSpecialty, PathologyTest, Branch, Doctor
 
 class Command(BaseCommand):
     help = 'Seeds NeonDB database with mock data'
@@ -25,7 +25,7 @@ class Command(BaseCommand):
 
         specialty_map = {}
         for sp in SPECIALTIES:
-            obj, created = Specialty.objects.update_or_create(
+            obj, created = DoctorSpecialty.objects.update_or_create(
                 id=sp["id"],
                 defaults={
                     "name": sp["name"],

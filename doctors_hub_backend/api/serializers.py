@@ -1,6 +1,6 @@
 from rest_framework import serializers
 from .models import (
-    User, Hospital, Branch, Specialty, HospitalSpecialty, TestCategory, PathologyTest, BranchTest,
+    User, Hospital, Branch, DoctorSpecialty, HospitalSpecialty, TestCategory, PathologyTest, BranchTest,
     Doctor, DoctorAffiliation, AffiliationSchedule,
     DoctorBooking, LabBooking
 )
@@ -47,12 +47,12 @@ class LoginSerializer(serializers.Serializer):
             return user
         raise serializers.ValidationError("Incorrect Credentials")
 
-class SpecialtySerializer(serializers.ModelSerializer):
+class DoctorSpecialtySerializer(serializers.ModelSerializer):
     class Meta:
-        model = Specialty
+        model = DoctorSpecialty
         fields = '__all__'
 
-DoctorSpecialtySerializer = SpecialtySerializer
+SpecialtySerializer = DoctorSpecialtySerializer
 
 class HospitalSpecialtySerializer(serializers.ModelSerializer):
     class Meta:
@@ -122,9 +122,9 @@ class DoctorAffiliationSerializer(serializers.ModelSerializer):
         return instance
 
 class DoctorSerializer(serializers.ModelSerializer):
-    specialties = SpecialtySerializer(many=True, read_only=True)
+    specialties = DoctorSpecialtySerializer(many=True, read_only=True)
     specialty_ids = serializers.PrimaryKeyRelatedField(
-        queryset=Specialty.objects.all(), many=True, write_only=True, source='specialties', required=False
+        queryset=DoctorSpecialty.objects.all(), many=True, write_only=True, source='specialties', required=False
     )
     affiliations = DoctorAffiliationSerializer(many=True, required=False)
 

@@ -2,7 +2,7 @@ from django.urls import path, include
 from rest_framework.routers import DefaultRouter
 from .views import (
     RegisterAPIView, LoginAPIView, UserProfileAPIView,
-    HospitalViewSet, BranchViewSet, SpecialtyViewSet, HospitalSpecialtyViewSet, TestCategoryViewSet, PathologyTestViewSet,
+    HospitalViewSet, BranchViewSet, DoctorSpecialtyViewSet, HospitalSpecialtyViewSet, TestCategoryViewSet, PathologyTestViewSet,
     BranchTestViewSet, DoctorViewSet, DoctorAffiliationViewSet,
     DoctorBookingViewSet, LabBookingViewSet
 )
@@ -11,8 +11,8 @@ router = DefaultRouter()
 router.register(r'hospitals', HospitalViewSet)
 router.register(r'branches', BranchViewSet, basename='branch')
 router.register(r'chambers', BranchViewSet, basename='chamber')
-router.register(r'specialties', SpecialtyViewSet)
-router.register(r'doctor-specialties', SpecialtyViewSet, basename='doctor-specialty')
+router.register(r'specialties', DoctorSpecialtyViewSet, basename='specialty')
+router.register(r'doctor-specialties', DoctorSpecialtyViewSet, basename='doctor-specialty')
 router.register(r'hospital-specialties', HospitalSpecialtyViewSet)
 router.register(r'test-categories', TestCategoryViewSet)
 router.register(r'tests', PathologyTestViewSet)

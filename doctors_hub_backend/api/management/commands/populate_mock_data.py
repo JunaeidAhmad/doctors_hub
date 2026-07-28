@@ -1,6 +1,6 @@
 from django.core.management.base import BaseCommand
 from api.models import (
-    User, Hospital, Branch, Specialty, PathologyTest, BranchTest,
+    User, Hospital, Branch, DoctorSpecialty, HospitalSpecialty, TestCategory, PathologyTest, BranchTest,
     Doctor, DoctorAffiliation, AffiliationSchedule
 )
 import datetime
@@ -15,7 +15,9 @@ class Command(BaseCommand):
         BranchTest.objects.all().delete()
         Doctor.objects.all().delete()
         PathologyTest.objects.all().delete()
-        Specialty.objects.all().delete()
+        DoctorSpecialty.objects.all().delete()
+        HospitalSpecialty.objects.all().delete()
+        TestCategory.objects.all().delete()
         Branch.objects.all().delete()
         Hospital.objects.all().delete()
 
@@ -125,11 +127,11 @@ class Command(BaseCommand):
         )
 
         self.stdout.write("Creating Specialties...")
-        s_cardio = Specialty.objects.create(id="cardiology", name="Cardiologist", icon="Heart", description="Heart & Vascular Care")
-        s_gyn = Specialty.objects.create(id="gynecology", name="Gynecologist", icon="User", description="Women's Health & Maternity")
-        s_neuro = Specialty.objects.create(id="neurology", name="Neurologist", icon="Brain", description="Brain & Nervous System")
-        s_ortho = Specialty.objects.create(id="orthopedics", name="Orthopedic", icon="Activity", description="Bones, Joints & Spine")
-        s_derm = Specialty.objects.create(id="dermatology", name="Dermatologist", icon="Sparkles", description="Skin, Hair & Aesthetics")
+        s_cardio = DoctorSpecialty.objects.create(id="cardiology", name="Cardiologist", icon="Heart", description="Heart & Vascular Care")
+        s_gyn = DoctorSpecialty.objects.create(id="gynecology", name="Gynecologist", icon="User", description="Women's Health & Maternity")
+        s_neuro = DoctorSpecialty.objects.create(id="neurology", name="Neurologist", icon="Brain", description="Brain & Nervous System")
+        s_ortho = DoctorSpecialty.objects.create(id="orthopedics", name="Orthopedic", icon="Activity", description="Bones, Joints & Spine")
+        s_derm = DoctorSpecialty.objects.create(id="dermatology", name="Dermatologist", icon="Sparkles", description="Skin, Hair & Aesthetics")
 
         self.stdout.write("Creating Pathology Tests...")
         t_cbc = PathologyTest.objects.create(

@@ -1,6 +1,6 @@
 from django.contrib import admin
 from .models import (
-    User, Hospital, Branch, Specialty, PathologyTest, BranchTest,
+    User, Hospital, Branch, DoctorSpecialty, HospitalSpecialty, TestCategory, PathologyTest, BranchTest,
     Doctor, DoctorAffiliation, AffiliationSchedule,
     DoctorBooking, LabBooking
 )
@@ -29,14 +29,24 @@ class BranchAdmin(admin.ModelAdmin):
     search_fields = ('name', 'city', 'location')
     inlines = [BranchTestInline, DoctorAffiliationInline]
 
-@admin.register(Specialty)
-class SpecialtyAdmin(admin.ModelAdmin):
+@admin.register(DoctorSpecialty)
+class DoctorSpecialtyAdmin(admin.ModelAdmin):
     list_display = ('id', 'name', 'icon')
+    search_fields = ('name',)
+
+@admin.register(HospitalSpecialty)
+class HospitalSpecialtyAdmin(admin.ModelAdmin):
+    list_display = ('id', 'name', 'icon', 'count')
+    search_fields = ('name',)
+
+@admin.register(TestCategory)
+class TestCategoryAdmin(admin.ModelAdmin):
+    list_display = ('id', 'name', 'icon', 'count')
     search_fields = ('name',)
 
 @admin.register(PathologyTest)
 class PathologyTestAdmin(admin.ModelAdmin):
-    list_display = ('id', 'name', 'category', 'fasting_required')
+    list_display = ('id', 'name', 'category', 'test_category', 'fasting_required')
     list_filter = ('category', 'fasting_required')
     search_fields = ('name', 'category')
 

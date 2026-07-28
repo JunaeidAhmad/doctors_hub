@@ -65,7 +65,7 @@ class Branch(models.Model):
         h_prefix = f"{self.hospital_name} - " if self.hospital_name else ""
         return f"{h_prefix}{self.name} ({self.city})"
 
-class Specialty(models.Model):
+class DoctorSpecialty(models.Model):
     """Doctor Specialty"""
     id = models.CharField(max_length=50, primary_key=True)
     name = models.CharField(max_length=100)
@@ -77,9 +77,6 @@ class Specialty(models.Model):
 
     def __str__(self):
         return self.name
-
-# Alias for clarity
-DoctorSpecialty = Specialty
 
 class HospitalSpecialty(models.Model):
     """Hospital Specialty / Category"""
@@ -134,7 +131,7 @@ class BranchTest(models.Model):
 class Doctor(models.Model):
     id = models.CharField(max_length=50, primary_key=True)
     name = models.CharField(max_length=200)
-    specialties = models.ManyToManyField(Specialty, related_name='doctors')
+    specialties = models.ManyToManyField(DoctorSpecialty, related_name='doctors')
     qualification = models.TextField()
     experience = models.CharField(max_length=50)
 

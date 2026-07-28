@@ -27,11 +27,11 @@ export default function ThreeWayEngine({
               <span>Smart Healthcare Search</span>
             </div>
             <h2 className="text-xl sm:text-2xl font-black text-slate-900 tracking-tight">
-              Find Doctors, Tests & Clinics
+              Find Doctors, Diagnostics & Hospitals
             </h2>
           </div>
           <p className="text-xs sm:text-sm text-slate-500 max-w-md">
-            Find specialist doctors, lab diagnostic tests, and clinic locations near you in real time.
+            Find specialist doctors, lab diagnostic tests, and hospital locations near you in real time.
           </p>
         </div>
 
