@@ -46,10 +46,10 @@ export default function SpecialtyGrid({ selectedSpecialty, setSelectedSpecialty,
             Specialist Categories
           </span>
           <h2 className="text-2xl sm:text-3xl font-black text-slate-900 mt-2">
-            Consult Top Specialists by Department
+            Consult Top Specialists
           </h2>
           <p className="text-xs sm:text-sm text-slate-600 mt-1">
-            Choose a clinical discipline to filter visiting OPD doctors in your region.
+            Choose a clinical discipline to filter visiting doctors in your region.
           </p>
         </div>
 

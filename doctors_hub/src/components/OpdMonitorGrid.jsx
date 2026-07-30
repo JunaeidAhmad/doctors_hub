@@ -19,10 +19,10 @@ export default function OpdMonitorGrid({ onSelectCategory }) {
         {/* Section Header */}
         <div className="text-center max-w-2xl mx-auto mb-10">
           <span className="text-xs font-extrabold uppercase tracking-wider text-emerald-700 bg-emerald-100 px-3 py-1 rounded-full">
-            Real-Time Live Monitor
+            Hospital Categories
           </span>
           <h2 className="text-2xl sm:text-3xl font-black text-slate-900 mt-2 tracking-tight">
-            Hospital & Diagnostic Partner
+            Hospitals
           </h2>
           <p className="mt-1 text-sm text-slate-600">
             Verified hospital networks, specialized institutes & diagnostic clinics across Bangladesh.

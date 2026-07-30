@@ -16,7 +16,7 @@ export default function Footer({ onSelectLocation }) {
                 <HeartPulse className="w-6 h-6" />
               </div>
               <span className="text-2xl font-black text-white">
-                Doctor<span className="text-emerald-500">Hub</span>.com.bd
+                Doctors<span className="text-emerald-500">Hub</span>.com.bd
               </span>
             </div>
             <p className="text-slate-400 text-xs leading-relaxed max-w-sm">

@@ -19,10 +19,10 @@ export default function PathologySection({ onSelectCategory }) {
         {/* Header */}
         <div className="text-center max-w-2xl mx-auto mb-10">
           <span className="text-xs font-extrabold uppercase tracking-wider text-emerald-700 bg-emerald-100 px-3 py-1 rounded-full">
-            NABL & DGHS Approved Diagnostics
+            Diagnostics Categories
           </span>
           <h2 className="text-2xl sm:text-3xl font-black text-slate-900 mt-2 tracking-tight">
-            Tests and Health Checkup packages
+            Diagnostics
           </h2>
           <p className="mt-1 text-sm text-slate-600">
             Free home blood sample pickup, digital WhatsApp report delivery, and verified lab partners.

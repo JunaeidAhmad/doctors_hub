@@ -72,17 +72,17 @@ export default function HomePage({
         }}
       />
 
-      {/* 6. HOSPITALS AND DIAGNOSTICS GRID (REAL-TIME OPD MONITOR GRID) */}
-      <OpdMonitorGrid
-        onSelectCategory={(specId) => {
-          onExecuteSearch('hospital', specId);
-        }}
-      />
-
-      {/* 7. LAB TEST GRID (PATHOLOGY DIAGNOSTICS SECTION) */}
+      {/* 6. LAB TEST GRID (PATHOLOGY DIAGNOSTICS SECTION) */}
       <PathologySection
         onSelectCategory={(catId) => {
           onExecuteSearch('pathology', catId);
+        }}
+      />
+
+      {/* 7. HOSPITALS AND DIAGNOSTICS GRID (REAL-TIME OPD MONITOR GRID) */}
+      <OpdMonitorGrid
+        onSelectCategory={(specId) => {
+          onExecuteSearch('hospital', specId);
         }}
       />
 

@@ -68,44 +68,139 @@ export const SPECIALTIES = [
   { id: "nephrology", name: "Nephrologist", icon: "Droplet", description: "Kidney Care & Dialysis", count: 20 }
 ];
 
-export const HOSPITAL_SPECIALTIES = [
-  { id: "all", name: "All Partners", icon: "Building2", description: "Show All Hospitals & Labs", count: 24 },
-  { id: "cardiac", name: "Cardiac Hospitals", icon: "Heart", description: "Specialized Heart Institutes", count: 6 },
-  { id: "eye", name: "Eye Hospitals", icon: "Sparkles", description: "Ophthalmology & Vision Care", count: 5 },
+export const HOSPITAL_CATEGORIES = [
+  { id: "all", name: "All Hospital Partners", icon: "Building2", description: "Show All Multi-Specialty Institutes", count: 12 },
+  { id: "cardiac", name: "Cardiac Hospitals", icon: "Heart", description: "Specialized Heart Institutes", count: 4 },
+  { id: "eye", name: "Eye Hospitals", icon: "Sparkles", description: "Ophthalmology & Vision Care", count: 3 },
   { id: "multispecialty", name: "Multi-Specialty", icon: "Building2", description: "General & In-Patient Hubs", count: 8 },
-  { id: "diagnostic", name: "Diagnostic Centers", icon: "FlaskConical", description: "Pathology & Imaging Labs", count: 12 },
-  { id: "orthopedic", name: "Orthopedic Centers", icon: "Activity", description: "Bone, Joint & Spine Care", count: 4 }
+  { id: "orthopedic", name: "Orthopedic Centers", icon: "Activity", description: "Bone, Joint & Spine Care", count: 3 }
 ];
 
-export const PATHOLOGY_CATEGORIES = [
-  { id: "all", name: "All Packages", icon: "FlaskConical", description: "All Tests & Health Profiles", count: 18 },
-  { id: "blood", name: "Blood Tests", icon: "Droplet", description: "CBC, Hemoglobin & Serology", count: 8 },
-  { id: "radiology", name: "Radiology & Scans", icon: "FileText", description: "CT Scan, MRI & X-Ray", count: 5 },
-  { id: "usg", name: "Ultrasonography", icon: "Activity", description: "4D Ultrasound & Doppler", count: 4 },
-  { id: "cardiac_profile", name: "Cardiac Profiles", icon: "Heart", description: "Lipid, ECG & Troponin-I", count: 3 }
+// Alias for backward compatibility
+export const HOSPITAL_SPECIALTIES = HOSPITAL_CATEGORIES;
+
+export const DIAGNOSTIC_CENTER_CATEGORIES = [
+  { id: "all", name: "All Center Categories", icon: "Building2", parent: null },
+  { id: "private-chain", name: "Private Diagnostic Chain", icon: "Building2", parent: null },
+  { id: "gov-labs", name: "Government & Public Labs", icon: "ShieldCheck", parent: null },
+  { id: "specialized-centers", name: "Specialized Diagnostic Centers", icon: "Activity", parent: null },
+  { id: "pathology-biochem", name: "Pathology & Clinical Biochemistry", icon: "FlaskConical", parent: "private-chain" },
+  { id: "radiology-imaging", name: "Advanced Radiology & Imaging Hubs", icon: "FileText", parent: "private-chain" },
+  { id: "cardiac-diagnostics", name: "Cardiac Diagnostics & Echo Centers", icon: "Heart", parent: "specialized-centers" }
 ];
+
+export const TEST_CATEGORIES = [
+  { id: "all", name: "All Test Categories", icon: "FlaskConical", description: "All Pathology & Imaging Tests", count: 18 },
+  { id: "routine-blood", name: "Routine Blood Profiles", icon: "Droplet", description: "CBC, Hemoglobin & ESR", count: 8 },
+  { id: "hormone-profiles", name: "Hormone & Endocrine Profiles", icon: "Sparkles", description: "Thyroid T3, T4, TSH & Diabetes", count: 5 },
+  { id: "ct-mri-imaging", name: "CT Scan & MRI Imaging", icon: "FileText", description: "Brain, Chest & Abdomen Scans", count: 5 },
+  { id: "ultrasound", name: "Ultrasonography (USG)", icon: "Activity", description: "4D Abdomen & Pelvic Sonography", count: 4 },
+  { id: "lipid-cardiac", name: "Lipid & Cardiac Profiles", icon: "Heart", description: "Cholesterol, Lipid Panel & Troponin-I", count: 3 }
+];
+
+// Backward compatibility alias
+export const PATHOLOGY_CATEGORIES = TEST_CATEGORIES;
 
 export const HOSPITALS = [
   {
     id: "ibn-sina",
     name: "Ibn Sina Healthcare Group",
     description: "Leading nationwide hospital network offering multi-branch inpatient & outpatient services.",
-    logo: "https://images.unsplash.com/photo-1519494026892-80bbd2d6fd0d?auto=format&fit=crop&w=600&q=80"
+    city: "Dhaka",
+    district: "Dhaka",
+    location: "House 48, Road 9/A, Dhanmondi, Dhaka",
+    logo: "https://images.unsplash.com/photo-1519494026892-80bbd2d6fd0d?auto=format&fit=crop&w=600&q=80",
+    image: "https://images.unsplash.com/photo-1519494026892-80bbd2d6fd0d?auto=format&fit=crop&w=600&q=80",
+    rating: 4.9,
+    reviews_count: 320,
+    open_timing: "24/7 Inpatient & OPD",
+    is_verified: true
   },
   {
-    id: "popular",
-    name: "Popular Diagnostic & Medical Center",
-    description: "Nationwide healthcare pioneer providing state-of-the-art diagnostic imaging and specialist doctor chambers.",
-    logo: "https://images.unsplash.com/photo-1586773860418-d37222d8fce3?auto=format&fit=crop&w=600&q=80"
+    id: "nhf",
+    name: "National Heart Foundation",
+    description: "Premier specialized cardiac and cardiovascular hospital institute in Bangladesh.",
+    city: "Dhaka",
+    district: "Dhaka",
+    location: "Mirpur-2, Dhaka",
+    logo: "https://images.unsplash.com/photo-1519494026892-80bbd2d6fd0d?auto=format&fit=crop&w=600&q=80",
+    image: "https://images.unsplash.com/photo-1519494026892-80bbd2d6fd0d?auto=format&fit=crop&w=600&q=80",
+    rating: 4.95,
+    reviews_count: 520,
+    open_timing: "24/7 Emergency & OPD",
+    is_verified: true
   }
 ];
 
-export const PATHOLOGY_TESTS = [
+export const DIAGNOSTIC_CENTERS = [
+  {
+    id: "popular-panthapath",
+    name: "Popular Diagnostic Centre - Panthapath",
+    address: "House 16, Road 2, Dhanmondi / Panthapath, Dhaka",
+    district: "Dhaka",
+    division: "Dhaka",
+    city: "Dhaka",
+    location: "House 16, Road 2, Dhanmondi / Panthapath, Dhaka",
+    phone: "+880 9613-787801",
+    rating: 4.85,
+    reviews_count: 410,
+    open_timing: "07:00 AM - 11:00 PM",
+    tagline: "Nationwide Leading Diagnostic & Imaging Hub",
+    badge: "Verified Partner",
+    image: "https://images.unsplash.com/photo-1586773860418-d37222d8fce3?auto=format&fit=crop&w=600&q=80",
+    services: ["Specialist Visiting Doctor OPD", "Advanced MRI", "Full Automated Pathology", "128-Slice CT Scan"],
+    is_verified: true,
+    categories: [{ id: "pathology-biochem", name: "Pathology & Clinical Biochemistry" }]
+  },
+  {
+    id: "ibn-sina-mirpur",
+    name: "Ibn Sina Diagnostic Center - Mirpur",
+    address: "Plot 11, Avenue 1, Block A, Mirpur 10, Dhaka",
+    district: "Dhaka",
+    division: "Dhaka",
+    city: "Dhaka",
+    location: "Plot 11, Avenue 1, Block A, Mirpur 10, Dhaka",
+    phone: "+880 9610-010616",
+    rating: 4.8,
+    reviews_count: 180,
+    open_timing: "08:00 AM - 10:00 PM",
+    tagline: "Top Diagnostic Center in Mirpur",
+    badge: "Verified Partner",
+    image: "https://images.unsplash.com/photo-1538108149393-fbbd81895907?auto=format&fit=crop&w=600&q=80",
+    services: ["4D USG", "Digital X-Ray", "Blood Collection", "Visiting Specialist OPD"],
+    is_verified: true,
+    categories: [{ id: "pathology-biochem", name: "Pathology & Clinical Biochemistry" }]
+  },
+  {
+    id: "chevron-chittagong",
+    name: "Chevron Healthcare - Chittagong",
+    address: "12/12 O.R. Nizam Road, Panchlaish, Chittagong",
+    district: "Chittagong",
+    division: "Chittagong",
+    city: "Chittagong",
+    location: "12/12 O.R. Nizam Road, Panchlaish, Chittagong",
+    phone: "+880 31-652533",
+    rating: 4.9,
+    reviews_count: 260,
+    open_timing: "24/7 OPD & Diagnostic Service",
+    tagline: "Chittagong's Most Trusted Diagnostic Center",
+    badge: "Top Rated",
+    image: "https://images.unsplash.com/photo-1629909613654-28e377c37b09?auto=format&fit=crop&w=600&q=80",
+    services: ["24/7 Emergency OPD", "Digital X-Ray", "Home Sample Collection"],
+    is_verified: true,
+    categories: [{ id: "pathology-biochem", name: "Pathology & Clinical Biochemistry" }]
+  }
+];
+
+// Alias for backward compatibility
+export const OPD_CHAMBERS = DIAGNOSTIC_CENTERS;
+
+export const TESTS = [
   {
     id: "cbc",
     name: "Blood Test (CBC)",
     category: "Routine Blood Profiles",
-    categoryGroup: "blood",
+    categoryGroup: "routine-blood",
     fastingRequired: false,
     price: 450,
     originalPrice: 600,
@@ -114,10 +209,22 @@ export const PATHOLOGY_TESTS = [
     description: "Complete Blood Count measuring RBC, WBC, ESR, Platelets, and Hemoglobin."
   },
   {
+    id: "thyroid",
+    name: "Thyroid Profile (T3, T4, TSH)",
+    category: "Hormone & Endocrine Profiles",
+    categoryGroup: "hormone-profiles",
+    fastingRequired: false,
+    price: 1100,
+    originalPrice: 1500,
+    discount: "26% OFF",
+    reportTime: "12 Hours",
+    description: "Accurate endocrine hormone evaluation for thyroid disorders."
+  },
+  {
     id: "ct-scan",
     name: "CT Scan (Brain / Chest)",
-    category: "Advanced Radiology",
-    categoryGroup: "radiology",
+    category: "CT Scan & MRI Imaging",
+    categoryGroup: "ct-mri-imaging",
     fastingRequired: true,
     price: 4500,
     originalPrice: 6000,
@@ -128,8 +235,8 @@ export const PATHOLOGY_TESTS = [
   {
     id: "usg",
     name: "USG (Ultrasound Abdomen)",
-    category: "Sonography",
-    categoryGroup: "usg",
+    category: "Ultrasonography (USG)",
+    categoryGroup: "ultrasound",
     fastingRequired: true,
     price: 1500,
     originalPrice: 2000,
@@ -140,8 +247,8 @@ export const PATHOLOGY_TESTS = [
   {
     id: "lipid",
     name: "Lipid Profile (Cholesterol)",
-    category: "Cardiac Risk",
-    categoryGroup: "cardiac_profile",
+    category: "Lipid & Cardiac Profiles",
+    categoryGroup: "lipid-cardiac",
     fastingRequired: true,
     price: 1200,
     originalPrice: 1600,
@@ -151,214 +258,50 @@ export const PATHOLOGY_TESTS = [
   }
 ];
 
-export const BRANCH_TESTS = [
+// Alias for backward compatibility
+export const PATHOLOGY_TESTS = TESTS;
+
+export const DIAGNOSTIC_CENTER_TESTS = [
   {
     id: 1,
-    branch_id: "ibn-sina-dhanmondi",
-    branch_name: "Ibn Sina Hospital - Dhanmondi",
+    center_id: "popular-panthapath",
+    center_name: "Popular Diagnostic Centre - Panthapath",
     test_id: "cbc",
-    test_details: PATHOLOGY_TESTS[0],
-    price: 450,
-    original_price: 600,
-    discount: "25% OFF",
-    report_time: "Same Day (6 Hours)"
-  },
-  {
-    id: 2,
-    branch_id: "ibn-sina-mirpur",
-    branch_name: "Ibn Sina Diagnostic - Mirpur",
-    test_id: "cbc",
-    test_details: PATHOLOGY_TESTS[0],
-    price: 400,
-    original_price: 550,
-    discount: "27% OFF",
-    report_time: "Same Day (4 Hours)"
-  },
-  {
-    id: 3,
-    branch_id: "popular-panthapath",
-    branch_name: "Popular Diagnostic - Panthapath",
-    test_id: "cbc",
-    test_details: PATHOLOGY_TESTS[0],
+    test_details: TESTS[0],
     price: 500,
     original_price: 650,
     discount: "23% OFF",
-    report_time: "8 Hours"
+    report_time: "8 Hours",
+    home_sample_collection: true
   },
   {
-    id: 4,
-    branch_id: "ibn-sina-dhanmondi",
-    branch_name: "Ibn Sina Hospital - Dhanmondi",
-    test_id: "ct-scan",
-    test_details: PATHOLOGY_TESTS[1],
-    price: 4500,
-    original_price: 6000,
-    discount: "25% OFF",
-    report_time: "24 Hours"
+    id: 2,
+    center_id: "ibn-sina-mirpur",
+    center_name: "Ibn Sina Diagnostic Center - Mirpur",
+    test_id: "cbc",
+    test_details: TESTS[0],
+    price: 400,
+    original_price: 550,
+    discount: "27% OFF",
+    report_time: "Same Day (4 Hours)",
+    home_sample_collection: true
   },
   {
-    id: 5,
-    branch_id: "popular-panthapath",
-    branch_name: "Popular Diagnostic - Panthapath",
+    id: 3,
+    center_id: "popular-panthapath",
+    center_name: "Popular Diagnostic Centre - Panthapath",
     test_id: "ct-scan",
-    test_details: PATHOLOGY_TESTS[1],
+    test_details: TESTS[2],
     price: 4800,
     original_price: 6200,
     discount: "22% OFF",
-    report_time: "12 Hours"
+    report_time: "12 Hours",
+    home_sample_collection: false
   }
 ];
 
-export const OPD_CHAMBERS = [
-  {
-    id: "national-heart-institute",
-    hospital_id: "nhf",
-    hospital_name: "National Heart Foundation",
-    name: "National Heart Foundation & Research Institute",
-    specialtyCategory: "cardiac",
-    facility_types: ["Hospital", "Cardiac Center"],
-    location: "Mirpur-2, Dhaka",
-    city: "Dhaka",
-    verified: true,
-    rating: 4.95,
-    reviewsCount: 520,
-    openTiming: "24/7 Emergency & OPD",
-    contactPhone: "+880 2-9006970",
-    tagline: "Premier Specialized Cardiac & Cardiovascular Hospital in Bangladesh",
-    badge: "Cardiac Center",
-    image: "https://images.unsplash.com/photo-1519494026892-80bbd2d6fd0d?auto=format&fit=crop&w=600&q=80",
-    description: "Specialized cardiac care hospital equipped with catheterization labs and cardiac surgery suites.",
-    services: ["Coronary Angiogram", "Bypass Surgery", "Echocardiogram", "24/7 Cardiac Emergency"],
-    doctors: [
-      {
-        id: "doc-cardiac-1",
-        name: "Prof. Dr. M. A. Zaman",
-        specialty: "Cardiologist",
-        qualification: "MBBS, FCPS (Medicine), MD (Cardiology), FACC",
-        experience: "25+ Yrs Exp.",
-        visitDays: "Sat, Mon, Wed",
-        visitTime: "05:00 PM - 09:00 PM",
-        fee: 1500
-      }
-    ]
-  },
-  {
-    id: "islamia-eye-hospital",
-    hospital_id: "islamia-eye",
-    hospital_name: "Ispahani Islamia Eye Institute",
-    name: "Ispahani Islamia Eye Institute & Hospital",
-    specialtyCategory: "eye",
-    facility_types: ["Hospital", "Eye Specialty"],
-    location: "Farmgate, Sher-e-Bangla Nagar, Dhaka",
-    city: "Dhaka",
-    verified: true,
-    rating: 4.9,
-    reviewsCount: 480,
-    openTiming: "08:00 AM - 08:00 PM",
-    contactPhone: "+880 9610-008080",
-    tagline: "Largest Pioneer Ophthalmic Care & Eye Hospital in Bangladesh",
-    badge: "Eye Center",
-    image: "https://images.unsplash.com/photo-1579684385127-1ef15d508118?auto=format&fit=crop&w=600&q=80",
-    description: "Premier eye hospital providing cataract, cornea, retina, and pediatric ophthalmology care.",
-    services: ["Phaco Cataract Surgery", "Lasik Vision Correction", "Retina Surgery", "Glaucoma Care"],
-    doctors: [
-      {
-        id: "doc-eye-1",
-        name: "Prof. Dr. Nazrul Islam",
-        specialty: "Eye Specialist",
-        qualification: "MBBS, FCPS (Ophthalmology), DO",
-        experience: "20+ Yrs Exp.",
-        visitDays: "Sun, Tue, Thu",
-        visitTime: "04:00 PM - 08:00 PM",
-        fee: 1200
-      }
-    ]
-  },
-  {
-    id: "ibn-sina-dhanmondi",
-    hospital_id: "ibn-sina",
-    hospital_name: "Ibn Sina Healthcare Group",
-    name: "Ibn Sina Hospital & Diagnostic - Dhanmondi",
-    specialtyCategory: "multispecialty",
-    facility_types: ["Hospital", "Diagnostic Center"],
-    location: "House 48, Road 9/A, Dhanmondi, Dhaka",
-    city: "Dhaka",
-    verified: true,
-    rating: 4.9,
-    reviewsCount: 320,
-    openTiming: "07:30 AM - 10:30 PM",
-    contactPhone: "+880 9610-010615 / +880 1711-234567",
-    tagline: "Premier Multispecialty OPD & Diagnostic Center in Bangladesh",
-    badge: "Super Partner",
-    image: "https://images.unsplash.com/photo-1519494026892-80bbd2d6fd0d?auto=format&fit=crop&w=600&q=80",
-    description: "Ibn Sina Diagnostic & OPD Hub Dhanmondi is one of Bangladesh's premier healthcare and diagnostic facilities.",
-    services: [
-      "24/7 Specialist OPD Consultation",
-      "High-Resolution 128-Slice CT Scan",
-      "4D Ultrasonography & Color Doppler",
-      "Automated Clinical Pathology & Biochemistry",
-      "Home Blood Sample Collection"
-    ],
-    doctors: [
-      {
-        id: "doc-1",
-        name: "Prof. Dr. A. K. M. Fazlul Haque",
-        specialty: "Cardiologist",
-        qualification: "MBBS, FCPS (Medicine), MD (Cardiology), FACC (USA)",
-        experience: "22+ Yrs Exp.",
-        visitDays: "Sat, Mon, Wed",
-        visitTime: "05:00 PM - 09:00 PM",
-        fee: 1200
-      },
-      {
-        id: "doc-2",
-        name: "Dr. Sharmin Sultana",
-        specialty: "Gynecologist",
-        qualification: "MBBS, FCPS (Obstetrics & Gynecology), MS",
-        experience: "14+ Yrs Exp.",
-        visitDays: "Sun, Thu",
-        visitTime: "04:00 PM - 08:00 PM",
-        fee: 1000
-      }
-    ]
-  },
-  {
-    id: "popular-panthapath",
-    hospital_id: "popular",
-    hospital_name: "Popular Diagnostic & Medical Center",
-    name: "Popular Diagnostic Centre & Super Clinic",
-    specialtyCategory: "diagnostic",
-    facility_types: ["Hospital", "Diagnostic Center"],
-    location: "House 16, Road 2, Dhanmondi / Panthapath, Dhaka",
-    city: "Dhaka",
-    verified: true,
-    rating: 4.85,
-    reviewsCount: 410,
-    openTiming: "07:00 AM - 11:00 PM",
-    contactPhone: "+880 9613-787801 / +880 1819-876543",
-    tagline: "Nationwide Leading Diagnostic & Specialist Doctor OPD Network",
-    badge: "Verified Partner",
-    image: "https://images.unsplash.com/photo-1586773860418-d37222d8fce3?auto=format&fit=crop&w=600&q=80",
-    description: "Popular Diagnostic Centre is a nationwide healthcare pioneer.",
-    services: [
-      "Specialist Visiting Doctor OPD",
-      "Advanced MRI & High-Speed CT Scan",
-      "Full Automated Pathology & Serology"
-    ],
-    doctors: [
-      {
-        id: "doc-3",
-        name: "Prof. Dr. Syed Atiqul Haq",
-        specialty: "Neurologist",
-        qualification: "MBBS, FCPS (Medicine), MD (Neurology), FRCP",
-        experience: "25+ Yrs Exp.",
-        visitDays: "Sat, Mon",
-        visitTime: "06:00 PM - 09:30 PM",
-        fee: 1500
-      }
-    ]
-  }
-];
+// Alias for backward compatibility
+export const BRANCH_TESTS = DIAGNOSTIC_CENTER_TESTS;
 
 export const TESTIMONIALS = [
   {
@@ -366,7 +309,7 @@ export const TESTIMONIALS = [
     name: "Tanvir Hossain",
     location: "Uttara, Dhaka",
     role: "Patient",
-    comment: "DoctorHub BD made finding specialist doctor chamber visiting hours at Dhanmondi Ibn Sina super smooth!",
+    comment: "DoctorHub BD made finding diagnostic center tests and specialist doctors super smooth!",
     rating: 5
   }
 ];

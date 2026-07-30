@@ -1,14 +1,16 @@
 import React, { useState, useEffect } from 'react';
 import { 
-  Building2, MapPin, Phone, Clock, ShieldCheck, CheckCircle, 
-  Star, ArrowRight, Search, UserCheck, Activity, ChevronRight, Filter, Sparkles 
+  Building2, MapPin, Clock, ShieldCheck, CheckCircle, 
+  Star, ArrowRight, Search, UserCheck, ChevronRight, Filter, FlaskConical, Stethoscope 
 } from 'lucide-react';
 import { api } from '../services/api';
-import { OPD_CHAMBERS, LOCATIONS, HOSPITAL_SPECIALTIES, CITY_THANAS } from '../data/mockData';
+import { HOSPITALS, DIAGNOSTIC_CENTERS, LOCATIONS, HOSPITAL_CATEGORIES, CITY_THANAS } from '../data/mockData';
 
 export default function MedicalPartnersPage({ initialKeyword = '', onSelectPartner, onNavigateHome }) {
-  const [chambers, setChambers] = useState([]);
-  const [hospitalCategories, setHospitalCategories] = useState(HOSPITAL_SPECIALTIES);
+  const [partnerType, setPartnerType] = useState('all'); // 'all' | 'hospital' | 'diagnostic'
+  const [hospitals, setHospitals] = useState([]);
+  const [diagnosticCenters, setDiagnosticCenters] = useState([]);
+  const [hospitalCategories, setHospitalCategories] = useState(HOSPITAL_CATEGORIES);
   const [loading, setLoading] = useState(true);
   
   // Filter states
@@ -22,16 +24,14 @@ export default function MedicalPartnersPage({ initialKeyword = '', onSelectPartn
     async function loadData() {
       setLoading(true);
       try {
-        const [chambData, catData] = await Promise.all([
-          api.getChambers(selectedLocation),
-          api.getHospitalSpecialties().catch(() => [])
+        const [hospData, dcData, catData] = await Promise.all([
+          api.getHospitals({ location: selectedLocation }).catch(() => []),
+          api.getDiagnosticCenters({ location: selectedLocation }).catch(() => []),
+          api.getHospitalCategories().catch(() => [])
         ]);
         if (isMounted) {
-          if (Array.isArray(chambData) && chambData.length > 0) {
-            setChambers(chambData);
-          } else {
-            setChambers(OPD_CHAMBERS);
-          }
+          setHospitals(Array.isArray(hospData) && hospData.length > 0 ? hospData : HOSPITALS);
+          setDiagnosticCenters(Array.isArray(dcData) && dcData.length > 0 ? dcData : DIAGNOSTIC_CENTERS);
           if (Array.isArray(catData) && catData.length > 0) {
             setHospitalCategories(catData);
           }
@@ -43,7 +43,8 @@ export default function MedicalPartnersPage({ initialKeyword = '', onSelectPartn
       }
 
       if (isMounted) {
-        setChambers(OPD_CHAMBERS);
+        setHospitals(HOSPITALS);
+        setDiagnosticCenters(DIAGNOSTIC_CENTERS);
         setLoading(false);
       }
     }
@@ -51,23 +52,53 @@ export default function MedicalPartnersPage({ initialKeyword = '', onSelectPartn
     loadData();
   }, [selectedLocation]);
 
-  // Reset area filter when location switches to "All Bangladesh"
+  useEffect(() => {
+    if (initialKeyword) {
+      const str = initialKeyword.toLowerCase().trim();
+      const catMatch = hospitalCategories.find(c => 
+        c.id.toString().toLowerCase() === str || 
+        c.name.toLowerCase().includes(str)
+      );
+      if (catMatch && catMatch.id !== 'all') {
+        setSelectedCategory(catMatch.id);
+        setSearchKeyword('');
+      } else {
+        setSelectedCategory('all');
+        setSearchKeyword(initialKeyword);
+      }
+    }
+  }, [initialKeyword, hospitalCategories]);
+
+  // Reset area filter when location switches
   const handleLocationChange = (loc) => {
     setSelectedLocation(loc);
     setSelectedArea('All Areas');
   };
 
-  const filteredChambers = chambers.filter(c => {
-    // 1. Location (City) filter
+  // Combine or filter partners based on tab selection
+  const allCombinedPartners = [
+    ...hospitals.map(h => ({ ...h, type: 'Hospital', badge: h.badge || 'Verified Hospital' })),
+    ...diagnosticCenters.map(d => ({ ...d, type: 'Diagnostic Center', badge: d.badge || 'Verified Diagnostic' }))
+  ];
+
+  const partnersToDisplay = partnerType === 'all' 
+    ? allCombinedPartners 
+    : partnerType === 'hospital' 
+      ? allCombinedPartners.filter(p => p.type === 'Hospital')
+      : allCombinedPartners.filter(p => p.type === 'Diagnostic Center');
+
+  const filteredPartners = partnersToDisplay.filter(p => {
+    // 1. Location (City / District) filter
     if (selectedLocation && selectedLocation !== 'All Bangladesh') {
-      if (c.city && c.city.toLowerCase() !== selectedLocation.toLowerCase()) {
+      const pCity = (p.city || p.district || '').toLowerCase();
+      if (pCity && !pCity.includes(selectedLocation.toLowerCase())) {
         return false;
       }
     }
 
-    // 2. Area / Thana filter (visible and active when location !== 'All Bangladesh')
+    // 2. Area / Thana filter
     if (selectedLocation !== 'All Bangladesh' && selectedArea && selectedArea !== 'All Areas') {
-      const locText = `${c.location || ''} ${c.name || ''}`.toLowerCase();
+      const locText = `${p.location || ''} ${p.address || ''} ${p.name || ''}`.toLowerCase();
       if (!locText.includes(selectedArea.toLowerCase())) {
         return false;
       }
@@ -75,29 +106,20 @@ export default function MedicalPartnersPage({ initialKeyword = '', onSelectPartn
 
     // 3. Hospital Category filter
     if (selectedCategory && selectedCategory !== 'all' && selectedCategory !== 'All Categories') {
-      const catKw = selectedCategory.toLowerCase();
-      const matchesCategoryProp = c.specialtyCategory && c.specialtyCategory.toLowerCase() === catKw;
-      const matchesNameOrTag = c.name.toLowerCase().includes(catKw) || (c.tagline && c.tagline.toLowerCase().includes(catKw));
-      let keywordMatch = false;
-
-      if (catKw === 'cardiac') keywordMatch = c.name.toLowerCase().includes('heart') || c.name.toLowerCase().includes('cardiac');
-      if (catKw === 'eye') keywordMatch = c.name.toLowerCase().includes('eye') || c.name.toLowerCase().includes('ophthalmology');
-      if (catKw === 'diagnostic') keywordMatch = c.facility_types?.includes('Diagnostic Center') || c.name.toLowerCase().includes('diagnostic');
-      if (catKw === 'orthopedic') keywordMatch = c.name.toLowerCase().includes('ortho') || c.name.toLowerCase().includes('bone');
-      if (catKw === 'multispecialty') keywordMatch = c.facility_types?.includes('Hospital');
-
-      if (!matchesCategoryProp && !matchesNameOrTag && !keywordMatch) {
-        return false;
-      }
+      const catKw = selectedCategory.toString().toLowerCase();
+      const pCats = p.categories || [];
+      const hasCatMatch = pCats.some(c => (c.id && c.id.toString().toLowerCase() === catKw) || (c.name && c.name.toLowerCase().includes(catKw)));
+      const matchesName = p.name.toLowerCase().includes(catKw);
+      if (!hasCatMatch && !matchesName) return false;
     }
 
     // 4. Keyword search
     if (searchKeyword.trim()) {
       const kw = searchKeyword.toLowerCase();
-      const matchName = c.name.toLowerCase().includes(kw);
-      const matchLoc = (c.location && c.location.toLowerCase().includes(kw));
-      const matchCity = (c.city && c.city.toLowerCase().includes(kw));
-      const matchTag = (c.tagline && c.tagline.toLowerCase().includes(kw));
+      const matchName = p.name.toLowerCase().includes(kw);
+      const matchLoc = (p.location && p.location.toLowerCase().includes(kw)) || (p.address && p.address.toLowerCase().includes(kw));
+      const matchCity = (p.city && p.city.toLowerCase().includes(kw)) || (p.district && p.district.toLowerCase().includes(kw));
+      const matchTag = (p.tagline && p.tagline.toLowerCase().includes(kw));
       if (!matchName && !matchLoc && !matchCity && !matchTag) return false;
     }
 
@@ -122,31 +144,68 @@ export default function MedicalPartnersPage({ initialKeyword = '', onSelectPartn
             <div>
               <div className="inline-flex items-center gap-2 px-3 py-1 rounded-full bg-emerald-500/20 text-emerald-400 text-xs font-bold uppercase tracking-wider mb-3 border border-emerald-500/30">
                 <Building2 className="w-3.5 h-3.5 text-emerald-400" />
-                <span>Verified Diagnostic & OPD Network</span>
+                <span>Verified Hospitals & Diagnostic Network</span>
               </div>
               <h1 className="text-3xl sm:text-4xl lg:text-5xl font-black tracking-tight text-white">
-                Hospital & Diagnostic Partner
+                Hospitals & Diagnostic Partners
               </h1>
               <p className="mt-2 text-slate-300 text-sm sm:text-base max-w-2xl">
-                Explore Bangladesh's top diagnostic centers, super clinics, and visiting doctor chambers. Click any medical partner to view complete visiting doctors roster, services, and diagnostic tests.
+                Explore Bangladesh's top multi-specialty hospitals and automated diagnostic centers. View visiting doctor rosters, specialized services, and lab test packages.
               </p>
             </div>
 
             <div className="bg-slate-800/80 backdrop-blur-md p-3.5 rounded-2xl border border-slate-700 text-xs flex items-center gap-3 shrink-0">
               <div className="w-3 h-3 rounded-full bg-emerald-400 animate-ping"></div>
               <div>
-                <div className="font-extrabold text-white">{filteredChambers.length} Active Partners</div>
-                <div className="text-slate-400">Filtered Medical Network</div>
+                <div className="font-extrabold text-white">{filteredPartners.length} Active Medical Partners</div>
+                <div className="text-slate-400">Hospitals & Diagnostic Labs</div>
               </div>
             </div>
           </div>
 
-          {/* SEARCH & FILTER CONTROLS BAR (OPD STYLE FILTERING) */}
+          {/* TYPE TOGGLE STRIP (Hospitals vs Diagnostic Centers) */}
+          <div className="flex items-center gap-2 bg-slate-800 p-1.5 rounded-2xl border border-slate-700 w-fit">
+            <button
+              onClick={() => setPartnerType('all')}
+              className={`px-4 py-2 rounded-xl text-xs font-bold transition-all flex items-center gap-1.5 ${
+                partnerType === 'all'
+                  ? 'bg-emerald-600 text-white shadow-md'
+                  : 'text-slate-300 hover:text-white'
+              }`}
+            >
+              <Building2 className="w-4 h-4" />
+              <span>All Partners ({allCombinedPartners.length})</span>
+            </button>
+            <button
+              onClick={() => setPartnerType('hospital')}
+              className={`px-4 py-2 rounded-xl text-xs font-bold transition-all flex items-center gap-1.5 ${
+                partnerType === 'hospital'
+                  ? 'bg-emerald-600 text-white shadow-md'
+                  : 'text-slate-300 hover:text-white'
+              }`}
+            >
+              <Stethoscope className="w-4 h-4" />
+              <span>Hospitals ({hospitals.length})</span>
+            </button>
+            <button
+              onClick={() => setPartnerType('diagnostic')}
+              className={`px-4 py-2 rounded-xl text-xs font-bold transition-all flex items-center gap-1.5 ${
+                partnerType === 'diagnostic'
+                  ? 'bg-emerald-600 text-white shadow-md'
+                  : 'text-slate-300 hover:text-white'
+              }`}
+            >
+              <FlaskConical className="w-4 h-4" />
+              <span>Diagnostic Centers ({diagnosticCenters.length})</span>
+            </button>
+          </div>
+
+          {/* SEARCH & FILTER CONTROLS BAR */}
           <div className="bg-slate-800/90 border border-slate-700/80 rounded-2xl p-4 sm:p-5 shadow-xl space-y-4">
             <div className="flex items-center justify-between text-xs font-extrabold uppercase tracking-wider text-slate-400 pb-2 border-b border-slate-700/60">
               <div className="flex items-center gap-2">
                 <Filter className="w-4 h-4 text-emerald-400" />
-                <span>Hospital & Diagnostic Search Filters</span>
+                <span>Search & Filter Controls</span>
               </div>
               {(selectedCategory !== 'all' || selectedLocation !== 'All Bangladesh' || selectedArea !== 'All Areas' || searchKeyword) && (
                 <button
@@ -194,7 +253,7 @@ export default function MedicalPartnersPage({ initialKeyword = '', onSelectPartn
                 </select>
               </div>
 
-              {/* Area / Thana Filter (Only visible when city selected != 'All Bangladesh') */}
+              {/* Area / Thana Filter */}
               {selectedLocation !== 'All Bangladesh' ? (
                 <div>
                   <label className="block text-[11px] font-bold text-emerald-400 mb-1">Area / Thana ({selectedLocation})</label>
@@ -213,12 +272,15 @@ export default function MedicalPartnersPage({ initialKeyword = '', onSelectPartn
                 <div className="hidden lg:block"></div>
               )}
 
-              {/* Hospital Specialty / Category Filter */}
+              {/* Category Filter */}
               <div>
                 <label className="block text-[11px] font-bold text-slate-400 mb-1">Hospital Category</label>
                 <select
                   value={selectedCategory}
-                  onChange={(e) => setSelectedCategory(e.target.value)}
+                  onChange={(e) => {
+                    setSelectedCategory(e.target.value);
+                    setSearchKeyword('');
+                  }}
                   className="w-full bg-slate-900 border border-slate-700 rounded-xl px-3 py-2.5 text-xs text-white focus:outline-none focus:border-emerald-500 font-bold"
                 >
                   <option value="all">All Hospital Categories</option>
@@ -242,30 +304,31 @@ export default function MedicalPartnersPage({ initialKeyword = '', onSelectPartn
             <div className="w-10 h-10 border-4 border-emerald-600 border-t-transparent rounded-full animate-spin"></div>
             <p className="text-xs font-semibold text-slate-500 mt-3">Loading Medical Partners...</p>
           </div>
-        ) : filteredChambers.length === 0 ? (
+        ) : filteredPartners.length === 0 ? (
           <div className="bg-white rounded-2xl p-12 text-center border border-slate-200 max-w-lg mx-auto">
             <Building2 className="w-12 h-12 text-slate-300 mx-auto mb-3" />
             <h3 className="text-lg font-bold text-slate-800">No Medical Partners Found</h3>
             <p className="text-xs text-slate-500 mt-1">
-              Try resetting your search query or location filter.
+              Try resetting your search query, location, or partner category filter.
             </p>
           </div>
         ) : (
           <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-8">
-            {filteredChambers.map((chamber) => {
-              const docCount = (chamber.doctors || []).length;
+            {filteredPartners.map((partner) => {
+              const docCount = (partner.affiliated_doctors || partner.doctors || []).length;
+              const testCount = (partner.offered_tests || partner.tests || []).length;
               return (
                 <div
-                  key={chamber.id}
-                  onClick={() => onSelectPartner(chamber.id)}
+                  key={partner.id}
+                  onClick={() => onSelectPartner(partner.id)}
                   className="bg-white rounded-2xl border border-slate-200/90 shadow-md hover:shadow-xl hover:border-emerald-400 transition-all duration-300 overflow-hidden flex flex-col justify-between cursor-pointer group"
                 >
                   <div>
                     {/* Top Image */}
                     <div className="relative h-48 overflow-hidden bg-slate-900">
                       <img
-                        src={chamber.image}
-                        alt={chamber.name}
+                        src={partner.image || partner.logo || "https://images.unsplash.com/photo-1519494026892-80bbd2d6fd0d?auto=format&fit=crop&w=600&q=80"}
+                        alt={partner.name}
                         className="w-full h-full object-cover opacity-80 group-hover:scale-105 transition-transform duration-500"
                       />
                       <div className="absolute inset-0 bg-gradient-to-t from-slate-950 via-slate-950/40 to-transparent"></div>
@@ -273,23 +336,23 @@ export default function MedicalPartnersPage({ initialKeyword = '', onSelectPartn
                       <div className="absolute top-3 left-3 right-3 flex items-center justify-between">
                         <div className="inline-flex items-center gap-1 bg-slate-900/90 backdrop-blur-md border border-emerald-500/40 text-emerald-400 text-xs font-extrabold px-3 py-1 rounded-full">
                           <ShieldCheck className="w-3.5 h-3.5 text-emerald-400" />
-                          <span>{chamber.badge || "Verified Partner"}</span>
+                          <span>{partner.badge || partner.type}</span>
                         </div>
                         <div className="bg-slate-900/90 backdrop-blur-md text-amber-400 text-xs font-bold px-2.5 py-1 rounded-full border border-amber-500/30 flex items-center gap-1">
                           <Star className="w-3.5 h-3.5 fill-amber-400" />
-                          <span>{chamber.rating} ({chamber.reviews_count || chamber.reviewsCount || 200})</span>
+                          <span>{partner.rating || 4.8} ({partner.reviews_count || partner.reviewsCount || 250})</span>
                         </div>
                       </div>
 
                       <div className="absolute bottom-3 left-4 right-4 text-white">
                         <h3 className="text-lg font-extrabold text-white group-hover:text-emerald-300 transition-colors flex items-center gap-2">
-                          <span>{chamber.hospital_name ? `${chamber.hospital_name} - ${chamber.name}` : chamber.name}</span>
-                          {chamber.verified && (
+                          <span>{partner.name}</span>
+                          {partner.is_verified && (
                             <CheckCircle className="w-4 h-4 text-emerald-400 shrink-0" />
                           )}
                         </h3>
                         <p className="text-xs text-slate-300 font-medium line-clamp-1 mt-0.5">
-                          {chamber.tagline}
+                          {partner.tagline || partner.description}
                         </p>
                       </div>
                     </div>
@@ -298,16 +361,16 @@ export default function MedicalPartnersPage({ initialKeyword = '', onSelectPartn
                     <div className="p-4 bg-slate-50 border-b border-slate-200 text-xs text-slate-600 space-y-2">
                       <div className="flex items-center gap-2 font-semibold text-slate-800">
                         <MapPin className="w-4 h-4 text-emerald-600 shrink-0" />
-                        <span className="truncate">{chamber.location}</span>
+                        <span className="truncate">{partner.address || partner.location || partner.district}</span>
                       </div>
                       <div className="flex items-center justify-between text-slate-600 pt-1">
                         <span className="flex items-center gap-1.5">
                           <Clock className="w-3.5 h-3.5 text-emerald-600" />
-                          <span>{chamber.open_timing || chamber.openTiming}</span>
+                          <span>{partner.open_timing || partner.openTiming || "24/7 Service"}</span>
                         </span>
                         <span className="flex items-center gap-1 text-emerald-700 font-bold bg-emerald-100/80 px-2 py-0.5 rounded-md">
                           <UserCheck className="w-3.5 h-3.5" />
-                          <span>{docCount} Visiting Doctors</span>
+                          <span>{docCount} Doctors {testCount > 0 ? `| ${testCount} Tests` : ''}</span>
                         </span>
                       </div>
                     </div>
@@ -318,10 +381,10 @@ export default function MedicalPartnersPage({ initialKeyword = '', onSelectPartn
                         Available Services:
                       </div>
                       <div className="flex flex-wrap gap-1.5">
-                        {((chamber.services && chamber.services.length > 0 ? chamber.services : [
-                          "24/7 OPD Doctor Visits",
-                          "Radiology & 4D USG",
-                          "Automated Lab Testing"
+                        {((partner.services && partner.services.length > 0 ? partner.services : [
+                          "Specialist OPD Consultation",
+                          "Automated Lab Testing",
+                          "Radiology & Ultrasound"
                         ])).slice(0, 3).map((srv, idx) => (
                           <span key={idx} className="text-[10px] font-semibold bg-slate-100 text-slate-700 px-2 py-1 rounded-md border border-slate-200">
                             {srv}
@@ -333,7 +396,7 @@ export default function MedicalPartnersPage({ initialKeyword = '', onSelectPartn
 
                   {/* Action Footer */}
                   <div className="p-3.5 bg-slate-50 border-t border-slate-200 flex items-center justify-between text-xs font-bold text-emerald-700 group-hover:bg-emerald-50/50 transition-colors">
-                    <span>View Doctors, Services & Book</span>
+                    <span>View Doctors, Tests & Book</span>
                     <ArrowRight className="w-4 h-4 text-emerald-600 group-hover:translate-x-1 transition-transform" />
                   </div>
                 </div>

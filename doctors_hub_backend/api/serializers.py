@@ -1,15 +1,17 @@
 from rest_framework import serializers
 from .models import (
-    User, Hospital, Branch, DoctorSpecialty, HospitalSpecialty, TestCategory, PathologyTest, BranchTest,
-    Doctor, DoctorAffiliation, AffiliationSchedule,
-    DoctorBooking, LabBooking
+    User, DoctorSpecialty, HospitalCategory, Hospital,
+    TestCategory, Test, DiagnosticCenterCategory, DiagnosticCenter, DiagnosticCenterTest,
+    Doctor, DoctorAffiliation, AffiliationSchedule, DoctorBooking, LabBooking
 )
 from django.contrib.auth import authenticate
+
 
 class UserSerializer(serializers.ModelSerializer):
     class Meta:
         model = User
         fields = ('id', 'phone_number', 'first_name', 'last_name', 'is_staff', 'is_superuser')
+
 
 class UserProfileSerializer(serializers.ModelSerializer):
     class Meta:
@@ -22,12 +24,14 @@ class UserProfileSerializer(serializers.ModelSerializer):
             raise serializers.ValidationError("A user with this phone number already exists.")
         return value
 
+
 class RegisterSerializer(serializers.ModelSerializer):
     password = serializers.CharField(write_only=True)
+
     class Meta:
         model = User
         fields = ('phone_number', 'password', 'first_name', 'last_name')
-        
+
     def create(self, validated_data):
         user = User.objects.create_user(
             phone_number=validated_data['phone_number'],
@@ -36,6 +40,7 @@ class RegisterSerializer(serializers.ModelSerializer):
             last_name=validated_data.get('last_name', '')
         )
         return user
+
 
 class LoginSerializer(serializers.Serializer):
     phone_number = serializers.CharField()
@@ -47,39 +52,72 @@ class LoginSerializer(serializers.Serializer):
             return user
         raise serializers.ValidationError("Incorrect Credentials")
 
+
 class DoctorSpecialtySerializer(serializers.ModelSerializer):
     class Meta:
         model = DoctorSpecialty
         fields = '__all__'
 
+
 SpecialtySerializer = DoctorSpecialtySerializer
 
-class HospitalSpecialtySerializer(serializers.ModelSerializer):
+
+class HospitalCategorySerializer(serializers.ModelSerializer):
     class Meta:
-        model = HospitalSpecialty
+        model = HospitalCategory
         fields = '__all__'
 
+
+# Backwards compatibility alias
+HospitalSpecialtySerializer = HospitalCategorySerializer
+
+
 class TestCategorySerializer(serializers.ModelSerializer):
+    parent_name = serializers.CharField(source='parent.name', read_only=True, default='')
+    is_leaf_level = serializers.BooleanField(read_only=True)
+
     class Meta:
         model = TestCategory
         fields = '__all__'
 
-class PathologyTestSerializer(serializers.ModelSerializer):
-    class Meta:
-        model = PathologyTest
-        fields = '__all__'
 
-class BranchTestSerializer(serializers.ModelSerializer):
-    test_details = PathologyTestSerializer(source='test', read_only=True)
-    branch_name = serializers.CharField(source='branch.name', read_only=True)
-    hospital_name = serializers.CharField(source='branch.hospital_name', read_only=True, default='')
+class TestSerializer(serializers.ModelSerializer):
+    category_name = serializers.CharField(source='category.name', read_only=True)
+    category_slug = serializers.CharField(source='category.slug', read_only=True)
 
     class Meta:
-        model = BranchTest
+        model = Test
         fields = '__all__'
+
+
+# Backwards compatibility alias
+PathologyTestSerializer = TestSerializer
+
+
+class DiagnosticCenterCategorySerializer(serializers.ModelSerializer):
+    parent_name = serializers.CharField(source='parent.name', read_only=True, default='')
+
+    class Meta:
+        model = DiagnosticCenterCategory
+        fields = '__all__'
+
+
+class DiagnosticCenterTestSerializer(serializers.ModelSerializer):
+    test_details = TestSerializer(source='test', read_only=True)
+    center_name = serializers.CharField(source='center.name', read_only=True)
+    center_district = serializers.CharField(source='center.district', read_only=True, default='')
+
+    class Meta:
+        model = DiagnosticCenterTest
+        fields = '__all__'
+
+
+# Backwards compatibility alias
+BranchTestSerializer = DiagnosticCenterTestSerializer
+
 
 class AffiliationScheduleSerializer(serializers.ModelSerializer):
-    id = serializers.IntegerField(required=False)
+    id = serializers.UUIDField(required=False)
 
     class Meta:
         model = AffiliationSchedule
@@ -88,11 +126,12 @@ class AffiliationScheduleSerializer(serializers.ModelSerializer):
             'affiliation': {'required': False}
         }
 
+
 class DoctorAffiliationSerializer(serializers.ModelSerializer):
-    branch_id = serializers.CharField(source='branch.id', read_only=True)
-    branch_name = serializers.CharField(source='branch.name', read_only=True)
-    hospital_name = serializers.CharField(source='branch.hospital_name', read_only=True, default='')
-    city = serializers.CharField(source='branch.city', read_only=True)
+    hospital_name = serializers.CharField(source='hospital.name', read_only=True, default='')
+    diagnostic_center_name = serializers.CharField(source='diagnostic_center.name', read_only=True, default='')
+    facility_name = serializers.SerializerMethodField()
+    city = serializers.SerializerMethodField()
     schedules = AffiliationScheduleSerializer(many=True, required=False)
     doctor_name = serializers.CharField(source='doctor.name', read_only=True)
 
@@ -102,6 +141,20 @@ class DoctorAffiliationSerializer(serializers.ModelSerializer):
         extra_kwargs = {
             'doctor': {'required': False}
         }
+
+    def get_facility_name(self, obj):
+        if obj.hospital:
+            return obj.hospital.name
+        if obj.diagnostic_center:
+            return obj.diagnostic_center.name
+        return ''
+
+    def get_city(self, obj):
+        if obj.hospital:
+            return obj.hospital.city or obj.hospital.district
+        if obj.diagnostic_center:
+            return obj.diagnostic_center.district
+        return ''
 
     def create(self, validated_data):
         schedules_data = validated_data.pop('schedules', [])
@@ -120,6 +173,7 @@ class DoctorAffiliationSerializer(serializers.ModelSerializer):
             for sch in schedules_data:
                 AffiliationSchedule.objects.create(affiliation=instance, **sch)
         return instance
+
 
 class DoctorSerializer(serializers.ModelSerializer):
     specialties = DoctorSpecialtySerializer(many=True, read_only=True)
@@ -165,24 +219,39 @@ class DoctorSerializer(serializers.ModelSerializer):
 
         return instance
 
-class BranchSerializer(serializers.ModelSerializer):
-    offered_tests = BranchTestSerializer(many=True, read_only=True)
-    affiliated_doctors = DoctorAffiliationSerializer(many=True, read_only=True)
-
-    class Meta:
-        model = Branch
-        fields = '__all__'
 
 class HospitalSerializer(serializers.ModelSerializer):
-    branches = BranchSerializer(many=True, read_only=True)
+    categories = HospitalCategorySerializer(many=True, read_only=True)
+    category_ids = serializers.PrimaryKeyRelatedField(
+        queryset=HospitalCategory.objects.all(), many=True, write_only=True, source='categories', required=False
+    )
+    affiliated_doctors = DoctorAffiliationSerializer(many=True, read_only=True)
 
     class Meta:
         model = Hospital
         fields = '__all__'
 
+
+class DiagnosticCenterSerializer(serializers.ModelSerializer):
+    categories = DiagnosticCenterCategorySerializer(many=True, read_only=True)
+    category_ids = serializers.PrimaryKeyRelatedField(
+        queryset=DiagnosticCenterCategory.objects.all(), many=True, write_only=True, source='categories', required=False
+    )
+    offered_tests = DiagnosticCenterTestSerializer(many=True, read_only=True)
+    affiliated_doctors = DoctorAffiliationSerializer(many=True, read_only=True)
+
+    class Meta:
+        model = DiagnosticCenter
+        fields = '__all__'
+
+
+# Backwards compatibility alias
+BranchSerializer = DiagnosticCenterSerializer
+
+
 class DoctorBookingSerializer(serializers.ModelSerializer):
     doctor_name = serializers.CharField(source='affiliation.doctor.name', read_only=True)
-    branch_name = serializers.CharField(source='affiliation.branch.name', read_only=True)
+    facility_name = serializers.SerializerMethodField()
     consultation_type = serializers.CharField(source='affiliation.consultation_type', read_only=True)
 
     class Meta:
@@ -190,10 +259,18 @@ class DoctorBookingSerializer(serializers.ModelSerializer):
         fields = '__all__'
         read_only_fields = ('user', 'created_at')
 
+    def get_facility_name(self, obj):
+        if obj.affiliation and obj.affiliation.hospital:
+            return obj.affiliation.hospital.name
+        if obj.affiliation and obj.affiliation.diagnostic_center:
+            return obj.affiliation.diagnostic_center.name
+        return ''
+
+
 class LabBookingSerializer(serializers.ModelSerializer):
-    test_name = serializers.CharField(source='branch_test.test.name', read_only=True)
-    branch_name = serializers.CharField(source='branch_test.branch.name', read_only=True)
-    price = serializers.DecimalField(source='branch_test.price', max_digits=10, decimal_places=2, read_only=True)
+    test_name = serializers.CharField(source='center_test.test.name', read_only=True, default='')
+    center_name = serializers.CharField(source='center_test.center.name', read_only=True, default='')
+    price = serializers.DecimalField(source='center_test.price', max_digits=10, decimal_places=2, read_only=True, default=0)
 
     class Meta:
         model = LabBooking

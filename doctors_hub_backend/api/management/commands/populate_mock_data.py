@@ -1,243 +1,637 @@
+import sys
+import datetime
 from django.core.management.base import BaseCommand
+from django.db import connection
 from api.models import (
-    User, Hospital, Branch, DoctorSpecialty, HospitalSpecialty, TestCategory, PathologyTest, BranchTest,
+    User, DoctorSpecialty, HospitalCategory, Hospital,
+    TestCategory, Test, DiagnosticCenterCategory, DiagnosticCenter, DiagnosticCenterTest,
     Doctor, DoctorAffiliation, AffiliationSchedule
 )
-import datetime
+
 
 class Command(BaseCommand):
-    help = 'Populates mock data for Hospitals, Branches, Doctors, Tests, and Schedules'
+    help = 'Populates complete database with Hospitals, Diagnostic Centers, Categories, Tests, Doctors, and Schedules'
 
     def handle(self, *args, **options):
-        self.stdout.write("Clearing old data...")
-        AffiliationSchedule.objects.all().delete()
-        DoctorAffiliation.objects.all().delete()
-        BranchTest.objects.all().delete()
-        Doctor.objects.all().delete()
-        PathologyTest.objects.all().delete()
-        DoctorSpecialty.objects.all().delete()
-        HospitalSpecialty.objects.all().delete()
-        TestCategory.objects.all().delete()
-        Branch.objects.all().delete()
-        Hospital.objects.all().delete()
+        self.stdout.write("Seeding database with UUID models...")
+        sys.stdout.flush()
 
-        self.stdout.write("Creating Default Admin User...")
-        if not User.objects.filter(phone_number='01700000000').exists():
-            User.objects.create_superuser(
-                phone_number='01700000000',
-                password='admin123',
-                first_name='Admin',
-                last_name='User'
+        self.stdout.write("Clearing existing data with CASCADE...")
+        sys.stdout.flush()
+        with connection.cursor() as cursor:
+            cursor.execute("""
+                TRUNCATE TABLE 
+                    api_affiliationschedule, api_doctorbooking, api_labbooking,
+                    api_doctoraffiliation, api_doctor_specialties, api_doctor,
+                    api_diagnosticcentertest, api_diagnosticcenter_categories,
+                    api_diagnosticcenter, api_hospital_categories, api_hospital,
+                    api_diagnosticcentercategory, api_test, api_testcategory,
+                    api_hospitalcategory, api_doctorspecialty, api_user
+                CASCADE;
+            """)
+
+        self.stdout.write("1. Creating Default Admin & Demo User...")
+        sys.stdout.flush()
+        admin_user = User.objects.create_user(
+            phone_number='01700000000',
+            password='admin123456',
+            first_name='System',
+            last_name='Admin',
+            is_staff=True,
+            is_superuser=True
+        )
+
+        demo_user = User.objects.create_user(
+            phone_number='01711111111',
+            password='user123456',
+            first_name='Demo',
+            last_name='Patient'
+        )
+
+        self.stdout.write("2. Creating Doctor Specialties...")
+        sys.stdout.flush()
+        specialties_data = [
+            {"name": "Cardiologist", "icon": "Heart", "description": "Heart & Vascular Care"},
+            {"name": "Neurologist", "icon": "Brain", "description": "Brain & Nervous System"},
+            {"name": "Gynecologist", "icon": "User", "description": "Women's Health & Maternity"},
+            {"name": "Orthopedic", "icon": "Activity", "description": "Bones, Joints & Spine"},
+            {"name": "Dermatologist", "icon": "Sparkles", "description": "Skin, Hair & Aesthetics"},
+            {"name": "Pediatrician", "icon": "Baby", "description": "Child & Infant Care"},
+            {"name": "General Physician", "icon": "Stethoscope", "description": "General Health & Fever"},
+            {"name": "Gastroenterologist", "icon": "Flame", "description": "Digestive & Liver Care"},
+            {"name": "ENT Specialist", "icon": "Ear", "description": "Ear, Nose & Throat"},
+            {"name": "Oncologist", "icon": "ShieldAlert", "description": "Cancer Care & Chemotherapy"},
+            {"name": "Pulmonologist", "icon": "Wind", "description": "Lungs & Respiratory Care"},
+            {"name": "Nephrologist", "icon": "Droplet", "description": "Kidney Care & Dialysis"},
+            {"name": "Eye Specialist", "icon": "Eye", "description": "Ophthalmology & Vision Care"},
+        ]
+        spec_objs = {}
+        for sp in specialties_data:
+            obj = DoctorSpecialty.objects.create(
+                name=sp["name"],
+                icon=sp["icon"],
+                description=sp["description"]
             )
-            self.stdout.write(self.style.SUCCESS("Admin user created: Phone 01700000000 / Password admin123"))
+            spec_objs[sp["name"]] = obj
 
-        self.stdout.write("Creating Hospitals...")
-        h1 = Hospital.objects.create(
-            id="ibn-sina",
-            name="Ibn Sina Healthcare Group",
-            description="Leading nationwide hospital network offering multi-branch inpatient & outpatient services.",
-            logo="https://images.unsplash.com/photo-1519494026892-80bbd2d6fd0d?auto=format&fit=crop&w=600&q=80"
-        )
-        h2 = Hospital.objects.create(
-            id="popular",
-            name="Popular Diagnostic & Medical Center",
-            description="Nationwide healthcare pioneer providing state-of-the-art diagnostic imaging and specialist doctor chambers.",
-            logo="https://images.unsplash.com/photo-1586773860418-d37222d8fce3?auto=format&fit=crop&w=600&q=80"
-        )
+        self.stdout.write("3. Creating Hospital Categories...")
+        sys.stdout.flush()
+        hospital_categories = [
+            {"name": "All Partners", "icon": "Building2", "description": "Show All Multi-Specialty Institutes", "count": 12},
+            {"name": "Cardiac Hospitals", "icon": "Heart", "description": "Specialized Heart Institutes", "count": 4},
+            {"name": "Eye Hospitals", "icon": "Sparkles", "description": "Ophthalmology & Vision Care", "count": 3},
+            {"name": "Multi-Specialty", "icon": "Building2", "description": "General & In-Patient Hubs", "count": 8},
+            {"name": "Orthopedic Centers", "icon": "Activity", "description": "Bone, Joint & Spine Care", "count": 3},
+        ]
+        hcat_objs = {}
+        for hc in hospital_categories:
+            obj = HospitalCategory.objects.create(
+                name=hc["name"],
+                icon=hc["icon"],
+                description=hc["description"],
+                count=hc["count"]
+            )
+            hcat_objs[hc["name"]] = obj
 
-        self.stdout.write("Creating Branches...")
-        b1 = Branch.objects.create(
-            id="ibn-sina-dhanmondi",
-            hospital=h1,
-            hospital_name="Ibn Sina Healthcare Group",
-            name="Dhanmondi Branch",
-            facility_types=["Hospital", "Diagnostic Center"],
-            location="House 48, Road 9/A, Dhanmondi, Dhaka",
-            city="Dhaka",
-            verified=True,
-            rating=4.9,
-            reviews_count=320,
-            open_timing="07:30 AM - 10:30 PM",
-            contact_phone="+880 9610-010615",
-            tagline="Premier Multispecialty OPD & Inpatient Hospital in Dhanmondi",
-            badge="Super Partner",
-            image="https://images.unsplash.com/photo-1519494026892-80bbd2d6fd0d?auto=format&fit=crop&w=600&q=80",
-            services=["24/7 ICU & In-patient", "Specialist OPD Consultation", "128-Slice CT Scan", "Automated Pathology Lab"],
-            description="High-end radiology, 24/7 emergency response, inpatient surgery, automated pathology lab testing."
+        self.stdout.write("4. Creating Diagnostic Center Categories (Self-referencing Tree)...")
+        sys.stdout.flush()
+        cat_private = DiagnosticCenterCategory.objects.create(
+            name="Private Diagnostic Chain",
+            icon="Building2",
+            description="Nationwide automated lab networks"
         )
-
-        b2 = Branch.objects.create(
-            id="ibn-sina-mirpur",
-            hospital=h1,
-            hospital_name="Ibn Sina Healthcare Group",
-            name="Mirpur Branch",
-            facility_types=["Diagnostic Center"],
-            location="Plot 11, Avenue 1, Block A, Mirpur 10, Dhaka",
-            city="Dhaka",
-            verified=True,
-            rating=4.8,
-            reviews_count=180,
-            open_timing="08:00 AM - 10:00 PM",
-            contact_phone="+880 9610-010616",
-            tagline="Top Diagnostic Center in Mirpur",
-            badge="Verified Partner",
-            image="https://images.unsplash.com/photo-1538108149393-fbbd81895907?auto=format&fit=crop&w=600&q=80",
-            services=["4D USG", "Digital X-Ray", "Blood Collection", "Visiting Specialist OPD"],
-            description="Specialized diagnostic testing and visiting doctor OPD sessions."
+        cat_gov = DiagnosticCenterCategory.objects.create(
+            name="Government & Public Labs",
+            icon="ShieldCheck",
+            description="Government subsidized pathology centers"
+        )
+        cat_specialized = DiagnosticCenterCategory.objects.create(
+            name="Specialized Diagnostic Centers",
+            icon="Activity",
+            description="Focused imaging and advanced pathology"
         )
 
-        b3 = Branch.objects.create(
-            id="popular-panthapath",
-            hospital=h2,
-            hospital_name="Popular Diagnostic & Medical Center",
-            name="Panthapath Branch",
-            facility_types=["Hospital", "Diagnostic Center"],
-            location="House 16, Road 2, Dhanmondi / Panthapath, Dhaka",
-            city="Dhaka",
-            verified=True,
-            rating=4.85,
-            reviews_count=410,
-            open_timing="07:00 AM - 11:00 PM",
-            contact_phone="+880 9613-787801",
-            tagline="Nationwide Leading Diagnostic & Hospital Network",
-            badge="Verified Partner",
-            image="https://images.unsplash.com/photo-1586773860418-d37222d8fce3?auto=format&fit=crop&w=600&q=80",
-            services=["Inpatient Surgery", "Specialist Visiting Doctor OPD", "Advanced MRI", "Full Automated Pathology"],
-            description="Popular Medical Center providing state-of-the-art diagnostic imaging, surgery, and doctor chambers."
+        dcc_pathology = DiagnosticCenterCategory.objects.create(
+            name="Pathology & Clinical Biochemistry Labs",
+            parent=cat_private,
+            icon="FlaskConical",
+            description="Full blood & hormone diagnostic hubs"
+        )
+        dcc_radiology = DiagnosticCenterCategory.objects.create(
+            name="Advanced Radiology & Imaging Hubs",
+            parent=cat_private,
+            icon="FileText",
+            description="High resolution MRI, CT scan & 4D USG"
+        )
+        dcc_cardiac_center = DiagnosticCenterCategory.objects.create(
+            name="Cardiac Diagnostics & Echo Centers",
+            parent=cat_specialized,
+            icon="Heart",
+            description="Cardiovascular screening & Doppler labs"
         )
 
-        b4 = Branch.objects.create(
-            id="chevron-chittagong",
-            hospital=None,
-            hospital_name="Chevron Healthcare",
-            name="Panchlaish Branch",
-            facility_types=["Diagnostic Center", "Chamber"],
-            location="12/12 O.R. Nizam Road, Panchlaish, Chittagong",
-            city="Chittagong",
-            verified=True,
-            rating=4.9,
-            reviews_count=260,
-            open_timing="24/7 OPD & Diagnostic Service",
-            contact_phone="+880 31-652533",
-            tagline="Chittagong's Most Trusted Multispecialty Consultation Center",
-            badge="Top Rated",
-            image="https://images.unsplash.com/photo-1629909613654-28e377c37b09?auto=format&fit=crop&w=600&q=80",
-            services=["24/7 Emergency OPD", "Orthopedic Clinic", "Digital X-Ray", "Home Sample Collection"],
-            description="Chevron Clinical Laboratory offering round-the-clock OPD specialist doctor visits."
+        self.stdout.write("5. Creating Test Categories (Self-referencing Tree)...")
+        sys.stdout.flush()
+        tcat_pathology = TestCategory.objects.create(
+            name="Pathology & Laboratory",
+            icon="FlaskConical",
+            description="Blood, Urine & Body Fluid Profiles",
+            order=1
+        )
+        tcat_radiology = TestCategory.objects.create(
+            name="Radiology & Medical Imaging",
+            icon="FileText",
+            description="CT Scan, MRI, X-Ray & Ultrasound",
+            order=2
+        )
+        tcat_cardiology = TestCategory.objects.create(
+            name="Cardiology Diagnostics",
+            icon="Heart",
+            description="ECG, Lipid & Cardiac Biomarkers",
+            order=3
         )
 
-        self.stdout.write("Creating Specialties...")
-        s_cardio = DoctorSpecialty.objects.create(id="cardiology", name="Cardiologist", icon="Heart", description="Heart & Vascular Care")
-        s_gyn = DoctorSpecialty.objects.create(id="gynecology", name="Gynecologist", icon="User", description="Women's Health & Maternity")
-        s_neuro = DoctorSpecialty.objects.create(id="neurology", name="Neurologist", icon="Brain", description="Brain & Nervous System")
-        s_ortho = DoctorSpecialty.objects.create(id="orthopedics", name="Orthopedic", icon="Activity", description="Bones, Joints & Spine")
-        s_derm = DoctorSpecialty.objects.create(id="dermatology", name="Dermatologist", icon="Sparkles", description="Skin, Hair & Aesthetics")
-
-        self.stdout.write("Creating Pathology Tests...")
-        t_cbc = PathologyTest.objects.create(
-            id="cbc", name="Blood Test (CBC)", category="Routine Blood Profiles", fasting_required=False, description="Complete Blood Count measuring RBC, WBC, ESR."
+        tcat_blood = TestCategory.objects.create(
+            name="Routine Blood Profiles",
+            parent=tcat_pathology,
+            icon="Droplet",
+            description="CBC, Hemoglobin & ESR",
+            order=1
         )
-        t_ct = PathologyTest.objects.create(
-            id="ct-scan", name="CT Scan (Brain / Chest)", category="Advanced Radiology", fasting_required=True, description="High-resolution CT scan."
+        tcat_hormone = TestCategory.objects.create(
+            name="Hormone & Endocrine Profiles",
+            parent=tcat_pathology,
+            icon="Sparkles",
+            description="Thyroid T3, T4, TSH & Diabetes",
+            order=2
         )
-        t_usg = PathologyTest.objects.create(
-            id="usg", name="USG (Ultrasound Abdomen)", category="Sonography", fasting_required=True, description="Full abdominal 4D ultrasonography."
+        tcat_ct_mri = TestCategory.objects.create(
+            name="CT Scan & MRI Imaging",
+            parent=tcat_radiology,
+            icon="FileText",
+            description="Brain, Chest & Abdomen Scans",
+            order=1
         )
-        t_lipid = PathologyTest.objects.create(
-            id="lipid", name="Lipid Profile (Cholesterol)", category="Cardiac Risk", fasting_required=True, description="Measures Total Cholesterol, HDL, LDL."
+        tcat_usg = TestCategory.objects.create(
+            name="Ultrasonography (USG)",
+            parent=tcat_radiology,
+            icon="Activity",
+            description="4D Abdomen & Pelvic Sonography",
+            order=2
+        )
+        tcat_lipid = TestCategory.objects.create(
+            name="Lipid & Cardiac Profiles",
+            parent=tcat_cardiology,
+            icon="Heart",
+            description="Cholesterol, Lipid Panel & Troponin-I",
+            order=1
         )
 
-        self.stdout.write("Linking Branch Tests...")
-        BranchTest.objects.create(branch=b1, test=t_cbc, price=450, original_price=600, discount="25% OFF", report_time="Same Day (6 Hours)")
-        BranchTest.objects.create(branch=b2, test=t_cbc, price=400, original_price=550, discount="27% OFF", report_time="Same Day (4 Hours)")
-        BranchTest.objects.create(branch=b3, test=t_cbc, price=500, original_price=650, discount="23% OFF", report_time="8 Hours")
+        self.stdout.write("6. Creating Individual Tests...")
+        sys.stdout.flush()
+        tests_data = [
+            {
+                "name": "Blood Test (CBC)",
+                "category": tcat_blood,
+                "code": "LAB-CBC-01",
+                "sample_type": "Blood (EDTA)",
+                "preparation_instructions": "No specific fasting required.",
+                "fasting_required": False,
+                "report_time_hours": 6,
+                "description": "Complete Blood Count measuring RBC, WBC, ESR, Platelets, and Hemoglobin."
+            },
+            {
+                "name": "Thyroid Profile (T3, T4, TSH)",
+                "category": tcat_hormone,
+                "code": "LAB-THY-02",
+                "sample_type": "Blood Serum",
+                "preparation_instructions": "Morning blood sample recommended.",
+                "fasting_required": False,
+                "report_time_hours": 12,
+                "description": "Accurate endocrine hormone evaluation for thyroid disorders."
+            },
+            {
+                "name": "CT Scan (Brain / Chest)",
+                "category": tcat_ct_mri,
+                "code": "RAD-CT-01",
+                "sample_type": "Imaging Scan",
+                "preparation_instructions": "Fasting 4 hours if contrast dye is required.",
+                "fasting_required": True,
+                "report_time_hours": 24,
+                "description": "High-resolution computed tomography scan for detailed internal organ imaging."
+            },
+            {
+                "name": "USG (Ultrasound Abdomen)",
+                "category": tcat_usg,
+                "code": "RAD-USG-01",
+                "sample_type": "Sonography",
+                "preparation_instructions": "Fasting 6-8 hours with full bladder required.",
+                "fasting_required": True,
+                "report_time_hours": 4,
+                "description": "Full abdominal 4D ultrasonography for liver, kidney, and pelvic examination."
+            },
+            {
+                "name": "Lipid Profile (Cholesterol)",
+                "category": tcat_lipid,
+                "code": "LAB-LIP-01",
+                "sample_type": "Blood Serum",
+                "preparation_instructions": "Overnight fasting 8-12 hours required.",
+                "fasting_required": True,
+                "report_time_hours": 12,
+                "description": "Measures Total Cholesterol, HDL, LDL, Triglycerides, and Cardiac Risk Index."
+            }
+        ]
+        test_objs = {}
+        for t in tests_data:
+            obj = Test.objects.create(
+                name=t["name"],
+                category=t["category"],
+                code=t["code"],
+                sample_type=t["sample_type"],
+                preparation_instructions=t["preparation_instructions"],
+                fasting_required=t["fasting_required"],
+                report_time_hours=t["report_time_hours"],
+                description=t["description"]
+            )
+            test_objs[t["name"]] = obj
 
-        BranchTest.objects.create(branch=b1, test=t_ct, price=4500, original_price=6000, discount="25% OFF", report_time="24 Hours")
-        BranchTest.objects.create(branch=b3, test=t_ct, price=4800, original_price=6200, discount="22% OFF", report_time="12 Hours")
+        self.stdout.write("7. Creating Hospitals...")
+        sys.stdout.flush()
+        hospitals_data = [
+            {
+                "name": "Ibn Sina Healthcare Group",
+                "description": "Leading nationwide multi-specialty hospital offering inpatient surgery, ICU, and specialist OPD chambers.",
+                "address": "House 48, Road 9/A, Dhanmondi",
+                "district": "Dhaka",
+                "division": "Dhaka",
+                "city": "Dhaka",
+                "phone": "+880 9610-010615",
+                "email": "info@ibnsina.com.bd",
+                "rating": 4.9,
+                "reviews_count": 320,
+                "open_timing": "24/7 Inpatient & OPD",
+                "tagline": "Premier Multispecialty OPD & Inpatient Hospital in Dhanmondi",
+                "badge": "Super Partner",
+                "logo": "https://images.unsplash.com/photo-1519494026892-80bbd2d6fd0d?auto=format&fit=crop&w=600&q=80",
+                "image": "https://images.unsplash.com/photo-1519494026892-80bbd2d6fd0d?auto=format&fit=crop&w=600&q=80",
+                "services": ["24/7 ICU & In-patient", "Specialist OPD Consultation", "Surgery & OT", "24/7 Emergency"],
+                "categories": [hcat_objs["Multi-Specialty"]],
+                "is_verified": True
+            },
+            {
+                "name": "National Heart Foundation",
+                "description": "Premier specialized cardiac and cardiovascular hospital institute in Bangladesh.",
+                "address": "Mirpur-2",
+                "district": "Dhaka",
+                "division": "Dhaka",
+                "city": "Dhaka",
+                "phone": "+880 2-9006970",
+                "email": "info@nhf.org.bd",
+                "rating": 4.95,
+                "reviews_count": 520,
+                "open_timing": "24/7 Cardiac Emergency & OPD",
+                "tagline": "Premier Specialized Cardiac Hospital in Bangladesh",
+                "badge": "Cardiac Center",
+                "logo": "https://images.unsplash.com/photo-1519494026892-80bbd2d6fd0d?auto=format&fit=crop&w=600&q=80",
+                "image": "https://images.unsplash.com/photo-1519494026892-80bbd2d6fd0d?auto=format&fit=crop&w=600&q=80",
+                "services": ["Coronary Angiogram", "Bypass Surgery", "Echocardiogram", "24/7 Cardiac Emergency"],
+                "categories": [hcat_objs["Cardiac Hospitals"]],
+                "is_verified": True
+            },
+            {
+                "name": "Ispahani Islamia Eye Institute",
+                "description": "Pioneer ophthalmic hospital network offering advanced eye surgery and consultations.",
+                "address": "Farmgate, Sher-e-Bangla Nagar",
+                "district": "Dhaka",
+                "division": "Dhaka",
+                "city": "Dhaka",
+                "phone": "+880 9610-008080",
+                "email": "info@islamiaeye.org",
+                "rating": 4.9,
+                "reviews_count": 480,
+                "open_timing": "08:00 AM - 08:00 PM",
+                "tagline": "Largest Pioneer Ophthalmic Care & Eye Hospital",
+                "badge": "Eye Center",
+                "logo": "https://images.unsplash.com/photo-1579684385127-1ef15d508118?auto=format&fit=crop&w=600&q=80",
+                "image": "https://images.unsplash.com/photo-1579684385127-1ef15d508118?auto=format&fit=crop&w=600&q=80",
+                "services": ["Phaco Cataract Surgery", "Lasik Vision Correction", "Retina Surgery", "Glaucoma Care"],
+                "categories": [hcat_objs["Eye Hospitals"]],
+                "is_verified": True
+            }
+        ]
+        hospital_objs = {}
+        for h in hospitals_data:
+            cats = h.pop("categories")
+            obj = Hospital.objects.create(**h)
+            obj.categories.set(cats)
+            hospital_objs[h["name"]] = obj
 
-        BranchTest.objects.create(branch=b1, test=t_usg, price=1500, original_price=2000, discount="25% OFF", report_time="Same Day")
-        BranchTest.objects.create(branch=b4, test=t_usg, price=1400, original_price=1800, discount="22% OFF", report_time="Same Day")
+        self.stdout.write("8. Creating Diagnostic Centers...")
+        sys.stdout.flush()
+        centers_data = [
+            {
+                "name": "Popular Diagnostic Centre - Panthapath",
+                "address": "House 16, Road 2, Dhanmondi / Panthapath",
+                "district": "Dhaka",
+                "division": "Dhaka",
+                "phone": "+880 9613-787801",
+                "email": "panthapath@populardiagnostic.com",
+                "rating": 4.85,
+                "reviews_count": 410,
+                "open_timing": "07:00 AM - 11:00 PM",
+                "tagline": "Nationwide Leading Diagnostic & Imaging Hub",
+                "badge": "Verified Partner",
+                "logo": "https://images.unsplash.com/photo-1586773860418-d37222d8fce3?auto=format&fit=crop&w=600&q=80",
+                "image": "https://images.unsplash.com/photo-1586773860418-d37222d8fce3?auto=format&fit=crop&w=600&q=80",
+                "services": ["Specialist Visiting Doctor OPD", "Advanced MRI", "Full Automated Pathology", "128-Slice CT Scan"],
+                "description": "Popular Medical Center providing state-of-the-art diagnostic imaging and visiting doctor chambers.",
+                "categories": [dcc_pathology, dcc_radiology],
+                "is_verified": True
+            },
+            {
+                "name": "Ibn Sina Diagnostic Center - Mirpur",
+                "address": "Plot 11, Avenue 1, Block A, Mirpur 10",
+                "district": "Dhaka",
+                "division": "Dhaka",
+                "phone": "+880 9610-010616",
+                "email": "mirpur@ibnsinadiagnostic.com",
+                "rating": 4.8,
+                "reviews_count": 180,
+                "open_timing": "08:00 AM - 10:00 PM",
+                "tagline": "Top Diagnostic & Pathology Center in Mirpur",
+                "badge": "Verified Partner",
+                "logo": "https://images.unsplash.com/photo-1538108149393-fbbd81895907?auto=format&fit=crop&w=600&q=80",
+                "image": "https://images.unsplash.com/photo-1538108149393-fbbd81895907?auto=format&fit=crop&w=600&q=80",
+                "services": ["4D USG", "Digital X-Ray", "Blood Collection", "Visiting Specialist OPD"],
+                "description": "Specialized diagnostic testing and visiting doctor OPD sessions in Mirpur.",
+                "categories": [dcc_pathology],
+                "is_verified": True
+            },
+            {
+                "name": "Chevron Healthcare - Chittagong",
+                "address": "12/12 O.R. Nizam Road, Panchlaish",
+                "district": "Chittagong",
+                "division": "Chittagong",
+                "phone": "+880 31-652533",
+                "email": "info@chevronbd.com",
+                "rating": 4.9,
+                "reviews_count": 260,
+                "open_timing": "24/7 OPD & Diagnostic Service",
+                "tagline": "Chittagong's Most Trusted Diagnostic & OPD Center",
+                "badge": "Top Rated",
+                "logo": "https://images.unsplash.com/photo-1629909613654-28e377c37b09?auto=format&fit=crop&w=600&q=80",
+                "image": "https://images.unsplash.com/photo-1629909613654-28e377c37b09?auto=format&fit=crop&w=600&q=80",
+                "services": ["24/7 Emergency OPD", "Digital X-Ray", "Home Sample Collection", "Automated Blood Lab"],
+                "description": "Chevron Clinical Laboratory offering round-the-clock OPD specialist doctor visits and diagnostics.",
+                "categories": [dcc_pathology, dcc_radiology],
+                "is_verified": True
+            },
+            {
+                "name": "Labaid Diagnostics - Rajshahi",
+                "address": "Laxmipur, Rajshahi",
+                "district": "Rajshahi",
+                "division": "Rajshahi",
+                "phone": "+880 721-772211",
+                "email": "rajshahi@labaidgroup.com",
+                "rating": 4.85,
+                "reviews_count": 190,
+                "open_timing": "08:00 AM - 09:30 PM",
+                "tagline": "Super Specialist Diagnostic & Clinical Lab",
+                "badge": "Super Partner",
+                "logo": "https://images.unsplash.com/photo-1538108149393-fbbd81895907?auto=format&fit=crop&w=600&q=80",
+                "image": "https://images.unsplash.com/photo-1538108149393-fbbd81895907?auto=format&fit=crop&w=600&q=80",
+                "services": ["Nephrology Support", "Gynecology Clinic", "High-Accuracy Pathology"],
+                "description": "Labaid Diagnostic Laxmipur is Rajshahi's premier center for pathology and digital diagnostic radiology.",
+                "categories": [dcc_pathology, dcc_cardiac_center],
+                "is_verified": True
+            }
+        ]
+        center_objs = {}
+        for c in centers_data:
+            cats = c.pop("categories")
+            obj = DiagnosticCenter.objects.create(**c)
+            obj.categories.set(cats)
+            center_objs[c["name"]] = obj
 
-        BranchTest.objects.create(branch=b1, test=t_lipid, price=950, original_price=1400, discount="32% OFF", report_time="12 Hours")
-        BranchTest.objects.create(branch=b2, test=t_lipid, price=900, original_price=1300, discount="30% OFF", report_time="12 Hours")
-
-        self.stdout.write("Creating Doctors...")
-        d1 = Doctor.objects.create(
-            id="doc-1",
-            name="Prof. Dr. A. K. M. Fazlul Haque",
-            qualification="MBBS, FCPS (Medicine), MD (Cardiology), FACC (USA)",
-            experience="22+ Yrs Exp."
+        self.stdout.write("9. Linking Tests to Diagnostic Centers (DiagnosticCenterTest)...")
+        sys.stdout.flush()
+        
+        DiagnosticCenterTest.objects.create(
+            center=center_objs["Popular Diagnostic Centre - Panthapath"],
+            test=test_objs["Blood Test (CBC)"],
+            price=500.00,
+            original_price=650.00,
+            discount="23% OFF",
+            report_time="8 Hours",
+            is_available=True,
+            home_sample_collection=True
         )
-        d1.specialties.set([s_cardio])
-
-        d2 = Doctor.objects.create(
-            id="doc-2",
-            name="Dr. Sharmin Sultana",
-            qualification="MBBS, FCPS (Obstetrics & Gynecology), MS",
-            experience="14+ Yrs Exp."
+        DiagnosticCenterTest.objects.create(
+            center=center_objs["Popular Diagnostic Centre - Panthapath"],
+            test=test_objs["CT Scan (Brain / Chest)"],
+            price=4800.00,
+            original_price=6200.00,
+            discount="22% OFF",
+            report_time="12 Hours",
+            is_available=True,
+            home_sample_collection=False
         )
-        d2.specialties.set([s_gyn, s_derm])
-
-        d3 = Doctor.objects.create(
-            id="doc-3",
-            name="Prof. Dr. Syed Atiqul Haq",
-            qualification="MBBS, FCPS (Medicine), MD (Neurology), FRCP",
-            experience="25+ Yrs Exp."
+        DiagnosticCenterTest.objects.create(
+            center=center_objs["Popular Diagnostic Centre - Panthapath"],
+            test=test_objs["Thyroid Profile (T3, T4, TSH)"],
+            price=1100.00,
+            original_price=1500.00,
+            discount="26% OFF",
+            report_time="Same Day",
+            is_available=True,
+            home_sample_collection=True
         )
-        d3.specialties.set([s_neuro])
 
-        d4 = Doctor.objects.create(
-            id="doc-4",
-            name="Dr. Chowdhury Farhan Hossain",
-            qualification="MBBS, MS (Orthopedic Surgery), Fellow Spine Surgery",
-            experience="18+ Yrs Exp."
+        DiagnosticCenterTest.objects.create(
+            center=center_objs["Ibn Sina Diagnostic Center - Mirpur"],
+            test=test_objs["Blood Test (CBC)"],
+            price=400.00,
+            original_price=550.00,
+            discount="27% OFF",
+            report_time="Same Day (4 Hours)",
+            is_available=True,
+            home_sample_collection=True
         )
-        d4.specialties.set([s_ortho])
-
-        self.stdout.write("Creating Doctor Affiliations & Schedules...")
-        aff1 = DoctorAffiliation.objects.create(
-            doctor=d1, branch=b1, consultation_type="OPD", fee=1200
+        DiagnosticCenterTest.objects.create(
+            center=center_objs["Ibn Sina Diagnostic Center - Mirpur"],
+            test=test_objs["USG (Ultrasound Abdomen)"],
+            price=1500.00,
+            original_price=2000.00,
+            discount="25% OFF",
+            report_time="Same Day",
+            is_available=True,
+            home_sample_collection=False
         )
-        AffiliationSchedule.objects.create(affiliation=aff1, day_of_week="Sat", start_time=datetime.time(17, 0), end_time=datetime.time(21, 0))
-        AffiliationSchedule.objects.create(affiliation=aff1, day_of_week="Mon", start_time=datetime.time(17, 0), end_time=datetime.time(21, 0))
-        AffiliationSchedule.objects.create(affiliation=aff1, day_of_week="Wed", start_time=datetime.time(17, 0), end_time=datetime.time(21, 0))
-
-        aff1_inp = DoctorAffiliation.objects.create(
-            doctor=d1, branch=b1, consultation_type="In-patient", fee=2000
+        DiagnosticCenterTest.objects.create(
+            center=center_objs["Ibn Sina Diagnostic Center - Mirpur"],
+            test=test_objs["Lipid Profile (Cholesterol)"],
+            price=900.00,
+            original_price=1300.00,
+            discount="30% OFF",
+            report_time="12 Hours",
+            is_available=True,
+            home_sample_collection=True
         )
-        AffiliationSchedule.objects.create(affiliation=aff1_inp, day_of_week="Everyday", start_time=datetime.time(9, 0), end_time=datetime.time(13, 0))
 
-        aff1_m = DoctorAffiliation.objects.create(
-            doctor=d1, branch=b2, consultation_type="OPD", fee=1000
+        DiagnosticCenterTest.objects.create(
+            center=center_objs["Chevron Healthcare - Chittagong"],
+            test=test_objs["Blood Test (CBC)"],
+            price=450.00,
+            original_price=600.00,
+            discount="25% OFF",
+            report_time="Same Day",
+            is_available=True,
+            home_sample_collection=True
         )
-        AffiliationSchedule.objects.create(affiliation=aff1_m, day_of_week="Tue", start_time=datetime.time(15, 0), end_time=datetime.time(18, 0))
-
-        aff2 = DoctorAffiliation.objects.create(
-            doctor=d2, branch=b1, consultation_type="OPD", fee=1000
+        DiagnosticCenterTest.objects.create(
+            center=center_objs["Chevron Healthcare - Chittagong"],
+            test=test_objs["USG (Ultrasound Abdomen)"],
+            price=1400.00,
+            original_price=1800.00,
+            discount="22% OFF",
+            report_time="Same Day",
+            is_available=True,
+            home_sample_collection=False
         )
-        AffiliationSchedule.objects.create(affiliation=aff2, day_of_week="Sun", start_time=datetime.time(16, 0), end_time=datetime.time(20, 0))
-        AffiliationSchedule.objects.create(affiliation=aff2, day_of_week="Thu", start_time=datetime.time(16, 0), end_time=datetime.time(20, 0))
 
-        aff2_inp = DoctorAffiliation.objects.create(
-            doctor=d2, branch=b3, consultation_type="In-patient", fee=1500
+        DiagnosticCenterTest.objects.create(
+            center=center_objs["Labaid Diagnostics - Rajshahi"],
+            test=test_objs["Lipid Profile (Cholesterol)"],
+            price=950.00,
+            original_price=1400.00,
+            discount="32% OFF",
+            report_time="12 Hours",
+            is_available=True,
+            home_sample_collection=True
         )
-        AffiliationSchedule.objects.create(affiliation=aff2_inp, day_of_week="Everyday", start_time=datetime.time(10, 0), end_time=datetime.time(14, 0))
 
-        aff3 = DoctorAffiliation.objects.create(
-            doctor=d3, branch=b3, consultation_type="OPD", fee=1500
-        )
-        AffiliationSchedule.objects.create(affiliation=aff3, day_of_week="Sat", start_time=datetime.time(18, 0), end_time=datetime.time(21, 30))
-        AffiliationSchedule.objects.create(affiliation=aff3, day_of_week="Mon", start_time=datetime.time(18, 0), end_time=datetime.time(21, 30))
+        self.stdout.write("10. Creating Doctors & Affiliations...")
+        sys.stdout.flush()
 
-        aff4 = DoctorAffiliation.objects.create(
-            doctor=d4, branch=b4, consultation_type="OPD", fee=1200
-        )
-        AffiliationSchedule.objects.create(affiliation=aff4, day_of_week="Sun", start_time=datetime.time(17, 0), end_time=datetime.time(21, 0))
-        AffiliationSchedule.objects.create(affiliation=aff4, day_of_week="Tue", start_time=datetime.time(17, 0), end_time=datetime.time(21, 0))
+        doctors_data = [
+            {
+                "name": "Prof. Dr. M. A. Zaman",
+                "qualification": "MBBS, FCPS (Medicine), MD (Cardiology), FACC",
+                "experience": "25+ Yrs Exp.",
+                "specs": ["Cardiologist"],
+                "hospital": hospital_objs["National Heart Foundation"],
+                "dc": None,
+                "type": "OPD",
+                "fee": 1500,
+                "schedules": [("Sat", 17, 21), ("Mon", 17, 21), ("Wed", 17, 21)]
+            },
+            {
+                "name": "Prof. Dr. Nazrul Islam",
+                "qualification": "MBBS, FCPS (Ophthalmology), DO",
+                "experience": "20+ Yrs Exp.",
+                "specs": ["Eye Specialist"],
+                "hospital": hospital_objs["Ispahani Islamia Eye Institute"],
+                "dc": None,
+                "type": "OPD",
+                "fee": 1200,
+                "schedules": [("Sun", 16, 20), ("Tue", 16, 20), ("Thu", 16, 20)]
+            },
+            {
+                "name": "Prof. Dr. A. K. M. Fazlul Haque",
+                "qualification": "MBBS, FCPS (Medicine), MD (Cardiology), FACC (USA)",
+                "experience": "22+ Yrs Exp.",
+                "specs": ["Cardiologist"],
+                "hospital": hospital_objs["Ibn Sina Healthcare Group"],
+                "dc": None,
+                "type": "OPD",
+                "fee": 1200,
+                "schedules": [("Sat", 17, 21), ("Mon", 17, 21), ("Wed", 17, 21)]
+            },
+            {
+                "name": "Dr. Sharmin Sultana",
+                "qualification": "MBBS, FCPS (Obstetrics & Gynecology), MS",
+                "experience": "14+ Yrs Exp.",
+                "specs": ["Gynecologist"],
+                "hospital": hospital_objs["Ibn Sina Healthcare Group"],
+                "dc": None,
+                "type": "In-patient",
+                "fee": 1000,
+                "schedules": [("Everyday", 9, 13)]
+            },
+            {
+                "name": "Prof. Dr. Syed Atiqul Haq",
+                "qualification": "MBBS, FCPS (Medicine), MD (Neurology), FRCP",
+                "experience": "25+ Yrs Exp.",
+                "specs": ["Neurologist"],
+                "hospital": None,
+                "dc": center_objs["Popular Diagnostic Centre - Panthapath"],
+                "type": "OPD",
+                "fee": 1500,
+                "schedules": [("Sat", 18, 21.5), ("Mon", 18, 21.5)]
+            },
+            {
+                "name": "Dr. Md. Tariqul Islam",
+                "qualification": "MBBS, FCPS (Medicine), MRCP (London)",
+                "experience": "16+ Yrs Exp.",
+                "specs": ["General Physician"],
+                "hospital": None,
+                "dc": center_objs["Popular Diagnostic Centre - Panthapath"],
+                "type": "OPD",
+                "fee": 800,
+                "schedules": [("Mon", 9, 13), ("Tue", 9, 13), ("Wed", 9, 13)]
+            },
+            {
+                "name": "Dr. Chowdhury Farhan Hossain",
+                "qualification": "MBBS, MS (Orthopedic Surgery), Fellow Spine Surgery",
+                "experience": "18+ Yrs Exp.",
+                "specs": ["Orthopedic"],
+                "hospital": None,
+                "dc": center_objs["Chevron Healthcare - Chittagong"],
+                "type": "OPD",
+                "fee": 1200,
+                "schedules": [("Sun", 17, 21), ("Tue", 17, 21)]
+            },
+            {
+                "name": "Dr. M. A. Bashar",
+                "qualification": "MBBS, MD (Nephrology), FCPS (Medicine)",
+                "experience": "17+ Yrs Exp.",
+                "specs": ["Nephrologist"],
+                "hospital": None,
+                "dc": center_objs["Labaid Diagnostics - Rajshahi"],
+                "type": "OPD",
+                "fee": 1200,
+                "schedules": [("Thu", 15, 19.5), ("Fri", 15, 19.5)]
+            }
+        ]
 
-        aff4_inp = DoctorAffiliation.objects.create(
-            doctor=d4, branch=b4, consultation_type="In-patient", fee=1800
-        )
-        AffiliationSchedule.objects.create(affiliation=aff4_inp, day_of_week="Everyday", start_time=datetime.time(8, 0), end_time=datetime.time(12, 0))
+        for ddata in doctors_data:
+            doc = Doctor.objects.create(
+                name=ddata["name"],
+                qualification=ddata["qualification"],
+                experience=ddata["experience"]
+            )
+            for spec_name in ddata["specs"]:
+                if spec_name in spec_objs:
+                    doc.specialties.add(spec_objs[spec_name])
 
-        self.stdout.write(self.style.SUCCESS("Successfully populated mock data & default admin user!"))
+            aff = DoctorAffiliation.objects.create(
+                doctor=doc,
+                hospital=ddata["hospital"],
+                diagnostic_center=ddata["dc"],
+                consultation_type=ddata["type"],
+                fee=ddata["fee"]
+            )
+            for day, start_h, end_h in ddata["schedules"]:
+                sh = int(start_h)
+                sm = int((start_h - sh) * 60)
+                eh = int(end_h)
+                em = int((end_h - eh) * 60)
+                AffiliationSchedule.objects.create(
+                    affiliation=aff,
+                    day_of_week=day,
+                    start_time=datetime.time(sh, sm),
+                    end_time=datetime.time(eh, em)
+                )
+
+        self.stdout.write(self.style.SUCCESS("Successfully populated database with UUID models and mock data!"))
+        sys.stdout.flush()

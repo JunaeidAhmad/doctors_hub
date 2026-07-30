@@ -140,7 +140,7 @@ export default function AdminDashboardPage({ currentUser, onNavigate, onAdminLog
 
   // Dedicated Admin Login State
   const [adminPhone, setAdminPhone] = useState('01700000000');
-  const [adminPassword, setAdminPassword] = useState('admin123');
+  const [adminPassword, setAdminPassword] = useState('admin123456');
   const [loginLoading, setLoginLoading] = useState(false);
   const [loginErr, setLoginErr] = useState('');
 
@@ -385,6 +385,7 @@ export default function AdminDashboardPage({ currentUser, onNavigate, onAdminLog
         branch_name: isCustom ? 'Other' : ch.name,
         isCustomBranch: isCustom,
         customBranchName: isCustom ? ch.name : '',
+        specialtyCategory: ch.specialtyCategory || ch.specialty_category || 'multispecialty',
         city: cityName,
         location: ch.location,
         verified: ch.verified,
@@ -407,6 +408,7 @@ export default function AdminDashboardPage({ currentUser, onNavigate, onAdminLog
         branch_name: CITY_THANAS["Dhaka"][0],
         isCustomBranch: false,
         customBranchName: '',
+        specialtyCategory: 'multispecialty',
         city: 'Dhaka',
         location: 'House 48, Road 9/A, Dhanmondi',
         verified: true,
@@ -435,6 +437,8 @@ export default function AdminDashboardPage({ currentUser, onNavigate, onAdminLog
         id: chamberForm.id,
         hospital_name: chamberForm.hospital_name,
         name: finalBranchName,
+        specialtyCategory: chamberForm.specialtyCategory || 'multispecialty',
+        specialty_category: chamberForm.specialtyCategory || 'multispecialty',
         facility_types: chamberForm.facility_types,
         location: chamberForm.location,
         city: chamberForm.city,
@@ -775,11 +779,12 @@ export default function AdminDashboardPage({ currentUser, onNavigate, onAdminLog
               <input
                 type="password"
                 required
-                placeholder="••••••••"
+                placeholder="admin123456"
                 value={adminPassword}
                 onChange={e => setAdminPassword(e.target.value)}
                 className="w-full bg-slate-950 border border-slate-800 rounded-xl px-4 py-3 text-sm text-white focus:outline-none focus:border-teal-500 font-mono"
               />
+              <p className="text-[11px] text-slate-500 mt-1">Default Seed Admin: <span className="font-mono text-slate-400">01700000000</span> / <span className="font-mono text-slate-400">admin123456</span></p>
             </div>
 
             <button
@@ -832,7 +837,7 @@ export default function AdminDashboardPage({ currentUser, onNavigate, onAdminLog
               onClick={() => onNavigate('home')}
               className="px-3.5 py-2 bg-emerald-600 hover:bg-emerald-500 text-white rounded-xl text-xs font-bold transition shadow-xs"
             >
-              Exit Console
+              Exit
             </button>
           </div>
         </div>
@@ -863,7 +868,7 @@ export default function AdminDashboardPage({ currentUser, onNavigate, onAdminLog
             { id: 'chambers', label: `Hospitals & Branches (${chambers.length})`, icon: Building2 },
             { id: 'doctors', label: `Specialist Doctors (${doctors.length})`, icon: Stethoscope },
             { id: 'doctor-specs', label: `Doctor Specialties (${doctorSpecialties.length})`, icon: Stethoscope },
-            { id: 'hospital-specs', label: `Hospital Specialties (${hospitalSpecialties.length})`, icon: Building2 },
+            { id: 'hospital-specs', label: `Hospital Categories (${hospitalSpecialties.length})`, icon: Building2 },
             { id: 'tests', label: `Pathology Base Tests (${tests.length})`, icon: TestTube },
             { id: 'test-cats', label: `Test Categories (${testCategories.length})`, icon: TestTube },
             { id: 'branch-tests', label: `Diagnostic Test Prices (${branchTests.length})`, icon: Calculator },
@@ -1017,7 +1022,7 @@ export default function AdminDashboardPage({ currentUser, onNavigate, onAdminLog
                 <div className="flex items-center justify-between border-b border-slate-800 pb-3">
                   <div className="flex items-center gap-2 font-bold text-white text-sm">
                     <Building2 className="w-4 h-4 text-emerald-400" />
-                    <span>Hospital Specialties ({hospitalSpecialties.length})</span>
+                    <span>Hospital Categories ({hospitalSpecialties.length})</span>
                   </div>
                   <button
                     onClick={() => handleOpenHospitalSpecModal()}
@@ -1043,7 +1048,7 @@ export default function AdminDashboardPage({ currentUser, onNavigate, onAdminLog
                 <div className="flex items-center justify-between border-b border-slate-800 pb-3">
                   <div className="flex items-center gap-2 font-bold text-white text-sm">
                     <TestTube className="w-4 h-4 text-cyan-400" />
-                    <span>Test Categories ({testCategories.length})</span>
+                    <span>Diagnostic Categories ({testCategories.length})</span>
                   </div>
                   <button
                     onClick={() => handleOpenTestCatModal()}
@@ -1621,7 +1626,7 @@ export default function AdminDashboardPage({ currentUser, onNavigate, onAdminLog
           <div className="bg-slate-900 border border-slate-800 rounded-2xl overflow-hidden shadow-xl">
             <div className="p-5 border-b border-slate-800 flex flex-wrap items-center justify-between gap-4">
               <div>
-                <h3 className="text-base font-bold text-white">Hospital Specialties & Categories</h3>
+                <h3 className="text-base font-bold text-white">Hospital Categories</h3>
                 <p className="text-xs text-slate-400">Categories for filtering partner hospital and diagnostic center networks</p>
               </div>
               <button
@@ -2530,7 +2535,7 @@ export default function AdminDashboardPage({ currentUser, onNavigate, onAdminLog
         <div className="fixed inset-0 z-50 bg-slate-950/80 backdrop-blur-sm flex items-center justify-center p-4">
           <div className="bg-slate-900 border border-slate-800 rounded-2xl max-w-md w-full p-6 shadow-2xl space-y-4">
             <h3 className="text-lg font-bold text-white">
-              {editingHospitalSpec ? 'Edit Hospital Specialty / Category' : 'Add New Hospital Category'}
+              {editingHospitalSpec ? 'Edit Hospital Category' : 'Add New Hospital Category'}
             </h3>
             
             <form onSubmit={handleSaveHospitalSpec} className="space-y-4 text-xs">
