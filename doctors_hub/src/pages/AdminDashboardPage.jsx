@@ -1,6 +1,6 @@
 import React, { useState, useEffect, useMemo } from 'react';
 import { api } from '../services/api';
-import { SPECIALTIES, HOSPITAL_CATEGORIES, DIAGNOSTIC_CENTER_CATEGORIES, HOSPITAL_SERVICES, DIAGNOSTIC_SERVICES, TEST_CATEGORIES, CITY_THANAS } from '../data/mockData';
+import { SPECIALTIES, HOSPITAL_CATEGORIES, DIAGNOSTIC_CENTER_CATEGORIES, HOSPITAL_SERVICES, DIAGNOSTIC_SERVICES, TEST_CATEGORIES, CITY_THANAS, LOCATIONS } from '../data/mockData';
 import { 
   Users, Building2, TestTube, Calendar, Plus, Edit, Trash2, CheckCircle, 
   XCircle, Search, RefreshCw, AlertCircle, ShieldAlert, Sparkles, Clock, MapPin, Stethoscope, ChevronLeft, ChevronRight, Filter, Calculator, FlaskConical, Activity
@@ -94,49 +94,51 @@ export default function AdminDashboardPage({ currentUser, onNavigate, onAdminLog
   const [editingHospital, setEditingHospital] = useState(null);
   const [hospitalForm, setHospitalForm] = useState({
     id: '',
-    name: '',
-    branch: '',
-    category_ids: [],
-    service_ids: [],
-    address: '',
-    district: 'Dhaka',
-    division: 'Dhaka',
+    name: 'Ibn Sina Healthcare Group',
     city: 'Dhaka',
-    phone: '',
-    email: '',
-    rating: 4.8,
-    reviews_count: 50,
+    branch: 'Dhanmondi',
+    isCustomBranch: false,
+    customBranch: '',
+    category_id: '',
+    service_ids: [],
+    address: 'House 48, Road 9/A, Dhanmondi',
+    phone: '+880 9610-010615',
+    email: 'info@ibnsina.com.bd',
+    rating: 4.9,
+    reviews_count: 320,
     open_timing: '24/7 Inpatient & OPD',
-    tagline: '',
-    badge: 'Verified Partner',
+    tagline: 'Premier Multispecialty OPD & Inpatient Hospital in Dhanmondi',
+    badge: 'Super Partner',
     logo: 'https://images.unsplash.com/photo-1519494026892-80bbd2d6fd0d?auto=format&fit=crop&w=600&q=80',
     image: 'https://images.unsplash.com/photo-1519494026892-80bbd2d6fd0d?auto=format&fit=crop&w=600&q=80',
-    description: '',
+    description: 'Leading hospital offering inpatient and OPD consultation.',
     is_verified: true
   });
 
-  // Diagnostic Center / Branch Modal State (Task 3 & Task 6)
+  // Diagnostic Center / Branch Modal State
   const [showDiagnosticModal, setShowDiagnosticModal] = useState(false);
   const [editingDiagnostic, setEditingDiagnostic] = useState(null);
   const [diagnosticForm, setDiagnosticForm] = useState({
     id: '',
-    name: '',
-    branch: '',
-    category_ids: [],
-    service_ids: [],
-    address: '',
+    name: 'Popular Diagnostic Centre',
+    city: 'Dhaka',
     district: 'Dhaka',
-    division: 'Dhaka',
-    phone: '',
-    email: '',
+    branch: 'Panthapath',
+    isCustomBranch: false,
+    customBranch: '',
+    category_id: '',
+    service_ids: [],
+    address: 'House 16, Road 2, Dhanmondi / Panthapath',
+    phone: '+880 9613-787801',
+    email: 'info@populardiagnostic.com',
     rating: 4.85,
-    reviews_count: 100,
+    reviews_count: 410,
     open_timing: '07:00 AM - 11:00 PM',
-    tagline: '',
+    tagline: 'Nationwide Leading Diagnostic & Imaging Hub',
     badge: 'Verified Partner',
     logo: 'https://images.unsplash.com/photo-1586773860418-d37222d8fce3?auto=format&fit=crop&w=600&q=80',
     image: 'https://images.unsplash.com/photo-1586773860418-d37222d8fce3?auto=format&fit=crop&w=600&q=80',
-    description: '',
+    description: 'State-of-the-art diagnostic imaging and visiting doctor chambers.',
     is_verified: true
   });
 
@@ -270,16 +272,23 @@ export default function AdminDashboardPage({ currentUser, onNavigate, onAdminLog
       setEditingHospital(h);
       const catIds = Array.isArray(h.categories) ? h.categories.map(c => c.id || c) : [];
       const srvIds = Array.isArray(h.services) ? h.services.map(s => s.id || s) : [];
+      const cityName = h.city || h.district || 'Dhaka';
+      const cityThanas = CITY_THANAS[cityName] || CITY_THANAS['Dhaka'];
+      const rawBranch = h.branch ? h.branch.replace(/ branch$/i, '') : '';
+      const isCustom = rawBranch && !cityThanas.includes(rawBranch);
+
       setHospitalForm({
         id: h.id,
         name: h.name,
-        branch: h.branch || '',
-        category_ids: catIds,
+        city: cityName,
+        branch: isCustom ? 'Other' : (rawBranch || cityThanas[0]),
+        isCustomBranch: isCustom,
+        customBranch: isCustom ? rawBranch : '',
+        category_id: catIds[0] || (hospitalCategories[0] ? hospitalCategories[0].id : ''),
         service_ids: srvIds,
         address: h.address || '',
-        district: h.district || 'Dhaka',
+        district: cityName,
         division: h.division || 'Dhaka',
-        city: h.city || 'Dhaka',
         phone: h.phone || '',
         email: h.email || '',
         rating: h.rating || 4.8,
@@ -297,13 +306,15 @@ export default function AdminDashboardPage({ currentUser, onNavigate, onAdminLog
       setHospitalForm({
         id: '',
         name: 'Ibn Sina Healthcare Group',
-        branch: 'Dhanmondi Branch',
-        category_ids: hospitalCategories[0] ? [hospitalCategories[0].id] : [],
+        city: 'Dhaka',
+        branch: CITY_THANAS['Dhaka'][0],
+        isCustomBranch: false,
+        customBranch: '',
+        category_id: hospitalCategories[0] ? hospitalCategories[0].id : '',
         service_ids: hospitalServices.slice(0, 3).map(s => s.id),
         address: 'House 48, Road 9/A, Dhanmondi',
         district: 'Dhaka',
         division: 'Dhaka',
-        city: 'Dhaka',
         phone: '+880 9610-010615',
         email: 'info@ibnsina.com.bd',
         rating: 4.9,
@@ -331,7 +342,29 @@ export default function AdminDashboardPage({ currentUser, onNavigate, onAdminLog
   const handleSaveHospital = async (e) => {
     e.preventDefault();
     try {
-      const payload = { ...hospitalForm };
+      const finalBranch = hospitalForm.isCustomBranch ? hospitalForm.customBranch : (hospitalForm.branch ? `${hospitalForm.branch} Branch` : 'Main Branch');
+      const payload = {
+        name: hospitalForm.name,
+        branch: finalBranch,
+        city: hospitalForm.city,
+        district: hospitalForm.city,
+        division: hospitalForm.division,
+        category_ids: hospitalForm.category_id ? [hospitalForm.category_id] : [],
+        service_ids: hospitalForm.service_ids,
+        address: hospitalForm.address,
+        phone: hospitalForm.phone,
+        email: hospitalForm.email,
+        rating: parseFloat(hospitalForm.rating) || 4.8,
+        reviews_count: parseInt(hospitalForm.reviews_count, 10) || 50,
+        open_timing: hospitalForm.open_timing,
+        tagline: hospitalForm.tagline,
+        badge: hospitalForm.badge,
+        logo: hospitalForm.logo,
+        image: hospitalForm.image,
+        description: hospitalForm.description,
+        is_verified: hospitalForm.is_verified
+      };
+
       if (editingHospital) {
         await api.updateHospital(editingHospital.id, payload);
         showNotification(`Hospital "${payload.name} (${payload.branch})" updated!`);
@@ -357,24 +390,32 @@ export default function AdminDashboardPage({ currentUser, onNavigate, onAdminLog
     }
   };
 
-  // --- DIAGNOSTIC CENTER / BRANCH CRUD HANDLERS (TASK 3 & TASK 6) ---
+  // --- DIAGNOSTIC CENTER / BRANCH CRUD HANDLERS (TASK 1, 3, 4, 6) ---
   const handleOpenDiagnosticModal = (dc = null) => {
     if (dc) {
       setEditingDiagnostic(dc);
       const catIds = Array.isArray(dc.categories) ? dc.categories.map(c => c.id || c) : [];
       const srvIds = Array.isArray(dc.services) ? dc.services.map(s => s.id || s) : [];
+      const distName = dc.district || dc.city || 'Dhaka';
+      const cityThanas = CITY_THANAS[distName] || CITY_THANAS['Dhaka'];
+      const rawBranch = dc.branch ? dc.branch.replace(/ branch$/i, '') : '';
+      const isCustom = rawBranch && !cityThanas.includes(rawBranch);
+
       setDiagnosticForm({
         id: dc.id,
         name: dc.name,
-        branch: dc.branch || '',
-        category_ids: catIds,
+        city: distName,
+        district: distName,
+        branch: isCustom ? 'Other' : (rawBranch || cityThanas[0]),
+        isCustomBranch: isCustom,
+        customBranch: isCustom ? rawBranch : '',
+        category_id: catIds[0] || (diagnosticCategories[0] ? diagnosticCategories[0].id : ''),
         service_ids: srvIds,
         address: dc.address || '',
-        district: dc.district || 'Dhaka',
         division: dc.division || 'Dhaka',
         phone: dc.phone || '',
         email: dc.email || '',
-        rating: dc.rating || 4.8,
+        rating: dc.rating || 4.85,
         reviews_count: dc.reviews_count || 100,
         open_timing: dc.open_timing || '07:00 AM - 11:00 PM',
         tagline: dc.tagline || '',
@@ -389,11 +430,14 @@ export default function AdminDashboardPage({ currentUser, onNavigate, onAdminLog
       setDiagnosticForm({
         id: '',
         name: 'Popular Diagnostic Centre',
-        branch: 'Panthapath Branch',
-        category_ids: diagnosticCategories[0] ? [diagnosticCategories[0].id] : [],
+        city: 'Dhaka',
+        district: 'Dhaka',
+        branch: CITY_THANAS['Dhaka'][0],
+        isCustomBranch: false,
+        customBranch: '',
+        category_id: diagnosticCategories[0] ? diagnosticCategories[0].id : '',
         service_ids: diagnosticServices.slice(0, 3).map(s => s.id),
         address: 'House 16, Road 2, Dhanmondi / Panthapath',
-        district: 'Dhaka',
         division: 'Dhaka',
         phone: '+880 9613-787801',
         email: 'info@populardiagnostic.com',
@@ -422,7 +466,28 @@ export default function AdminDashboardPage({ currentUser, onNavigate, onAdminLog
   const handleSaveDiagnostic = async (e) => {
     e.preventDefault();
     try {
-      const payload = { ...diagnosticForm };
+      const finalBranch = diagnosticForm.isCustomBranch ? diagnosticForm.customBranch : (diagnosticForm.branch ? `${diagnosticForm.branch} Branch` : 'Main Branch');
+      const payload = {
+        name: diagnosticForm.name,
+        branch: finalBranch,
+        district: diagnosticForm.city,
+        division: diagnosticForm.division,
+        category_ids: diagnosticForm.category_id ? [diagnosticForm.category_id] : [],
+        service_ids: diagnosticForm.service_ids,
+        address: diagnosticForm.address,
+        phone: diagnosticForm.phone,
+        email: diagnosticForm.email,
+        rating: parseFloat(diagnosticForm.rating) || 4.85,
+        reviews_count: parseInt(diagnosticForm.reviews_count, 10) || 100,
+        open_timing: diagnosticForm.open_timing,
+        tagline: diagnosticForm.tagline,
+        badge: diagnosticForm.badge,
+        logo: diagnosticForm.logo,
+        image: diagnosticForm.image,
+        description: diagnosticForm.description,
+        is_verified: diagnosticForm.is_verified
+      };
+
       if (editingDiagnostic) {
         await api.updateDiagnosticCenter(editingDiagnostic.id, payload);
         showNotification(`Diagnostic Center "${payload.name} (${payload.branch})" updated!`);
@@ -535,7 +600,7 @@ export default function AdminDashboardPage({ currentUser, onNavigate, onAdminLog
     }
   };
 
-  // --- CATEGORIES & SERVICES CRUD HANDLERS WITH FULL EDIT/DELETE SUPPORT ---
+  // --- CATEGORIES & SERVICES CRUD HANDLERS ---
   const handleOpenDoctorSpecModal = (s = null) => {
     if (s) {
       setEditingDoctorSpec(s);
@@ -1053,7 +1118,7 @@ export default function AdminDashboardPage({ currentUser, onNavigate, onAdminLog
               </div>
             </div>
 
-            {/* CATEGORIES & SERVICES OVERVIEW CARDS (USER DIRECTIVE: ROW 1 HAS 3 CARDS, ROW 2 HAS 2 CARDS!) */}
+            {/* CATEGORIES & SERVICES OVERVIEW CARDS (EXACT USER DIRECTIVE: ROW 1 HAS 3 CARDS, ROW 2 HAS 2 CARDS!) */}
             <div className="space-y-6">
               
               {/* ROW 1: 3 CARDS (Doctor Specialties, Hospital Categories, Diagnostics Categories) */}
@@ -1117,7 +1182,7 @@ export default function AdminDashboardPage({ currentUser, onNavigate, onAdminLog
                   </div>
                 </div>
 
-                {/* 3. Diagnostics Categories Card (TASK 4) */}
+                {/* 3. Diagnostics Categories Card */}
                 <div className="bg-slate-900 border border-slate-800 rounded-2xl p-5 space-y-3 shadow-lg">
                   <div className="flex items-center justify-between border-b border-slate-800 pb-3">
                     <div className="flex items-center gap-2 font-bold text-white text-sm">
@@ -1148,10 +1213,10 @@ export default function AdminDashboardPage({ currentUser, onNavigate, onAdminLog
 
               </div>
 
-              {/* ROW 2: 2 CARDS (Hospital Services & Diagnostic Services) (USER DIRECTIVE: REST 2!) */}
+              {/* ROW 2: 2 CARDS (Hospital Services & Diagnostic Services) */}
               <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
                 
-                {/* 1. Hospital Services Card (TASK 5) */}
+                {/* 1. Hospital Services Card */}
                 <div className="bg-slate-900 border border-slate-800 rounded-2xl p-5 space-y-3 shadow-lg">
                   <div className="flex items-center justify-between border-b border-slate-800 pb-3">
                     <div className="flex items-center gap-2 font-bold text-white text-sm">
@@ -1180,7 +1245,7 @@ export default function AdminDashboardPage({ currentUser, onNavigate, onAdminLog
                   </div>
                 </div>
 
-                {/* 2. Diagnostic Services Card (TASK 5) */}
+                {/* 2. Diagnostic Services Card */}
                 <div className="bg-slate-900 border border-slate-800 rounded-2xl p-5 space-y-3 shadow-lg">
                   <div className="flex items-center justify-between border-b border-slate-800 pb-3">
                     <div className="flex items-center gap-2 font-bold text-white text-sm">
@@ -1213,7 +1278,7 @@ export default function AdminDashboardPage({ currentUser, onNavigate, onAdminLog
 
             </div>
 
-            {/* Quick Preview Tables (RESTORED RECENT DOCTOR BOOKINGS & LAB PICKUPS) */}
+            {/* Quick Preview Tables */}
             <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
               
               {/* Doctor Bookings Table Preview */}
@@ -1429,7 +1494,7 @@ export default function AdminDashboardPage({ currentUser, onNavigate, onAdminLog
 
       </main>
 
-      {/* MODAL: ADD / EDIT HOSPITAL (ALL ORIGINAL FIELDS RESTORED) */}
+      {/* MODAL: ADD / EDIT HOSPITAL (SERIALIZED CITY -> BRANCH DROPDOWN, CATEGORY DROPDOWN, SERVICES AT BOTTOM) */}
       {showHospitalModal && (
         <div className="fixed inset-0 z-50 bg-slate-950/80 backdrop-blur-md flex items-center justify-center p-4 overflow-y-auto">
           <div className="bg-slate-900 border border-slate-800 rounded-3xl p-6 max-w-2xl w-full space-y-4 my-8 shadow-2xl">
@@ -1443,76 +1508,110 @@ export default function AdminDashboardPage({ currentUser, onNavigate, onAdminLog
             </div>
 
             <form onSubmit={handleSaveHospital} className="space-y-4 text-xs">
-              <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-                <div>
-                  <label className="block text-slate-300 font-semibold mb-1">Hospital Name *</label>
-                  <input
-                    type="text"
-                    required
-                    value={hospitalForm.name}
-                    onChange={e => setHospitalForm({ ...hospitalForm, name: e.target.value })}
-                    className="w-full bg-slate-950 border border-slate-800 rounded-xl px-3 py-2 text-white"
-                  />
-                </div>
-                {/* TASK 1: BRANCH FIELD */}
-                <div>
-                  <label className="block text-slate-300 font-semibold mb-1">Branch Name *</label>
-                  <input
-                    type="text"
-                    required
-                    placeholder="e.g. Dhanmondi Branch"
-                    value={hospitalForm.branch}
-                    onChange={e => setHospitalForm({ ...hospitalForm, branch: e.target.value })}
-                    className="w-full bg-slate-950 border border-slate-800 rounded-xl px-3 py-2 text-white"
-                  />
-                </div>
-              </div>
-
-              {/* TASK 6: CLICKABLE HOSPITAL SERVICES OPTIONS */}
+              
+              {/* TASK 4: CATEGORY DROPDOWN */}
               <div>
-                <label className="block text-slate-300 font-semibold mb-1.5">Services & Facilities (Click to Select / Deselect) *</label>
-                <div className="flex flex-wrap gap-2 p-3 bg-slate-950 border border-slate-800 rounded-xl max-h-44 overflow-y-auto">
-                  {hospitalServices.map(srv => {
-                    const isSelected = hospitalForm.service_ids.includes(srv.id);
-                    return (
-                      <button
-                        key={srv.id}
-                        type="button"
-                        onClick={() => toggleHospitalServiceSelection(srv.id)}
-                        className={`px-3 py-1.5 rounded-xl border text-xs font-bold transition flex items-center gap-1.5 ${
-                          isSelected 
-                            ? 'bg-emerald-500/20 text-emerald-300 border-emerald-500/50 shadow-sm shadow-emerald-500/20' 
-                            : 'bg-slate-900 text-slate-400 border-slate-800 hover:border-slate-700 hover:text-slate-200'
-                        }`}
-                      >
-                        <CheckCircle className={`w-3.5 h-3.5 ${isSelected ? 'opacity-100 text-emerald-400' : 'opacity-0'}`} />
-                        <span>{srv.name}</span>
-                      </button>
-                    );
-                  })}
-                </div>
+                <label className="block text-slate-300 font-semibold mb-1">Hospital Category *</label>
+                <select
+                  required
+                  value={hospitalForm.category_id}
+                  onChange={e => setHospitalForm({ ...hospitalForm, category_id: e.target.value })}
+                  className="w-full bg-slate-950 border border-slate-800 rounded-xl px-3 py-2.5 text-white font-bold"
+                >
+                  <option value="">Select Hospital Category</option>
+                  {hospitalCategories.map(cat => (
+                    <option key={cat.id} value={cat.id}>{cat.name}</option>
+                  ))}
+                </select>
               </div>
 
-              <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+              <div>
+                <label className="block text-slate-300 font-semibold mb-1">Hospital Name *</label>
+                <input
+                  type="text"
+                  required
+                  placeholder="e.g. Ibn Sina Healthcare Group"
+                  value={hospitalForm.name}
+                  onChange={e => setHospitalForm({ ...hospitalForm, name: e.target.value })}
+                  className="w-full bg-slate-950 border border-slate-800 rounded-xl px-3 py-2 text-white font-semibold"
+                />
+              </div>
+
+              {/* TASK 3 & 1: SERIALIZED CITY FIRST, THEN BRANCH DROPDOWN (THANAS OF SELECTED CITY) */}
+              <div className="grid grid-cols-1 md:grid-cols-2 gap-4 bg-slate-950/60 p-3 rounded-2xl border border-slate-800/80">
+                {/* 1. SELECT CITY FIRST */}
                 <div>
-                  <label className="block text-slate-300 font-semibold mb-1">District / City *</label>
-                  <input
-                    type="text"
+                  <label className="block text-emerald-400 font-bold mb-1">Step 1: Select City *</label>
+                  <select
                     required
                     value={hospitalForm.city}
-                    onChange={e => setHospitalForm({ ...hospitalForm, city: e.target.value, district: e.target.value })}
-                    className="w-full bg-slate-950 border border-slate-800 rounded-xl px-3 py-2 text-white"
-                  />
+                    onChange={e => {
+                      const newCity = e.target.value;
+                      const thanas = CITY_THANAS[newCity] || [];
+                      setHospitalForm({
+                        ...hospitalForm,
+                        city: newCity,
+                        district: newCity,
+                        branch: thanas[0] || 'Main',
+                        isCustomBranch: false,
+                        customBranch: ''
+                      });
+                    }}
+                    className="w-full bg-slate-900 border border-emerald-500/50 rounded-xl px-3 py-2 text-white font-bold"
+                  >
+                    {LOCATIONS.filter(l => l !== 'All Bangladesh').map(loc => (
+                      <option key={loc} value={loc}>{loc}</option>
+                    ))}
+                  </select>
                 </div>
+
+                {/* 2. SELECT BRANCH DROPDOWN BASED ON SELECTED CITY */}
                 <div>
-                  <label className="block text-slate-300 font-semibold mb-1">Full Address</label>
-                  <input
-                    type="text"
-                    value={hospitalForm.address}
-                    onChange={e => setHospitalForm({ ...hospitalForm, address: e.target.value })}
-                    className="w-full bg-slate-950 border border-slate-800 rounded-xl px-3 py-2 text-white"
-                  />
+                  <label className="block text-emerald-400 font-bold mb-1">Step 2: Select Branch (Thanas in {hospitalForm.city}) *</label>
+                  <select
+                    required
+                    value={hospitalForm.isCustomBranch ? 'Other' : hospitalForm.branch}
+                    onChange={e => {
+                      const val = e.target.value;
+                      if (val === 'Other') {
+                        setHospitalForm({ ...hospitalForm, isCustomBranch: true, branch: 'Other' });
+                      } else {
+                        setHospitalForm({ ...hospitalForm, isCustomBranch: false, branch: val, customBranch: '' });
+                      }
+                    }}
+                    className="w-full bg-slate-900 border border-emerald-500/50 rounded-xl px-3 py-2 text-white font-bold"
+                  >
+                    {(CITY_THANAS[hospitalForm.city] || []).map(th => (
+                      <option key={th} value={th}>{th} Branch</option>
+                    ))}
+                    <option value="Other">+ Other (Custom Branch Name)</option>
+                  </select>
                 </div>
+
+                {hospitalForm.isCustomBranch && (
+                  <div className="md:col-span-2 mt-1">
+                    <label className="block text-slate-300 font-semibold mb-1">Specify Custom Branch Name *</label>
+                    <input
+                      type="text"
+                      required
+                      placeholder="e.g. Rampura Main Branch"
+                      value={hospitalForm.customBranch}
+                      onChange={e => setHospitalForm({ ...hospitalForm, customBranch: e.target.value })}
+                      className="w-full bg-slate-900 border border-slate-700 rounded-xl px-3 py-2 text-white"
+                    />
+                  </div>
+                )}
+              </div>
+
+              <div>
+                <label className="block text-slate-300 font-semibold mb-1">Full Address</label>
+                <input
+                  type="text"
+                  placeholder="e.g. House 48, Road 9/A, Dhanmondi"
+                  value={hospitalForm.address}
+                  onChange={e => setHospitalForm({ ...hospitalForm, address: e.target.value })}
+                  className="w-full bg-slate-950 border border-slate-800 rounded-xl px-3 py-2 text-white"
+                />
               </div>
 
               <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
@@ -1567,7 +1666,7 @@ export default function AdminDashboardPage({ currentUser, onNavigate, onAdminLog
                 ></textarea>
               </div>
 
-              <div className="flex items-center gap-2 pt-2">
+              <div className="flex items-center gap-2 pt-1">
                 <input
                   type="checkbox"
                   id="hosp_verified"
@@ -1576,6 +1675,31 @@ export default function AdminDashboardPage({ currentUser, onNavigate, onAdminLog
                   className="w-4 h-4 text-emerald-500 rounded bg-slate-950 border-slate-800"
                 />
                 <label htmlFor="hosp_verified" className="text-slate-300 font-semibold cursor-pointer">Verified Hospital Partner</label>
+              </div>
+
+              {/* TASK 2: SERVICES & FACILITIES KEPT AT THE VERY BOTTOM OF THE FORM */}
+              <div className="pt-2">
+                <label className="block text-slate-300 font-semibold mb-1.5">Services & Facilities (Click to Select / Deselect) *</label>
+                <div className="flex flex-wrap gap-2 p-3 bg-slate-950 border border-slate-800 rounded-xl max-h-44 overflow-y-auto">
+                  {hospitalServices.map(srv => {
+                    const isSelected = hospitalForm.service_ids.includes(srv.id);
+                    return (
+                      <button
+                        key={srv.id}
+                        type="button"
+                        onClick={() => toggleHospitalServiceSelection(srv.id)}
+                        className={`px-3 py-1.5 rounded-xl border text-xs font-bold transition flex items-center gap-1.5 ${
+                          isSelected 
+                            ? 'bg-emerald-500/20 text-emerald-300 border-emerald-500/50 shadow-sm shadow-emerald-500/20' 
+                            : 'bg-slate-900 text-slate-400 border-slate-800 hover:border-slate-700 hover:text-slate-200'
+                        }`}
+                      >
+                        <CheckCircle className={`w-3.5 h-3.5 ${isSelected ? 'opacity-100 text-emerald-400' : 'opacity-0'}`} />
+                        <span>{srv.name}</span>
+                      </button>
+                    );
+                  })}
+                </div>
               </div>
 
               <div className="flex justify-end gap-3 pt-4 border-t border-slate-800">
@@ -1591,7 +1715,7 @@ export default function AdminDashboardPage({ currentUser, onNavigate, onAdminLog
         </div>
       )}
 
-      {/* MODAL: ADD / EDIT DIAGNOSTICS & BRANCH (TASK 3 & TASK 6) */}
+      {/* MODAL: ADD / EDIT DIAGNOSTICS & BRANCH (SERIALIZED CITY -> BRANCH DROPDOWN, CATEGORY DROPDOWN, SERVICES AT BOTTOM) */}
       {showDiagnosticModal && (
         <div className="fixed inset-0 z-50 bg-slate-950/80 backdrop-blur-md flex items-center justify-center p-4 overflow-y-auto">
           <div className="bg-slate-900 border border-slate-800 rounded-3xl p-6 max-w-2xl w-full space-y-4 my-8 shadow-2xl">
@@ -1605,76 +1729,110 @@ export default function AdminDashboardPage({ currentUser, onNavigate, onAdminLog
             </div>
 
             <form onSubmit={handleSaveDiagnostic} className="space-y-4 text-xs">
-              <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-                <div>
-                  <label className="block text-slate-300 font-semibold mb-1">Diagnostic Center Name *</label>
-                  <input
-                    type="text"
-                    required
-                    value={diagnosticForm.name}
-                    onChange={e => setDiagnosticForm({ ...diagnosticForm, name: e.target.value })}
-                    className="w-full bg-slate-950 border border-slate-800 rounded-xl px-3 py-2 text-white"
-                  />
-                </div>
-                {/* TASK 1: BRANCH FIELD */}
-                <div>
-                  <label className="block text-slate-300 font-semibold mb-1">Branch Name *</label>
-                  <input
-                    type="text"
-                    required
-                    placeholder="e.g. Panthapath Branch"
-                    value={diagnosticForm.branch}
-                    onChange={e => setDiagnosticForm({ ...diagnosticForm, branch: e.target.value })}
-                    className="w-full bg-slate-950 border border-slate-800 rounded-xl px-3 py-2 text-white"
-                  />
-                </div>
-              </div>
-
-              {/* TASK 6: CLICKABLE DIAGNOSTIC SERVICES OPTIONS */}
+              
+              {/* TASK 4: CATEGORY DROPDOWN */}
               <div>
-                <label className="block text-slate-300 font-semibold mb-1.5">Services & Facilities (Click to Select / Deselect) *</label>
-                <div className="flex flex-wrap gap-2 p-3 bg-slate-950 border border-slate-800 rounded-xl max-h-44 overflow-y-auto">
-                  {diagnosticServices.map(srv => {
-                    const isSelected = diagnosticForm.service_ids.includes(srv.id);
-                    return (
-                      <button
-                        key={srv.id}
-                        type="button"
-                        onClick={() => toggleDiagnosticServiceSelection(srv.id)}
-                        className={`px-3 py-1.5 rounded-xl border text-xs font-bold transition flex items-center gap-1.5 ${
-                          isSelected 
-                            ? 'bg-cyan-500/20 text-cyan-300 border-cyan-500/50 shadow-sm shadow-cyan-500/20' 
-                            : 'bg-slate-900 text-slate-400 border-slate-800 hover:border-slate-700 hover:text-slate-200'
-                        }`}
-                      >
-                        <CheckCircle className={`w-3.5 h-3.5 ${isSelected ? 'opacity-100 text-cyan-400' : 'opacity-0'}`} />
-                        <span>{srv.name}</span>
-                      </button>
-                    );
-                  })}
-                </div>
+                <label className="block text-slate-300 font-semibold mb-1">Diagnostic Category *</label>
+                <select
+                  required
+                  value={diagnosticForm.category_id}
+                  onChange={e => setDiagnosticForm({ ...diagnosticForm, category_id: e.target.value })}
+                  className="w-full bg-slate-950 border border-slate-800 rounded-xl px-3 py-2.5 text-white font-bold"
+                >
+                  <option value="">Select Diagnostic Category</option>
+                  {diagnosticCategories.map(cat => (
+                    <option key={cat.id} value={cat.id}>{cat.name}</option>
+                  ))}
+                </select>
               </div>
 
-              <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+              <div>
+                <label className="block text-slate-300 font-semibold mb-1">Diagnostic Center Name *</label>
+                <input
+                  type="text"
+                  required
+                  placeholder="e.g. Popular Diagnostic Centre"
+                  value={diagnosticForm.name}
+                  onChange={e => setDiagnosticForm({ ...diagnosticForm, name: e.target.value })}
+                  className="w-full bg-slate-950 border border-slate-800 rounded-xl px-3 py-2 text-white font-semibold"
+                />
+              </div>
+
+              {/* TASK 3 & 1: SERIALIZED CITY FIRST, THEN BRANCH DROPDOWN (THANAS OF SELECTED CITY) */}
+              <div className="grid grid-cols-1 md:grid-cols-2 gap-4 bg-slate-950/60 p-3 rounded-2xl border border-slate-800/80">
+                {/* 1. SELECT CITY FIRST */}
                 <div>
-                  <label className="block text-slate-300 font-semibold mb-1">District *</label>
-                  <input
-                    type="text"
+                  <label className="block text-cyan-400 font-bold mb-1">Step 1: Select City *</label>
+                  <select
                     required
-                    value={diagnosticForm.district}
-                    onChange={e => setDiagnosticForm({ ...diagnosticForm, district: e.target.value })}
-                    className="w-full bg-slate-950 border border-slate-800 rounded-xl px-3 py-2 text-white"
-                  />
+                    value={diagnosticForm.city}
+                    onChange={e => {
+                      const newCity = e.target.value;
+                      const thanas = CITY_THANAS[newCity] || [];
+                      setDiagnosticForm({
+                        ...diagnosticForm,
+                        city: newCity,
+                        district: newCity,
+                        branch: thanas[0] || 'Main',
+                        isCustomBranch: false,
+                        customBranch: ''
+                      });
+                    }}
+                    className="w-full bg-slate-900 border border-cyan-500/50 rounded-xl px-3 py-2 text-white font-bold"
+                  >
+                    {LOCATIONS.filter(l => l !== 'All Bangladesh').map(loc => (
+                      <option key={loc} value={loc}>{loc}</option>
+                    ))}
+                  </select>
                 </div>
+
+                {/* 2. SELECT BRANCH DROPDOWN BASED ON SELECTED CITY */}
                 <div>
-                  <label className="block text-slate-300 font-semibold mb-1">Full Address</label>
-                  <input
-                    type="text"
-                    value={diagnosticForm.address}
-                    onChange={e => setDiagnosticForm({ ...diagnosticForm, address: e.target.value })}
-                    className="w-full bg-slate-950 border border-slate-800 rounded-xl px-3 py-2 text-white"
-                  />
+                  <label className="block text-cyan-400 font-bold mb-1">Step 2: Select Branch (Thanas in {diagnosticForm.city}) *</label>
+                  <select
+                    required
+                    value={diagnosticForm.isCustomBranch ? 'Other' : diagnosticForm.branch}
+                    onChange={e => {
+                      const val = e.target.value;
+                      if (val === 'Other') {
+                        setDiagnosticForm({ ...diagnosticForm, isCustomBranch: true, branch: 'Other' });
+                      } else {
+                        setDiagnosticForm({ ...diagnosticForm, isCustomBranch: false, branch: val, customBranch: '' });
+                      }
+                    }}
+                    className="w-full bg-slate-900 border border-cyan-500/50 rounded-xl px-3 py-2 text-white font-bold"
+                  >
+                    {(CITY_THANAS[diagnosticForm.city] || []).map(th => (
+                      <option key={th} value={th}>{th} Branch</option>
+                    ))}
+                    <option value="Other">+ Other (Custom Branch Name)</option>
+                  </select>
                 </div>
+
+                {diagnosticForm.isCustomBranch && (
+                  <div className="md:col-span-2 mt-1">
+                    <label className="block text-slate-300 font-semibold mb-1">Specify Custom Branch Name *</label>
+                    <input
+                      type="text"
+                      required
+                      placeholder="e.g. Panthapath Main Branch"
+                      value={diagnosticForm.customBranch}
+                      onChange={e => setDiagnosticForm({ ...diagnosticForm, customBranch: e.target.value })}
+                      className="w-full bg-slate-900 border border-slate-700 rounded-xl px-3 py-2 text-white"
+                    />
+                  </div>
+                )}
+              </div>
+
+              <div>
+                <label className="block text-slate-300 font-semibold mb-1">Full Address</label>
+                <input
+                  type="text"
+                  placeholder="e.g. House 16, Road 2, Dhanmondi / Panthapath"
+                  value={diagnosticForm.address}
+                  onChange={e => setDiagnosticForm({ ...diagnosticForm, address: e.target.value })}
+                  className="w-full bg-slate-950 border border-slate-800 rounded-xl px-3 py-2 text-white"
+                />
               </div>
 
               <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
@@ -1708,7 +1866,7 @@ export default function AdminDashboardPage({ currentUser, onNavigate, onAdminLog
                 ></textarea>
               </div>
 
-              <div className="flex items-center gap-2 pt-2">
+              <div className="flex items-center gap-2 pt-1">
                 <input
                   type="checkbox"
                   id="diag_verified"
@@ -1717,6 +1875,31 @@ export default function AdminDashboardPage({ currentUser, onNavigate, onAdminLog
                   className="w-4 h-4 text-cyan-500 rounded bg-slate-950 border-slate-800"
                 />
                 <label htmlFor="diag_verified" className="text-slate-300 font-semibold cursor-pointer">Verified Diagnostic Partner</label>
+              </div>
+
+              {/* TASK 2: SERVICES & FACILITIES KEPT AT THE VERY BOTTOM OF THE FORM */}
+              <div className="pt-2">
+                <label className="block text-slate-300 font-semibold mb-1.5">Services & Facilities (Click to Select / Deselect) *</label>
+                <div className="flex flex-wrap gap-2 p-3 bg-slate-950 border border-slate-800 rounded-xl max-h-44 overflow-y-auto">
+                  {diagnosticServices.map(srv => {
+                    const isSelected = diagnosticForm.service_ids.includes(srv.id);
+                    return (
+                      <button
+                        key={srv.id}
+                        type="button"
+                        onClick={() => toggleDiagnosticServiceSelection(srv.id)}
+                        className={`px-3 py-1.5 rounded-xl border text-xs font-bold transition flex items-center gap-1.5 ${
+                          isSelected 
+                            ? 'bg-cyan-500/20 text-cyan-300 border-cyan-500/50 shadow-sm shadow-cyan-500/20' 
+                            : 'bg-slate-900 text-slate-400 border-slate-800 hover:border-slate-700 hover:text-slate-200'
+                        }`}
+                      >
+                        <CheckCircle className={`w-3.5 h-3.5 ${isSelected ? 'opacity-100 text-cyan-400' : 'opacity-0'}`} />
+                        <span>{srv.name}</span>
+                      </button>
+                    );
+                  })}
+                </div>
               </div>
 
               <div className="flex justify-end gap-3 pt-4 border-t border-slate-800">
