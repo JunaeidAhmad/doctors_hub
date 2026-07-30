@@ -36,19 +36,19 @@ export default function AdminDashboardPage({ currentUser, onNavigate, onAdminLog
   const navSliderRef = React.useRef(null);
   const [activeTab, setActiveTab] = useState('overview'); 
   // Tabs: 'overview' | 'hospitals' | 'diagnostics' | 'doctors' | 'doctor-specs' | 'hospital-specs' | 'diag-cats' | 'hosp-services' | 'diag-services' | 'tests' | 'test-cats' | 'branch-tests' | 'doc-bookings' | 'lab-bookings'
-  
+
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState('');
   const [successMsg, setSuccessMsg] = useState('');
 
-  // Data states
+  // Main Data States
   const [hospitals, setHospitals] = useState([]);
   const [diagnosticCenters, setDiagnosticCenters] = useState([]);
   const [doctors, setDoctors] = useState([]);
   const [tests, setTests] = useState([]);
   const [branchTests, setBranchTests] = useState([]);
   
-  // Metadata / Category states
+  // Category & Metadata States
   const [doctorSpecialties, setDoctorSpecialties] = useState(SPECIALTIES);
   const [hospitalCategories, setHospitalCategories] = useState(HOSPITAL_CATEGORIES);
   const [diagnosticCategories, setDiagnosticCategories] = useState(DIAGNOSTIC_CENTER_CATEGORIES);
@@ -56,10 +56,11 @@ export default function AdminDashboardPage({ currentUser, onNavigate, onAdminLog
   const [diagnosticServices, setDiagnosticServices] = useState(DIAGNOSTIC_SERVICES);
   const [testCategories, setTestCategories] = useState(TEST_CATEGORIES);
   
+  // Bookings States
   const [doctorBookings, setDoctorBookings] = useState([]);
   const [labBookings, setLabBookings] = useState([]);
 
-  // Category & Specialty CRUD Modals State
+  // Category & Service CRUD Modals State
   const [showDoctorSpecModal, setShowDoctorSpecModal] = useState(false);
   const [editingDoctorSpec, setEditingDoctorSpec] = useState(null);
   const [doctorSpecForm, setDoctorSpecForm] = useState({ id: '', name: '', icon: 'Stethoscope', description: '' });
@@ -88,52 +89,54 @@ export default function AdminDashboardPage({ currentUser, onNavigate, onAdminLog
   const [branchTestBranchFilter, setBranchTestBranchFilter] = useState('');
   const [branchTestTestFilter, setBranchTestTestFilter] = useState('');
 
-  // Hospital Modal state
+  // Hospital Modal State
   const [showHospitalModal, setShowHospitalModal] = useState(false);
   const [editingHospital, setEditingHospital] = useState(null);
   const [hospitalForm, setHospitalForm] = useState({
     id: '',
-    name: 'Ibn Sina Healthcare Group',
-    branch: 'Dhanmondi Branch',
+    name: '',
+    branch: '',
     category_ids: [],
     service_ids: [],
-    address: 'House 48, Road 9/A, Dhanmondi',
+    address: '',
     district: 'Dhaka',
     division: 'Dhaka',
     city: 'Dhaka',
-    phone: '+880 9610-010615',
-    email: 'info@ibnsina.com.bd',
-    rating: 4.9,
-    reviews_count: 320,
+    phone: '',
+    email: '',
+    rating: 4.8,
+    reviews_count: 50,
     open_timing: '24/7 Inpatient & OPD',
-    tagline: 'Premier Multispecialty OPD & Inpatient Hospital in Dhanmondi',
-    badge: 'Super Partner',
+    tagline: '',
+    badge: 'Verified Partner',
+    logo: 'https://images.unsplash.com/photo-1519494026892-80bbd2d6fd0d?auto=format&fit=crop&w=600&q=80',
     image: 'https://images.unsplash.com/photo-1519494026892-80bbd2d6fd0d?auto=format&fit=crop&w=600&q=80',
-    description: 'Leading hospital offering inpatient and OPD consultation.',
+    description: '',
     is_verified: true
   });
 
-  // Diagnostic Center / Branch Modal State (Task 3 & 6)
+  // Diagnostic Center / Branch Modal State (Task 3 & Task 6)
   const [showDiagnosticModal, setShowDiagnosticModal] = useState(false);
   const [editingDiagnostic, setEditingDiagnostic] = useState(null);
   const [diagnosticForm, setDiagnosticForm] = useState({
     id: '',
-    name: 'Popular Diagnostic Centre',
-    branch: 'Panthapath Branch',
+    name: '',
+    branch: '',
     category_ids: [],
     service_ids: [],
-    address: 'House 16, Road 2, Dhanmondi / Panthapath',
+    address: '',
     district: 'Dhaka',
     division: 'Dhaka',
-    phone: '+880 9613-787801',
-    email: 'info@populardiagnostic.com',
+    phone: '',
+    email: '',
     rating: 4.85,
-    reviews_count: 410,
+    reviews_count: 100,
     open_timing: '07:00 AM - 11:00 PM',
-    tagline: 'Nationwide Leading Diagnostic & Imaging Hub',
+    tagline: '',
     badge: 'Verified Partner',
+    logo: 'https://images.unsplash.com/photo-1586773860418-d37222d8fce3?auto=format&fit=crop&w=600&q=80',
     image: 'https://images.unsplash.com/photo-1586773860418-d37222d8fce3?auto=format&fit=crop&w=600&q=80',
-    description: 'State-of-the-art diagnostic imaging and visiting doctor chambers.',
+    description: '',
     is_verified: true
   });
 
@@ -221,8 +224,8 @@ export default function AdminDashboardPage({ currentUser, onNavigate, onAdminLog
       if (isStaff) {
         try {
           const [docBks, labBks] = await Promise.all([
-            api.getDoctorBookings(),
-            api.getLabBookings()
+            api.getDoctorBookings().catch(() => []),
+            api.getLabBookings().catch(() => [])
           ]);
           setDoctorBookings(docBks || []);
           setLabBookings(labBks || []);
@@ -284,6 +287,7 @@ export default function AdminDashboardPage({ currentUser, onNavigate, onAdminLog
         open_timing: h.open_timing || '24/7 Inpatient & OPD',
         tagline: h.tagline || '',
         badge: h.badge || 'Verified Partner',
+        logo: h.logo || 'https://images.unsplash.com/photo-1519494026892-80bbd2d6fd0d?auto=format&fit=crop&w=600&q=80',
         image: h.image || 'https://images.unsplash.com/photo-1519494026892-80bbd2d6fd0d?auto=format&fit=crop&w=600&q=80',
         description: h.description || '',
         is_verified: h.is_verified ?? true
@@ -307,6 +311,7 @@ export default function AdminDashboardPage({ currentUser, onNavigate, onAdminLog
         open_timing: '24/7 Inpatient & OPD',
         tagline: 'Premier Multispecialty OPD & Inpatient Hospital in Dhanmondi',
         badge: 'Super Partner',
+        logo: 'https://images.unsplash.com/photo-1519494026892-80bbd2d6fd0d?auto=format&fit=crop&w=600&q=80',
         image: 'https://images.unsplash.com/photo-1519494026892-80bbd2d6fd0d?auto=format&fit=crop&w=600&q=80',
         description: 'Leading hospital offering inpatient and OPD consultation.',
         is_verified: true
@@ -374,6 +379,7 @@ export default function AdminDashboardPage({ currentUser, onNavigate, onAdminLog
         open_timing: dc.open_timing || '07:00 AM - 11:00 PM',
         tagline: dc.tagline || '',
         badge: dc.badge || 'Verified Partner',
+        logo: dc.logo || 'https://images.unsplash.com/photo-1586773860418-d37222d8fce3?auto=format&fit=crop&w=600&q=80',
         image: dc.image || 'https://images.unsplash.com/photo-1586773860418-d37222d8fce3?auto=format&fit=crop&w=600&q=80',
         description: dc.description || '',
         is_verified: dc.is_verified ?? true
@@ -396,6 +402,7 @@ export default function AdminDashboardPage({ currentUser, onNavigate, onAdminLog
         open_timing: '07:00 AM - 11:00 PM',
         tagline: 'Nationwide Leading Diagnostic & Imaging Hub',
         badge: 'Verified Partner',
+        logo: 'https://images.unsplash.com/photo-1586773860418-d37222d8fce3?auto=format&fit=crop&w=600&q=80',
         image: 'https://images.unsplash.com/photo-1586773860418-d37222d8fce3?auto=format&fit=crop&w=600&q=80',
         description: 'State-of-the-art diagnostic imaging and visiting doctor chambers.',
         is_verified: true
@@ -528,7 +535,18 @@ export default function AdminDashboardPage({ currentUser, onNavigate, onAdminLog
     }
   };
 
-  // --- CATEGORY & SERVICES CRUD HANDLERS ---
+  // --- CATEGORIES & SERVICES CRUD HANDLERS WITH FULL EDIT/DELETE SUPPORT ---
+  const handleOpenDoctorSpecModal = (s = null) => {
+    if (s) {
+      setEditingDoctorSpec(s);
+      setDoctorSpecForm({ id: s.id, name: s.name, icon: s.icon || 'Stethoscope', description: s.description || '' });
+    } else {
+      setEditingDoctorSpec(null);
+      setDoctorSpecForm({ id: '', name: '', icon: 'Stethoscope', description: '' });
+    }
+    setShowDoctorSpecModal(true);
+  };
+
   const handleSaveDoctorSpec = async (e) => {
     e.preventDefault();
     try {
@@ -544,6 +562,28 @@ export default function AdminDashboardPage({ currentUser, onNavigate, onAdminLog
     } catch (err) {
       alert(`Error saving specialty: ${err.message}`);
     }
+  };
+
+  const handleDeleteDoctorSpec = async (id, name) => {
+    if (!window.confirm(`Delete Doctor Specialty "${name}"?`)) return;
+    try {
+      await api.deleteSpecialty(id);
+      showNotification(`Doctor Specialty "${name}" deleted.`);
+      loadAllData();
+    } catch (err) {
+      alert(`Error deleting specialty: ${err.message}`);
+    }
+  };
+
+  const handleOpenHospitalCatModal = (hc = null) => {
+    if (hc) {
+      setEditingHospitalCat(hc);
+      setHospitalCatForm({ id: hc.id, name: hc.name, icon: hc.icon || 'Building2', description: hc.description || '', count: hc.count || 0 });
+    } else {
+      setEditingHospitalCat(null);
+      setHospitalCatForm({ id: '', name: '', icon: 'Building2', description: '', count: 0 });
+    }
+    setShowHospitalCatModal(true);
   };
 
   const handleSaveHospitalCat = async (e) => {
@@ -563,6 +603,28 @@ export default function AdminDashboardPage({ currentUser, onNavigate, onAdminLog
     }
   };
 
+  const handleDeleteHospitalCat = async (id, name) => {
+    if (!window.confirm(`Delete Hospital Category "${name}"?`)) return;
+    try {
+      await api.deleteHospitalCategory(id);
+      showNotification(`Hospital Category "${name}" deleted.`);
+      loadAllData();
+    } catch (err) {
+      alert(`Error deleting category: ${err.message}`);
+    }
+  };
+
+  const handleOpenDiagCatModal = (dc = null) => {
+    if (dc) {
+      setEditingDiagCat(dc);
+      setDiagCatForm({ id: dc.id, name: dc.name, icon: dc.icon || 'Building2', description: dc.description || '' });
+    } else {
+      setEditingDiagCat(null);
+      setDiagCatForm({ id: '', name: '', icon: 'Building2', description: '' });
+    }
+    setShowDiagCatModal(true);
+  };
+
   const handleSaveDiagCat = async (e) => {
     e.preventDefault();
     try {
@@ -578,6 +640,28 @@ export default function AdminDashboardPage({ currentUser, onNavigate, onAdminLog
     } catch (err) {
       alert(`Error saving category: ${err.message}`);
     }
+  };
+
+  const handleDeleteDiagCat = async (id, name) => {
+    if (!window.confirm(`Delete Diagnostic Category "${name}"?`)) return;
+    try {
+      await api.deleteDiagnosticCenterCategory(id);
+      showNotification(`Diagnostic Category "${name}" deleted.`);
+      loadAllData();
+    } catch (err) {
+      alert(`Error deleting category: ${err.message}`);
+    }
+  };
+
+  const handleOpenHospServiceModal = (hs = null) => {
+    if (hs) {
+      setEditingHospService(hs);
+      setHospServiceForm({ id: hs.id, name: hs.name, icon: hs.icon || 'Activity', description: hs.description || '' });
+    } else {
+      setEditingHospService(null);
+      setHospServiceForm({ id: '', name: '', icon: 'Activity', description: '' });
+    }
+    setShowHospServiceModal(true);
   };
 
   const handleSaveHospService = async (e) => {
@@ -597,6 +681,28 @@ export default function AdminDashboardPage({ currentUser, onNavigate, onAdminLog
     }
   };
 
+  const handleDeleteHospService = async (id, name) => {
+    if (!window.confirm(`Delete Hospital Service "${name}"?`)) return;
+    try {
+      await api.deleteHospitalService(id);
+      showNotification(`Hospital Service "${name}" deleted.`);
+      loadAllData();
+    } catch (err) {
+      alert(`Error deleting service: ${err.message}`);
+    }
+  };
+
+  const handleOpenDiagServiceModal = (ds = null) => {
+    if (ds) {
+      setEditingDiagService(ds);
+      setDiagServiceForm({ id: ds.id, name: ds.name, icon: ds.icon || 'FlaskConical', description: ds.description || '' });
+    } else {
+      setEditingDiagService(null);
+      setDiagServiceForm({ id: '', name: '', icon: 'FlaskConical', description: '' });
+    }
+    setShowDiagServiceModal(true);
+  };
+
   const handleSaveDiagService = async (e) => {
     e.preventDefault();
     try {
@@ -611,6 +717,17 @@ export default function AdminDashboardPage({ currentUser, onNavigate, onAdminLog
       loadAllData();
     } catch (err) {
       alert(`Error saving service: ${err.message}`);
+    }
+  };
+
+  const handleDeleteDiagService = async (id, name) => {
+    if (!window.confirm(`Delete Diagnostic Service "${name}"?`)) return;
+    try {
+      await api.deleteDiagnosticService(id);
+      showNotification(`Diagnostic Service "${name}" deleted.`);
+      loadAllData();
+    } catch (err) {
+      alert(`Error deleting service: ${err.message}`);
     }
   };
 
@@ -748,7 +865,7 @@ export default function AdminDashboardPage({ currentUser, onNavigate, onAdminLog
               <ShieldAlert className="w-5 h-5" />
             </div>
             <div>
-              <h1 className="font-extrabold text-white text-lg">DoctorsHub Admin Console</h1>
+              <h1 className="font-extrabold text-white text-lg">DoctorsHub Admin Management Console</h1>
               <p className="text-xs text-slate-400">Manage Hospitals, Diagnostics & Branches, Services, Doctors & Test Pricing</p>
             </div>
           </div>
@@ -936,107 +1053,225 @@ export default function AdminDashboardPage({ currentUser, onNavigate, onAdminLog
               </div>
             </div>
 
-            {/* TASK 4 & 5: CATEGORIES & SERVICES CARDS SECTION IN OVERVIEW */}
-            <div className="grid grid-cols-1 md:grid-cols-3 lg:grid-cols-5 gap-4">
+            {/* CATEGORIES & SERVICES OVERVIEW CARDS (USER DIRECTIVE: ROW 1 HAS 3 CARDS, ROW 2 HAS 2 CARDS!) */}
+            <div className="space-y-6">
               
-              {/* Doctor Specialties Card */}
-              <div className="bg-slate-900 border border-slate-800 rounded-2xl p-4 space-y-3 shadow-lg">
-                <div className="flex items-center justify-between border-b border-slate-800 pb-2.5">
-                  <div className="flex items-center gap-1.5 font-bold text-white text-xs">
-                    <Stethoscope className="w-4 h-4 text-teal-400" />
-                    <span>Doctor Specialties ({doctorSpecialties.length})</span>
+              {/* ROW 1: 3 CARDS (Doctor Specialties, Hospital Categories, Diagnostics Categories) */}
+              <div className="grid grid-cols-1 md:grid-cols-3 gap-6">
+                
+                {/* 1. Doctor Specialties Card */}
+                <div className="bg-slate-900 border border-slate-800 rounded-2xl p-5 space-y-3 shadow-lg">
+                  <div className="flex items-center justify-between border-b border-slate-800 pb-3">
+                    <div className="flex items-center gap-2 font-bold text-white text-sm">
+                      <Stethoscope className="w-4 h-4 text-teal-400" />
+                      <span>Doctor Specialties ({doctorSpecialties.length})</span>
+                    </div>
+                    <button
+                      onClick={() => handleOpenDoctorSpecModal()}
+                      className="text-[11px] font-bold text-teal-400 hover:underline flex items-center gap-1 bg-teal-500/10 px-2.5 py-1 rounded-lg border border-teal-500/20"
+                    >
+                      <Plus className="w-3 h-3" /> Add
+                    </button>
                   </div>
-                  <button onClick={() => setShowDoctorSpecModal(true)} className="text-[10px] font-bold text-teal-400 bg-teal-500/10 px-2 py-0.5 rounded border border-teal-500/20">
-                    + Add
-                  </button>
+                  <div className="flex flex-wrap gap-1.5 max-h-48 overflow-y-auto pr-1">
+                    {doctorSpecialties.map(s => (
+                      <span key={s.id} className="text-[11px] bg-slate-800/80 text-slate-300 px-2.5 py-1 rounded-lg border border-slate-700/80 font-medium flex items-center gap-1">
+                        <span>{s.name}</span>
+                        <button onClick={() => handleOpenDoctorSpecModal(s)} className="text-slate-400 hover:text-teal-400 ml-1" title="Edit Specialty">
+                          <Edit className="w-3 h-3" />
+                        </button>
+                        <button onClick={() => handleDeleteDoctorSpec(s.id, s.name)} className="text-slate-400 hover:text-rose-400 ml-0.5" title="Delete Specialty">
+                          <Trash2 className="w-3 h-3" />
+                        </button>
+                      </span>
+                    ))}
+                  </div>
                 </div>
-                <div className="flex flex-wrap gap-1.5 max-h-36 overflow-y-auto pr-1">
-                  {doctorSpecialties.map(s => (
-                    <span key={s.id} className="text-[11px] bg-slate-800/80 text-slate-300 px-2 py-0.5 rounded border border-slate-700/80 font-medium">
-                      {s.name}
-                    </span>
-                  ))}
+
+                {/* 2. Hospital Categories Card */}
+                <div className="bg-slate-900 border border-slate-800 rounded-2xl p-5 space-y-3 shadow-lg">
+                  <div className="flex items-center justify-between border-b border-slate-800 pb-3">
+                    <div className="flex items-center gap-2 font-bold text-white text-sm">
+                      <Building2 className="w-4 h-4 text-emerald-400" />
+                      <span>Hospital Categories ({hospitalCategories.length})</span>
+                    </div>
+                    <button
+                      onClick={() => handleOpenHospitalCatModal()}
+                      className="text-[11px] font-bold text-emerald-400 hover:underline flex items-center gap-1 bg-emerald-500/10 px-2.5 py-1 rounded-lg border border-emerald-500/20"
+                    >
+                      <Plus className="w-3 h-3" /> Add
+                    </button>
+                  </div>
+                  <div className="flex flex-wrap gap-1.5 max-h-48 overflow-y-auto pr-1">
+                    {hospitalCategories.map(hc => (
+                      <span key={hc.id} className="text-[11px] bg-slate-800/80 text-slate-300 px-2.5 py-1 rounded-lg border border-slate-700/80 font-medium flex items-center gap-1">
+                        <span>{hc.name}</span>
+                        <button onClick={() => handleOpenHospitalCatModal(hc)} className="text-slate-400 hover:text-emerald-400 ml-1" title="Edit Category">
+                          <Edit className="w-3 h-3" />
+                        </button>
+                        <button onClick={() => handleDeleteHospitalCat(hc.id, hc.name)} className="text-slate-400 hover:text-rose-400 ml-0.5" title="Delete Category">
+                          <Trash2 className="w-3 h-3" />
+                        </button>
+                      </span>
+                    ))}
+                  </div>
                 </div>
+
+                {/* 3. Diagnostics Categories Card (TASK 4) */}
+                <div className="bg-slate-900 border border-slate-800 rounded-2xl p-5 space-y-3 shadow-lg">
+                  <div className="flex items-center justify-between border-b border-slate-800 pb-3">
+                    <div className="flex items-center gap-2 font-bold text-white text-sm">
+                      <FlaskConical className="w-4 h-4 text-cyan-400" />
+                      <span>Diagnostics Categories ({diagnosticCategories.length})</span>
+                    </div>
+                    <button
+                      onClick={() => handleOpenDiagCatModal()}
+                      className="text-[11px] font-bold text-cyan-400 hover:underline flex items-center gap-1 bg-cyan-500/10 px-2.5 py-1 rounded-lg border border-cyan-500/20"
+                    >
+                      <Plus className="w-3 h-3" /> Add
+                    </button>
+                  </div>
+                  <div className="flex flex-wrap gap-1.5 max-h-48 overflow-y-auto pr-1">
+                    {diagnosticCategories.map(dc => (
+                      <span key={dc.id} className="text-[11px] bg-slate-800/80 text-slate-300 px-2.5 py-1 rounded-lg border border-slate-700/80 font-medium flex items-center gap-1">
+                        <span>{dc.name}</span>
+                        <button onClick={() => handleOpenDiagCatModal(dc)} className="text-slate-400 hover:text-cyan-400 ml-1" title="Edit Category">
+                          <Edit className="w-3 h-3" />
+                        </button>
+                        <button onClick={() => handleDeleteDiagCat(dc.id, dc.name)} className="text-slate-400 hover:text-rose-400 ml-0.5" title="Delete Category">
+                          <Trash2 className="w-3 h-3" />
+                        </button>
+                      </span>
+                    ))}
+                  </div>
+                </div>
+
               </div>
 
-              {/* Hospital Categories Card */}
-              <div className="bg-slate-900 border border-slate-800 rounded-2xl p-4 space-y-3 shadow-lg">
-                <div className="flex items-center justify-between border-b border-slate-800 pb-2.5">
-                  <div className="flex items-center gap-1.5 font-bold text-white text-xs">
-                    <Building2 className="w-4 h-4 text-emerald-400" />
-                    <span>Hospital Categories ({hospitalCategories.length})</span>
+              {/* ROW 2: 2 CARDS (Hospital Services & Diagnostic Services) (USER DIRECTIVE: REST 2!) */}
+              <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
+                
+                {/* 1. Hospital Services Card (TASK 5) */}
+                <div className="bg-slate-900 border border-slate-800 rounded-2xl p-5 space-y-3 shadow-lg">
+                  <div className="flex items-center justify-between border-b border-slate-800 pb-3">
+                    <div className="flex items-center gap-2 font-bold text-white text-sm">
+                      <Activity className="w-4 h-4 text-amber-400" />
+                      <span>Hospital Services ({hospitalServices.length})</span>
+                    </div>
+                    <button
+                      onClick={() => handleOpenHospServiceModal()}
+                      className="text-[11px] font-bold text-amber-400 hover:underline flex items-center gap-1 bg-amber-500/10 px-2.5 py-1 rounded-lg border border-amber-500/20"
+                    >
+                      <Plus className="w-3 h-3" /> Add Service
+                    </button>
                   </div>
-                  <button onClick={() => setShowHospitalCatModal(true)} className="text-[10px] font-bold text-emerald-400 bg-emerald-500/10 px-2 py-0.5 rounded border border-emerald-500/20">
-                    + Add
-                  </button>
+                  <div className="flex flex-wrap gap-1.5 max-h-48 overflow-y-auto pr-1">
+                    {hospitalServices.map(hs => (
+                      <span key={hs.id} className="text-[11px] bg-slate-800/80 text-slate-300 px-2.5 py-1 rounded-lg border border-slate-700/80 font-medium flex items-center gap-1">
+                        <span>{hs.name}</span>
+                        <button onClick={() => handleOpenHospServiceModal(hs)} className="text-slate-400 hover:text-amber-400 ml-1" title="Edit Service">
+                          <Edit className="w-3 h-3" />
+                        </button>
+                        <button onClick={() => handleDeleteHospService(hs.id, hs.name)} className="text-slate-400 hover:text-rose-400 ml-0.5" title="Delete Service">
+                          <Trash2 className="w-3 h-3" />
+                        </button>
+                      </span>
+                    ))}
+                  </div>
                 </div>
-                <div className="flex flex-wrap gap-1.5 max-h-36 overflow-y-auto pr-1">
-                  {hospitalCategories.map(hc => (
-                    <span key={hc.id} className="text-[11px] bg-slate-800/80 text-slate-300 px-2 py-0.5 rounded border border-slate-700/80 font-medium">
-                      {hc.name}
-                    </span>
-                  ))}
+
+                {/* 2. Diagnostic Services Card (TASK 5) */}
+                <div className="bg-slate-900 border border-slate-800 rounded-2xl p-5 space-y-3 shadow-lg">
+                  <div className="flex items-center justify-between border-b border-slate-800 pb-3">
+                    <div className="flex items-center gap-2 font-bold text-white text-sm">
+                      <FlaskConical className="w-4 h-4 text-purple-400" />
+                      <span>Diagnostic Services ({diagnosticServices.length})</span>
+                    </div>
+                    <button
+                      onClick={() => handleOpenDiagServiceModal()}
+                      className="text-[11px] font-bold text-purple-400 hover:underline flex items-center gap-1 bg-purple-500/10 px-2.5 py-1 rounded-lg border border-purple-500/20"
+                    >
+                      <Plus className="w-3 h-3" /> Add Service
+                    </button>
+                  </div>
+                  <div className="flex flex-wrap gap-1.5 max-h-48 overflow-y-auto pr-1">
+                    {diagnosticServices.map(ds => (
+                      <span key={ds.id} className="text-[11px] bg-slate-800/80 text-slate-300 px-2.5 py-1 rounded-lg border border-slate-700/80 font-medium flex items-center gap-1">
+                        <span>{ds.name}</span>
+                        <button onClick={() => handleOpenDiagServiceModal(ds)} className="text-slate-400 hover:text-purple-400 ml-1" title="Edit Service">
+                          <Edit className="w-3 h-3" />
+                        </button>
+                        <button onClick={() => handleDeleteDiagService(ds.id, ds.name)} className="text-slate-400 hover:text-rose-400 ml-0.5" title="Delete Service">
+                          <Trash2 className="w-3 h-3" />
+                        </button>
+                      </span>
+                    ))}
+                  </div>
                 </div>
+
               </div>
 
-              {/* TASK 4: Diagnostics Categories Card */}
-              <div className="bg-slate-900 border border-slate-800 rounded-2xl p-4 space-y-3 shadow-lg">
-                <div className="flex items-center justify-between border-b border-slate-800 pb-2.5">
-                  <div className="flex items-center gap-1.5 font-bold text-white text-xs">
-                    <FlaskConical className="w-4 h-4 text-cyan-400" />
-                    <span>Diagnostics Categories ({diagnosticCategories.length})</span>
-                  </div>
-                  <button onClick={() => setShowDiagCatModal(true)} className="text-[10px] font-bold text-cyan-400 bg-cyan-500/10 px-2 py-0.5 rounded border border-cyan-500/20">
-                    + Add
+            </div>
+
+            {/* Quick Preview Tables (RESTORED RECENT DOCTOR BOOKINGS & LAB PICKUPS) */}
+            <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
+              
+              {/* Doctor Bookings Table Preview */}
+              <div className="bg-slate-900 border border-slate-800 rounded-2xl p-5 space-y-3">
+                <div className="flex items-center justify-between pb-2 border-b border-slate-800">
+                  <h3 className="font-bold text-white text-sm flex items-center gap-2">
+                    <Calendar className="w-4 h-4 text-teal-400" /> Recent Doctor Bookings
+                  </h3>
+                  <button onClick={() => setActiveTab('doc-bookings')} className="text-xs font-bold text-teal-400 hover:underline">
+                    View All &rarr;
                   </button>
                 </div>
-                <div className="flex flex-wrap gap-1.5 max-h-36 overflow-y-auto pr-1">
-                  {diagnosticCategories.map(dc => (
-                    <span key={dc.id} className="text-[11px] bg-slate-800/80 text-slate-300 px-2 py-0.5 rounded border border-slate-700/80 font-medium">
-                      {dc.name}
-                    </span>
-                  ))}
-                </div>
+                {doctorBookings.length === 0 ? (
+                  <p className="text-xs text-slate-500 py-4 text-center">No doctor bookings recorded yet.</p>
+                ) : (
+                  <div className="space-y-2">
+                    {doctorBookings.slice(0, 4).map(b => (
+                      <div key={b.id} className="p-3 bg-slate-950 border border-slate-800 rounded-xl flex items-center justify-between text-xs">
+                        <div>
+                          <div className="font-bold text-white">{b.patient_name}</div>
+                          <div className="text-[10px] text-slate-400">{b.date} • {b.slot}</div>
+                        </div>
+                        <span className="px-2 py-0.5 bg-emerald-500/20 text-emerald-400 border border-emerald-500/30 rounded text-[10px] font-bold">
+                          {b.status || 'Confirmed'}
+                        </span>
+                      </div>
+                    ))}
+                  </div>
+                )}
               </div>
 
-              {/* TASK 5: Hospital Services Card */}
-              <div className="bg-slate-900 border border-slate-800 rounded-2xl p-4 space-y-3 shadow-lg">
-                <div className="flex items-center justify-between border-b border-slate-800 pb-2.5">
-                  <div className="flex items-center gap-1.5 font-bold text-white text-xs">
-                    <Activity className="w-4 h-4 text-amber-400" />
-                    <span>Hospital Services ({hospitalServices.length})</span>
-                  </div>
-                  <button onClick={() => setShowHospServiceModal(true)} className="text-[10px] font-bold text-amber-400 bg-amber-500/10 px-2 py-0.5 rounded border border-amber-500/20">
-                    + Add
+              {/* Lab Bookings Table Preview */}
+              <div className="bg-slate-900 border border-slate-800 rounded-2xl p-5 space-y-3">
+                <div className="flex items-center justify-between pb-2 border-b border-slate-800">
+                  <h3 className="font-bold text-white text-sm flex items-center gap-2">
+                    <TestTube className="w-4 h-4 text-cyan-400" /> Recent Home Lab Pickups
+                  </h3>
+                  <button onClick={() => setActiveTab('lab-bookings')} className="text-xs font-bold text-cyan-400 hover:underline">
+                    View All &rarr;
                   </button>
                 </div>
-                <div className="flex flex-wrap gap-1.5 max-h-36 overflow-y-auto pr-1">
-                  {hospitalServices.map(hs => (
-                    <span key={hs.id} className="text-[11px] bg-slate-800/80 text-slate-300 px-2 py-0.5 rounded border border-slate-700/80 font-medium">
-                      {hs.name}
-                    </span>
-                  ))}
-                </div>
-              </div>
-
-              {/* TASK 5: Diagnostic Services Card */}
-              <div className="bg-slate-900 border border-slate-800 rounded-2xl p-4 space-y-3 shadow-lg">
-                <div className="flex items-center justify-between border-b border-slate-800 pb-2.5">
-                  <div className="flex items-center gap-1.5 font-bold text-white text-xs">
-                    <FlaskConical className="w-4 h-4 text-purple-400" />
-                    <span>Diagnostic Services ({diagnosticServices.length})</span>
+                {labBookings.length === 0 ? (
+                  <p className="text-xs text-slate-500 py-4 text-center">No lab bookings recorded yet.</p>
+                ) : (
+                  <div className="space-y-2">
+                    {labBookings.slice(0, 4).map(b => (
+                      <div key={b.id} className="p-3 bg-slate-950 border border-slate-800 rounded-xl flex items-center justify-between text-xs">
+                        <div>
+                          <div className="font-bold text-white">{b.patient_name} (+880 {b.patient_phone})</div>
+                          <div className="text-[10px] text-slate-400">Pickup: {b.pickup_date}</div>
+                        </div>
+                        <span className="px-2 py-0.5 bg-cyan-500/20 text-cyan-400 border border-cyan-500/30 rounded text-[10px] font-bold">
+                          {b.status || 'Confirmed'}
+                        </span>
+                      </div>
+                    ))}
                   </div>
-                  <button onClick={() => setShowDiagServiceModal(true)} className="text-[10px] font-bold text-purple-400 bg-purple-500/10 px-2 py-0.5 rounded border border-purple-500/20">
-                    + Add
-                  </button>
-                </div>
-                <div className="flex flex-wrap gap-1.5 max-h-36 overflow-y-auto pr-1">
-                  {diagnosticServices.map(ds => (
-                    <span key={ds.id} className="text-[11px] bg-slate-800/80 text-slate-300 px-2 py-0.5 rounded border border-slate-700/80 font-medium">
-                      {ds.name}
-                    </span>
-                  ))}
-                </div>
+                )}
               </div>
 
             </div>
@@ -1086,11 +1321,9 @@ export default function AdminDashboardPage({ currentUser, onNavigate, onAdminLog
                           <div className="text-sm text-emerald-400">{h.name}</div>
                           <div className="text-slate-400 text-[11px] font-normal">{h.tagline}</div>
                         </td>
-                        {/* TASK 1: BRANCH FIELD DISPLAY */}
                         <td className="py-4 px-4 font-bold text-teal-300">
                           {h.branch || 'Main Branch'}
                         </td>
-                        {/* TASK 5 & 6: CLICKABLE SERVICES DISPLAY */}
                         <td className="py-4 px-4">
                           <div className="flex flex-wrap gap-1">
                             {(h.services || []).map((s, idx) => (
@@ -1196,7 +1429,7 @@ export default function AdminDashboardPage({ currentUser, onNavigate, onAdminLog
 
       </main>
 
-      {/* MODAL: ADD / EDIT HOSPITAL */}
+      {/* MODAL: ADD / EDIT HOSPITAL (ALL ORIGINAL FIELDS RESTORED) */}
       {showHospitalModal && (
         <div className="fixed inset-0 z-50 bg-slate-950/80 backdrop-blur-md flex items-center justify-center p-4 overflow-y-auto">
           <div className="bg-slate-900 border border-slate-800 rounded-3xl p-6 max-w-2xl w-full space-y-4 my-8 shadow-2xl">
@@ -1280,6 +1513,69 @@ export default function AdminDashboardPage({ currentUser, onNavigate, onAdminLog
                     className="w-full bg-slate-950 border border-slate-800 rounded-xl px-3 py-2 text-white"
                   />
                 </div>
+              </div>
+
+              <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+                <div>
+                  <label className="block text-slate-300 font-semibold mb-1">Contact Phone</label>
+                  <input
+                    type="text"
+                    value={hospitalForm.phone}
+                    onChange={e => setHospitalForm({ ...hospitalForm, phone: e.target.value })}
+                    className="w-full bg-slate-950 border border-slate-800 rounded-xl px-3 py-2 text-white font-mono"
+                  />
+                </div>
+                <div>
+                  <label className="block text-slate-300 font-semibold mb-1">Open Hours / Timing</label>
+                  <input
+                    type="text"
+                    value={hospitalForm.open_timing}
+                    onChange={e => setHospitalForm({ ...hospitalForm, open_timing: e.target.value })}
+                    className="w-full bg-slate-950 border border-slate-800 rounded-xl px-3 py-2 text-white"
+                  />
+                </div>
+              </div>
+
+              <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+                <div>
+                  <label className="block text-slate-300 font-semibold mb-1">Tagline</label>
+                  <input
+                    type="text"
+                    value={hospitalForm.tagline}
+                    onChange={e => setHospitalForm({ ...hospitalForm, tagline: e.target.value })}
+                    className="w-full bg-slate-950 border border-slate-800 rounded-xl px-3 py-2 text-white"
+                  />
+                </div>
+                <div>
+                  <label className="block text-slate-300 font-semibold mb-1">Badge Tag</label>
+                  <input
+                    type="text"
+                    value={hospitalForm.badge}
+                    onChange={e => setHospitalForm({ ...hospitalForm, badge: e.target.value })}
+                    className="w-full bg-slate-950 border border-slate-800 rounded-xl px-3 py-2 text-white"
+                  />
+                </div>
+              </div>
+
+              <div>
+                <label className="block text-slate-300 font-semibold mb-1">Hospital Description</label>
+                <textarea
+                  rows="2"
+                  value={hospitalForm.description}
+                  onChange={e => setHospitalForm({ ...hospitalForm, description: e.target.value })}
+                  className="w-full bg-slate-950 border border-slate-800 rounded-xl px-3 py-2 text-white"
+                ></textarea>
+              </div>
+
+              <div className="flex items-center gap-2 pt-2">
+                <input
+                  type="checkbox"
+                  id="hosp_verified"
+                  checked={hospitalForm.is_verified}
+                  onChange={e => setHospitalForm({ ...hospitalForm, is_verified: e.target.checked })}
+                  className="w-4 h-4 text-emerald-500 rounded bg-slate-950 border-slate-800"
+                />
+                <label htmlFor="hosp_verified" className="text-slate-300 font-semibold cursor-pointer">Verified Hospital Partner</label>
               </div>
 
               <div className="flex justify-end gap-3 pt-4 border-t border-slate-800">
@@ -1381,6 +1677,48 @@ export default function AdminDashboardPage({ currentUser, onNavigate, onAdminLog
                 </div>
               </div>
 
+              <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+                <div>
+                  <label className="block text-slate-300 font-semibold mb-1">Contact Phone</label>
+                  <input
+                    type="text"
+                    value={diagnosticForm.phone}
+                    onChange={e => setDiagnosticForm({ ...diagnosticForm, phone: e.target.value })}
+                    className="w-full bg-slate-950 border border-slate-800 rounded-xl px-3 py-2 text-white font-mono"
+                  />
+                </div>
+                <div>
+                  <label className="block text-slate-300 font-semibold mb-1">Open Hours / Timing</label>
+                  <input
+                    type="text"
+                    value={diagnosticForm.open_timing}
+                    onChange={e => setDiagnosticForm({ ...diagnosticForm, open_timing: e.target.value })}
+                    className="w-full bg-slate-950 border border-slate-800 rounded-xl px-3 py-2 text-white"
+                  />
+                </div>
+              </div>
+
+              <div>
+                <label className="block text-slate-300 font-semibold mb-1">Center Description</label>
+                <textarea
+                  rows="2"
+                  value={diagnosticForm.description}
+                  onChange={e => setDiagnosticForm({ ...diagnosticForm, description: e.target.value })}
+                  className="w-full bg-slate-950 border border-slate-800 rounded-xl px-3 py-2 text-white"
+                ></textarea>
+              </div>
+
+              <div className="flex items-center gap-2 pt-2">
+                <input
+                  type="checkbox"
+                  id="diag_verified"
+                  checked={diagnosticForm.is_verified}
+                  onChange={e => setDiagnosticForm({ ...diagnosticForm, is_verified: e.target.checked })}
+                  className="w-4 h-4 text-cyan-500 rounded bg-slate-950 border-slate-800"
+                />
+                <label htmlFor="diag_verified" className="text-slate-300 font-semibold cursor-pointer">Verified Diagnostic Partner</label>
+              </div>
+
               <div className="flex justify-end gap-3 pt-4 border-t border-slate-800">
                 <button type="button" onClick={() => setShowDiagnosticModal(false)} className="px-4 py-2 bg-slate-800 text-slate-300 font-bold rounded-xl">
                   Cancel
@@ -1388,6 +1726,101 @@ export default function AdminDashboardPage({ currentUser, onNavigate, onAdminLog
                 <button type="submit" className="px-5 py-2 bg-cyan-600 hover:bg-cyan-500 text-white font-bold rounded-xl shadow-lg">
                   Save Diagnostic Center
                 </button>
+              </div>
+            </form>
+          </div>
+        </div>
+      )}
+
+      {/* MODAL: DOCTOR SPECIALTY */}
+      {showDoctorSpecModal && (
+        <div className="fixed inset-0 z-50 bg-slate-950/80 backdrop-blur-md flex items-center justify-center p-4">
+          <div className="bg-slate-900 border border-slate-800 rounded-2xl p-6 max-w-md w-full space-y-4">
+            <h3 className="text-base font-bold text-white">{editingDoctorSpec ? 'Edit Doctor Specialty' : 'Add Doctor Specialty'}</h3>
+            <form onSubmit={handleSaveDoctorSpec} className="space-y-3 text-xs">
+              <div>
+                <label className="block text-slate-300 mb-1">Specialty Name *</label>
+                <input type="text" required value={doctorSpecForm.name} onChange={e => setDoctorSpecForm({ ...doctorSpecForm, name: e.target.value })} className="w-full bg-slate-950 border border-slate-800 rounded-xl px-3 py-2 text-white" />
+              </div>
+              <div className="flex justify-end gap-2 pt-2">
+                <button type="button" onClick={() => setShowDoctorSpecModal(false)} className="px-3 py-1.5 bg-slate-800 text-slate-300 font-bold rounded-xl">Cancel</button>
+                <button type="submit" className="px-4 py-1.5 bg-teal-600 text-white font-bold rounded-xl">Save</button>
+              </div>
+            </form>
+          </div>
+        </div>
+      )}
+
+      {/* MODAL: HOSPITAL CATEGORY */}
+      {showHospitalCatModal && (
+        <div className="fixed inset-0 z-50 bg-slate-950/80 backdrop-blur-md flex items-center justify-center p-4">
+          <div className="bg-slate-900 border border-slate-800 rounded-2xl p-6 max-w-md w-full space-y-4">
+            <h3 className="text-base font-bold text-white">{editingHospitalCat ? 'Edit Hospital Category' : 'Add Hospital Category'}</h3>
+            <form onSubmit={handleSaveHospitalCat} className="space-y-3 text-xs">
+              <div>
+                <label className="block text-slate-300 mb-1">Category Name *</label>
+                <input type="text" required value={hospitalCatForm.name} onChange={e => setHospitalCatForm({ ...hospitalCatForm, name: e.target.value })} className="w-full bg-slate-950 border border-slate-800 rounded-xl px-3 py-2 text-white" />
+              </div>
+              <div className="flex justify-end gap-2 pt-2">
+                <button type="button" onClick={() => setShowHospitalCatModal(false)} className="px-3 py-1.5 bg-slate-800 text-slate-300 font-bold rounded-xl">Cancel</button>
+                <button type="submit" className="px-4 py-1.5 bg-emerald-600 text-white font-bold rounded-xl">Save</button>
+              </div>
+            </form>
+          </div>
+        </div>
+      )}
+
+      {/* MODAL: DIAGNOSTIC CATEGORY */}
+      {showDiagCatModal && (
+        <div className="fixed inset-0 z-50 bg-slate-950/80 backdrop-blur-md flex items-center justify-center p-4">
+          <div className="bg-slate-900 border border-slate-800 rounded-2xl p-6 max-w-md w-full space-y-4">
+            <h3 className="text-base font-bold text-white">{editingDiagCat ? 'Edit Diagnostic Category' : 'Add Diagnostic Category'}</h3>
+            <form onSubmit={handleSaveDiagCat} className="space-y-3 text-xs">
+              <div>
+                <label className="block text-slate-300 mb-1">Category Name *</label>
+                <input type="text" required value={diagCatForm.name} onChange={e => setDiagCatForm({ ...diagCatForm, name: e.target.value })} className="w-full bg-slate-950 border border-slate-800 rounded-xl px-3 py-2 text-white" />
+              </div>
+              <div className="flex justify-end gap-2 pt-2">
+                <button type="button" onClick={() => setShowDiagCatModal(false)} className="px-3 py-1.5 bg-slate-800 text-slate-300 font-bold rounded-xl">Cancel</button>
+                <button type="submit" className="px-4 py-1.5 bg-cyan-600 text-white font-bold rounded-xl">Save</button>
+              </div>
+            </form>
+          </div>
+        </div>
+      )}
+
+      {/* MODAL: HOSPITAL SERVICE */}
+      {showHospServiceModal && (
+        <div className="fixed inset-0 z-50 bg-slate-950/80 backdrop-blur-md flex items-center justify-center p-4">
+          <div className="bg-slate-900 border border-slate-800 rounded-2xl p-6 max-w-md w-full space-y-4">
+            <h3 className="text-base font-bold text-white">{editingHospService ? 'Edit Hospital Service' : 'Add Hospital Service'}</h3>
+            <form onSubmit={handleSaveHospService} className="space-y-3 text-xs">
+              <div>
+                <label className="block text-slate-300 mb-1">Service Name *</label>
+                <input type="text" required value={hospServiceForm.name} onChange={e => setHospServiceForm({ ...hospServiceForm, name: e.target.value })} className="w-full bg-slate-950 border border-slate-800 rounded-xl px-3 py-2 text-white" />
+              </div>
+              <div className="flex justify-end gap-2 pt-2">
+                <button type="button" onClick={() => setShowHospServiceModal(false)} className="px-3 py-1.5 bg-slate-800 text-slate-300 font-bold rounded-xl">Cancel</button>
+                <button type="submit" className="px-4 py-1.5 bg-amber-600 text-white font-bold rounded-xl">Save</button>
+              </div>
+            </form>
+          </div>
+        </div>
+      )}
+
+      {/* MODAL: DIAGNOSTIC SERVICE */}
+      {showDiagServiceModal && (
+        <div className="fixed inset-0 z-50 bg-slate-950/80 backdrop-blur-md flex items-center justify-center p-4">
+          <div className="bg-slate-900 border border-slate-800 rounded-2xl p-6 max-w-md w-full space-y-4">
+            <h3 className="text-base font-bold text-white">{editingDiagService ? 'Edit Diagnostic Service' : 'Add Diagnostic Service'}</h3>
+            <form onSubmit={handleSaveDiagService} className="space-y-3 text-xs">
+              <div>
+                <label className="block text-slate-300 mb-1">Service Name *</label>
+                <input type="text" required value={diagServiceForm.name} onChange={e => setDiagServiceForm({ ...diagServiceForm, name: e.target.value })} className="w-full bg-slate-950 border border-slate-800 rounded-xl px-3 py-2 text-white" />
+              </div>
+              <div className="flex justify-end gap-2 pt-2">
+                <button type="button" onClick={() => setShowDiagServiceModal(false)} className="px-3 py-1.5 bg-slate-800 text-slate-300 font-bold rounded-xl">Cancel</button>
+                <button type="submit" className="px-4 py-1.5 bg-purple-600 text-white font-bold rounded-xl">Save</button>
               </div>
             </form>
           </div>
