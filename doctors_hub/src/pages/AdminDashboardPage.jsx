@@ -1,16 +1,13 @@
 import React, { useState, useEffect, useMemo } from 'react';
 import { api } from '../services/api';
-import { SPECIALTIES, HOSPITAL_SPECIALTIES, PATHOLOGY_CATEGORIES, CITY_THANAS } from '../data/mockData';
+import { SPECIALTIES, HOSPITAL_CATEGORIES, DIAGNOSTIC_CENTER_CATEGORIES, HOSPITAL_SERVICES, DIAGNOSTIC_SERVICES, TEST_CATEGORIES, CITY_THANAS } from '../data/mockData';
 import { 
   Users, Building2, TestTube, Calendar, Plus, Edit, Trash2, CheckCircle, 
-  XCircle, Search, RefreshCw, AlertCircle, ShieldAlert, Sparkles, Clock, MapPin, Stethoscope, ChevronRight, Filter, Calculator 
+  XCircle, Search, RefreshCw, AlertCircle, ShieldAlert, Sparkles, Clock, MapPin, Stethoscope, ChevronLeft, ChevronRight, Filter, Calculator, FlaskConical, Activity
 } from 'lucide-react';
-
-
 
 /**
  * Helper to auto-calculate price based on original price and discount input
- * Supports percentages (e.g. "20%", "25% OFF") or flat amounts (e.g. "200 BDT", "150")
  */
 function calculateFinalPrice(origPriceStr, discountStr) {
   const orig = parseFloat(origPriceStr);
@@ -18,7 +15,6 @@ function calculateFinalPrice(origPriceStr, discountStr) {
   if (!discountStr || !discountStr.trim()) return orig.toString();
 
   const distTrim = discountStr.trim();
-  // Check if percentage (e.g. "20%", "25% OFF")
   const pctMatch = distTrim.match(/^(\d+(?:\.\d+)?)\s*%/);
   if (pctMatch) {
     const pct = parseFloat(pctMatch[1]);
@@ -26,7 +22,6 @@ function calculateFinalPrice(origPriceStr, discountStr) {
     return (finalPrice >= 0 ? finalPrice : 0).toString();
   }
 
-  // Check if flat amount (e.g. "200", "200 BDT")
   const flatMatch = distTrim.match(/^(\d+(?:\.\d+)?)/);
   if (flatMatch) {
     const flat = parseFloat(flatMatch[1]);
@@ -38,20 +33,29 @@ function calculateFinalPrice(origPriceStr, discountStr) {
 }
 
 export default function AdminDashboardPage({ currentUser, onNavigate, onAdminLoggedIn }) {
-  const [activeTab, setActiveTab] = useState('overview'); // 'overview' | 'doctors' | 'chambers' | 'tests' | 'branch-tests' | 'doc-bookings' | 'lab-bookings'
+  const navSliderRef = React.useRef(null);
+  const [activeTab, setActiveTab] = useState('overview'); 
+  // Tabs: 'overview' | 'hospitals' | 'diagnostics' | 'doctors' | 'doctor-specs' | 'hospital-specs' | 'diag-cats' | 'hosp-services' | 'diag-services' | 'tests' | 'test-cats' | 'branch-tests' | 'doc-bookings' | 'lab-bookings'
+  
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState('');
   const [successMsg, setSuccessMsg] = useState('');
 
   // Data states
+  const [hospitals, setHospitals] = useState([]);
+  const [diagnosticCenters, setDiagnosticCenters] = useState([]);
   const [doctors, setDoctors] = useState([]);
-  const [chambers, setChambers] = useState([]);
   const [tests, setTests] = useState([]);
   const [branchTests, setBranchTests] = useState([]);
-  const [specialties, setSpecialties] = useState([]);
+  
+  // Metadata / Category states
   const [doctorSpecialties, setDoctorSpecialties] = useState(SPECIALTIES);
-  const [hospitalSpecialties, setHospitalSpecialties] = useState(HOSPITAL_SPECIALTIES);
-  const [testCategories, setTestCategories] = useState(PATHOLOGY_CATEGORIES);
+  const [hospitalCategories, setHospitalCategories] = useState(HOSPITAL_CATEGORIES);
+  const [diagnosticCategories, setDiagnosticCategories] = useState(DIAGNOSTIC_CENTER_CATEGORIES);
+  const [hospitalServices, setHospitalServices] = useState(HOSPITAL_SERVICES);
+  const [diagnosticServices, setDiagnosticServices] = useState(DIAGNOSTIC_SERVICES);
+  const [testCategories, setTestCategories] = useState(TEST_CATEGORIES);
+  
   const [doctorBookings, setDoctorBookings] = useState([]);
   const [labBookings, setLabBookings] = useState([]);
 
@@ -60,9 +64,21 @@ export default function AdminDashboardPage({ currentUser, onNavigate, onAdminLog
   const [editingDoctorSpec, setEditingDoctorSpec] = useState(null);
   const [doctorSpecForm, setDoctorSpecForm] = useState({ id: '', name: '', icon: 'Stethoscope', description: '' });
 
-  const [showHospitalSpecModal, setShowHospitalSpecModal] = useState(false);
-  const [editingHospitalSpec, setEditingHospitalSpec] = useState(null);
-  const [hospitalSpecForm, setHospitalSpecForm] = useState({ id: '', name: '', icon: 'Building2', description: '', count: 0 });
+  const [showHospitalCatModal, setShowHospitalCatModal] = useState(false);
+  const [editingHospitalCat, setEditingHospitalCat] = useState(null);
+  const [hospitalCatForm, setHospitalCatForm] = useState({ id: '', name: '', icon: 'Building2', description: '', count: 0 });
+
+  const [showDiagCatModal, setShowDiagCatModal] = useState(false);
+  const [editingDiagCat, setEditingDiagCat] = useState(null);
+  const [diagCatForm, setDiagCatForm] = useState({ id: '', name: '', icon: 'Building2', description: '' });
+
+  const [showHospServiceModal, setShowHospServiceModal] = useState(false);
+  const [editingHospService, setEditingHospService] = useState(null);
+  const [hospServiceForm, setHospServiceForm] = useState({ id: '', name: '', icon: 'Activity', description: '' });
+
+  const [showDiagServiceModal, setShowDiagServiceModal] = useState(false);
+  const [editingDiagService, setEditingDiagService] = useState(null);
+  const [diagServiceForm, setDiagServiceForm] = useState({ id: '', name: '', icon: 'FlaskConical', description: '' });
 
   const [showTestCatModal, setShowTestCatModal] = useState(false);
   const [editingTestCat, setEditingTestCat] = useState(null);
@@ -72,7 +88,56 @@ export default function AdminDashboardPage({ currentUser, onNavigate, onAdminLog
   const [branchTestBranchFilter, setBranchTestBranchFilter] = useState('');
   const [branchTestTestFilter, setBranchTestTestFilter] = useState('');
 
-  // Modals state
+  // Hospital Modal state
+  const [showHospitalModal, setShowHospitalModal] = useState(false);
+  const [editingHospital, setEditingHospital] = useState(null);
+  const [hospitalForm, setHospitalForm] = useState({
+    id: '',
+    name: 'Ibn Sina Healthcare Group',
+    branch: 'Dhanmondi Branch',
+    category_ids: [],
+    service_ids: [],
+    address: 'House 48, Road 9/A, Dhanmondi',
+    district: 'Dhaka',
+    division: 'Dhaka',
+    city: 'Dhaka',
+    phone: '+880 9610-010615',
+    email: 'info@ibnsina.com.bd',
+    rating: 4.9,
+    reviews_count: 320,
+    open_timing: '24/7 Inpatient & OPD',
+    tagline: 'Premier Multispecialty OPD & Inpatient Hospital in Dhanmondi',
+    badge: 'Super Partner',
+    image: 'https://images.unsplash.com/photo-1519494026892-80bbd2d6fd0d?auto=format&fit=crop&w=600&q=80',
+    description: 'Leading hospital offering inpatient and OPD consultation.',
+    is_verified: true
+  });
+
+  // Diagnostic Center / Branch Modal State (Task 3 & 6)
+  const [showDiagnosticModal, setShowDiagnosticModal] = useState(false);
+  const [editingDiagnostic, setEditingDiagnostic] = useState(null);
+  const [diagnosticForm, setDiagnosticForm] = useState({
+    id: '',
+    name: 'Popular Diagnostic Centre',
+    branch: 'Panthapath Branch',
+    category_ids: [],
+    service_ids: [],
+    address: 'House 16, Road 2, Dhanmondi / Panthapath',
+    district: 'Dhaka',
+    division: 'Dhaka',
+    phone: '+880 9613-787801',
+    email: 'info@populardiagnostic.com',
+    rating: 4.85,
+    reviews_count: 410,
+    open_timing: '07:00 AM - 11:00 PM',
+    tagline: 'Nationwide Leading Diagnostic & Imaging Hub',
+    badge: 'Verified Partner',
+    image: 'https://images.unsplash.com/photo-1586773860418-d37222d8fce3?auto=format&fit=crop&w=600&q=80',
+    description: 'State-of-the-art diagnostic imaging and visiting doctor chambers.',
+    is_verified: true
+  });
+
+  // Doctor Modal state
   const [showDoctorModal, setShowDoctorModal] = useState(false);
   const [editingDoctor, setEditingDoctor] = useState(null);
   const [doctorForm, setDoctorForm] = useState({
@@ -81,55 +146,22 @@ export default function AdminDashboardPage({ currentUser, onNavigate, onAdminLog
     qualification: '',
     experience: '10+ Yrs Exp.',
     selectedSpecialties: [],
-    affiliations: [
-      {
-        branch: '',
-        consultation_type: 'OPD',
-        original_fee: '1500',
-        discount: '20% OFF',
-        fee: '1200',
-        schedules: [
-          { day_of_week: 'Sat', start_time: '17:00', end_time: '21:00' }
-        ]
-      }
-    ]
+    affiliations: []
   });
 
-  const [showChamberModal, setShowChamberModal] = useState(false);
-  const [editingChamber, setEditingChamber] = useState(null);
-  const [chamberForm, setChamberForm] = useState({
-    id: '',
-    hospital_name: 'Ibn Sina Healthcare Group',
-    branch_name: 'Dhanmondi Branch',
-    isCustomBranch: false,
-    customBranchName: '',
-    specialtyCategory: 'multispecialty',
-    city: 'Dhaka',
-    location: '',
-    verified: true,
-    rating: 4.8,
-    reviews_count: 50,
-    open_timing: '08:00 AM - 08:00 PM',
-    contact_phone: '+880 1700-000000',
-    tagline: 'Leading Healthcare & Diagnostic Hub',
-    badge: 'Verified Partner',
-    image: 'https://images.unsplash.com/photo-1519494026892-80bbd2d6fd0d?auto=format&fit=crop&w=600&q=80',
-    servicesStr: '24/7 Specialist OPD Consultation, Digital Radiology & X-Ray, 4D Ultrasonography, CT Scan',
-    description: 'Premier multispecialty OPD and clinical diagnostic center.',
-    facility_types: ['Hospital', 'Diagnostic Center']
-  });
-
+  // Test Modal state
   const [showTestModal, setShowTestModal] = useState(false);
   const [editingTest, setEditingTest] = useState(null);
   const [testForm, setTestForm] = useState({
-    id: '', name: '', category: 'Routine Blood Profiles', categoryGroup: 'blood', fasting_required: false, description: ''
+    id: '', name: '', category: '', fasting_required: false, description: ''
   });
 
+  // Branch Test Pricing Modal state
   const [showBranchTestModal, setShowBranchTestModal] = useState(false);
   const [editingBranchTest, setEditingBranchTest] = useState(null);
   const [branchTestForm, setBranchTestForm] = useState({
     id: '',
-    branch: '',
+    center: '',
     test: '',
     original_price: '700',
     discount: '25% OFF',
@@ -157,22 +189,33 @@ export default function AdminDashboardPage({ currentUser, onNavigate, onAdminLog
     setLoading(true);
     setError('');
     try {
-      const [docsData, chambsData, testsData, specsData, branchTestsData, hospSpecsData, testCatsData] = await Promise.all([
-        api.getDoctors(),
-        api.getBranches(),
-        api.getTests(),
-        api.getSpecialties(),
-        api.getBranchTests().catch(() => []),
-        api.getHospitalSpecialties().catch(() => []),
+      const [
+        hospsData, diagsData, docsData, testsData, specsData, 
+        branchTestsData, hospCatsData, diagCatsData, hospServsData, diagServsData, testCatsData
+      ] = await Promise.all([
+        api.getHospitals().catch(() => []),
+        api.getDiagnosticCenters().catch(() => []),
+        api.getDoctors().catch(() => []),
+        api.getTests().catch(() => []),
+        api.getSpecialties().catch(() => []),
+        api.getDiagnosticCenterTests().catch(() => []),
+        api.getHospitalCategories().catch(() => []),
+        api.getDiagnosticCenterCategories().catch(() => []),
+        api.getHospitalServices().catch(() => []),
+        api.getDiagnosticServices().catch(() => []),
         api.getTestCategories().catch(() => [])
       ]);
+
+      setHospitals(hospsData || []);
+      setDiagnosticCenters(diagsData || []);
       setDoctors(docsData || []);
-      setChambers(chambsData || []);
       setTests(testsData || []);
-      setSpecialties(specsData || []);
       if (Array.isArray(specsData) && specsData.length > 0) setDoctorSpecialties(specsData);
       setBranchTests(branchTestsData || []);
-      if (Array.isArray(hospSpecsData) && hospSpecsData.length > 0) setHospitalSpecialties(hospSpecsData);
+      if (Array.isArray(hospCatsData) && hospCatsData.length > 0) setHospitalCategories(hospCatsData);
+      if (Array.isArray(diagCatsData) && diagCatsData.length > 0) setDiagnosticCategories(diagCatsData);
+      if (Array.isArray(hospServsData) && hospServsData.length > 0) setHospitalServices(hospServsData);
+      if (Array.isArray(diagServsData) && diagServsData.length > 0) setDiagnosticServices(diagServsData);
       if (Array.isArray(testCatsData) && testCatsData.length > 0) setTestCategories(testCatsData);
 
       if (isStaff) {
@@ -218,37 +261,203 @@ export default function AdminDashboardPage({ currentUser, onNavigate, onAdminLog
     }
   };
 
+  // --- HOSPITAL CRUD HANDLERS ---
+  const handleOpenHospitalModal = (h = null) => {
+    if (h) {
+      setEditingHospital(h);
+      const catIds = Array.isArray(h.categories) ? h.categories.map(c => c.id || c) : [];
+      const srvIds = Array.isArray(h.services) ? h.services.map(s => s.id || s) : [];
+      setHospitalForm({
+        id: h.id,
+        name: h.name,
+        branch: h.branch || '',
+        category_ids: catIds,
+        service_ids: srvIds,
+        address: h.address || '',
+        district: h.district || 'Dhaka',
+        division: h.division || 'Dhaka',
+        city: h.city || 'Dhaka',
+        phone: h.phone || '',
+        email: h.email || '',
+        rating: h.rating || 4.8,
+        reviews_count: h.reviews_count || 50,
+        open_timing: h.open_timing || '24/7 Inpatient & OPD',
+        tagline: h.tagline || '',
+        badge: h.badge || 'Verified Partner',
+        image: h.image || 'https://images.unsplash.com/photo-1519494026892-80bbd2d6fd0d?auto=format&fit=crop&w=600&q=80',
+        description: h.description || '',
+        is_verified: h.is_verified ?? true
+      });
+    } else {
+      setEditingHospital(null);
+      setHospitalForm({
+        id: '',
+        name: 'Ibn Sina Healthcare Group',
+        branch: 'Dhanmondi Branch',
+        category_ids: hospitalCategories[0] ? [hospitalCategories[0].id] : [],
+        service_ids: hospitalServices.slice(0, 3).map(s => s.id),
+        address: 'House 48, Road 9/A, Dhanmondi',
+        district: 'Dhaka',
+        division: 'Dhaka',
+        city: 'Dhaka',
+        phone: '+880 9610-010615',
+        email: 'info@ibnsina.com.bd',
+        rating: 4.9,
+        reviews_count: 320,
+        open_timing: '24/7 Inpatient & OPD',
+        tagline: 'Premier Multispecialty OPD & Inpatient Hospital in Dhanmondi',
+        badge: 'Super Partner',
+        image: 'https://images.unsplash.com/photo-1519494026892-80bbd2d6fd0d?auto=format&fit=crop&w=600&q=80',
+        description: 'Leading hospital offering inpatient and OPD consultation.',
+        is_verified: true
+      });
+    }
+    setShowHospitalModal(true);
+  };
+
+  const toggleHospitalServiceSelection = (srvId) => {
+    setHospitalForm(prev => {
+      const exists = prev.service_ids.includes(srvId);
+      const updated = exists ? prev.service_ids.filter(id => id !== srvId) : [...prev.service_ids, srvId];
+      return { ...prev, service_ids: updated };
+    });
+  };
+
+  const handleSaveHospital = async (e) => {
+    e.preventDefault();
+    try {
+      const payload = { ...hospitalForm };
+      if (editingHospital) {
+        await api.updateHospital(editingHospital.id, payload);
+        showNotification(`Hospital "${payload.name} (${payload.branch})" updated!`);
+      } else {
+        await api.createHospital(payload);
+        showNotification(`Hospital "${payload.name} (${payload.branch})" created!`);
+      }
+      setShowHospitalModal(false);
+      loadAllData();
+    } catch (err) {
+      alert(`Error saving hospital: ${err.message}`);
+    }
+  };
+
+  const handleDeleteHospital = async (id, name) => {
+    if (!window.confirm(`Delete hospital "${name}"?`)) return;
+    try {
+      await api.deleteHospital(id);
+      showNotification(`Hospital "${name}" removed.`);
+      loadAllData();
+    } catch (err) {
+      alert(`Error deleting hospital: ${err.message}`);
+    }
+  };
+
+  // --- DIAGNOSTIC CENTER / BRANCH CRUD HANDLERS (TASK 3 & TASK 6) ---
+  const handleOpenDiagnosticModal = (dc = null) => {
+    if (dc) {
+      setEditingDiagnostic(dc);
+      const catIds = Array.isArray(dc.categories) ? dc.categories.map(c => c.id || c) : [];
+      const srvIds = Array.isArray(dc.services) ? dc.services.map(s => s.id || s) : [];
+      setDiagnosticForm({
+        id: dc.id,
+        name: dc.name,
+        branch: dc.branch || '',
+        category_ids: catIds,
+        service_ids: srvIds,
+        address: dc.address || '',
+        district: dc.district || 'Dhaka',
+        division: dc.division || 'Dhaka',
+        phone: dc.phone || '',
+        email: dc.email || '',
+        rating: dc.rating || 4.8,
+        reviews_count: dc.reviews_count || 100,
+        open_timing: dc.open_timing || '07:00 AM - 11:00 PM',
+        tagline: dc.tagline || '',
+        badge: dc.badge || 'Verified Partner',
+        image: dc.image || 'https://images.unsplash.com/photo-1586773860418-d37222d8fce3?auto=format&fit=crop&w=600&q=80',
+        description: dc.description || '',
+        is_verified: dc.is_verified ?? true
+      });
+    } else {
+      setEditingDiagnostic(null);
+      setDiagnosticForm({
+        id: '',
+        name: 'Popular Diagnostic Centre',
+        branch: 'Panthapath Branch',
+        category_ids: diagnosticCategories[0] ? [diagnosticCategories[0].id] : [],
+        service_ids: diagnosticServices.slice(0, 3).map(s => s.id),
+        address: 'House 16, Road 2, Dhanmondi / Panthapath',
+        district: 'Dhaka',
+        division: 'Dhaka',
+        phone: '+880 9613-787801',
+        email: 'info@populardiagnostic.com',
+        rating: 4.85,
+        reviews_count: 410,
+        open_timing: '07:00 AM - 11:00 PM',
+        tagline: 'Nationwide Leading Diagnostic & Imaging Hub',
+        badge: 'Verified Partner',
+        image: 'https://images.unsplash.com/photo-1586773860418-d37222d8fce3?auto=format&fit=crop&w=600&q=80',
+        description: 'State-of-the-art diagnostic imaging and visiting doctor chambers.',
+        is_verified: true
+      });
+    }
+    setShowDiagnosticModal(true);
+  };
+
+  const toggleDiagnosticServiceSelection = (srvId) => {
+    setDiagnosticForm(prev => {
+      const exists = prev.service_ids.includes(srvId);
+      const updated = exists ? prev.service_ids.filter(id => id !== srvId) : [...prev.service_ids, srvId];
+      return { ...prev, service_ids: updated };
+    });
+  };
+
+  const handleSaveDiagnostic = async (e) => {
+    e.preventDefault();
+    try {
+      const payload = { ...diagnosticForm };
+      if (editingDiagnostic) {
+        await api.updateDiagnosticCenter(editingDiagnostic.id, payload);
+        showNotification(`Diagnostic Center "${payload.name} (${payload.branch})" updated!`);
+      } else {
+        await api.createDiagnosticCenter(payload);
+        showNotification(`Diagnostic Center "${payload.name} (${payload.branch})" created!`);
+      }
+      setShowDiagnosticModal(false);
+      loadAllData();
+    } catch (err) {
+      alert(`Error saving diagnostic center: ${err.message}`);
+    }
+  };
+
+  const handleDeleteDiagnostic = async (id, name) => {
+    if (!window.confirm(`Delete Diagnostic Center "${name}"?`)) return;
+    try {
+      await api.deleteDiagnosticCenter(id);
+      showNotification(`Diagnostic Center "${name}" removed.`);
+      loadAllData();
+    } catch (err) {
+      alert(`Error deleting center: ${err.message}`);
+    }
+  };
+
   // --- DOCTOR CRUD HANDLERS ---
   const handleOpenDoctorModal = (doc = null) => {
     if (doc) {
       setEditingDoctor(doc);
       const specIds = Array.isArray(doc.specialties) 
         ? doc.specialties.map(s => s.id || s)
-        : (doc.specialty ? [doc.specialty.id || doc.specialty] : []);
+        : [];
 
       const affs = Array.isArray(doc.affiliations) && doc.affiliations.length > 0
         ? doc.affiliations.map(a => ({
-            branch: a.branch_id || a.branch || chambers[0]?.id || '',
+            hospital: a.hospital?.id || a.hospital || null,
+            diagnostic_center: a.diagnostic_center?.id || a.diagnostic_center || null,
             consultation_type: a.consultation_type || 'OPD',
-            original_fee: a.original_fee || a.fee || '1500',
-            discount: a.discount || '20% OFF',
             fee: a.fee || '1200',
-            schedules: Array.isArray(a.schedules) && a.schedules.length > 0
-              ? a.schedules.map(s => ({
-                  day_of_week: s.day_of_week || 'Sat',
-                  start_time: s.start_time || '17:00',
-                  end_time: s.end_time || '21:00'
-                }))
-              : [{ day_of_week: 'Sat', start_time: '17:00', end_time: '21:00' }]
+            schedules: Array.isArray(a.schedules) ? a.schedules : []
           }))
-        : [{
-            branch: chambers[0]?.id || '',
-            consultation_type: 'OPD',
-            original_fee: '1500',
-            discount: '20% OFF',
-            fee: '1200',
-            schedules: [{ day_of_week: 'Sat', start_time: '17:00', end_time: '21:00' }]
-          }];
+        : [];
 
       setDoctorForm({
         id: doc.id,
@@ -261,17 +470,16 @@ export default function AdminDashboardPage({ currentUser, onNavigate, onAdminLog
     } else {
       setEditingDoctor(null);
       setDoctorForm({
-        id: `doc-${Date.now()}`,
+        id: '',
         name: '',
         qualification: 'MBBS, FCPS (Medicine)',
         experience: '12+ Yrs Exp.',
-        selectedSpecialties: specialties[0] ? [specialties[0].id] : [],
+        selectedSpecialties: doctorSpecialties[0] ? [doctorSpecialties[0].id] : [],
         affiliations: [
           {
-            branch: chambers[0]?.id || '',
+            hospital: hospitals[0]?.id || null,
+            diagnostic_center: null,
             consultation_type: 'OPD',
-            original_fee: '1500',
-            discount: '20% OFF',
             fee: '1200',
             schedules: [{ day_of_week: 'Sat', start_time: '17:00', end_time: '21:00' }]
           }
@@ -281,61 +489,10 @@ export default function AdminDashboardPage({ currentUser, onNavigate, onAdminLog
     setShowDoctorModal(true);
   };
 
-  const handleToggleSpecialty = (specId) => {
-    setDoctorForm(prev => {
-      const exists = prev.selectedSpecialties.includes(specId);
-      const updated = exists 
-        ? prev.selectedSpecialties.filter(id => id !== specId)
-        : [...prev.selectedSpecialties, specId];
-      return { ...prev, selectedSpecialties: updated };
-    });
-  };
-
-  const handleAddAffiliation = () => {
-    setDoctorForm(prev => ({
-      ...prev,
-      affiliations: [
-        ...prev.affiliations,
-        {
-          branch: chambers[0]?.id || '',
-          consultation_type: 'OPD',
-          original_fee: '1500',
-          discount: '20% OFF',
-          fee: '1200',
-          schedules: [{ day_of_week: 'Sat', start_time: '17:00', end_time: '21:00' }]
-        }
-      ]
-    }));
-  };
-
-  const handleRemoveAffiliation = (index) => {
-    setDoctorForm(prev => ({
-      ...prev,
-      affiliations: prev.affiliations.filter((_, i) => i !== index)
-    }));
-  };
-
-  const handleAddScheduleRow = (affIndex) => {
-    setDoctorForm(prev => {
-      const updatedAffs = [...prev.affiliations];
-      updatedAffs[affIndex].schedules.push({ day_of_week: 'Mon', start_time: '17:00', end_time: '21:00' });
-      return { ...prev, affiliations: updatedAffs };
-    });
-  };
-
-  const handleRemoveScheduleRow = (affIndex, schIndex) => {
-    setDoctorForm(prev => {
-      const updatedAffs = [...prev.affiliations];
-      updatedAffs[affIndex].schedules = updatedAffs[affIndex].schedules.filter((_, i) => i !== schIndex);
-      return { ...prev, affiliations: updatedAffs };
-    });
-  };
-
   const handleSaveDoctor = async (e) => {
     e.preventDefault();
     try {
       const payload = {
-        id: doctorForm.id,
         name: doctorForm.name,
         qualification: doctorForm.qualification,
         experience: doctorForm.experience,
@@ -348,10 +505,10 @@ export default function AdminDashboardPage({ currentUser, onNavigate, onAdminLog
 
       if (editingDoctor) {
         await api.updateDoctor(editingDoctor.id, payload);
-        showNotification(`Doctor "${payload.name}" updated successfully!`);
+        showNotification(`Doctor "${payload.name}" updated!`);
       } else {
         await api.createDoctor(payload);
-        showNotification(`Doctor "${payload.name}" added successfully!`);
+        showNotification(`Doctor "${payload.name}" added!`);
       }
       setShowDoctorModal(false);
       loadAllData();
@@ -361,7 +518,7 @@ export default function AdminDashboardPage({ currentUser, onNavigate, onAdminLog
   };
 
   const handleDeleteDoctor = async (id, name) => {
-    if (!window.confirm(`Are you sure you want to remove Dr. ${name}?`)) return;
+    if (!window.confirm(`Remove Dr. ${name}?`)) return;
     try {
       await api.deleteDoctor(id);
       showNotification(`Dr. ${name} removed.`);
@@ -371,315 +528,116 @@ export default function AdminDashboardPage({ currentUser, onNavigate, onAdminLog
     }
   };
 
-  // --- CHAMBER / HOSPITAL CRUD HANDLERS ---
-  const handleOpenChamberModal = (ch = null) => {
-    if (ch) {
-      setEditingChamber(ch);
-      const cityName = ch.city || 'Dhaka';
-      const cityThanasList = CITY_THANAS[cityName] || CITY_THANAS["Dhaka"];
-      const isCustom = !cityThanasList.includes(ch.name);
-
-      setChamberForm({
-        id: ch.id,
-        hospital_name: ch.hospital_name || (ch.hospital?.name) || 'Medical Group',
-        branch_name: isCustom ? 'Other' : ch.name,
-        isCustomBranch: isCustom,
-        customBranchName: isCustom ? ch.name : '',
-        specialtyCategory: ch.specialtyCategory || ch.specialty_category || 'multispecialty',
-        city: cityName,
-        location: ch.location,
-        verified: ch.verified,
-        rating: ch.rating || 4.8,
-        reviews_count: ch.reviews_count || ch.reviewsCount || 50,
-        open_timing: ch.open_timing || ch.openTiming || '08:00 AM - 08:00 PM',
-        contact_phone: ch.contact_phone || ch.contactPhone || '',
-        tagline: ch.tagline || '',
-        badge: ch.badge || 'Verified Partner',
-        image: ch.image || 'https://images.unsplash.com/photo-1519494026892-80bbd2d6fd0d?auto=format&fit=crop&w=600&q=80',
-        servicesStr: Array.isArray(ch.services) ? ch.services.join(', ') : (ch.services || ''),
-        description: ch.description || '',
-        facility_types: ch.facility_types && ch.facility_types.length > 0 ? ch.facility_types : ['Hospital', 'Diagnostic Center']
-      });
-    } else {
-      setEditingChamber(null);
-      setChamberForm({
-        id: `branch-${Date.now()}`,
-        hospital_name: 'Ibn Sina Healthcare Group',
-        branch_name: CITY_THANAS["Dhaka"][0],
-        isCustomBranch: false,
-        customBranchName: '',
-        specialtyCategory: 'multispecialty',
-        city: 'Dhaka',
-        location: 'House 48, Road 9/A, Dhanmondi',
-        verified: true,
-        rating: 4.8,
-        reviews_count: 50,
-        open_timing: '07:30 AM - 10:30 PM',
-        contact_phone: '+880 9610-010615',
-        tagline: 'Premier Multispecialty Healthcare Hub',
-        badge: 'Verified Partner',
-        image: 'https://images.unsplash.com/photo-1519494026892-80bbd2d6fd0d?auto=format&fit=crop&w=600&q=80',
-        servicesStr: '24/7 Specialist OPD Consultation, Digital Radiology & X-Ray, 4D Ultrasonography, CT Scan',
-        description: 'Multispecialty healthcare and clinical diagnostic facility.',
-        facility_types: ['Hospital', 'Diagnostic Center']
-      });
-    }
-    setShowChamberModal(true);
-  };
-
-  const handleSaveChamber = async (e) => {
-    e.preventDefault();
-    try {
-      const finalBranchName = chamberForm.isCustomBranch ? chamberForm.customBranchName : chamberForm.branch_name;
-      const services = chamberForm.servicesStr.split(',').map(s => s.trim()).filter(Boolean);
-      
-      const payload = {
-        id: chamberForm.id,
-        hospital_name: chamberForm.hospital_name,
-        name: finalBranchName,
-        specialtyCategory: chamberForm.specialtyCategory || 'multispecialty',
-        specialty_category: chamberForm.specialtyCategory || 'multispecialty',
-        facility_types: chamberForm.facility_types,
-        location: chamberForm.location,
-        city: chamberForm.city,
-        verified: chamberForm.verified,
-        rating: parseFloat(chamberForm.rating) || 0,
-        reviews_count: parseInt(chamberForm.reviews_count, 10) || 0,
-        open_timing: chamberForm.open_timing,
-        contact_phone: chamberForm.contact_phone,
-        tagline: chamberForm.tagline,
-        badge: chamberForm.badge,
-        image: chamberForm.image,
-        services: services,
-        description: chamberForm.description
-      };
-
-      if (editingChamber) {
-        await api.updateBranch(editingChamber.id, payload);
-        showNotification(`Branch "${payload.hospital_name} - ${payload.name}" updated successfully!`);
-      } else {
-        await api.createBranch(payload);
-        showNotification(`Branch "${payload.hospital_name} - ${payload.name}" added successfully!`);
-      }
-      setShowChamberModal(false);
-      loadAllData();
-    } catch (err) {
-      alert(`Error saving hospital branch: ${err.message}`);
-    }
-  };
-
-  const handleDeleteChamber = async (id, name) => {
-    if (!window.confirm(`Are you sure you want to remove hospital branch "${name}"?`)) return;
-    try {
-      await api.deleteBranch(id);
-      showNotification(`Branch "${name}" removed.`);
-      loadAllData();
-    } catch (err) {
-      alert(`Failed to delete branch: ${err.message}`);
-    }
-  };
-
-  // --- PATHOLOGY BASE TEST CRUD ---
-  const handleOpenTestModal = (t = null) => {
-    if (t) {
-      setEditingTest(t);
-      setTestForm({
-        id: t.id,
-        name: t.name,
-        category: t.category,
-        fasting_required: t.fasting_required,
-        description: t.description || ''
-      });
-    } else {
-      setEditingTest(null);
-      setTestForm({
-        id: `test-${Date.now()}`,
-        name: '',
-        category: 'Routine Blood Profiles',
-        fasting_required: false,
-        description: 'Comprehensive diagnostic test profile.'
-      });
-    }
-    setShowTestModal(true);
-  };
-
-  const handleSaveTest = async (e) => {
-    e.preventDefault();
-    try {
-      const payload = { ...testForm };
-      if (editingTest) {
-        await api.updateTest(editingTest.id, payload);
-        showNotification(`Pathology Test "${payload.name}" updated.`);
-      } else {
-        await api.createTest(payload);
-        showNotification(`Pathology Test "${payload.name}" created.`);
-      }
-      setShowTestModal(false);
-      loadAllData();
-    } catch (err) {
-      alert(`Error saving test: ${err.message}`);
-    }
-  };
-
-  const handleDeleteTest = async (id, name) => {
-    if (!window.confirm(`Delete pathology test "${name}"?`)) return;
-    try {
-      await api.deleteTest(id);
-      showNotification(`Test "${name}" deleted.`);
-      loadAllData();
-    } catch (err) {
-      alert(`Failed to delete test: ${err.message}`);
-    }
-  };
-
-  // --- DOCTOR SPECIALTY CRUD HANDLERS ---
-  const handleOpenDoctorSpecModal = (s = null) => {
-    if (s) {
-      setEditingDoctorSpec(s);
-      setDoctorSpecForm({ id: s.id, name: s.name, icon: s.icon || 'Stethoscope', description: s.description || '' });
-    } else {
-      setEditingDoctorSpec(null);
-      setDoctorSpecForm({ id: `doc-spec-${Date.now()}`, name: '', icon: 'Stethoscope', description: '' });
-    }
-    setShowDoctorSpecModal(true);
-  };
-
+  // --- CATEGORY & SERVICES CRUD HANDLERS ---
   const handleSaveDoctorSpec = async (e) => {
     e.preventDefault();
     try {
       if (editingDoctorSpec) {
-        await api.updateSpecialty(editingDoctorSpec.id, doctorSpecForm).catch(() => {});
-        setDoctorSpecialties(prev => prev.map(item => item.id === editingDoctorSpec.id ? doctorSpecForm : item));
-        showNotification(`Doctor Specialty "${doctorSpecForm.name}" updated.`);
+        await api.updateSpecialty(editingDoctorSpec.id, doctorSpecForm);
+        showNotification(`Specialty "${doctorSpecForm.name}" updated.`);
       } else {
-        await api.createSpecialty(doctorSpecForm).catch(() => {});
-        setDoctorSpecialties(prev => [...prev, doctorSpecForm]);
-        showNotification(`Doctor Specialty "${doctorSpecForm.name}" created.`);
+        await api.createSpecialty(doctorSpecForm);
+        showNotification(`Specialty "${doctorSpecForm.name}" created.`);
       }
       setShowDoctorSpecModal(false);
+      loadAllData();
     } catch (err) {
-      alert(`Error saving doctor specialty: ${err.message}`);
+      alert(`Error saving specialty: ${err.message}`);
     }
   };
 
-  const handleDeleteDoctorSpec = async (id, name) => {
-    if (!window.confirm(`Delete Doctor Specialty "${name}"?`)) return;
-    try {
-      await api.deleteSpecialty(id).catch(() => {});
-      setDoctorSpecialties(prev => prev.filter(s => s.id !== id));
-      showNotification(`Doctor Specialty "${name}" removed.`);
-    } catch (err) {
-      alert(`Error deleting specialty: ${err.message}`);
-    }
-  };
-
-  // --- HOSPITAL SPECIALTY CRUD HANDLERS ---
-  const handleOpenHospitalSpecModal = (hs = null) => {
-    if (hs) {
-      setEditingHospitalSpec(hs);
-      setHospitalSpecForm({ id: hs.id, name: hs.name, icon: hs.icon || 'Building2', description: hs.description || '', count: hs.count || 0 });
-    } else {
-      setEditingHospitalSpec(null);
-      setHospitalSpecForm({ id: `hosp-spec-${Date.now()}`, name: '', icon: 'Building2', description: '', count: 0 });
-    }
-    setShowHospitalSpecModal(true);
-  };
-
-  const handleSaveHospitalSpec = async (e) => {
+  const handleSaveHospitalCat = async (e) => {
     e.preventDefault();
     try {
-      if (editingHospitalSpec) {
-        await api.updateHospitalSpecialty(editingHospitalSpec.id, hospitalSpecForm).catch(() => {});
-        setHospitalSpecialties(prev => prev.map(item => item.id === editingHospitalSpec.id ? hospitalSpecForm : item));
-        showNotification(`Hospital Specialty "${hospitalSpecForm.name}" updated.`);
+      if (editingHospitalCat) {
+        await api.updateHospitalCategory(editingHospitalCat.id, hospitalCatForm);
+        showNotification(`Hospital Category "${hospitalCatForm.name}" updated.`);
       } else {
-        await api.createHospitalSpecialty(hospitalSpecForm).catch(() => {});
-        setHospitalSpecialties(prev => [...prev, hospitalSpecForm]);
-        showNotification(`Hospital Specialty "${hospitalSpecForm.name}" created.`);
+        await api.createHospitalCategory(hospitalCatForm);
+        showNotification(`Hospital Category "${hospitalCatForm.name}" created.`);
       }
-      setShowHospitalSpecModal(false);
+      setShowHospitalCatModal(false);
+      loadAllData();
     } catch (err) {
-      alert(`Error saving hospital specialty: ${err.message}`);
+      alert(`Error saving category: ${err.message}`);
     }
   };
 
-  const handleDeleteHospitalSpec = async (id, name) => {
-    if (!window.confirm(`Delete Hospital Specialty "${name}"?`)) return;
-    try {
-      await api.deleteHospitalSpecialty(id).catch(() => {});
-      setHospitalSpecialties(prev => prev.filter(hs => hs.id !== id));
-      showNotification(`Hospital Specialty "${name}" removed.`);
-    } catch (err) {
-      alert(`Error deleting specialty: ${err.message}`);
-    }
-  };
-
-  // --- TEST CATEGORY CRUD HANDLERS ---
-  const handleOpenTestCatModal = (tc = null) => {
-    if (tc) {
-      setEditingTestCat(tc);
-      setTestCatForm({ id: tc.id, name: tc.name, icon: tc.icon || 'FlaskConical', description: tc.description || '', count: tc.count || 0 });
-    } else {
-      setEditingTestCat(null);
-      setTestCatForm({ id: `test-cat-${Date.now()}`, name: '', icon: 'FlaskConical', description: '', count: 0 });
-    }
-    setShowTestCatModal(true);
-  };
-
-  const handleSaveTestCat = async (e) => {
+  const handleSaveDiagCat = async (e) => {
     e.preventDefault();
     try {
-      if (editingTestCat) {
-        await api.updateTestCategory(editingTestCat.id, testCatForm).catch(() => {});
-        setTestCategories(prev => prev.map(item => item.id === editingTestCat.id ? testCatForm : item));
-        showNotification(`Test Category "${testCatForm.name}" updated.`);
+      if (editingDiagCat) {
+        await api.updateDiagnosticCenterCategory(editingDiagCat.id, diagCatForm);
+        showNotification(`Diagnostic Category "${diagCatForm.name}" updated.`);
       } else {
-        await api.createTestCategory(testCatForm).catch(() => {});
-        setTestCategories(prev => [...prev, testCatForm]);
-        showNotification(`Test Category "${testCatForm.name}" created.`);
+        await api.createDiagnosticCenterCategory(diagCatForm);
+        showNotification(`Diagnostic Category "${diagCatForm.name}" created.`);
       }
-      setShowTestCatModal(false);
+      setShowDiagCatModal(false);
+      loadAllData();
     } catch (err) {
-      alert(`Error saving test category: ${err.message}`);
+      alert(`Error saving category: ${err.message}`);
     }
   };
 
-  const handleDeleteTestCat = async (id, name) => {
-    if (!window.confirm(`Delete Test Category "${name}"?`)) return;
+  const handleSaveHospService = async (e) => {
+    e.preventDefault();
     try {
-      await api.deleteTestCategory(id).catch(() => {});
-      setTestCategories(prev => prev.filter(tc => tc.id !== id));
-      showNotification(`Test Category "${name}" removed.`);
+      if (editingHospService) {
+        await api.updateHospitalService(editingHospService.id, hospServiceForm);
+        showNotification(`Hospital Service "${hospServiceForm.name}" updated.`);
+      } else {
+        await api.createHospitalService(hospServiceForm);
+        showNotification(`Hospital Service "${hospServiceForm.name}" created.`);
+      }
+      setShowHospServiceModal(false);
+      loadAllData();
     } catch (err) {
-      alert(`Error deleting category: ${err.message}`);
+      alert(`Error saving service: ${err.message}`);
     }
   };
 
-  // --- BRANCH TEST PRICING CRUD HANDLERS ---
+  const handleSaveDiagService = async (e) => {
+    e.preventDefault();
+    try {
+      if (editingDiagService) {
+        await api.updateDiagnosticService(editingDiagService.id, diagServiceForm);
+        showNotification(`Diagnostic Service "${diagServiceForm.name}" updated.`);
+      } else {
+        await api.createDiagnosticService(diagServiceForm);
+        showNotification(`Diagnostic Service "${diagServiceForm.name}" created.`);
+      }
+      setShowDiagServiceModal(false);
+      loadAllData();
+    } catch (err) {
+      alert(`Error saving service: ${err.message}`);
+    }
+  };
+
+  // --- BRANCH TEST PRICING HANDLERS ---
   const handleOpenBranchTestModal = (bt = null) => {
-    const todayStr = new Date().toISOString().split('T')[0];
     if (bt) {
       setEditingBranchTest(bt);
       setBranchTestForm({
         id: bt.id,
-        branch: bt.branch?.id || bt.branch || chambers[0]?.id || '',
+        center: bt.center?.id || bt.center || diagnosticCenters[0]?.id || '',
         test: bt.test?.id || bt.test || tests[0]?.id || '',
         original_price: bt.original_price ? bt.original_price.toString() : '700',
         discount: bt.discount || '25% OFF',
         price: bt.price ? bt.price.toString() : '525',
-        report_delivery_date: todayStr,
+        report_delivery_date: new Date().toISOString().split('T')[0],
         report_time_slot: '05:00 PM - 09:00 PM'
       });
     } else {
       setEditingBranchTest(null);
       setBranchTestForm({
         id: '',
-        branch: chambers[0]?.id || '',
+        center: diagnosticCenters[0]?.id || '',
         test: tests[0]?.id || '',
         original_price: '700',
         discount: '25% OFF',
         price: '525',
-        report_delivery_date: todayStr,
+        report_delivery_date: new Date().toISOString().split('T')[0],
         report_time_slot: '05:00 PM - 09:00 PM'
       });
     }
@@ -689,19 +647,17 @@ export default function AdminDashboardPage({ currentUser, onNavigate, onAdminLog
   const handleSaveBranchTest = async (e) => {
     e.preventDefault();
     try {
-      const formattedReportTime = `Delivery: ${branchTestForm.report_delivery_date} | Slot: ${branchTestForm.report_time_slot}`;
-      
       const payload = {
-        branch: branchTestForm.branch,
+        center: branchTestForm.center,
         test: branchTestForm.test,
         price: parseFloat(branchTestForm.price) || 0,
         original_price: branchTestForm.original_price ? parseFloat(branchTestForm.original_price) : null,
         discount: branchTestForm.discount,
-        report_time: formattedReportTime
+        report_time: `${branchTestForm.report_delivery_date} | ${branchTestForm.report_time_slot}`
       };
 
-      await api.createBranchTest(payload);
-      showNotification("Diagnostic Branch Test pricing updated!");
+      await api.createDiagnosticCenterTest(payload);
+      showNotification("Diagnostic Center test pricing created/updated!");
       setShowBranchTestModal(false);
       loadAllData();
     } catch (err) {
@@ -710,33 +666,15 @@ export default function AdminDashboardPage({ currentUser, onNavigate, onAdminLog
   };
 
   const handleDeleteBranchTest = async (id) => {
-    if (!window.confirm("Remove this diagnostic test offering?")) return;
+    if (!window.confirm("Remove this test offering?")) return;
     try {
-      await api.deleteBranchTest(id);
-      showNotification("Diagnostic test offering removed.");
+      await api.deleteDiagnosticCenterTest(id);
+      showNotification("Test offering removed.");
       loadAllData();
     } catch (err) {
       alert(`Failed to remove: ${err.message}`);
     }
   };
-
-  // Filtered Branch Tests for Tab 3
-  const filteredBranchTests = useMemo(() => {
-    return branchTests.filter(bt => {
-      const bHospitalName = bt.hospital_name || (bt.branch?.hospital_name) || (bt.branch?.hospital?.name) || '';
-      const bBranchName = bt.branch_name || (bt.branch?.name) || '';
-      const fullBranchDisplayName = bHospitalName ? `${bHospitalName} - ${bBranchName}` : bBranchName;
-      const tName = bt.test_details?.name || (bt.test?.name) || '';
-
-      if (branchTestBranchFilter && !fullBranchDisplayName.toLowerCase().includes(branchTestBranchFilter.toLowerCase())) {
-        return false;
-      }
-      if (branchTestTestFilter && !tName.toLowerCase().includes(branchTestTestFilter.toLowerCase())) {
-        return false;
-      }
-      return true;
-    });
-  }, [branchTests, branchTestBranchFilter, branchTestTestFilter]);
 
   if (!isStaff) {
     return (
@@ -784,7 +722,6 @@ export default function AdminDashboardPage({ currentUser, onNavigate, onAdminLog
                 onChange={e => setAdminPassword(e.target.value)}
                 className="w-full bg-slate-950 border border-slate-800 rounded-xl px-4 py-3 text-sm text-white focus:outline-none focus:border-teal-500 font-mono"
               />
-              <p className="text-[11px] text-slate-500 mt-1">Default Seed Admin: <span className="font-mono text-slate-400">01700000000</span> / <span className="font-mono text-slate-400">admin123456</span></p>
             </div>
 
             <button
@@ -795,15 +732,6 @@ export default function AdminDashboardPage({ currentUser, onNavigate, onAdminLog
               {loginLoading ? <RefreshCw className="w-4 h-4 animate-spin" /> : 'Sign In to Admin Console'}
             </button>
           </form>
-
-          <div className="mt-8 pt-6 border-t border-slate-800/80 text-center">
-            <button
-              onClick={() => onNavigate('home')}
-              className="text-xs text-slate-400 hover:text-teal-300 font-medium transition"
-            >
-              &larr; Back to Public Patient View
-            </button>
-          </div>
         </div>
       </div>
     );
@@ -820,8 +748,8 @@ export default function AdminDashboardPage({ currentUser, onNavigate, onAdminLog
               <ShieldAlert className="w-5 h-5" />
             </div>
             <div>
-              <h1 className="font-extrabold text-white text-lg">DoctorsHub Admin Management Console</h1>
-              <p className="text-xs text-slate-400">Manage Hospitals, Diagnostic Test Pricing, Doctors & Schedules</p>
+              <h1 className="font-extrabold text-white text-lg">DoctorsHub Admin Console</h1>
+              <p className="text-xs text-slate-400">Manage Hospitals, Diagnostics & Branches, Services, Doctors & Test Pricing</p>
             </div>
           </div>
 
@@ -861,37 +789,57 @@ export default function AdminDashboardPage({ currentUser, onNavigate, onAdminLog
           </div>
         )}
 
-        {/* Navigation Tabs */}
-        <div className="flex items-center gap-2 border-b border-slate-800 overflow-x-auto pb-1 text-xs">
-          {[
-            { id: 'overview', label: 'Overview', icon: Users },
-            { id: 'chambers', label: `Hospitals & Branches (${chambers.length})`, icon: Building2 },
-            { id: 'doctors', label: `Specialist Doctors (${doctors.length})`, icon: Stethoscope },
-            { id: 'doctor-specs', label: `Doctor Specialties (${doctorSpecialties.length})`, icon: Stethoscope },
-            { id: 'hospital-specs', label: `Hospital Categories (${hospitalSpecialties.length})`, icon: Building2 },
-            { id: 'tests', label: `Pathology Base Tests (${tests.length})`, icon: TestTube },
-            { id: 'test-cats', label: `Test Categories (${testCategories.length})`, icon: TestTube },
-            { id: 'branch-tests', label: `Diagnostic Test Prices (${branchTests.length})`, icon: Calculator },
-            { id: 'doc-bookings', label: `Doctor Bookings (${doctorBookings.length})`, icon: Calendar },
-            { id: 'lab-bookings', label: `Lab Bookings (${labBookings.length})`, icon: Calendar },
-          ].map(tab => {
-            const Icon = tab.icon;
-            const isActive = activeTab === tab.id;
-            return (
-              <button
-                key={tab.id}
-                onClick={() => { setActiveTab(tab.id); setSearchTerm(''); }}
-                className={`px-4 py-3 font-bold rounded-t-xl border-b-2 flex items-center gap-2 transition-all whitespace-nowrap ${
-                  isActive 
-                    ? 'border-teal-400 text-teal-400 bg-slate-900' 
-                    : 'border-transparent text-slate-400 hover:text-slate-200 hover:bg-slate-900/50'
-                }`}
-              >
-                <Icon className="w-4 h-4" />
-                <span>{tab.label}</span>
-              </button>
-            );
-          })}
+        {/* TASK 3: TOP NAVIGATION MENU TABS INCLUDING "Diagnostics & Branches" */}
+        <div className="relative bg-slate-900/90 border border-slate-800/80 rounded-2xl p-2 shadow-xl backdrop-blur-md flex items-center gap-2">
+          <button
+            onClick={() => navSliderRef.current?.scrollBy({ left: -220, behavior: 'smooth' })}
+            className="p-2 bg-slate-800/80 hover:bg-slate-700 text-slate-300 rounded-xl hidden sm:flex shrink-0 border border-slate-700/50"
+          >
+            <ChevronLeft className="w-4 h-4" />
+          </button>
+
+          <div ref={navSliderRef} className="admin-sliding-bar flex items-center gap-2 overflow-x-auto scroll-smooth py-1 px-1 text-xs w-full">
+            {[
+              { id: 'overview', label: 'Overview', icon: Users },
+              { id: 'hospitals', label: `Hospitals (${hospitals.length})`, icon: Building2 },
+              { id: 'diagnostics', label: `Diagnostics & Branches (${diagnosticCenters.length})`, icon: FlaskConical },
+              { id: 'doctors', label: `Specialist Doctors (${doctors.length})`, icon: Stethoscope },
+              { id: 'doctor-specs', label: `Doctor Specialties (${doctorSpecialties.length})`, icon: Stethoscope },
+              { id: 'hospital-specs', label: `Hospital Categories (${hospitalCategories.length})`, icon: Building2 },
+              { id: 'diag-cats', label: `Diagnostics Categories (${diagnosticCategories.length})`, icon: FlaskConical },
+              { id: 'hosp-services', label: `Hospital Services (${hospitalServices.length})`, icon: Activity },
+              { id: 'diag-services', label: `Diagnostic Services (${diagnosticServices.length})`, icon: FlaskConical },
+              { id: 'tests', label: `Add Test (${tests.length})`, icon: TestTube },
+              { id: 'test-cats', label: `Test Categories (${testCategories.length})`, icon: TestTube },
+              { id: 'branch-tests', label: `Diagnostic Test Prices (${branchTests.length})`, icon: Calculator },
+              { id: 'doc-bookings', label: `Doctor Bookings (${doctorBookings.length})`, icon: Calendar },
+              { id: 'lab-bookings', label: `Lab Bookings (${labBookings.length})`, icon: Calendar },
+            ].map(tab => {
+              const Icon = tab.icon;
+              const isActive = activeTab === tab.id;
+              return (
+                <button
+                  key={tab.id}
+                  onClick={() => { setActiveTab(tab.id); setSearchTerm(''); }}
+                  className={`px-4 py-2.5 font-bold rounded-xl border flex items-center gap-2 transition-all whitespace-nowrap shadow-sm ${
+                    isActive 
+                      ? 'border-teal-400/60 text-teal-300 bg-gradient-to-r from-teal-950/60 to-slate-900 shadow-teal-500/10' 
+                      : 'border-slate-800/80 text-slate-400 hover:text-slate-200 hover:bg-slate-800/50 hover:border-slate-700'
+                  }`}
+                >
+                  <Icon className={`w-4 h-4 ${isActive ? 'text-teal-400' : 'text-slate-400'}`} />
+                  <span>{tab.label}</span>
+                </button>
+              );
+            })}
+          </div>
+
+          <button
+            onClick={() => navSliderRef.current?.scrollBy({ left: 220, behavior: 'smooth' })}
+            className="p-2 bg-slate-800/80 hover:bg-slate-700 text-slate-300 rounded-xl hidden sm:flex shrink-0 border border-slate-700/50"
+          >
+            <ChevronRight className="w-4 h-4" />
+          </button>
         </div>
 
         {/* 0. OVERVIEW DASHBOARD TAB */}
@@ -906,27 +854,27 @@ export default function AdminDashboardPage({ currentUser, onNavigate, onAdminLog
                   <span>Admin Operations Command</span>
                 </div>
                 <h2 className="text-2xl font-black text-white">Healthcare System Overview</h2>
-                <p className="text-xs text-slate-400 mt-1">Real-time stats across partner hospital branches, doctor rosters, pathology base tests, pricing, and user bookings.</p>
+                <p className="text-xs text-slate-400 mt-1">Real-time stats across Hospitals, Diagnostics & Branches, Services, Doctors & Pathology test pricing.</p>
               </div>
 
               <div className="flex flex-wrap items-center gap-2.5">
+                <button
+                  onClick={() => handleOpenHospitalModal()}
+                  className="px-3.5 py-2 bg-emerald-600 hover:bg-emerald-500 text-white font-bold text-xs rounded-xl flex items-center gap-1.5 shadow-md"
+                >
+                  <Plus className="w-3.5 h-3.5" /> Add Hospital
+                </button>
+                <button
+                  onClick={() => handleOpenDiagnosticModal()}
+                  className="px-3.5 py-2 bg-cyan-600 hover:bg-cyan-500 text-white font-bold text-xs rounded-xl flex items-center gap-1.5 shadow-md"
+                >
+                  <Plus className="w-3.5 h-3.5" /> Add Diagnostics / Branch
+                </button>
                 <button
                   onClick={() => handleOpenDoctorModal()}
                   className="px-3.5 py-2 bg-teal-600 hover:bg-teal-500 text-white font-bold text-xs rounded-xl flex items-center gap-1.5 shadow-md"
                 >
                   <Plus className="w-3.5 h-3.5" /> Add Doctor
-                </button>
-                <button
-                  onClick={() => handleOpenChamberModal()}
-                  className="px-3.5 py-2 bg-emerald-600 hover:bg-emerald-500 text-white font-bold text-xs rounded-xl flex items-center gap-1.5 shadow-md"
-                >
-                  <Plus className="w-3.5 h-3.5" /> Add Hospital Branch
-                </button>
-                <button
-                  onClick={() => handleOpenTestModal()}
-                  className="px-3.5 py-2 bg-cyan-600 hover:bg-cyan-500 text-white font-bold text-xs rounded-xl flex items-center gap-1.5 shadow-md"
-                >
-                  <Plus className="w-3.5 h-3.5" /> Add Test
                 </button>
               </div>
             </div>
@@ -938,8 +886,17 @@ export default function AdminDashboardPage({ currentUser, onNavigate, onAdminLog
                   <Building2 className="w-5 h-5" />
                   <span className="text-[10px] font-bold bg-emerald-500/20 text-emerald-300 px-2 py-0.5 rounded border border-emerald-500/30">Hospitals</span>
                 </div>
-                <div className="text-2xl font-black text-white">{chambers.length}</div>
-                <div className="text-xs text-slate-400 font-semibold mt-1">Hospital Branches</div>
+                <div className="text-2xl font-black text-white">{hospitals.length}</div>
+                <div className="text-xs text-slate-400 font-semibold mt-1">Hospitals</div>
+              </div>
+
+              <div className="bg-slate-900 border border-slate-800 p-4 rounded-2xl">
+                <div className="flex items-center justify-between text-cyan-400 mb-2">
+                  <FlaskConical className="w-5 h-5" />
+                  <span className="text-[10px] font-bold bg-cyan-500/20 text-cyan-300 px-2 py-0.5 rounded border border-cyan-500/30">Diagnostics</span>
+                </div>
+                <div className="text-2xl font-black text-white">{diagnosticCenters.length}</div>
+                <div className="text-xs text-slate-400 font-semibold mt-1">Diagnostic Branches</div>
               </div>
 
               <div className="bg-slate-900 border border-slate-800 p-4 rounded-2xl">
@@ -952,21 +909,12 @@ export default function AdminDashboardPage({ currentUser, onNavigate, onAdminLog
               </div>
 
               <div className="bg-slate-900 border border-slate-800 p-4 rounded-2xl">
-                <div className="flex items-center justify-between text-cyan-400 mb-2">
+                <div className="flex items-center justify-between text-amber-400 mb-2">
                   <TestTube className="w-5 h-5" />
-                  <span className="text-[10px] font-bold bg-cyan-500/20 text-cyan-300 px-2 py-0.5 rounded border border-cyan-500/30">Tests</span>
+                  <span className="text-[10px] font-bold bg-amber-500/20 text-amber-300 px-2 py-0.5 rounded border border-amber-500/30">Tests</span>
                 </div>
                 <div className="text-2xl font-black text-white">{tests.length}</div>
-                <div className="text-xs text-slate-400 font-semibold mt-1">Pathology Tests</div>
-              </div>
-
-              <div className="bg-slate-900 border border-slate-800 p-4 rounded-2xl">
-                <div className="flex items-center justify-between text-amber-400 mb-2">
-                  <Calculator className="w-5 h-5" />
-                  <span className="text-[10px] font-bold bg-amber-500/20 text-amber-300 px-2 py-0.5 rounded border border-amber-500/30">Quotes</span>
-                </div>
-                <div className="text-2xl font-black text-white">{branchTests.length}</div>
-                <div className="text-xs text-slate-400 font-semibold mt-1">Diagnostic Prices</div>
+                <div className="text-xs text-slate-400 font-semibold mt-1">Base Tests</div>
               </div>
 
               <div className="bg-slate-900 border border-slate-800 p-4 rounded-2xl">
@@ -988,148 +936,107 @@ export default function AdminDashboardPage({ currentUser, onNavigate, onAdminLog
               </div>
             </div>
 
-            {/* Categories & Specialties Summary Cards */}
-            <div className="grid grid-cols-1 md:grid-cols-3 gap-6">
+            {/* TASK 4 & 5: CATEGORIES & SERVICES CARDS SECTION IN OVERVIEW */}
+            <div className="grid grid-cols-1 md:grid-cols-3 lg:grid-cols-5 gap-4">
               
               {/* Doctor Specialties Card */}
-              <div className="bg-slate-900 border border-slate-800 rounded-2xl p-5 space-y-3">
-                <div className="flex items-center justify-between border-b border-slate-800 pb-3">
-                  <div className="flex items-center gap-2 font-bold text-white text-sm">
+              <div className="bg-slate-900 border border-slate-800 rounded-2xl p-4 space-y-3 shadow-lg">
+                <div className="flex items-center justify-between border-b border-slate-800 pb-2.5">
+                  <div className="flex items-center gap-1.5 font-bold text-white text-xs">
                     <Stethoscope className="w-4 h-4 text-teal-400" />
                     <span>Doctor Specialties ({doctorSpecialties.length})</span>
                   </div>
-                  <button
-                    onClick={() => handleOpenDoctorSpecModal()}
-                    className="text-[11px] font-bold text-teal-400 hover:underline flex items-center gap-1"
-                  >
-                    <Plus className="w-3 h-3" /> Add
+                  <button onClick={() => setShowDoctorSpecModal(true)} className="text-[10px] font-bold text-teal-400 bg-teal-500/10 px-2 py-0.5 rounded border border-teal-500/20">
+                    + Add
                   </button>
                 </div>
                 <div className="flex flex-wrap gap-1.5 max-h-36 overflow-y-auto pr-1">
                   {doctorSpecialties.map(s => (
-                    <span key={s.id} className="text-[11px] bg-slate-800 text-slate-300 px-2.5 py-1 rounded-lg border border-slate-700 font-medium flex items-center gap-1">
-                      <span>{s.name}</span>
-                      <button onClick={() => handleOpenDoctorSpecModal(s)} className="text-slate-400 hover:text-teal-400 ml-1">
-                        <Edit className="w-3 h-3" />
-                      </button>
+                    <span key={s.id} className="text-[11px] bg-slate-800/80 text-slate-300 px-2 py-0.5 rounded border border-slate-700/80 font-medium">
+                      {s.name}
                     </span>
                   ))}
                 </div>
               </div>
 
               {/* Hospital Categories Card */}
-              <div className="bg-slate-900 border border-slate-800 rounded-2xl p-5 space-y-3">
-                <div className="flex items-center justify-between border-b border-slate-800 pb-3">
-                  <div className="flex items-center gap-2 font-bold text-white text-sm">
+              <div className="bg-slate-900 border border-slate-800 rounded-2xl p-4 space-y-3 shadow-lg">
+                <div className="flex items-center justify-between border-b border-slate-800 pb-2.5">
+                  <div className="flex items-center gap-1.5 font-bold text-white text-xs">
                     <Building2 className="w-4 h-4 text-emerald-400" />
-                    <span>Hospital Categories ({hospitalSpecialties.length})</span>
+                    <span>Hospital Categories ({hospitalCategories.length})</span>
                   </div>
-                  <button
-                    onClick={() => handleOpenHospitalSpecModal()}
-                    className="text-[11px] font-bold text-emerald-400 hover:underline flex items-center gap-1"
-                  >
-                    <Plus className="w-3 h-3" /> Add
+                  <button onClick={() => setShowHospitalCatModal(true)} className="text-[10px] font-bold text-emerald-400 bg-emerald-500/10 px-2 py-0.5 rounded border border-emerald-500/20">
+                    + Add
                   </button>
                 </div>
                 <div className="flex flex-wrap gap-1.5 max-h-36 overflow-y-auto pr-1">
-                  {hospitalSpecialties.map(hs => (
-                    <span key={hs.id} className="text-[11px] bg-slate-800 text-slate-300 px-2.5 py-1 rounded-lg border border-slate-700 font-medium flex items-center gap-1">
-                      <span>{hs.name}</span>
-                      <button onClick={() => handleOpenHospitalSpecModal(hs)} className="text-slate-400 hover:text-emerald-400 ml-1">
-                        <Edit className="w-3 h-3" />
-                      </button>
+                  {hospitalCategories.map(hc => (
+                    <span key={hc.id} className="text-[11px] bg-slate-800/80 text-slate-300 px-2 py-0.5 rounded border border-slate-700/80 font-medium">
+                      {hc.name}
                     </span>
                   ))}
                 </div>
               </div>
 
-              {/* Test Categories Card */}
-              <div className="bg-slate-900 border border-slate-800 rounded-2xl p-5 space-y-3">
-                <div className="flex items-center justify-between border-b border-slate-800 pb-3">
-                  <div className="flex items-center gap-2 font-bold text-white text-sm">
-                    <TestTube className="w-4 h-4 text-cyan-400" />
-                    <span>Diagnostic Categories ({testCategories.length})</span>
+              {/* TASK 4: Diagnostics Categories Card */}
+              <div className="bg-slate-900 border border-slate-800 rounded-2xl p-4 space-y-3 shadow-lg">
+                <div className="flex items-center justify-between border-b border-slate-800 pb-2.5">
+                  <div className="flex items-center gap-1.5 font-bold text-white text-xs">
+                    <FlaskConical className="w-4 h-4 text-cyan-400" />
+                    <span>Diagnostics Categories ({diagnosticCategories.length})</span>
                   </div>
-                  <button
-                    onClick={() => handleOpenTestCatModal()}
-                    className="text-[11px] font-bold text-cyan-400 hover:underline flex items-center gap-1"
-                  >
-                    <Plus className="w-3 h-3" /> Add
+                  <button onClick={() => setShowDiagCatModal(true)} className="text-[10px] font-bold text-cyan-400 bg-cyan-500/10 px-2 py-0.5 rounded border border-cyan-500/20">
+                    + Add
                   </button>
                 </div>
                 <div className="flex flex-wrap gap-1.5 max-h-36 overflow-y-auto pr-1">
-                  {testCategories.map(tc => (
-                    <span key={tc.id} className="text-[11px] bg-slate-800 text-slate-300 px-2.5 py-1 rounded-lg border border-slate-700 font-medium flex items-center gap-1">
-                      <span>{tc.name}</span>
-                      <button onClick={() => handleOpenTestCatModal(tc)} className="text-slate-400 hover:text-cyan-400 ml-1">
-                        <Edit className="w-3 h-3" />
-                      </button>
+                  {diagnosticCategories.map(dc => (
+                    <span key={dc.id} className="text-[11px] bg-slate-800/80 text-slate-300 px-2 py-0.5 rounded border border-slate-700/80 font-medium">
+                      {dc.name}
                     </span>
                   ))}
                 </div>
               </div>
 
-            </div>
-
-            {/* Quick Preview Tables */}
-            <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
-              
-              {/* Doctor Bookings Table Preview */}
-              <div className="bg-slate-900 border border-slate-800 rounded-2xl p-5 space-y-3">
-                <div className="flex items-center justify-between pb-2 border-b border-slate-800">
-                  <h3 className="font-bold text-white text-sm flex items-center gap-2">
-                    <Calendar className="w-4 h-4 text-teal-400" /> Recent Doctor Bookings
-                  </h3>
-                  <button onClick={() => setActiveTab('doc-bookings')} className="text-xs font-bold text-teal-400 hover:underline">
-                    View All &rarr;
+              {/* TASK 5: Hospital Services Card */}
+              <div className="bg-slate-900 border border-slate-800 rounded-2xl p-4 space-y-3 shadow-lg">
+                <div className="flex items-center justify-between border-b border-slate-800 pb-2.5">
+                  <div className="flex items-center gap-1.5 font-bold text-white text-xs">
+                    <Activity className="w-4 h-4 text-amber-400" />
+                    <span>Hospital Services ({hospitalServices.length})</span>
+                  </div>
+                  <button onClick={() => setShowHospServiceModal(true)} className="text-[10px] font-bold text-amber-400 bg-amber-500/10 px-2 py-0.5 rounded border border-amber-500/20">
+                    + Add
                   </button>
                 </div>
-                {doctorBookings.length === 0 ? (
-                  <p className="text-xs text-slate-500 py-4 text-center">No doctor bookings recorded yet.</p>
-                ) : (
-                  <div className="space-y-2">
-                    {doctorBookings.slice(0, 4).map(b => (
-                      <div key={b.id} className="p-3 bg-slate-950 border border-slate-800 rounded-xl flex items-center justify-between text-xs">
-                        <div>
-                          <div className="font-bold text-white">{b.patient_name}</div>
-                          <div className="text-[10px] text-slate-400">{b.date} • {b.slot}</div>
-                        </div>
-                        <span className="px-2 py-0.5 bg-emerald-500/20 text-emerald-400 border border-emerald-500/30 rounded text-[10px] font-bold">
-                          {b.status || 'Confirmed'}
-                        </span>
-                      </div>
-                    ))}
-                  </div>
-                )}
+                <div className="flex flex-wrap gap-1.5 max-h-36 overflow-y-auto pr-1">
+                  {hospitalServices.map(hs => (
+                    <span key={hs.id} className="text-[11px] bg-slate-800/80 text-slate-300 px-2 py-0.5 rounded border border-slate-700/80 font-medium">
+                      {hs.name}
+                    </span>
+                  ))}
+                </div>
               </div>
 
-              {/* Lab Bookings Table Preview */}
-              <div className="bg-slate-900 border border-slate-800 rounded-2xl p-5 space-y-3">
-                <div className="flex items-center justify-between pb-2 border-b border-slate-800">
-                  <h3 className="font-bold text-white text-sm flex items-center gap-2">
-                    <TestTube className="w-4 h-4 text-cyan-400" /> Recent Home Lab Pickups
-                  </h3>
-                  <button onClick={() => setActiveTab('lab-bookings')} className="text-xs font-bold text-cyan-400 hover:underline">
-                    View All &rarr;
+              {/* TASK 5: Diagnostic Services Card */}
+              <div className="bg-slate-900 border border-slate-800 rounded-2xl p-4 space-y-3 shadow-lg">
+                <div className="flex items-center justify-between border-b border-slate-800 pb-2.5">
+                  <div className="flex items-center gap-1.5 font-bold text-white text-xs">
+                    <FlaskConical className="w-4 h-4 text-purple-400" />
+                    <span>Diagnostic Services ({diagnosticServices.length})</span>
+                  </div>
+                  <button onClick={() => setShowDiagServiceModal(true)} className="text-[10px] font-bold text-purple-400 bg-purple-500/10 px-2 py-0.5 rounded border border-purple-500/20">
+                    + Add
                   </button>
                 </div>
-                {labBookings.length === 0 ? (
-                  <p className="text-xs text-slate-500 py-4 text-center">No lab bookings recorded yet.</p>
-                ) : (
-                  <div className="space-y-2">
-                    {labBookings.slice(0, 4).map(b => (
-                      <div key={b.id} className="p-3 bg-slate-950 border border-slate-800 rounded-xl flex items-center justify-between text-xs">
-                        <div>
-                          <div className="font-bold text-white">{b.patient_name} (+880 {b.patient_phone})</div>
-                          <div className="text-[10px] text-slate-400">Pickup: {b.pickup_date}</div>
-                        </div>
-                        <span className="px-2 py-0.5 bg-cyan-500/20 text-cyan-400 border border-cyan-500/30 rounded text-[10px] font-bold">
-                          {b.status || 'Confirmed'}
-                        </span>
-                      </div>
-                    ))}
-                  </div>
-                )}
+                <div className="flex flex-wrap gap-1.5 max-h-36 overflow-y-auto pr-1">
+                  {diagnosticServices.map(ds => (
+                    <span key={ds.id} className="text-[11px] bg-slate-800/80 text-slate-300 px-2 py-0.5 rounded border border-slate-700/80 font-medium">
+                      {ds.name}
+                    </span>
+                  ))}
+                </div>
               </div>
 
             </div>
@@ -1137,8 +1044,8 @@ export default function AdminDashboardPage({ currentUser, onNavigate, onAdminLog
           </div>
         )}
 
-        {/* 1. HOSPITALS & BRANCHES TAB */}
-        {activeTab === 'chambers' && (
+        {/* 1. HOSPITALS TAB */}
+        {activeTab === 'hospitals' && (
           <div className="bg-slate-900 border border-slate-800 rounded-2xl overflow-hidden shadow-xl">
             <div className="p-5 border-b border-slate-800 flex flex-wrap items-center justify-between gap-4">
               <div className="relative flex-1 min-w-[240px]">
@@ -1152,7 +1059,7 @@ export default function AdminDashboardPage({ currentUser, onNavigate, onAdminLog
                 />
               </div>
               <button
-                onClick={() => handleOpenChamberModal()}
+                onClick={() => handleOpenHospitalModal()}
                 className="flex items-center gap-2 px-4 py-2.5 bg-emerald-600 hover:bg-emerald-500 text-white font-bold text-xs rounded-xl transition shadow-lg shadow-emerald-600/20"
               >
                 <Plus className="w-4 h-4" /> Add New Hospital Branch
@@ -1163,397 +1070,45 @@ export default function AdminDashboardPage({ currentUser, onNavigate, onAdminLog
               <table className="w-full text-left text-xs text-slate-300">
                 <thead className="bg-slate-950 text-slate-400 text-[11px] uppercase tracking-wider border-b border-slate-800">
                   <tr>
-                    <th className="py-3.5 px-4">Hospital & Branch Name</th>
-                    <th className="py-3.5 px-4">Facility Types</th>
+                    <th className="py-3.5 px-4">Hospital Name</th>
+                    <th className="py-3.5 px-4">Branch</th>
+                    <th className="py-3.5 px-4">Services & Facilities</th>
                     <th className="py-3.5 px-4">Location & City</th>
-                    <th className="py-3.5 px-4">Contact Phone</th>
                     <th className="py-3.5 px-4 text-right">Actions</th>
                   </tr>
                 </thead>
                 <tbody className="divide-y divide-slate-800/60">
-                  {chambers
-                    .filter(c => {
-                      const fullStr = `${c.hospital_name || ''} ${c.name} ${c.city} ${c.location}`.toLowerCase();
-                      return fullStr.includes(searchTerm.toLowerCase());
-                    })
-                    .map(ch => {
-                      const displayName = ch.hospital_name ? `${ch.hospital_name} - ${ch.name}` : ch.name;
-                      const facilities = ch.facility_types && ch.facility_types.length > 0 ? ch.facility_types : ['Hospital', 'Diagnostic Center'];
-
-                      return (
-                        <tr key={ch.id} className="hover:bg-slate-800/40 transition">
-                          <td className="py-4 px-4 font-bold text-white">
-                            <div className="text-sm text-emerald-400">{displayName}</div>
-                            <div className="text-slate-400 text-[11px] font-normal">{ch.tagline}</div>
-                          </td>
-                          <td className="py-4 px-4">
-                            <div className="flex flex-wrap gap-1">
-                              {facilities.map(f => (
-                                <span key={f} className="px-2 py-0.5 bg-teal-500/20 text-teal-300 border border-teal-500/30 rounded text-[10px] font-bold">
-                                  {f}
-                                </span>
-                              ))}
-                            </div>
-                          </td>
-                          <td className="py-4 px-4">
-                            <div className="text-slate-200">{ch.location}</div>
-                            <div className="text-slate-400 font-bold">{ch.city}</div>
-                          </td>
-                          <td className="py-4 px-4 font-mono text-slate-300">
-                            {ch.contact_phone}
-                          </td>
-                          <td className="py-4 px-4 text-right space-x-2 whitespace-nowrap">
-                            <button
-                              onClick={() => handleOpenChamberModal(ch)}
-                              className="p-2 bg-slate-800 hover:bg-slate-700 text-slate-300 rounded-lg transition"
-                              title="Edit Branch"
-                            >
-                              <Edit className="w-4 h-4" />
-                            </button>
-                            <button
-                              onClick={() => handleDeleteChamber(ch.id, displayName)}
-                              className="p-2 bg-rose-500/20 hover:bg-rose-500/30 text-rose-400 rounded-lg transition"
-                              title="Delete Branch"
-                            >
-                              <Trash2 className="w-4 h-4" />
-                            </button>
-                          </td>
-                        </tr>
-                      );
-                    })}
-                  {chambers.length === 0 && (
-                    <tr>
-                      <td colSpan="5" className="py-8 text-center text-slate-500">No branches added yet.</td>
-                    </tr>
-                  )}
-                </tbody>
-              </table>
-            </div>
-          </div>
-        )}
-
-        {/* 2. DOCTORS TAB */}
-        {activeTab === 'doctors' && (
-          <div className="bg-slate-900 border border-slate-800 rounded-2xl overflow-hidden shadow-xl">
-            <div className="p-5 border-b border-slate-800 flex flex-wrap items-center justify-between gap-4">
-              <div className="relative flex-1 min-w-[240px]">
-                <Search className="w-4 h-4 absolute left-3 top-3 text-slate-400" />
-                <input
-                  type="text"
-                  placeholder="Search doctor name or specialty..."
-                  value={searchTerm}
-                  onChange={(e) => setSearchTerm(e.target.value)}
-                  className="w-full bg-slate-950 border border-slate-800 rounded-xl pl-9 pr-4 py-2 text-xs text-white placeholder-slate-500 focus:outline-none focus:border-teal-500"
-                />
-              </div>
-              <button
-                onClick={() => handleOpenDoctorModal()}
-                className="flex items-center gap-2 px-4 py-2.5 bg-teal-600 hover:bg-teal-500 text-white font-bold text-xs rounded-xl transition shadow-lg shadow-teal-600/20"
-              >
-                <Plus className="w-4 h-4" /> Add Doctor (With Multi-Chamber & Schedules)
-              </button>
-            </div>
-
-            <div className="overflow-x-auto">
-              <table className="w-full text-left text-xs text-slate-300">
-                <thead className="bg-slate-950 text-slate-400 text-[11px] uppercase tracking-wider border-b border-slate-800">
-                  <tr>
-                    <th className="py-3.5 px-4">Doctor Profile</th>
-                    <th className="py-3.5 px-4">Specialties</th>
-                    <th className="py-3.5 px-4">Chamber Affiliations & Schedules</th>
-                    <th className="py-3.5 px-4 text-right">Actions</th>
-                  </tr>
-                </thead>
-                <tbody className="divide-y divide-slate-800/60">
-                  {doctors
-                    .filter(d => {
-                      const specNames = Array.isArray(d.specialties) ? d.specialties.map(s=>s.name||s).join(' ') : (d.specialty || '');
-                      return `${d.name} ${specNames}`.toLowerCase().includes(searchTerm.toLowerCase());
-                    })
-                    .map(doc => {
-                      const specs = Array.isArray(doc.specialties) 
-                        ? doc.specialties.map(s => s.name || s)
-                        : [doc.specialty || doc.specialty_details?.name || 'General Physician'];
-                      const affs = doc.affiliations || [];
-
-                      return (
-                        <tr key={doc.id} className="hover:bg-slate-800/40 transition">
-                          <td className="py-4 px-4 font-bold text-white">
-                            <div className="text-sm text-teal-300">{doc.name}</div>
-                            <div className="text-slate-400 text-[11px] font-normal">{doc.qualification}</div>
-                            <div className="text-[10px] text-slate-500 font-semibold">{doc.experience}</div>
-                          </td>
-                          <td className="py-4 px-4">
-                            <div className="flex flex-wrap gap-1">
-                              {specs.map(s => (
-                                <span key={s} className="px-2 py-0.5 bg-emerald-500/20 text-emerald-400 border border-emerald-500/30 rounded text-[10px] font-bold">
-                                  {s}
-                                </span>
-                              ))}
-                            </div>
-                          </td>
-                          <td className="py-4 px-4">
-                            {affs.length > 0 ? (
-                              <div className="space-y-1.5">
-                                {affs.map((a, i) => (
-                                  <div key={i} className="bg-slate-950 p-2 rounded-lg border border-slate-800 text-[11px]">
-                                    <div className="flex items-center justify-between font-bold text-slate-200">
-                                      <span>{a.branch_name || 'Medical Branch'}</span>
-                                      <span className={`px-1.5 py-0.5 rounded text-[10px] ${a.consultation_type === 'In-patient' ? 'bg-purple-500/20 text-purple-300' : 'bg-emerald-500/20 text-emerald-300'}`}>
-                                        {a.consultation_type} (৳{a.fee})
-                                      </span>
-                                    </div>
-                                    {a.schedules && a.schedules.length > 0 && (
-                                      <div className="text-[10px] text-slate-400 mt-1 flex flex-wrap gap-2">
-                                        {a.schedules.map((sch, sIdx) => (
-                                          <span key={sIdx}>• {sch.day_of_week} ({sch.start_time}-{sch.end_time})</span>
-                                        ))}
-                                      </div>
-                                    )}
-                                  </div>
-                                ))}
-                              </div>
-                            ) : (
-                              <span className="text-slate-500 italic">No affiliations set</span>
-                            )}
-                          </td>
-                          <td className="py-4 px-4 text-right space-x-2 whitespace-nowrap">
-                            <button
-                              onClick={() => handleOpenDoctorModal(doc)}
-                              className="p-2 bg-slate-800 hover:bg-slate-700 text-slate-300 rounded-lg transition"
-                              title="Edit Doctor & Affiliations"
-                            >
-                              <Edit className="w-4 h-4" />
-                            </button>
-                            <button
-                              onClick={() => handleDeleteDoctor(doc.id, doc.name)}
-                              className="p-2 bg-rose-500/20 hover:bg-rose-500/30 text-rose-400 rounded-lg transition"
-                              title="Delete Doctor"
-                            >
-                              <Trash2 className="w-4 h-4" />
-                            </button>
-                          </td>
-                        </tr>
-                      );
-                    })}
-                  {doctors.length === 0 && (
-                    <tr>
-                      <td colSpan="4" className="py-8 text-center text-slate-500">No doctors added.</td>
-                    </tr>
-                  )}
-                </tbody>
-              </table>
-            </div>
-          </div>
-        )}
-
-        {/* 3. DIAGNOSTIC BRANCH TEST PRICING TAB (WITH TASKS 1, 2, 3 IMPLEMENTED) */}
-        {activeTab === 'branch-tests' && (
-          <div className="bg-slate-900 border border-slate-800 rounded-2xl overflow-hidden shadow-xl space-y-4">
-            
-            {/* Header & Modal Action */}
-            <div className="p-5 border-b border-slate-800 flex flex-wrap items-center justify-between gap-4">
-              <div>
-                <h3 className="text-base font-bold text-white">Diagnostic Branch Test Pricing</h3>
-                <p className="text-xs text-slate-400">Assign pathology tests to specific hospital branches with auto-calculated discounts</p>
-              </div>
-              <button
-                onClick={() => handleOpenBranchTestModal()}
-                className="flex items-center gap-2 px-4 py-2.5 bg-teal-600 hover:bg-teal-500 text-white font-bold text-xs rounded-xl transition shadow-lg shadow-teal-600/20"
-              >
-                <Plus className="w-4 h-4" /> Assign Test Pricing To Branch
-              </button>
-            </div>
-
-            {/* TASK 3: FILTER BAR FOR DIAGNOSTIC BRANCH & TEST NAME */}
-            <div className="px-5 flex flex-wrap items-center gap-3">
-              <div className="flex items-center gap-2 text-xs text-slate-400 font-bold">
-                <Filter className="w-4 h-4 text-teal-400" />
-                <span>Filters:</span>
-              </div>
-
-              {/* Diagnostic Branch Filter */}
-              <div className="flex-1 min-w-[200px]">
-                <select
-                  value={branchTestBranchFilter}
-                  onChange={(e) => setBranchTestBranchFilter(e.target.value)}
-                  className="w-full bg-slate-950 border border-slate-800 rounded-xl px-3 py-2 text-xs text-white focus:outline-none focus:border-teal-500 font-semibold"
-                >
-                  <option value="">All Diagnostic Branches</option>
-                  {chambers.map(c => {
-                    const full = c.hospital_name ? `${c.hospital_name} - ${c.name}` : c.name;
-                    return <option key={c.id} value={full}>{full}</option>;
-                  })}
-                </select>
-              </div>
-
-              {/* Test Name Filter */}
-              <div className="flex-1 min-w-[200px]">
-                <select
-                  value={branchTestTestFilter}
-                  onChange={(e) => setBranchTestTestFilter(e.target.value)}
-                  className="w-full bg-slate-950 border border-slate-800 rounded-xl px-3 py-2 text-xs text-white focus:outline-none focus:border-teal-500 font-semibold"
-                >
-                  <option value="">All Pathology Tests</option>
-                  {tests.map(t => (
-                    <option key={t.id} value={t.name}>{t.name}</option>
-                  ))}
-                </select>
-              </div>
-
-              {(branchTestBranchFilter || branchTestTestFilter) && (
-                <button
-                  onClick={() => {
-                    setBranchTestBranchFilter('');
-                    setBranchTestTestFilter('');
-                  }}
-                  className="text-xs text-rose-400 hover:underline font-bold px-2 py-1"
-                >
-                  Reset Filters
-                </button>
-              )}
-            </div>
-
-            {/* Table */}
-            <div className="overflow-x-auto">
-              <table className="w-full text-left text-xs text-slate-300">
-                <thead className="bg-slate-950 text-slate-400 text-[11px] uppercase tracking-wider border-b border-slate-800">
-                  <tr>
-                    <th className="py-3.5 px-4">Hospital & Branch Name (Diagnostic Branch)</th>
-                    <th className="py-3.5 px-4">Test Name</th>
-                    <th className="py-3.5 px-4">Calculated Test Price</th>
-                    <th className="py-3.5 px-4">Report Delivery Calendar & Slot</th>
-                    <th className="py-3.5 px-4 text-right">Actions</th>
-                  </tr>
-                </thead>
-                <tbody className="divide-y divide-slate-800/60">
-                  {filteredBranchTests.map(bt => {
-                    {/* TASK 1: COMBINE HOSPITAL NAME + BRANCH NAME */}
-                    const bHospitalName = bt.hospital_name || (bt.branch?.hospital_name) || (bt.branch?.hospital?.name) || '';
-                    const bBranchName = bt.branch_name || (bt.branch?.name) || 'Diagnostic Center';
-                    const fullBranchDisplayName = bHospitalName ? `${bHospitalName} - ${bBranchName}` : bBranchName;
-                    
-                    const tName = bt.test_details?.name || (bt.test?.name) || 'Pathology Test';
-
-                    return (
-                      <tr key={bt.id} className="hover:bg-slate-800/40 transition">
-                        <td className="py-4 px-4 font-bold text-emerald-400">
-                          <div className="text-sm">{fullBranchDisplayName}</div>
-                        </td>
+                  {hospitals
+                    .filter(h => `${h.name} ${h.branch} ${h.city}`.toLowerCase().includes(searchTerm.toLowerCase()))
+                    .map(h => (
+                      <tr key={h.id} className="hover:bg-slate-800/40 transition">
                         <td className="py-4 px-4 font-bold text-white">
-                          <div>{tName}</div>
-                          {bt.discount && (
-                            <span className="inline-block mt-0.5 px-2 py-0.5 rounded bg-emerald-500/20 text-emerald-300 border border-emerald-500/30 text-[10px] font-bold">
-                              {bt.discount}
-                            </span>
-                          )}
+                          <div className="text-sm text-emerald-400">{h.name}</div>
+                          <div className="text-slate-400 text-[11px] font-normal">{h.tagline}</div>
                         </td>
-                        <td className="py-4 px-4 font-mono font-bold text-teal-300">
-                          <div className="text-base text-teal-300">৳{bt.price}</div>
-                          {bt.original_price && (
-                            <div className="line-through text-slate-500 text-xs">Original: ৳{bt.original_price}</div>
-                          )}
+                        {/* TASK 1: BRANCH FIELD DISPLAY */}
+                        <td className="py-4 px-4 font-bold text-teal-300">
+                          {h.branch || 'Main Branch'}
                         </td>
-                        <td className="py-4 px-4 text-slate-300">
-                          <div className="inline-flex items-center gap-1.5 px-2.5 py-1 rounded-lg bg-slate-950 border border-slate-800 text-[11px] font-semibold text-slate-200">
-                            <Calendar className="w-3.5 h-3.5 text-teal-400" />
-                            <span>{bt.report_time || 'Same Day Delivery'}</span>
+                        {/* TASK 5 & 6: CLICKABLE SERVICES DISPLAY */}
+                        <td className="py-4 px-4">
+                          <div className="flex flex-wrap gap-1">
+                            {(h.services || []).map((s, idx) => (
+                              <span key={s.id || idx} className="px-2 py-0.5 bg-teal-500/20 text-teal-300 border border-teal-500/30 rounded text-[10px] font-bold">
+                                {s.name || s}
+                              </span>
+                            ))}
                           </div>
                         </td>
-                        <td className="py-4 px-4 text-right space-x-2 whitespace-nowrap">
-                          <button
-                            onClick={() => handleOpenBranchTestModal(bt)}
-                            className="p-2 bg-slate-800 hover:bg-slate-700 text-slate-300 rounded-lg transition"
-                          >
-                            <Edit className="w-4 h-4" />
-                          </button>
-                          <button
-                            onClick={() => handleDeleteBranchTest(bt.id)}
-                            className="p-2 bg-rose-500/20 hover:bg-rose-500/30 text-rose-400 rounded-lg transition"
-                          >
-                            <Trash2 className="w-4 h-4" />
-                          </button>
-                        </td>
-                      </tr>
-                    );
-                  })}
-                  {filteredBranchTests.length === 0 && (
-                    <tr>
-                      <td colSpan="5" className="py-8 text-center text-slate-500">
-                        No diagnostic branch test offerings match your search criteria.
-                      </td>
-                    </tr>
-                  )}
-                </tbody>
-              </table>
-            </div>
-          </div>
-        )}
-
-        {/* 4. PATHOLOGY BASE TESTS TAB */}
-        {activeTab === 'tests' && (
-          <div className="bg-slate-900 border border-slate-800 rounded-2xl overflow-hidden shadow-xl">
-            <div className="p-5 border-b border-slate-800 flex flex-wrap items-center justify-between gap-4">
-              <div className="relative flex-1 min-w-[240px]">
-                <Search className="w-4 h-4 absolute left-3 top-3 text-slate-400" />
-                <input
-                  type="text"
-                  placeholder="Search test name..."
-                  value={searchTerm}
-                  onChange={(e) => setSearchTerm(e.target.value)}
-                  className="w-full bg-slate-950 border border-slate-800 rounded-xl pl-9 pr-4 py-2 text-xs text-white placeholder-slate-500 focus:outline-none focus:border-teal-500"
-                />
-              </div>
-              <button
-                onClick={() => handleOpenTestModal()}
-                className="flex items-center gap-2 px-4 py-2.5 bg-teal-600 hover:bg-teal-500 text-white font-bold text-xs rounded-xl transition shadow-lg shadow-teal-600/20"
-              >
-                <Plus className="w-4 h-4" /> Add Pathology Base Test
-              </button>
-            </div>
-
-            <div className="overflow-x-auto">
-              <table className="w-full text-left text-xs text-slate-300">
-                <thead className="bg-slate-950 text-slate-400 text-[11px] uppercase tracking-wider border-b border-slate-800">
-                  <tr>
-                    <th className="py-3.5 px-4">Test Name</th>
-                    <th className="py-3.5 px-4">Category</th>
-                    <th className="py-3.5 px-4">Fasting Required</th>
-                    <th className="py-3.5 px-4 text-right">Actions</th>
-                  </tr>
-                </thead>
-                <tbody className="divide-y divide-slate-800/60">
-                  {tests
-                    .filter(t => t.name.toLowerCase().includes(searchTerm.toLowerCase()))
-                    .map(t => (
-                      <tr key={t.id} className="hover:bg-slate-800/40 transition">
-                        <td className="py-4 px-4 font-bold text-white">
-                          <div>{t.name}</div>
-                          <div className="text-[11px] text-slate-400 font-normal">{t.description}</div>
-                        </td>
                         <td className="py-4 px-4">
-                          <span className="px-2.5 py-1 bg-teal-500/10 text-teal-400 rounded-md border border-teal-500/20 font-bold">
-                            {t.category}
-                          </span>
-                        </td>
-                        <td className="py-4 px-4">
-                          {t.fasting_required ? (
-                            <span className="text-amber-400 font-semibold">Fasting Required</span>
-                          ) : (
-                            <span className="text-slate-400">No Fasting</span>
-                          )}
+                          <div className="text-slate-200">{h.address}</div>
+                          <div className="text-slate-400 font-bold">{h.city}</div>
                         </td>
                         <td className="py-4 px-4 text-right space-x-2 whitespace-nowrap">
-                          <button
-                            onClick={() => handleOpenTestModal(t)}
-                            className="p-2 bg-slate-800 hover:bg-slate-700 text-slate-300 rounded-lg transition"
-                          >
+                          <button onClick={() => handleOpenHospitalModal(h)} className="p-2 bg-slate-800 text-slate-300 rounded-lg hover:bg-slate-700">
                             <Edit className="w-4 h-4" />
                           </button>
-                          <button
-                            onClick={() => handleDeleteTest(t.id, t.name)}
-                            className="p-2 bg-rose-500/20 hover:bg-rose-500/30 text-rose-400 rounded-lg transition"
-                          >
+                          <button onClick={() => handleDeleteHospital(h.id, h.name)} className="p-2 bg-rose-500/20 text-rose-400 rounded-lg hover:bg-rose-500/30">
                             <Trash2 className="w-4 h-4" />
                           </button>
                         </td>
@@ -1565,131 +1120,25 @@ export default function AdminDashboardPage({ currentUser, onNavigate, onAdminLog
           </div>
         )}
 
-        {/* 5. DOCTOR SPECIALTIES TAB */}
-        {activeTab === 'doctor-specs' && (
+        {/* TASK 3: DIAGNOSTICS & BRANCHES TAB */}
+        {activeTab === 'diagnostics' && (
           <div className="bg-slate-900 border border-slate-800 rounded-2xl overflow-hidden shadow-xl">
             <div className="p-5 border-b border-slate-800 flex flex-wrap items-center justify-between gap-4">
-              <div>
-                <h3 className="text-base font-bold text-white">Doctor Specialties Management</h3>
-                <p className="text-xs text-slate-400">Clinical disciplines for filtering visiting doctors across OPD chambers</p>
+              <div className="relative flex-1 min-w-[240px]">
+                <Search className="w-4 h-4 absolute left-3 top-3 text-slate-400" />
+                <input
+                  type="text"
+                  placeholder="Search diagnostic center name or branch..."
+                  value={searchTerm}
+                  onChange={(e) => setSearchTerm(e.target.value)}
+                  className="w-full bg-slate-950 border border-slate-800 rounded-xl pl-9 pr-4 py-2 text-xs text-white placeholder-slate-500 focus:outline-none focus:border-cyan-500"
+                />
               </div>
               <button
-                onClick={() => handleOpenDoctorSpecModal()}
-                className="flex items-center gap-2 px-4 py-2.5 bg-teal-600 hover:bg-teal-500 text-white font-bold text-xs rounded-xl transition shadow-lg shadow-teal-600/20"
-              >
-                <Plus className="w-4 h-4" /> Add Doctor Specialty
-              </button>
-            </div>
-
-            <div className="overflow-x-auto">
-              <table className="w-full text-left text-xs text-slate-300">
-                <thead className="bg-slate-950 text-slate-400 text-[11px] uppercase tracking-wider border-b border-slate-800">
-                  <tr>
-                    <th className="py-3.5 px-4">Specialty ID</th>
-                    <th className="py-3.5 px-4">Specialty Name</th>
-                    <th className="py-3.5 px-4">Icon Token</th>
-                    <th className="py-3.5 px-4">Description</th>
-                    <th className="py-3.5 px-4 text-right">Actions</th>
-                  </tr>
-                </thead>
-                <tbody className="divide-y divide-slate-800/60">
-                  {doctorSpecialties.map(s => (
-                    <tr key={s.id} className="hover:bg-slate-800/40 transition">
-                      <td className="py-3.5 px-4 font-mono text-teal-400 font-bold">{s.id}</td>
-                      <td className="py-3.5 px-4 font-bold text-white">{s.name}</td>
-                      <td className="py-3.5 px-4 font-mono text-slate-400">{s.icon || 'Stethoscope'}</td>
-                      <td className="py-3.5 px-4 text-slate-400">{s.description}</td>
-                      <td className="py-3.5 px-4 text-right space-x-2 whitespace-nowrap">
-                        <button
-                          onClick={() => handleOpenDoctorSpecModal(s)}
-                          className="p-2 bg-slate-800 hover:bg-slate-700 text-slate-300 rounded-lg transition"
-                        >
-                          <Edit className="w-4 h-4" />
-                        </button>
-                        <button
-                          onClick={() => handleDeleteDoctorSpec(s.id, s.name)}
-                          className="p-2 bg-rose-500/20 hover:bg-rose-500/30 text-rose-400 rounded-lg transition"
-                        >
-                          <Trash2 className="w-4 h-4" />
-                        </button>
-                      </td>
-                    </tr>
-                  ))}
-                </tbody>
-              </table>
-            </div>
-          </div>
-        )}
-
-        {/* 6. HOSPITAL SPECIALTIES TAB */}
-        {activeTab === 'hospital-specs' && (
-          <div className="bg-slate-900 border border-slate-800 rounded-2xl overflow-hidden shadow-xl">
-            <div className="p-5 border-b border-slate-800 flex flex-wrap items-center justify-between gap-4">
-              <div>
-                <h3 className="text-base font-bold text-white">Hospital Categories</h3>
-                <p className="text-xs text-slate-400">Categories for filtering partner hospital and diagnostic center networks</p>
-              </div>
-              <button
-                onClick={() => handleOpenHospitalSpecModal()}
-                className="flex items-center gap-2 px-4 py-2.5 bg-emerald-600 hover:bg-emerald-500 text-white font-bold text-xs rounded-xl transition shadow-lg shadow-emerald-600/20"
-              >
-                <Plus className="w-4 h-4" /> Add Hospital Category
-              </button>
-            </div>
-
-            <div className="overflow-x-auto">
-              <table className="w-full text-left text-xs text-slate-300">
-                <thead className="bg-slate-950 text-slate-400 text-[11px] uppercase tracking-wider border-b border-slate-800">
-                  <tr>
-                    <th className="py-3.5 px-4">Category ID</th>
-                    <th className="py-3.5 px-4">Category Name</th>
-                    <th className="py-3.5 px-4">Icon Token</th>
-                    <th className="py-3.5 px-4">Description</th>
-                    <th className="py-3.5 px-4 text-right">Actions</th>
-                  </tr>
-                </thead>
-                <tbody className="divide-y divide-slate-800/60">
-                  {hospitalSpecialties.map(hs => (
-                    <tr key={hs.id} className="hover:bg-slate-800/40 transition">
-                      <td className="py-3.5 px-4 font-mono text-emerald-400 font-bold">{hs.id}</td>
-                      <td className="py-3.5 px-4 font-bold text-white">{hs.name}</td>
-                      <td className="py-3.5 px-4 font-mono text-slate-400">{hs.icon || 'Building2'}</td>
-                      <td className="py-3.5 px-4 text-slate-400">{hs.description}</td>
-                      <td className="py-3.5 px-4 text-right space-x-2 whitespace-nowrap">
-                        <button
-                          onClick={() => handleOpenHospitalSpecModal(hs)}
-                          className="p-2 bg-slate-800 hover:bg-slate-700 text-slate-300 rounded-lg transition"
-                        >
-                          <Edit className="w-4 h-4" />
-                        </button>
-                        <button
-                          onClick={() => handleDeleteHospitalSpec(hs.id, hs.name)}
-                          className="p-2 bg-rose-500/20 hover:bg-rose-500/30 text-rose-400 rounded-lg transition"
-                        >
-                          <Trash2 className="w-4 h-4" />
-                        </button>
-                      </td>
-                    </tr>
-                  ))}
-                </tbody>
-              </table>
-            </div>
-          </div>
-        )}
-
-        {/* 7. TEST CATEGORIES TAB */}
-        {activeTab === 'test-cats' && (
-          <div className="bg-slate-900 border border-slate-800 rounded-2xl overflow-hidden shadow-xl">
-            <div className="p-5 border-b border-slate-800 flex flex-wrap items-center justify-between gap-4">
-              <div>
-                <h3 className="text-base font-bold text-white">Pathology Test Categories</h3>
-                <p className="text-xs text-slate-400">Grouping categories for diagnostic & pathology lab test packages</p>
-              </div>
-              <button
-                onClick={() => handleOpenTestCatModal()}
+                onClick={() => handleOpenDiagnosticModal()}
                 className="flex items-center gap-2 px-4 py-2.5 bg-cyan-600 hover:bg-cyan-500 text-white font-bold text-xs rounded-xl transition shadow-lg shadow-cyan-600/20"
               >
-                <Plus className="w-4 h-4" /> Add Test Category
+                <Plus className="w-4 h-4" /> Add New Diagnostics / Branch
               </button>
             </div>
 
@@ -1697,36 +1146,48 @@ export default function AdminDashboardPage({ currentUser, onNavigate, onAdminLog
               <table className="w-full text-left text-xs text-slate-300">
                 <thead className="bg-slate-950 text-slate-400 text-[11px] uppercase tracking-wider border-b border-slate-800">
                   <tr>
-                    <th className="py-3.5 px-4">Category ID</th>
-                    <th className="py-3.5 px-4">Category Name</th>
-                    <th className="py-3.5 px-4">Icon Token</th>
-                    <th className="py-3.5 px-4">Description</th>
+                    <th className="py-3.5 px-4">Diagnostic Center Name</th>
+                    <th className="py-3.5 px-4">Branch</th>
+                    <th className="py-3.5 px-4">Services & Facilities</th>
+                    <th className="py-3.5 px-4">District / Division</th>
                     <th className="py-3.5 px-4 text-right">Actions</th>
                   </tr>
                 </thead>
                 <tbody className="divide-y divide-slate-800/60">
-                  {testCategories.map(tc => (
-                    <tr key={tc.id} className="hover:bg-slate-800/40 transition">
-                      <td className="py-3.5 px-4 font-mono text-cyan-400 font-bold">{tc.id}</td>
-                      <td className="py-3.5 px-4 font-bold text-white">{tc.name}</td>
-                      <td className="py-3.5 px-4 font-mono text-slate-400">{tc.icon || 'FlaskConical'}</td>
-                      <td className="py-3.5 px-4 text-slate-400">{tc.description}</td>
-                      <td className="py-3.5 px-4 text-right space-x-2 whitespace-nowrap">
-                        <button
-                          onClick={() => handleOpenTestCatModal(tc)}
-                          className="p-2 bg-slate-800 hover:bg-slate-700 text-slate-300 rounded-lg transition"
-                        >
-                          <Edit className="w-4 h-4" />
-                        </button>
-                        <button
-                          onClick={() => handleDeleteTestCat(tc.id, tc.name)}
-                          className="p-2 bg-rose-500/20 hover:bg-rose-500/30 text-rose-400 rounded-lg transition"
-                        >
-                          <Trash2 className="w-4 h-4" />
-                        </button>
-                      </td>
-                    </tr>
-                  ))}
+                  {diagnosticCenters
+                    .filter(dc => `${dc.name} ${dc.branch} ${dc.district}`.toLowerCase().includes(searchTerm.toLowerCase()))
+                    .map(dc => (
+                      <tr key={dc.id} className="hover:bg-slate-800/40 transition">
+                        <td className="py-4 px-4 font-bold text-white">
+                          <div className="text-sm text-cyan-400">{dc.name}</div>
+                          <div className="text-slate-400 text-[11px] font-normal">{dc.tagline}</div>
+                        </td>
+                        <td className="py-4 px-4 font-bold text-teal-300">
+                          {dc.branch || 'Main Branch'}
+                        </td>
+                        <td className="py-4 px-4">
+                          <div className="flex flex-wrap gap-1">
+                            {(dc.services || []).map((s, idx) => (
+                              <span key={s.id || idx} className="px-2 py-0.5 bg-cyan-500/20 text-cyan-300 border border-cyan-500/30 rounded text-[10px] font-bold">
+                                {s.name || s}
+                              </span>
+                            ))}
+                          </div>
+                        </td>
+                        <td className="py-4 px-4">
+                          <div className="text-slate-200">{dc.address}</div>
+                          <div className="text-slate-400 font-bold">{dc.district}</div>
+                        </td>
+                        <td className="py-4 px-4 text-right space-x-2 whitespace-nowrap">
+                          <button onClick={() => handleOpenDiagnosticModal(dc)} className="p-2 bg-slate-800 text-slate-300 rounded-lg hover:bg-slate-700">
+                            <Edit className="w-4 h-4" />
+                          </button>
+                          <button onClick={() => handleDeleteDiagnostic(dc.id, dc.name)} className="p-2 bg-rose-500/20 text-rose-400 rounded-lg hover:bg-rose-500/30">
+                            <Trash2 className="w-4 h-4" />
+                          </button>
+                        </td>
+                      </tr>
+                    ))}
                 </tbody>
               </table>
             </div>
@@ -1735,637 +1196,98 @@ export default function AdminDashboardPage({ currentUser, onNavigate, onAdminLog
 
       </main>
 
-      {/* --- HOSPITAL / BRANCH MODAL --- */}
-      {showChamberModal && (
-        <div className="fixed inset-0 z-50 bg-slate-950/80 backdrop-blur-sm flex items-center justify-center p-4">
-          <div className="bg-slate-900 border border-slate-800 rounded-2xl max-w-lg w-full max-h-[90vh] overflow-y-auto p-6 shadow-2xl space-y-4">
-            <h3 className="text-lg font-bold text-white">
-              {editingChamber ? 'Edit Hospital Branch' : 'Add New Hospital Branch'}
-            </h3>
-            
-            <form onSubmit={handleSaveChamber} className="space-y-4 text-xs">
-              <div>
-                <label className="block text-slate-300 font-bold mb-1">1. Hospital Group Name</label>
-                <input
-                  type="text"
-                  required
-                  placeholder="e.g. Ibn Sina Healthcare Group / Square Hospital"
-                  value={chamberForm.hospital_name}
-                  onChange={e => setChamberForm({...chamberForm, hospital_name: e.target.value})}
-                  className="w-full bg-slate-950 border border-slate-800 rounded-xl px-3.5 py-2.5 text-white focus:outline-none focus:border-teal-500 font-semibold"
-                />
-              </div>
+      {/* MODAL: ADD / EDIT HOSPITAL */}
+      {showHospitalModal && (
+        <div className="fixed inset-0 z-50 bg-slate-950/80 backdrop-blur-md flex items-center justify-center p-4 overflow-y-auto">
+          <div className="bg-slate-900 border border-slate-800 rounded-3xl p-6 max-w-2xl w-full space-y-4 my-8 shadow-2xl">
+            <div className="flex items-center justify-between border-b border-slate-800 pb-3">
+              <h3 className="text-lg font-bold text-white">
+                {editingHospital ? 'Edit Hospital' : 'Add New Hospital Branch'}
+              </h3>
+              <button onClick={() => setShowHospitalModal(false)} className="text-slate-400 hover:text-white">
+                <XCircle className="w-5 h-5" />
+              </button>
+            </div>
 
-              <div>
-                <label className="block text-slate-300 font-bold mb-1">Hospital Specialty / Category</label>
-                <select
-                  value={chamberForm.specialtyCategory || 'multispecialty'}
-                  onChange={e => setChamberForm({...chamberForm, specialtyCategory: e.target.value})}
-                  className="w-full bg-slate-950 border border-slate-800 rounded-xl px-3.5 py-2.5 text-white focus:outline-none focus:border-emerald-500 font-semibold"
-                >
-                  {hospitalSpecialties.map(hs => (
-                    <option key={hs.id} value={hs.id}>{hs.name}</option>
-                  ))}
-                </select>
-              </div>
-
-              <div className="grid grid-cols-2 gap-3">
+            <form onSubmit={handleSaveHospital} className="space-y-4 text-xs">
+              <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
                 <div>
-                  <label className="block text-slate-300 font-bold mb-1">2. City Location</label>
-                  <select
-                    value={chamberForm.city}
-                    onChange={e => {
-                      const newCity = e.target.value;
-                      const defaultBranch = CITY_THANAS[newCity] ? CITY_THANAS[newCity][0] : 'Main Branch';
-                      setChamberForm({
-                        ...chamberForm, 
-                        city: newCity,
-                        branch_name: defaultBranch,
-                        isCustomBranch: false
-                      });
-                    }}
-                    className="w-full bg-slate-950 border border-slate-800 rounded-xl px-3 py-2.5 text-white focus:outline-none focus:border-teal-500 font-semibold"
-                  >
-                    {Object.keys(CITY_THANAS).map(c => (
-                      <option key={c} value={c}>{c}</option>
-                    ))}
-                  </select>
-                </div>
-
-                <div>
-                  <label className="block text-slate-300 font-bold mb-1">3. Branch Thana / Area</label>
-                  {!chamberForm.isCustomBranch ? (
-                    <select
-                      value={chamberForm.branch_name}
-                      onChange={e => {
-                        if (e.target.value === '__custom__') {
-                          setChamberForm({...chamberForm, isCustomBranch: true, customBranchName: ''});
-                        } else {
-                          setChamberForm({...chamberForm, branch_name: e.target.value});
-                        }
-                      }}
-                      className="w-full bg-slate-950 border border-slate-800 rounded-xl px-3 py-2.5 text-white focus:outline-none focus:border-teal-500 font-semibold"
-                    >
-                      {(CITY_THANAS[chamberForm.city] || []).map(t => (
-                        <option key={t} value={`${t} Branch`}>{t} Branch</option>
-                      ))}
-                      <option value="__custom__">+ Enter Custom Branch Name...</option>
-                    </select>
-                  ) : (
-                    <div className="flex items-center gap-1">
-                      <input
-                        type="text"
-                        required
-                        placeholder="e.g. South City Branch"
-                        value={chamberForm.customBranchName}
-                        onChange={e => setChamberForm({...chamberForm, customBranchName: e.target.value})}
-                        className="w-full bg-slate-950 border border-slate-800 rounded-xl px-3 py-2 text-white focus:outline-none focus:border-teal-500"
-                      />
-                      <button
-                        type="button"
-                        onClick={() => setChamberForm({...chamberForm, isCustomBranch: false})}
-                        className="text-[10px] text-teal-400 underline shrink-0"
-                      >
-                        List
-                      </button>
-                    </div>
-                  )}
-                </div>
-              </div>
-
-              <div>
-                <label className="block text-slate-300 font-bold mb-1">Street Address Location</label>
-                <input
-                  type="text"
-                  required
-                  placeholder="House 48, Road 9/A, Dhanmondi, Dhaka"
-                  value={chamberForm.location}
-                  onChange={e => setChamberForm({...chamberForm, location: e.target.value})}
-                  className="w-full bg-slate-950 border border-slate-800 rounded-xl px-3 py-2 text-white focus:outline-none focus:border-teal-500"
-                />
-              </div>
-
-              <div>
-                <label className="block text-slate-300 font-bold mb-1">Facility Capabilities</label>
-                <div className="flex items-center gap-4 text-xs">
-                  {['Hospital', 'Diagnostic Center', 'Standalone Chamber'].map(fType => (
-                    <label key={fType} className="flex items-center gap-1.5 text-slate-300 cursor-pointer">
-                      <input
-                        type="checkbox"
-                        checked={chamberForm.facility_types.includes(fType)}
-                        onChange={e => {
-                          const updated = e.target.checked
-                            ? [...chamberForm.facility_types, fType]
-                            : chamberForm.facility_types.filter(t => t !== fType);
-                          setChamberForm({...chamberForm, facility_types: updated});
-                        }}
-                        className="rounded text-teal-500 focus:ring-teal-500"
-                      />
-                      <span>{fType}</span>
-                    </label>
-                  ))}
-                </div>
-              </div>
-
-              <div className="grid grid-cols-2 gap-3">
-                <div>
-                  <label className="block text-slate-400 mb-1">Contact Phone</label>
+                  <label className="block text-slate-300 font-semibold mb-1">Hospital Name *</label>
                   <input
                     type="text"
                     required
-                    value={chamberForm.contact_phone}
-                    onChange={e => setChamberForm({...chamberForm, contact_phone: e.target.value})}
+                    value={hospitalForm.name}
+                    onChange={e => setHospitalForm({ ...hospitalForm, name: e.target.value })}
                     className="w-full bg-slate-950 border border-slate-800 rounded-xl px-3 py-2 text-white"
                   />
                 </div>
+                {/* TASK 1: BRANCH FIELD */}
                 <div>
-                  <label className="block text-slate-400 mb-1">Opening Hours</label>
+                  <label className="block text-slate-300 font-semibold mb-1">Branch Name *</label>
                   <input
                     type="text"
                     required
-                    value={chamberForm.open_timing}
-                    onChange={e => setChamberForm({...chamberForm, open_timing: e.target.value})}
+                    placeholder="e.g. Dhanmondi Branch"
+                    value={hospitalForm.branch}
+                    onChange={e => setHospitalForm({ ...hospitalForm, branch: e.target.value })}
                     className="w-full bg-slate-950 border border-slate-800 rounded-xl px-3 py-2 text-white"
                   />
                 </div>
               </div>
 
+              {/* TASK 6: CLICKABLE HOSPITAL SERVICES OPTIONS */}
               <div>
-                <label className="block text-slate-400 mb-1">Services & Facilities (Comma Separated)</label>
-                <input
-                  type="text"
-                  value={chamberForm.servicesStr}
-                  onChange={e => setChamberForm({...chamberForm, servicesStr: e.target.value})}
-                  className="w-full bg-slate-950 border border-slate-800 rounded-xl px-3 py-2 text-white font-mono"
-                />
-              </div>
-
-              <div className="flex justify-end gap-3 pt-4 border-t border-slate-800">
-                <button
-                  type="button"
-                  onClick={() => setShowChamberModal(false)}
-                  className="px-4 py-2 bg-slate-800 text-slate-300 rounded-xl hover:bg-slate-700"
-                >
-                  Cancel
-                </button>
-                <button
-                  type="submit"
-                  className="px-5 py-2 bg-emerald-600 hover:bg-emerald-500 text-white font-bold rounded-xl"
-                >
-                  Save Branch
-                </button>
-              </div>
-            </form>
-          </div>
-        </div>
-      )}
-
-      {/* --- DIAGNOSTIC BRANCH TEST MODAL (WITH TASK 2 CALENDAR/SLOT AND TASK 4 AUTO-CALCULATION) --- */}
-      {showBranchTestModal && (
-        <div className="fixed inset-0 z-50 bg-slate-950/80 backdrop-blur-sm flex items-center justify-center p-4">
-          <div className="bg-slate-900 border border-slate-800 rounded-2xl max-w-lg w-full p-6 shadow-2xl space-y-4">
-            <h3 className="text-lg font-bold text-white">Assign Test Pricing To Diagnostic Branch</h3>
-            
-            <form onSubmit={handleSaveBranchTest} className="space-y-4 text-xs">
-              <div>
-                <label className="block text-slate-300 font-bold mb-1">Select Diagnostic Branch</label>
-                <select
-                  value={branchTestForm.branch}
-                  onChange={e => setBranchTestForm({...branchTestForm, branch: e.target.value})}
-                  className="w-full bg-slate-950 border border-slate-800 rounded-xl px-3.5 py-2.5 text-white font-semibold"
-                >
-                  {chambers.map(c => (
-                    <option key={c.id} value={c.id}>
-                      {c.hospital_name ? `${c.hospital_name} - ${c.name}` : c.name} ({c.city})
-                    </option>
-                  ))}
-                </select>
-              </div>
-
-              <div>
-                <label className="block text-slate-300 font-bold mb-1">Select Pathology Test</label>
-                <select
-                  value={branchTestForm.test}
-                  onChange={e => setBranchTestForm({...branchTestForm, test: e.target.value})}
-                  className="w-full bg-slate-950 border border-slate-800 rounded-xl px-3.5 py-2.5 text-white font-semibold"
-                >
-                  {tests.map(t => (
-                    <option key={t.id} value={t.id}>{t.name} ({t.category})</option>
-                  ))}
-                </select>
-              </div>
-
-              {/* TASK 4: AUTO CALCULATED PRICE FROM ORIGINAL PRICE AND DISCOUNT */}
-              <div className="grid grid-cols-2 gap-3 bg-slate-950 p-3 rounded-xl border border-slate-800">
-                <div>
-                  <label className="block text-slate-300 font-bold mb-1">Original Price (BDT)</label>
-                  <input
-                    type="number"
-                    required
-                    placeholder="700"
-                    value={branchTestForm.original_price}
-                    onChange={e => {
-                      const newOrig = e.target.value;
-                      const calculated = calculateFinalPrice(newOrig, branchTestForm.discount);
-                      setBranchTestForm({
-                        ...branchTestForm, 
-                        original_price: newOrig,
-                        price: calculated || branchTestForm.price
-                      });
-                    }}
-                    className="w-full bg-slate-900 border border-slate-800 rounded-xl px-3 py-2 text-white font-mono"
-                  />
-                </div>
-
-                <div>
-                  <label className="block text-slate-300 font-bold mb-1">Discount Tag (% or BDT)</label>
-                  <input
-                    type="text"
-                    placeholder="25% OFF / 150 BDT"
-                    value={branchTestForm.discount}
-                    onChange={e => {
-                      const newDisc = e.target.value;
-                      const calculated = calculateFinalPrice(branchTestForm.original_price, newDisc);
-                      setBranchTestForm({
-                        ...branchTestForm, 
-                        discount: newDisc,
-                        price: calculated || branchTestForm.price
-                      });
-                    }}
-                    className="w-full bg-slate-900 border border-slate-800 rounded-xl px-3 py-2 text-white"
-                  />
-                </div>
-
-                <div className="col-span-2 pt-2 border-t border-slate-800 flex items-center justify-between">
-                  <span className="text-slate-400 font-bold flex items-center gap-1.5">
-                    <Calculator className="w-4 h-4 text-teal-400" />
-                    Calculated Final Price:
-                  </span>
-                  <div className="flex items-center gap-2">
-                    <input
-                      type="number"
-                      required
-                      value={branchTestForm.price}
-                      onChange={e => setBranchTestForm({...branchTestForm, price: e.target.value})}
-                      className="w-28 bg-slate-900 border border-teal-500/50 rounded-xl px-3 py-1.5 text-teal-300 font-mono font-bold text-sm text-right focus:outline-none"
-                    />
-                    <span className="text-teal-400 font-bold">BDT</span>
-                  </div>
-                </div>
-              </div>
-
-              {/* TASK 2: REPORT PROCESSING TIME CALENDAR & TIME SLOT */}
-              <div className="grid grid-cols-2 gap-3 bg-slate-950 p-3 rounded-xl border border-slate-800">
-                <div>
-                  <label className="block text-slate-300 font-bold mb-1 flex items-center gap-1">
-                    <Calendar className="w-3.5 h-3.5 text-teal-400" />
-                    Report Delivery Date
-                  </label>
-                  <input
-                    type="date"
-                    required
-                    value={branchTestForm.report_delivery_date}
-                    onChange={e => setBranchTestForm({...branchTestForm, report_delivery_date: e.target.value})}
-                    className="w-full bg-slate-900 border border-slate-800 rounded-xl px-3 py-2 text-white font-mono"
-                  />
-                </div>
-
-                <div>
-                  <label className="block text-slate-300 font-bold mb-1 flex items-center gap-1">
-                    <Clock className="w-3.5 h-3.5 text-teal-400" />
-                    Time Slot
-                  </label>
-                  <select
-                    value={branchTestForm.report_time_slot}
-                    onChange={e => setBranchTestForm({...branchTestForm, report_time_slot: e.target.value})}
-                    className="w-full bg-slate-900 border border-slate-800 rounded-xl px-3 py-2 text-white font-semibold"
-                  >
-                    <option value="Same Day Morning (10:00 AM - 01:00 PM)">Morning (10:00 AM - 01:00 PM)</option>
-                    <option value="Same Day Afternoon (02:00 PM - 05:00 PM)">Afternoon (02:00 PM - 05:00 PM)</option>
-                    <option value="05:00 PM - 09:00 PM">Evening (05:00 PM - 09:00 PM)</option>
-                    <option value="Next Day Morning (10:00 AM)">Next Day Morning (10:00 AM)</option>
-                    <option value="Within 24 Hours">Within 24 Hours</option>
-                  </select>
-                </div>
-              </div>
-
-              <div className="flex justify-end gap-3 pt-4 border-t border-slate-800">
-                <button
-                  type="button"
-                  onClick={() => setShowBranchTestModal(false)}
-                  className="px-4 py-2 bg-slate-800 text-slate-300 rounded-xl hover:bg-slate-700"
-                >
-                  Cancel
-                </button>
-                <button
-                  type="submit"
-                  className="px-5 py-2 bg-teal-600 hover:bg-teal-500 text-white font-bold rounded-xl"
-                >
-                  Save Test Pricing
-                </button>
-              </div>
-            </form>
-          </div>
-        </div>
-      )}
-
-      {/* --- DOCTOR MODAL (MULTI-SPECIALTY, MULTI-CHAMBER & TASK 4 AUTO-CALCULATED DOCTOR FEE) --- */}
-      {showDoctorModal && (
-        <div className="fixed inset-0 z-50 bg-slate-950/80 backdrop-blur-sm flex items-center justify-center p-4">
-          <div className="bg-slate-900 border border-slate-800 rounded-2xl max-w-2xl w-full max-h-[90vh] overflow-y-auto p-6 shadow-2xl space-y-5">
-            <h3 className="text-lg font-bold text-white">
-              {editingDoctor ? 'Edit Doctor & Multi-Chamber Schedules' : 'Add New Doctor (Multi-Specialty & Multi-Chamber)'}
-            </h3>
-
-            <form onSubmit={handleSaveDoctor} className="space-y-5 text-xs">
-              
-              <div>
-                <label className="block text-slate-300 font-bold mb-1">Doctor Name</label>
-                <input
-                  type="text"
-                  required
-                  placeholder="e.g. Prof. Dr. A. K. M. Fazlul Haque"
-                  value={doctorForm.name}
-                  onChange={e => setDoctorForm({...doctorForm, name: e.target.value})}
-                  className="w-full bg-slate-950 border border-slate-800 rounded-xl px-3.5 py-2.5 text-white font-semibold"
-                />
-              </div>
-
-              <div className="grid grid-cols-2 gap-3">
-                <div>
-                  <label className="block text-slate-300 font-bold mb-1">Qualifications</label>
-                  <input
-                    type="text"
-                    required
-                    placeholder="MBBS, FCPS (Medicine), MD (Cardiology)"
-                    value={doctorForm.qualification}
-                    onChange={e => setDoctorForm({...doctorForm, qualification: e.target.value})}
-                    className="w-full bg-slate-950 border border-slate-800 rounded-xl px-3 py-2 text-white"
-                  />
-                </div>
-                <div>
-                  <label className="block text-slate-300 font-bold mb-1">Experience</label>
-                  <input
-                    type="text"
-                    required
-                    placeholder="15+ Yrs Exp."
-                    value={doctorForm.experience}
-                    onChange={e => setDoctorForm({...doctorForm, experience: e.target.value})}
-                    className="w-full bg-slate-950 border border-slate-800 rounded-xl px-3 py-2 text-white"
-                  />
-                </div>
-              </div>
-
-              {/* Multi Specialties Checkbox Selection */}
-              <div>
-                <label className="block text-slate-300 font-bold mb-2">
-                  Doctor Specialties (Select Multiple):
-                </label>
-                <div className="grid grid-cols-2 sm:grid-cols-3 gap-2 bg-slate-950 p-3 rounded-xl border border-slate-800 max-h-36 overflow-y-auto">
-                  {specialties.map(s => {
-                    const isChecked = doctorForm.selectedSpecialties.includes(s.id);
+                <label className="block text-slate-300 font-semibold mb-1.5">Services & Facilities (Click to Select / Deselect) *</label>
+                <div className="flex flex-wrap gap-2 p-3 bg-slate-950 border border-slate-800 rounded-xl max-h-44 overflow-y-auto">
+                  {hospitalServices.map(srv => {
+                    const isSelected = hospitalForm.service_ids.includes(srv.id);
                     return (
-                      <label key={s.id} className="flex items-center gap-2 text-slate-300 hover:text-white cursor-pointer select-none">
-                        <input
-                          type="checkbox"
-                          checked={isChecked}
-                          onChange={() => handleToggleSpecialty(s.id)}
-                          className="rounded text-teal-500 focus:ring-teal-500"
-                        />
-                        <span className="font-semibold">{s.name}</span>
-                      </label>
+                      <button
+                        key={srv.id}
+                        type="button"
+                        onClick={() => toggleHospitalServiceSelection(srv.id)}
+                        className={`px-3 py-1.5 rounded-xl border text-xs font-bold transition flex items-center gap-1.5 ${
+                          isSelected 
+                            ? 'bg-emerald-500/20 text-emerald-300 border-emerald-500/50 shadow-sm shadow-emerald-500/20' 
+                            : 'bg-slate-900 text-slate-400 border-slate-800 hover:border-slate-700 hover:text-slate-200'
+                        }`}
+                      >
+                        <CheckCircle className={`w-3.5 h-3.5 ${isSelected ? 'opacity-100 text-emerald-400' : 'opacity-0'}`} />
+                        <span>{srv.name}</span>
+                      </button>
                     );
                   })}
                 </div>
               </div>
 
-              {/* Chamber Affiliations & Schedules List */}
-              <div className="space-y-3">
-                <div className="flex items-center justify-between">
-                  <label className="block text-slate-300 font-bold">
-                    Chamber Affiliations & Specific Visiting Schedules:
-                  </label>
-                  <button
-                    type="button"
-                    onClick={handleAddAffiliation}
-                    className="text-xs text-teal-400 font-bold hover:underline flex items-center gap-1"
-                  >
-                    <Plus className="w-3.5 h-3.5" /> Add Chamber Location
-                  </button>
+              <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+                <div>
+                  <label className="block text-slate-300 font-semibold mb-1">District / City *</label>
+                  <input
+                    type="text"
+                    required
+                    value={hospitalForm.city}
+                    onChange={e => setHospitalForm({ ...hospitalForm, city: e.target.value, district: e.target.value })}
+                    className="w-full bg-slate-950 border border-slate-800 rounded-xl px-3 py-2 text-white"
+                  />
                 </div>
-
-                {doctorForm.affiliations.map((aff, affIdx) => (
-                  <div key={affIdx} className="bg-slate-950 p-4 rounded-xl border border-slate-800 space-y-3">
-                    <div className="flex items-center justify-between border-b border-slate-800 pb-2">
-                      <span className="font-bold text-teal-400">Chamber Affiliation #{affIdx + 1}</span>
-                      {doctorForm.affiliations.length > 1 && (
-                        <button
-                          type="button"
-                          onClick={() => handleRemoveAffiliation(affIdx)}
-                          className="text-rose-400 text-xs font-semibold hover:underline"
-                        >
-                          Remove Chamber
-                        </button>
-                      )}
-                    </div>
-
-                    <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
-                      <div>
-                        <label className="block text-slate-400 mb-1">Select Branch / Chamber</label>
-                        <select
-                          value={aff.branch}
-                          onChange={e => {
-                            const val = e.target.value;
-                            setDoctorForm(prev => {
-                              const updated = [...prev.affiliations];
-                              updated[affIdx].branch = val;
-                              return { ...prev, affiliations: updated };
-                            });
-                          }}
-                          className="w-full bg-slate-900 border border-slate-800 rounded-lg px-2.5 py-1.5 text-white font-semibold"
-                        >
-                          {chambers.map(c => (
-                            <option key={c.id} value={c.id}>
-                              {c.hospital_name ? `${c.hospital_name} - ${c.name}` : c.name} ({c.city})
-                            </option>
-                          ))}
-                        </select>
-                      </div>
-
-                      <div>
-                        <label className="block text-slate-400 mb-1">Consultation Tag</label>
-                        <select
-                          value={aff.consultation_type}
-                          onChange={e => {
-                            const val = e.target.value;
-                            setDoctorForm(prev => {
-                              const updated = [...prev.affiliations];
-                              updated[affIdx].consultation_type = val;
-                              return { ...prev, affiliations: updated };
-                            });
-                          }}
-                          className="w-full bg-slate-900 border border-slate-800 rounded-lg px-2.5 py-1.5 text-white font-semibold"
-                        >
-                          <option value="OPD">OPD (Chamber Doctor)</option>
-                          <option value="In-patient">In-patient (Hospital Doctor)</option>
-                        </select>
-                      </div>
-                    </div>
-
-                    {/* TASK 4: AUTO-CALCULATE DOCTOR CONSULTATION FEE */}
-                    <div className="grid grid-cols-3 gap-2 bg-slate-900/60 p-2.5 rounded-lg border border-slate-800/80">
-                      <div>
-                        <label className="block text-slate-400 text-[11px] mb-1">Original Fee</label>
-                        <input
-                          type="number"
-                          placeholder="1500"
-                          value={aff.original_fee || ''}
-                          onChange={e => {
-                            const val = e.target.value;
-                            setDoctorForm(prev => {
-                              const updated = [...prev.affiliations];
-                              updated[affIdx].original_fee = val;
-                              updated[affIdx].fee = calculateFinalPrice(val, updated[affIdx].discount) || updated[affIdx].fee;
-                              return { ...prev, affiliations: updated };
-                            });
-                          }}
-                          className="w-full bg-slate-950 border border-slate-800 rounded px-2 py-1 text-white font-mono"
-                        />
-                      </div>
-
-                      <div>
-                        <label className="block text-slate-400 text-[11px] mb-1">Discount Tag</label>
-                        <input
-                          type="text"
-                          placeholder="20% OFF"
-                          value={aff.discount || ''}
-                          onChange={e => {
-                            const val = e.target.value;
-                            setDoctorForm(prev => {
-                              const updated = [...prev.affiliations];
-                              updated[affIdx].discount = val;
-                              updated[affIdx].fee = calculateFinalPrice(updated[affIdx].original_fee, val) || updated[affIdx].fee;
-                              return { ...prev, affiliations: updated };
-                            });
-                          }}
-                          className="w-full bg-slate-950 border border-slate-800 rounded px-2 py-1 text-white"
-                        />
-                      </div>
-
-                      <div>
-                        <label className="block text-teal-400 font-bold text-[11px] mb-1">Final Fee (BDT)</label>
-                        <input
-                          type="number"
-                          required
-                          value={aff.fee}
-                          onChange={e => {
-                            const val = e.target.value;
-                            setDoctorForm(prev => {
-                              const updated = [...prev.affiliations];
-                              updated[affIdx].fee = val;
-                              return { ...prev, affiliations: updated };
-                            });
-                          }}
-                          className="w-full bg-slate-950 border border-teal-500/50 rounded px-2 py-1 text-teal-300 font-mono font-bold"
-                        />
-                      </div>
-                    </div>
-
-                    {/* Schedules inside Affiliation */}
-                    <div>
-                      <div className="flex items-center justify-between mb-1.5">
-                        <span className="text-[11px] font-bold text-slate-400">Visiting Days & Hours Schedule:</span>
-                        <button
-                          type="button"
-                          onClick={() => handleAddScheduleRow(affIdx)}
-                          className="text-[11px] text-teal-400 font-semibold hover:underline"
-                        >
-                          + Add Schedule Day
-                        </button>
-                      </div>
-
-                      <div className="space-y-1.5">
-                        {aff.schedules.map((sch, schIdx) => (
-                          <div key={schIdx} className="flex items-center gap-2">
-                            <select
-                              value={sch.day_of_week}
-                              onChange={e => {
-                                const val = e.target.value;
-                                setDoctorForm(prev => {
-                                  const updated = [...prev.affiliations];
-                                  updated[affIdx].schedules[schIdx].day_of_week = val;
-                                  return { ...prev, affiliations: updated };
-                                });
-                              }}
-                              className="bg-slate-900 border border-slate-800 rounded px-2 py-1 text-slate-200 text-xs"
-                            >
-                              {['Sat', 'Sun', 'Mon', 'Tue', 'Wed', 'Thu', 'Fri', 'Everyday'].map(d => (
-                                <option key={d} value={d}>{d}</option>
-                              ))}
-                            </select>
-
-                            <input
-                              type="text"
-                              placeholder="17:00"
-                              value={sch.start_time}
-                              onChange={e => {
-                                const val = e.target.value;
-                                setDoctorForm(prev => {
-                                  const updated = [...prev.affiliations];
-                                  updated[affIdx].schedules[schIdx].start_time = val;
-                                  return { ...prev, affiliations: updated };
-                                });
-                              }}
-                              className="w-20 bg-slate-900 border border-slate-800 rounded px-2 py-1 text-white font-mono text-xs"
-                            />
-
-                            <span className="text-slate-500 text-xs">to</span>
-
-                            <input
-                              type="text"
-                              placeholder="21:00"
-                              value={sch.end_time}
-                              onChange={e => {
-                                const val = e.target.value;
-                                setDoctorForm(prev => {
-                                  const updated = [...prev.affiliations];
-                                  updated[affIdx].schedules[schIdx].end_time = val;
-                                  return { ...prev, affiliations: updated };
-                                });
-                              }}
-                              className="w-20 bg-slate-900 border border-slate-800 rounded px-2 py-1 text-white font-mono text-xs"
-                            />
-
-                            {aff.schedules.length > 1 && (
-                              <button
-                                type="button"
-                                onClick={() => handleRemoveScheduleRow(affIdx, schIdx)}
-                                className="text-rose-400 hover:text-rose-300 text-xs px-1"
-                              >
-                                &times;
-                              </button>
-                            )}
-                          </div>
-                        ))}
-                      </div>
-                    </div>
-                  </div>
-                ))}
+                <div>
+                  <label className="block text-slate-300 font-semibold mb-1">Full Address</label>
+                  <input
+                    type="text"
+                    value={hospitalForm.address}
+                    onChange={e => setHospitalForm({ ...hospitalForm, address: e.target.value })}
+                    className="w-full bg-slate-950 border border-slate-800 rounded-xl px-3 py-2 text-white"
+                  />
+                </div>
               </div>
 
               <div className="flex justify-end gap-3 pt-4 border-t border-slate-800">
-                <button
-                  type="button"
-                  onClick={() => setShowDoctorModal(false)}
-                  className="px-4 py-2 bg-slate-800 text-slate-300 rounded-xl hover:bg-slate-700"
-                >
+                <button type="button" onClick={() => setShowHospitalModal(false)} className="px-4 py-2 bg-slate-800 text-slate-300 font-bold rounded-xl">
                   Cancel
                 </button>
-                <button
-                  type="submit"
-                  className="px-5 py-2 bg-teal-600 hover:bg-teal-500 text-white font-bold rounded-xl"
-                >
-                  Save Doctor Profile
+                <button type="submit" className="px-5 py-2 bg-emerald-600 hover:bg-emerald-500 text-white font-bold rounded-xl shadow-lg">
+                  Save Hospital
                 </button>
               </div>
             </form>
@@ -2373,282 +1295,98 @@ export default function AdminDashboardPage({ currentUser, onNavigate, onAdminLog
         </div>
       )}
 
-      {/* --- BASE PATHOLOGY TEST MODAL --- */}
-      {showTestModal && (
-        <div className="fixed inset-0 z-50 bg-slate-950/80 backdrop-blur-sm flex items-center justify-center p-4">
-          <div className="bg-slate-900 border border-slate-800 rounded-2xl max-w-lg w-full p-6 shadow-2xl space-y-4">
-            <h3 className="text-lg font-bold text-white">
-              {editingTest ? 'Edit Pathology Base Test' : 'Add New Pathology Base Test'}
-            </h3>
-            
-            <form onSubmit={handleSaveTest} className="space-y-4 text-xs">
-              <div>
-                <label className="block text-slate-300 font-bold mb-1">Test Name</label>
-                <input
-                  type="text"
-                  required
-                  placeholder="e.g. Complete Blood Count (CBC)"
-                  value={testForm.name}
-                  onChange={e => setTestForm({...testForm, name: e.target.value})}
-                  className="w-full bg-slate-950 border border-slate-800 rounded-xl px-3 py-2 text-white"
-                />
+      {/* MODAL: ADD / EDIT DIAGNOSTICS & BRANCH (TASK 3 & TASK 6) */}
+      {showDiagnosticModal && (
+        <div className="fixed inset-0 z-50 bg-slate-950/80 backdrop-blur-md flex items-center justify-center p-4 overflow-y-auto">
+          <div className="bg-slate-900 border border-slate-800 rounded-3xl p-6 max-w-2xl w-full space-y-4 my-8 shadow-2xl">
+            <div className="flex items-center justify-between border-b border-slate-800 pb-3">
+              <h3 className="text-lg font-bold text-white">
+                {editingDiagnostic ? 'Edit Diagnostic Center' : 'Add New Diagnostics / Branch'}
+              </h3>
+              <button onClick={() => setShowDiagnosticModal(false)} className="text-slate-400 hover:text-white">
+                <XCircle className="w-5 h-5" />
+              </button>
+            </div>
+
+            <form onSubmit={handleSaveDiagnostic} className="space-y-4 text-xs">
+              <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+                <div>
+                  <label className="block text-slate-300 font-semibold mb-1">Diagnostic Center Name *</label>
+                  <input
+                    type="text"
+                    required
+                    value={diagnosticForm.name}
+                    onChange={e => setDiagnosticForm({ ...diagnosticForm, name: e.target.value })}
+                    className="w-full bg-slate-950 border border-slate-800 rounded-xl px-3 py-2 text-white"
+                  />
+                </div>
+                {/* TASK 1: BRANCH FIELD */}
+                <div>
+                  <label className="block text-slate-300 font-semibold mb-1">Branch Name *</label>
+                  <input
+                    type="text"
+                    required
+                    placeholder="e.g. Panthapath Branch"
+                    value={diagnosticForm.branch}
+                    onChange={e => setDiagnosticForm({ ...diagnosticForm, branch: e.target.value })}
+                    className="w-full bg-slate-950 border border-slate-800 rounded-xl px-3 py-2 text-white"
+                  />
+                </div>
               </div>
 
+              {/* TASK 6: CLICKABLE DIAGNOSTIC SERVICES OPTIONS */}
               <div>
-                <label className="block text-slate-300 font-bold mb-1">Test Category Group</label>
-                <select
-                  value={testForm.categoryGroup || 'blood'}
-                  onChange={e => {
-                    const catObj = testCategories.find(tc => tc.id === e.target.value);
-                    setTestForm({
-                      ...testForm, 
-                      categoryGroup: e.target.value,
-                      category: catObj ? catObj.name : e.target.value
-                    });
-                  }}
-                  className="w-full bg-slate-950 border border-slate-800 rounded-xl px-3 py-2 text-white font-semibold"
-                >
-                  {testCategories.map(tc => (
-                    <option key={tc.id} value={tc.id}>{tc.name}</option>
-                  ))}
-                </select>
+                <label className="block text-slate-300 font-semibold mb-1.5">Services & Facilities (Click to Select / Deselect) *</label>
+                <div className="flex flex-wrap gap-2 p-3 bg-slate-950 border border-slate-800 rounded-xl max-h-44 overflow-y-auto">
+                  {diagnosticServices.map(srv => {
+                    const isSelected = diagnosticForm.service_ids.includes(srv.id);
+                    return (
+                      <button
+                        key={srv.id}
+                        type="button"
+                        onClick={() => toggleDiagnosticServiceSelection(srv.id)}
+                        className={`px-3 py-1.5 rounded-xl border text-xs font-bold transition flex items-center gap-1.5 ${
+                          isSelected 
+                            ? 'bg-cyan-500/20 text-cyan-300 border-cyan-500/50 shadow-sm shadow-cyan-500/20' 
+                            : 'bg-slate-900 text-slate-400 border-slate-800 hover:border-slate-700 hover:text-slate-200'
+                        }`}
+                      >
+                        <CheckCircle className={`w-3.5 h-3.5 ${isSelected ? 'opacity-100 text-cyan-400' : 'opacity-0'}`} />
+                        <span>{srv.name}</span>
+                      </button>
+                    );
+                  })}
+                </div>
               </div>
 
-              <div>
-                <label className="block text-slate-300 font-bold mb-1">Display Category Name</label>
-                <input
-                  type="text"
-                  required
-                  placeholder="Routine Blood Profiles"
-                  value={testForm.category}
-                  onChange={e => setTestForm({...testForm, category: e.target.value})}
-                  className="w-full bg-slate-950 border border-slate-800 rounded-xl px-3 py-2 text-white"
-                />
-              </div>
-
-              <div>
-                <label className="block text-slate-300 font-bold mb-1">Description</label>
-                <textarea
-                  rows="3"
-                  value={testForm.description}
-                  onChange={e => setTestForm({...testForm, description: e.target.value})}
-                  className="w-full bg-slate-950 border border-slate-800 rounded-xl px-3 py-2 text-white"
-                ></textarea>
-              </div>
-
-              <div className="flex items-center gap-2">
-                <input
-                  type="checkbox"
-                  id="f-req"
-                  checked={testForm.fasting_required}
-                  onChange={e => setTestForm({...testForm, fasting_required: e.target.checked})}
-                  className="rounded text-teal-500"
-                />
-                <label htmlFor="f-req" className="text-slate-300 font-semibold">Fasting Required Before Test</label>
+              <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+                <div>
+                  <label className="block text-slate-300 font-semibold mb-1">District *</label>
+                  <input
+                    type="text"
+                    required
+                    value={diagnosticForm.district}
+                    onChange={e => setDiagnosticForm({ ...diagnosticForm, district: e.target.value })}
+                    className="w-full bg-slate-950 border border-slate-800 rounded-xl px-3 py-2 text-white"
+                  />
+                </div>
+                <div>
+                  <label className="block text-slate-300 font-semibold mb-1">Full Address</label>
+                  <input
+                    type="text"
+                    value={diagnosticForm.address}
+                    onChange={e => setDiagnosticForm({ ...diagnosticForm, address: e.target.value })}
+                    className="w-full bg-slate-950 border border-slate-800 rounded-xl px-3 py-2 text-white"
+                  />
+                </div>
               </div>
 
               <div className="flex justify-end gap-3 pt-4 border-t border-slate-800">
-                <button
-                  type="button"
-                  onClick={() => setShowTestModal(false)}
-                  className="px-4 py-2 bg-slate-800 text-slate-300 rounded-xl hover:bg-slate-700"
-                >
+                <button type="button" onClick={() => setShowDiagnosticModal(false)} className="px-4 py-2 bg-slate-800 text-slate-300 font-bold rounded-xl">
                   Cancel
                 </button>
-                <button
-                  type="submit"
-                  className="px-5 py-2 bg-teal-600 hover:bg-teal-500 text-white font-bold rounded-xl"
-                >
-                  Save Test
-                </button>
-              </div>
-            </form>
-          </div>
-        </div>
-      )}
-
-      {/* --- DOCTOR SPECIALTY MODAL --- */}
-      {showDoctorSpecModal && (
-        <div className="fixed inset-0 z-50 bg-slate-950/80 backdrop-blur-sm flex items-center justify-center p-4">
-          <div className="bg-slate-900 border border-slate-800 rounded-2xl max-w-md w-full p-6 shadow-2xl space-y-4">
-            <h3 className="text-lg font-bold text-white">
-              {editingDoctorSpec ? 'Edit Doctor Specialty' : 'Add New Doctor Specialty'}
-            </h3>
-            
-            <form onSubmit={handleSaveDoctorSpec} className="space-y-4 text-xs">
-              <div>
-                <label className="block text-slate-300 font-bold mb-1">Specialty Name</label>
-                <input
-                  type="text"
-                  required
-                  placeholder="e.g. Cardiologist / Neurologist"
-                  value={doctorSpecForm.name}
-                  onChange={e => setDoctorSpecForm({...doctorSpecForm, name: e.target.value, id: doctorSpecForm.id || e.target.value.toLowerCase().replace(/\s+/g, '-')})}
-                  className="w-full bg-slate-950 border border-slate-800 rounded-xl px-3 py-2 text-white font-semibold"
-                />
-              </div>
-
-              <div>
-                <label className="block text-slate-300 font-bold mb-1">Lucide Icon Name</label>
-                <input
-                  type="text"
-                  placeholder="e.g. Heart, Brain, Baby, Stethoscope"
-                  value={doctorSpecForm.icon}
-                  onChange={e => setDoctorSpecForm({...doctorSpecForm, icon: e.target.value})}
-                  className="w-full bg-slate-950 border border-slate-800 rounded-xl px-3 py-2 text-white font-mono"
-                />
-              </div>
-
-              <div>
-                <label className="block text-slate-300 font-bold mb-1">Description</label>
-                <input
-                  type="text"
-                  placeholder="e.g. Heart & Vascular Care"
-                  value={doctorSpecForm.description}
-                  onChange={e => setDoctorSpecForm({...doctorSpecForm, description: e.target.value})}
-                  className="w-full bg-slate-950 border border-slate-800 rounded-xl px-3 py-2 text-white"
-                />
-              </div>
-
-              <div className="flex justify-end gap-3 pt-4 border-t border-slate-800">
-                <button
-                  type="button"
-                  onClick={() => setShowDoctorSpecModal(false)}
-                  className="px-4 py-2 bg-slate-800 text-slate-300 rounded-xl hover:bg-slate-700 font-semibold"
-                >
-                  Cancel
-                </button>
-                <button
-                  type="submit"
-                  className="px-5 py-2 bg-teal-600 hover:bg-teal-500 text-white font-bold rounded-xl"
-                >
-                  Save Specialty
-                </button>
-              </div>
-            </form>
-          </div>
-        </div>
-      )}
-
-      {/* --- HOSPITAL SPECIALTY MODAL --- */}
-      {showHospitalSpecModal && (
-        <div className="fixed inset-0 z-50 bg-slate-950/80 backdrop-blur-sm flex items-center justify-center p-4">
-          <div className="bg-slate-900 border border-slate-800 rounded-2xl max-w-md w-full p-6 shadow-2xl space-y-4">
-            <h3 className="text-lg font-bold text-white">
-              {editingHospitalSpec ? 'Edit Hospital Category' : 'Add New Hospital Category'}
-            </h3>
-            
-            <form onSubmit={handleSaveHospitalSpec} className="space-y-4 text-xs">
-              <div>
-                <label className="block text-slate-300 font-bold mb-1">Category Name</label>
-                <input
-                  type="text"
-                  required
-                  placeholder="e.g. Cardiac Hospitals / Eye Hospitals"
-                  value={hospitalSpecForm.name}
-                  onChange={e => setHospitalSpecForm({...hospitalSpecForm, name: e.target.value, id: hospitalSpecForm.id || e.target.value.toLowerCase().replace(/\s+/g, '-')})}
-                  className="w-full bg-slate-950 border border-slate-800 rounded-xl px-3 py-2 text-white font-semibold"
-                />
-              </div>
-
-              <div>
-                <label className="block text-slate-300 font-bold mb-1">Lucide Icon Name</label>
-                <input
-                  type="text"
-                  placeholder="e.g. Building2, Heart, Sparkles, Activity"
-                  value={hospitalSpecForm.icon}
-                  onChange={e => setHospitalSpecForm({...hospitalSpecForm, icon: e.target.value})}
-                  className="w-full bg-slate-950 border border-slate-800 rounded-xl px-3 py-2 text-white font-mono"
-                />
-              </div>
-
-              <div>
-                <label className="block text-slate-300 font-bold mb-1">Description</label>
-                <input
-                  type="text"
-                  placeholder="e.g. Specialized Heart Institutes"
-                  value={hospitalSpecForm.description}
-                  onChange={e => setHospitalSpecForm({...hospitalSpecForm, description: e.target.value})}
-                  className="w-full bg-slate-950 border border-slate-800 rounded-xl px-3 py-2 text-white"
-                />
-              </div>
-
-              <div className="flex justify-end gap-3 pt-4 border-t border-slate-800">
-                <button
-                  type="button"
-                  onClick={() => setShowHospitalSpecModal(false)}
-                  className="px-4 py-2 bg-slate-800 text-slate-300 rounded-xl hover:bg-slate-700 font-semibold"
-                >
-                  Cancel
-                </button>
-                <button
-                  type="submit"
-                  className="px-5 py-2 bg-emerald-600 hover:bg-emerald-500 text-white font-bold rounded-xl"
-                >
-                  Save Category
-                </button>
-              </div>
-            </form>
-          </div>
-        </div>
-      )}
-
-      {/* --- TEST CATEGORY MODAL --- */}
-      {showTestCatModal && (
-        <div className="fixed inset-0 z-50 bg-slate-950/80 backdrop-blur-sm flex items-center justify-center p-4">
-          <div className="bg-slate-900 border border-slate-800 rounded-2xl max-w-md w-full p-6 shadow-2xl space-y-4">
-            <h3 className="text-lg font-bold text-white">
-              {editingTestCat ? 'Edit Test Category' : 'Add New Test Category'}
-            </h3>
-            
-            <form onSubmit={handleSaveTestCat} className="space-y-4 text-xs">
-              <div>
-                <label className="block text-slate-300 font-bold mb-1">Category Name</label>
-                <input
-                  type="text"
-                  required
-                  placeholder="e.g. Blood Tests / Radiology & Scans"
-                  value={testCatForm.name}
-                  onChange={e => setTestCatForm({...testCatForm, name: e.target.value, id: testCatForm.id || e.target.value.toLowerCase().replace(/\s+/g, '-')})}
-                  className="w-full bg-slate-950 border border-slate-800 rounded-xl px-3 py-2 text-white font-semibold"
-                />
-              </div>
-
-              <div>
-                <label className="block text-slate-300 font-bold mb-1">Lucide Icon Name</label>
-                <input
-                  type="text"
-                  placeholder="e.g. FlaskConical, Droplet, FileText, Heart"
-                  value={testCatForm.icon}
-                  onChange={e => setTestCatForm({...testCatForm, icon: e.target.value})}
-                  className="w-full bg-slate-950 border border-slate-800 rounded-xl px-3 py-2 text-white font-mono"
-                />
-              </div>
-
-              <div>
-                <label className="block text-slate-300 font-bold mb-1">Description</label>
-                <input
-                  type="text"
-                  placeholder="e.g. CBC, Hemoglobin & Serology"
-                  value={testCatForm.description}
-                  onChange={e => setTestCatForm({...testCatForm, description: e.target.value})}
-                  className="w-full bg-slate-950 border border-slate-800 rounded-xl px-3 py-2 text-white"
-                />
-              </div>
-
-              <div className="flex justify-end gap-3 pt-4 border-t border-slate-800">
-                <button
-                  type="button"
-                  onClick={() => setShowTestCatModal(false)}
-                  className="px-4 py-2 bg-slate-800 text-slate-300 rounded-xl hover:bg-slate-700 font-semibold"
-                >
-                  Cancel
-                </button>
-                <button
-                  type="submit"
-                  className="px-5 py-2 bg-cyan-600 hover:bg-cyan-500 text-white font-bold rounded-xl"
-                >
-                  Save Category
+                <button type="submit" className="px-5 py-2 bg-cyan-600 hover:bg-cyan-500 text-white font-bold rounded-xl shadow-lg">
+                  Save Diagnostic Center
                 </button>
               </div>
             </form>

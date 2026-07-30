@@ -79,10 +79,25 @@ class HospitalCategory(models.Model):
         return self.name
 
 
+class HospitalService(models.Model):
+    """Specific Service/Facility provided by Hospitals"""
+    id = models.UUIDField(primary_key=True, default=uuid.uuid4, editable=False)
+    name = models.CharField(max_length=150)
+    icon = models.CharField(max_length=50, default='Activity')
+    description = models.TextField(blank=True)
+
+    class Meta:
+        verbose_name_plural = "Hospital Services"
+
+    def __str__(self):
+        return self.name
+
+
 class Hospital(models.Model):
     """Hospital model for In-patient and OPD Multi-Specialty Institutes"""
     id = models.UUIDField(primary_key=True, default=uuid.uuid4, editable=False)
     name = models.CharField(max_length=200)
+    branch = models.CharField(max_length=200, blank=True)  # e.g. "Dhanmondi Branch"
     slug = models.SlugField(max_length=220, unique=True, blank=True)
     description = models.TextField(blank=True)
     logo = models.URLField(max_length=500, blank=True)
@@ -99,18 +114,20 @@ class Hospital(models.Model):
     open_timing = models.CharField(max_length=100, blank=True)
     tagline = models.CharField(max_length=255, blank=True)
     badge = models.CharField(max_length=50, blank=True)
-    services = models.JSONField(default=list, blank=True)
+    services = models.ManyToManyField(HospitalService, related_name='hospitals', blank=True)
     is_verified = models.BooleanField(default=False)
     is_active = models.BooleanField(default=True)
     created_at = models.DateTimeField(auto_now_add=True)
 
     def save(self, *args, **kwargs):
         if not self.slug:
-            self.slug = slugify(self.name)
+            b_str = f"-{self.branch}" if self.branch else ""
+            self.slug = slugify(f"{self.name}{b_str}")
         super().save(*args, **kwargs)
 
     def __str__(self):
-        return self.name
+        b_str = f" ({self.branch})" if self.branch else ""
+        return f"{self.name}{b_str}"
 
 
 class TestCategory(models.Model):
@@ -129,10 +146,10 @@ class TestCategory(models.Model):
         related_name='children',
         on_delete=models.CASCADE
     )
-    icon = models.CharField(max_length=100, blank=True)  # optional, for UI
+    icon = models.CharField(max_length=100, blank=True)
     description = models.TextField(blank=True)
     is_active = models.BooleanField(default=True)
-    order = models.PositiveIntegerField(default=0)  # for display sorting
+    order = models.PositiveIntegerField(default=0)
 
     class Meta:
         verbose_name_plural = "Test Categories"
@@ -148,7 +165,6 @@ class TestCategory(models.Model):
 
     @property
     def is_leaf_level(self):
-        """True if no children — meaning Tests attach directly here."""
         return not self.children.exists()
 
 
@@ -166,10 +182,10 @@ class Test(models.Model):
     )
     name = models.CharField(max_length=200)
     slug = models.SlugField(max_length=220, unique=True, blank=True)
-    code = models.CharField(max_length=50, blank=True)  # internal/lab code
+    code = models.CharField(max_length=50, blank=True)
     description = models.TextField(blank=True)
-    sample_type = models.CharField(max_length=100, blank=True)  # Blood, Urine, etc
-    preparation_instructions = models.TextField(blank=True)  # "Fasting 8-12 hrs"
+    sample_type = models.CharField(max_length=100, blank=True)
+    preparation_instructions = models.TextField(blank=True)
     fasting_required = models.BooleanField(default=False)
     report_time_hours = models.PositiveIntegerField(null=True, blank=True)
     is_active = models.BooleanField(default=True)
@@ -211,10 +227,25 @@ class DiagnosticCenterCategory(models.Model):
         return f"{self.parent.name} > {self.name}" if self.parent else self.name
 
 
+class DiagnosticService(models.Model):
+    """Specific Service/Facility provided by Diagnostic Centers"""
+    id = models.UUIDField(primary_key=True, default=uuid.uuid4, editable=False)
+    name = models.CharField(max_length=150)
+    icon = models.CharField(max_length=50, default='FlaskConical')
+    description = models.TextField(blank=True)
+
+    class Meta:
+        verbose_name_plural = "Diagnostic Services"
+
+    def __str__(self):
+        return self.name
+
+
 class DiagnosticCenter(models.Model):
     """Diagnostic Center model separate from Hospitals"""
     id = models.UUIDField(primary_key=True, default=uuid.uuid4, editable=False)
     name = models.CharField(max_length=250)
+    branch = models.CharField(max_length=200, blank=True)  # e.g. "Panthapath Branch"
     slug = models.SlugField(max_length=270, unique=True, blank=True)
     categories = models.ManyToManyField(
         DiagnosticCenterCategory,
@@ -235,7 +266,7 @@ class DiagnosticCenter(models.Model):
     rating = models.FloatField(default=0.0)
     reviews_count = models.IntegerField(default=0)
     open_timing = models.CharField(max_length=100, blank=True)
-    services = models.JSONField(default=list, blank=True)
+    services = models.ManyToManyField(DiagnosticService, related_name='centers', blank=True)
     description = models.TextField(blank=True)
     is_verified = models.BooleanField(default=False)
     is_active = models.BooleanField(default=True)
@@ -249,11 +280,13 @@ class DiagnosticCenter(models.Model):
 
     def save(self, *args, **kwargs):
         if not self.slug:
-            self.slug = slugify(self.name)
+            b_str = f"-{self.branch}" if self.branch else ""
+            self.slug = slugify(f"{self.name}{b_str}")
         super().save(*args, **kwargs)
 
     def __str__(self):
-        return self.name
+        b_str = f" ({self.branch})" if self.branch else ""
+        return f"{self.name}{b_str}"
 
 
 class DiagnosticCenterTest(models.Model):
@@ -312,7 +345,7 @@ class DoctorAffiliation(models.Model):
 class AffiliationSchedule(models.Model):
     id = models.UUIDField(primary_key=True, default=uuid.uuid4, editable=False)
     affiliation = models.ForeignKey(DoctorAffiliation, on_delete=models.CASCADE, related_name='schedules')
-    day_of_week = models.CharField(max_length=20)  # e.g. "Sat", "Mon", "Everyday"
+    day_of_week = models.CharField(max_length=20)
     start_time = models.TimeField()
     end_time = models.TimeField()
 

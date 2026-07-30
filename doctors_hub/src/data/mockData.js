@@ -76,8 +76,25 @@ export const HOSPITAL_CATEGORIES = [
   { id: "orthopedic", name: "Orthopedic Centers", icon: "Activity", description: "Bone, Joint & Spine Care", count: 3 }
 ];
 
-// Alias for backward compatibility
 export const HOSPITAL_SPECIALTIES = HOSPITAL_CATEGORIES;
+
+export const HOSPITAL_SERVICES = [
+  { id: "hs-1", name: "24/7 ICU & In-patient", icon: "Activity", description: "Round the clock intensive care and bed admission" },
+  { id: "hs-2", name: "Specialist OPD Consultation", icon: "Stethoscope", description: "Out-patient specialist doctor visit chambers" },
+  { id: "hs-3", name: "Surgery & OT Suite", icon: "ShieldCheck", description: "Modern operation theater and laparoscopic surgery" },
+  { id: "hs-4", name: "24/7 Emergency & Ambulance", icon: "Clock", description: "Emergency triage and rapid ambulance response" },
+  { id: "hs-5", name: "Phaco Cataract Surgery", icon: "Eye", description: "Advanced stitchless cataract surgery" },
+  { id: "hs-6", name: "Lasik Vision Correction", icon: "Sparkles", description: "Laser refractive eye vision correction" }
+];
+
+export const DIAGNOSTIC_SERVICES = [
+  { id: "ds-1", name: "4D Ultrasonography & Color Doppler", icon: "Activity", description: "High resolution fetal & abdominal sonography" },
+  { id: "ds-2", name: "Digital X-Ray & Imaging", icon: "FileText", description: "Low radiation digital radiography" },
+  { id: "ds-3", name: "Automated Blood & Serology Lab", icon: "FlaskConical", description: "Fully automated clinical pathology and biochemistry" },
+  { id: "ds-4", name: "128-Slice CT Scan", icon: "FileText", description: "High-speed computed tomography body scan" },
+  { id: "ds-5", name: "High-Speed MRI Scan", icon: "Brain", description: "3.0 Tesla neuro and musculoskeletal MRI" },
+  { id: "ds-6", name: "Home Sample Collection", icon: "Droplet", description: "Doorstep blood sample collection by certified phlebotomists" }
+];
 
 export const DIAGNOSTIC_CENTER_CATEGORIES = [
   { id: "all", name: "All Center Categories", icon: "Building2", parent: null },
@@ -98,13 +115,13 @@ export const TEST_CATEGORIES = [
   { id: "lipid-cardiac", name: "Lipid & Cardiac Profiles", icon: "Heart", description: "Cholesterol, Lipid Panel & Troponin-I", count: 3 }
 ];
 
-// Backward compatibility alias
 export const PATHOLOGY_CATEGORIES = TEST_CATEGORIES;
 
 export const HOSPITALS = [
   {
     id: "ibn-sina",
     name: "Ibn Sina Healthcare Group",
+    branch: "Dhanmondi Branch",
     description: "Leading nationwide hospital network offering multi-branch inpatient & outpatient services.",
     city: "Dhaka",
     district: "Dhaka",
@@ -114,11 +131,13 @@ export const HOSPITALS = [
     rating: 4.9,
     reviews_count: 320,
     open_timing: "24/7 Inpatient & OPD",
+    services: [HOSPITAL_SERVICES[0], HOSPITAL_SERVICES[1], HOSPITAL_SERVICES[2]],
     is_verified: true
   },
   {
     id: "nhf",
     name: "National Heart Foundation",
+    branch: "Mirpur Branch",
     description: "Premier specialized cardiac and cardiovascular hospital institute in Bangladesh.",
     city: "Dhaka",
     district: "Dhaka",
@@ -128,6 +147,7 @@ export const HOSPITALS = [
     rating: 4.95,
     reviews_count: 520,
     open_timing: "24/7 Emergency & OPD",
+    services: [HOSPITAL_SERVICES[3], HOSPITAL_SERVICES[1]],
     is_verified: true
   }
 ];
@@ -135,7 +155,8 @@ export const HOSPITALS = [
 export const DIAGNOSTIC_CENTERS = [
   {
     id: "popular-panthapath",
-    name: "Popular Diagnostic Centre - Panthapath",
+    name: "Popular Diagnostic Centre",
+    branch: "Panthapath Branch",
     address: "House 16, Road 2, Dhanmondi / Panthapath, Dhaka",
     district: "Dhaka",
     division: "Dhaka",
@@ -148,13 +169,14 @@ export const DIAGNOSTIC_CENTERS = [
     tagline: "Nationwide Leading Diagnostic & Imaging Hub",
     badge: "Verified Partner",
     image: "https://images.unsplash.com/photo-1586773860418-d37222d8fce3?auto=format&fit=crop&w=600&q=80",
-    services: ["Specialist Visiting Doctor OPD", "Advanced MRI", "Full Automated Pathology", "128-Slice CT Scan"],
+    services: [DIAGNOSTIC_SERVICES[2], DIAGNOSTIC_SERVICES[3], DIAGNOSTIC_SERVICES[4], DIAGNOSTIC_SERVICES[5]],
     is_verified: true,
     categories: [{ id: "pathology-biochem", name: "Pathology & Clinical Biochemistry" }]
   },
   {
     id: "ibn-sina-mirpur",
-    name: "Ibn Sina Diagnostic Center - Mirpur",
+    name: "Ibn Sina Diagnostic Center",
+    branch: "Mirpur Branch",
     address: "Plot 11, Avenue 1, Block A, Mirpur 10, Dhaka",
     district: "Dhaka",
     division: "Dhaka",
@@ -167,13 +189,14 @@ export const DIAGNOSTIC_CENTERS = [
     tagline: "Top Diagnostic Center in Mirpur",
     badge: "Verified Partner",
     image: "https://images.unsplash.com/photo-1538108149393-fbbd81895907?auto=format&fit=crop&w=600&q=80",
-    services: ["4D USG", "Digital X-Ray", "Blood Collection", "Visiting Specialist OPD"],
+    services: [DIAGNOSTIC_SERVICES[0], DIAGNOSTIC_SERVICES[1], DIAGNOSTIC_SERVICES[2], DIAGNOSTIC_SERVICES[5]],
     is_verified: true,
     categories: [{ id: "pathology-biochem", name: "Pathology & Clinical Biochemistry" }]
   },
   {
     id: "chevron-chittagong",
-    name: "Chevron Healthcare - Chittagong",
+    name: "Chevron Healthcare",
+    branch: "Panchlaish Branch",
     address: "12/12 O.R. Nizam Road, Panchlaish, Chittagong",
     district: "Chittagong",
     division: "Chittagong",
@@ -186,13 +209,12 @@ export const DIAGNOSTIC_CENTERS = [
     tagline: "Chittagong's Most Trusted Diagnostic Center",
     badge: "Top Rated",
     image: "https://images.unsplash.com/photo-1629909613654-28e377c37b09?auto=format&fit=crop&w=600&q=80",
-    services: ["24/7 Emergency OPD", "Digital X-Ray", "Home Sample Collection"],
+    services: [DIAGNOSTIC_SERVICES[1], DIAGNOSTIC_SERVICES[2], DIAGNOSTIC_SERVICES[5]],
     is_verified: true,
     categories: [{ id: "pathology-biochem", name: "Pathology & Clinical Biochemistry" }]
   }
 ];
 
-// Alias for backward compatibility
 export const OPD_CHAMBERS = DIAGNOSTIC_CENTERS;
 
 export const TESTS = [
@@ -258,7 +280,6 @@ export const TESTS = [
   }
 ];
 
-// Alias for backward compatibility
 export const PATHOLOGY_TESTS = TESTS;
 
 export const DIAGNOSTIC_CENTER_TESTS = [
@@ -300,7 +321,6 @@ export const DIAGNOSTIC_CENTER_TESTS = [
   }
 ];
 
-// Alias for backward compatibility
 export const BRANCH_TESTS = DIAGNOSTIC_CENTER_TESTS;
 
 export const TESTIMONIALS = [

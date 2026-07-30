@@ -346,7 +346,7 @@ export default function MedicalPartnersPage({ initialKeyword = '', onSelectPartn
 
                       <div className="absolute bottom-3 left-4 right-4 text-white">
                         <h3 className="text-lg font-extrabold text-white group-hover:text-emerald-300 transition-colors flex items-center gap-2">
-                          <span>{partner.name}</span>
+                          <span>{partner.name}{partner.branch ? ` - ${partner.branch}` : ''}</span>
                           {partner.is_verified && (
                             <CheckCircle className="w-4 h-4 text-emerald-400 shrink-0" />
                           )}

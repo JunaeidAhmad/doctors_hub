@@ -1,7 +1,7 @@
 from django.contrib import admin
 from .models import (
-    User, DoctorSpecialty, HospitalCategory, Hospital,
-    TestCategory, Test, DiagnosticCenterCategory, DiagnosticCenter, DiagnosticCenterTest,
+    User, DoctorSpecialty, HospitalCategory, HospitalService, Hospital,
+    TestCategory, Test, DiagnosticCenterCategory, DiagnosticService, DiagnosticCenter, DiagnosticCenterTest,
     Doctor, DoctorAffiliation, AffiliationSchedule, DoctorBooking, LabBooking
 )
 
@@ -39,11 +39,17 @@ class HospitalCategoryAdmin(admin.ModelAdmin):
     search_fields = ('name', 'slug')
 
 
+@admin.register(HospitalService)
+class HospitalServiceAdmin(admin.ModelAdmin):
+    list_display = ('id', 'name', 'icon')
+    search_fields = ('name',)
+
+
 @admin.register(Hospital)
 class HospitalAdmin(admin.ModelAdmin):
-    list_display = ('id', 'name', 'city', 'district', 'is_verified', 'rating')
+    list_display = ('id', 'name', 'branch', 'city', 'district', 'is_verified', 'rating')
     list_filter = ('city', 'is_verified', 'categories')
-    search_fields = ('name', 'city', 'district', 'address')
+    search_fields = ('name', 'branch', 'city', 'district', 'address')
     inlines = [DoctorAffiliationInline]
 
 
@@ -68,11 +74,17 @@ class DiagnosticCenterCategoryAdmin(admin.ModelAdmin):
     search_fields = ('name', 'slug')
 
 
+@admin.register(DiagnosticService)
+class DiagnosticServiceAdmin(admin.ModelAdmin):
+    list_display = ('id', 'name', 'icon')
+    search_fields = ('name',)
+
+
 @admin.register(DiagnosticCenter)
 class DiagnosticCenterAdmin(admin.ModelAdmin):
-    list_display = ('id', 'name', 'district', 'division', 'is_verified', 'is_active', 'rating')
+    list_display = ('id', 'name', 'branch', 'district', 'division', 'is_verified', 'is_active', 'rating')
     list_filter = ('district', 'division', 'is_verified', 'is_active')
-    search_fields = ('name', 'district', 'division', 'address')
+    search_fields = ('name', 'branch', 'district', 'division', 'address')
     inlines = [DiagnosticCenterTestInline, DoctorAffiliationInline]
 
 

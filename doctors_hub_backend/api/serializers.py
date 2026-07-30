@@ -1,7 +1,7 @@
 from rest_framework import serializers
 from .models import (
-    User, DoctorSpecialty, HospitalCategory, Hospital,
-    TestCategory, Test, DiagnosticCenterCategory, DiagnosticCenter, DiagnosticCenterTest,
+    User, DoctorSpecialty, HospitalCategory, HospitalService, Hospital,
+    TestCategory, Test, DiagnosticCenterCategory, DiagnosticService, DiagnosticCenter, DiagnosticCenterTest,
     Doctor, DoctorAffiliation, AffiliationSchedule, DoctorBooking, LabBooking
 )
 from django.contrib.auth import authenticate
@@ -68,8 +68,19 @@ class HospitalCategorySerializer(serializers.ModelSerializer):
         fields = '__all__'
 
 
-# Backwards compatibility alias
 HospitalSpecialtySerializer = HospitalCategorySerializer
+
+
+class HospitalServiceSerializer(serializers.ModelSerializer):
+    class Meta:
+        model = HospitalService
+        fields = '__all__'
+
+
+class DiagnosticServiceSerializer(serializers.ModelSerializer):
+    class Meta:
+        model = DiagnosticService
+        fields = '__all__'
 
 
 class TestCategorySerializer(serializers.ModelSerializer):
@@ -90,7 +101,6 @@ class TestSerializer(serializers.ModelSerializer):
         fields = '__all__'
 
 
-# Backwards compatibility alias
 PathologyTestSerializer = TestSerializer
 
 
@@ -105,6 +115,7 @@ class DiagnosticCenterCategorySerializer(serializers.ModelSerializer):
 class DiagnosticCenterTestSerializer(serializers.ModelSerializer):
     test_details = TestSerializer(source='test', read_only=True)
     center_name = serializers.CharField(source='center.name', read_only=True)
+    center_branch = serializers.CharField(source='center.branch', read_only=True, default='')
     center_district = serializers.CharField(source='center.district', read_only=True, default='')
 
     class Meta:
@@ -112,7 +123,6 @@ class DiagnosticCenterTestSerializer(serializers.ModelSerializer):
         fields = '__all__'
 
 
-# Backwards compatibility alias
 BranchTestSerializer = DiagnosticCenterTestSerializer
 
 
@@ -129,7 +139,9 @@ class AffiliationScheduleSerializer(serializers.ModelSerializer):
 
 class DoctorAffiliationSerializer(serializers.ModelSerializer):
     hospital_name = serializers.CharField(source='hospital.name', read_only=True, default='')
+    hospital_branch = serializers.CharField(source='hospital.branch', read_only=True, default='')
     diagnostic_center_name = serializers.CharField(source='diagnostic_center.name', read_only=True, default='')
+    diagnostic_center_branch = serializers.CharField(source='diagnostic_center.branch', read_only=True, default='')
     facility_name = serializers.SerializerMethodField()
     city = serializers.SerializerMethodField()
     schedules = AffiliationScheduleSerializer(many=True, required=False)
@@ -144,9 +156,11 @@ class DoctorAffiliationSerializer(serializers.ModelSerializer):
 
     def get_facility_name(self, obj):
         if obj.hospital:
-            return obj.hospital.name
+            b_str = f" - {obj.hospital.branch}" if obj.hospital.branch else ""
+            return f"{obj.hospital.name}{b_str}"
         if obj.diagnostic_center:
-            return obj.diagnostic_center.name
+            b_str = f" - {obj.diagnostic_center.branch}" if obj.diagnostic_center.branch else ""
+            return f"{obj.diagnostic_center.name}{b_str}"
         return ''
 
     def get_city(self, obj):
@@ -225,17 +239,47 @@ class HospitalSerializer(serializers.ModelSerializer):
     category_ids = serializers.PrimaryKeyRelatedField(
         queryset=HospitalCategory.objects.all(), many=True, write_only=True, source='categories', required=False
     )
+    services = HospitalServiceSerializer(many=True, read_only=True)
+    service_ids = serializers.PrimaryKeyRelatedField(
+        queryset=HospitalService.objects.all(), many=True, write_only=True, source='services', required=False
+    )
     affiliated_doctors = DoctorAffiliationSerializer(many=True, read_only=True)
 
     class Meta:
         model = Hospital
         fields = '__all__'
 
+    def create(self, validated_data):
+        categories = validated_data.pop('categories', [])
+        services = validated_data.pop('services', [])
+        hospital = Hospital.objects.create(**validated_data)
+        if categories:
+            hospital.categories.set(categories)
+        if services:
+            hospital.services.set(services)
+        return hospital
+
+    def update(self, instance, validated_data):
+        categories = validated_data.pop('categories', None)
+        services = validated_data.pop('services', None)
+        for attr, value in validated_data.items():
+            setattr(instance, attr, value)
+        instance.save()
+        if categories is not None:
+            instance.categories.set(categories)
+        if services is not None:
+            instance.services.set(services)
+        return instance
+
 
 class DiagnosticCenterSerializer(serializers.ModelSerializer):
     categories = DiagnosticCenterCategorySerializer(many=True, read_only=True)
     category_ids = serializers.PrimaryKeyRelatedField(
         queryset=DiagnosticCenterCategory.objects.all(), many=True, write_only=True, source='categories', required=False
+    )
+    services = DiagnosticServiceSerializer(many=True, read_only=True)
+    service_ids = serializers.PrimaryKeyRelatedField(
+        queryset=DiagnosticService.objects.all(), many=True, write_only=True, source='services', required=False
     )
     offered_tests = DiagnosticCenterTestSerializer(many=True, read_only=True)
     affiliated_doctors = DoctorAffiliationSerializer(many=True, read_only=True)
@@ -244,8 +288,29 @@ class DiagnosticCenterSerializer(serializers.ModelSerializer):
         model = DiagnosticCenter
         fields = '__all__'
 
+    def create(self, validated_data):
+        categories = validated_data.pop('categories', [])
+        services = validated_data.pop('services', [])
+        center = DiagnosticCenter.objects.create(**validated_data)
+        if categories:
+            center.categories.set(categories)
+        if services:
+            center.services.set(services)
+        return center
 
-# Backwards compatibility alias
+    def update(self, instance, validated_data):
+        categories = validated_data.pop('categories', None)
+        services = validated_data.pop('services', None)
+        for attr, value in validated_data.items():
+            setattr(instance, attr, value)
+        instance.save()
+        if categories is not None:
+            instance.categories.set(categories)
+        if services is not None:
+            instance.services.set(services)
+        return instance
+
+
 BranchSerializer = DiagnosticCenterSerializer
 
 
@@ -261,15 +326,18 @@ class DoctorBookingSerializer(serializers.ModelSerializer):
 
     def get_facility_name(self, obj):
         if obj.affiliation and obj.affiliation.hospital:
-            return obj.affiliation.hospital.name
+            b_str = f" - {obj.affiliation.hospital.branch}" if obj.affiliation.hospital.branch else ""
+            return f"{obj.affiliation.hospital.name}{b_str}"
         if obj.affiliation and obj.affiliation.diagnostic_center:
-            return obj.affiliation.diagnostic_center.name
+            b_str = f" - {obj.affiliation.diagnostic_center.branch}" if obj.affiliation.diagnostic_center.branch else ""
+            return f"{obj.affiliation.diagnostic_center.name}{b_str}"
         return ''
 
 
 class LabBookingSerializer(serializers.ModelSerializer):
     test_name = serializers.CharField(source='center_test.test.name', read_only=True, default='')
     center_name = serializers.CharField(source='center_test.center.name', read_only=True, default='')
+    center_branch = serializers.CharField(source='center_test.center.branch', read_only=True, default='')
     price = serializers.DecimalField(source='center_test.price', max_digits=10, decimal_places=2, read_only=True, default=0)
 
     class Meta:

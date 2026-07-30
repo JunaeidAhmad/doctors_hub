@@ -35,3 +35,24 @@
   background: #94a3b8;
 }
 
+/* High visibility admin sliding bar scrollbar */
+.admin-sliding-bar::-webkit-scrollbar {
+  height: 10px;
+}
+.admin-sliding-bar::-webkit-scrollbar-track {
+  background: #090d16;
+  border-radius: 9999px;
+  border: 1px solid #1e293b;
+}
+.admin-sliding-bar::-webkit-scrollbar-thumb {
+  background: linear-gradient(to right, #0d9488, #06b6d4);
+  border-radius: 9999px;
+  border: 2px solid #090d16;
+  box-shadow: 0 0 8px rgba(20, 184, 166, 0.6);
+}
+.admin-sliding-bar::-webkit-scrollbar-thumb:hover {
+  background: linear-gradient(to right, #14b8a6, #22d3ee);
+  box-shadow: 0 0 12px rgba(34, 211, 238, 0.9);
+}
+
+

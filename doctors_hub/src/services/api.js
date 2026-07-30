@@ -182,6 +182,70 @@ export const api = {
   async updateHospitalSpecialty(id, data) { return this.updateHospitalCategory(id, data); },
   async deleteHospitalSpecialty(id) { return this.deleteHospitalCategory(id); },
 
+  // Hospital Services
+  async getHospitalServices() {
+    const res = await fetch(`${BASE_URL}/hospital-services/`, {
+      headers: getHeaders(),
+    });
+    return handleResponse(res);
+  },
+  async createHospitalService(data) {
+    const res = await fetch(`${BASE_URL}/hospital-services/`, {
+      method: 'POST',
+      headers: getHeaders(),
+      body: JSON.stringify(data),
+    });
+    return handleResponse(res);
+  },
+  async updateHospitalService(id, data) {
+    const res = await fetch(`${BASE_URL}/hospital-services/${id}/`, {
+      method: 'PUT',
+      headers: getHeaders(),
+      body: JSON.stringify(data),
+    });
+    return handleResponse(res);
+  },
+  async deleteHospitalService(id) {
+    const res = await fetch(`${BASE_URL}/hospital-services/${id}/`, {
+      method: 'DELETE',
+      headers: getHeaders(),
+    });
+    if (res.status === 204 || res.status === 200) return true;
+    return handleResponse(res);
+  },
+
+  // Diagnostic Services
+  async getDiagnosticServices() {
+    const res = await fetch(`${BASE_URL}/diagnostic-services/`, {
+      headers: getHeaders(),
+    });
+    return handleResponse(res);
+  },
+  async createDiagnosticService(data) {
+    const res = await fetch(`${BASE_URL}/diagnostic-services/`, {
+      method: 'POST',
+      headers: getHeaders(),
+      body: JSON.stringify(data),
+    });
+    return handleResponse(res);
+  },
+  async updateDiagnosticService(id, data) {
+    const res = await fetch(`${BASE_URL}/diagnostic-services/${id}/`, {
+      method: 'PUT',
+      headers: getHeaders(),
+      body: JSON.stringify(data),
+    });
+    return handleResponse(res);
+  },
+  async deleteDiagnosticService(id) {
+    const res = await fetch(`${BASE_URL}/diagnostic-services/${id}/`, {
+      method: 'DELETE',
+      headers: getHeaders(),
+    });
+    if (res.status === 204 || res.status === 200) return true;
+    return handleResponse(res);
+  },
+
   // Diagnostic Center Categories
   async getDiagnosticCenterCategories() {
     const res = await fetch(`${BASE_URL}/diagnostic-center-categories/`, {

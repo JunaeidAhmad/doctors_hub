@@ -3,17 +3,17 @@ import datetime
 from django.core.management.base import BaseCommand
 from django.db import connection
 from api.models import (
-    User, DoctorSpecialty, HospitalCategory, Hospital,
-    TestCategory, Test, DiagnosticCenterCategory, DiagnosticCenter, DiagnosticCenterTest,
-    Doctor, DoctorAffiliation, AffiliationSchedule
+    User, DoctorSpecialty, HospitalCategory, HospitalService, Hospital,
+    TestCategory, Test, DiagnosticCenterCategory, DiagnosticService, DiagnosticCenter, DiagnosticCenterTest,
+    Doctor, DoctorAffiliation, AffiliationSchedule, DoctorBooking, LabBooking
 )
 
 
 class Command(BaseCommand):
-    help = 'Populates complete database with Hospitals, Diagnostic Centers, Categories, Tests, Doctors, and Schedules'
+    help = 'Populates complete database with Hospitals, Diagnostic Centers, Services, Categories, Tests, Doctors, and Schedules'
 
     def handle(self, *args, **options):
-        self.stdout.write("Seeding database with UUID models...")
+        self.stdout.write("Seeding database with UUID models, branches, and services...")
         sys.stdout.flush()
 
         self.stdout.write("Clearing existing data with CASCADE...")
@@ -23,8 +23,9 @@ class Command(BaseCommand):
                 TRUNCATE TABLE 
                     api_affiliationschedule, api_doctorbooking, api_labbooking,
                     api_doctoraffiliation, api_doctor_specialties, api_doctor,
-                    api_diagnosticcentertest, api_diagnosticcenter_categories,
-                    api_diagnosticcenter, api_hospital_categories, api_hospital,
+                    api_diagnosticcentertest, api_diagnosticcenter_categories, api_diagnosticcenter_services,
+                    api_diagnosticcenter, api_hospitalservice, api_diagnosticservice,
+                    api_hospital_categories, api_hospital_services, api_hospital,
                     api_diagnosticcentercategory, api_test, api_testcategory,
                     api_hospitalcategory, api_doctorspecialty, api_user
                 CASCADE;
@@ -93,7 +94,35 @@ class Command(BaseCommand):
             )
             hcat_objs[hc["name"]] = obj
 
-        self.stdout.write("4. Creating Diagnostic Center Categories (Self-referencing Tree)...")
+        self.stdout.write("4. Creating Hospital & Diagnostic Services Models...")
+        sys.stdout.flush()
+        hosp_services_data = [
+            {"name": "24/7 ICU & In-patient", "icon": "Activity", "description": "Round the clock intensive care and bed admission"},
+            {"name": "Specialist OPD Consultation", "icon": "Stethoscope", "description": "Out-patient specialist doctor visit chambers"},
+            {"name": "Surgery & OT Suite", "icon": "ShieldCheck", "description": "Modern operation theater and laparoscopic surgery"},
+            {"name": "24/7 Cardiac Emergency", "icon": "Clock", "description": "Emergency triage and rapid ambulance response"},
+            {"name": "Phaco Cataract Surgery", "icon": "Eye", "description": "Advanced stitchless cataract surgery"},
+            {"name": "Lasik Vision Correction", "icon": "Sparkles", "description": "Laser refractive eye vision correction"}
+        ]
+        hservice_objs = {}
+        for hs in hosp_services_data:
+            obj = HospitalService.objects.create(name=hs["name"], icon=hs["icon"], description=hs["description"])
+            hservice_objs[hs["name"]] = obj
+
+        diag_services_data = [
+            {"name": "4D Ultrasonography & Color Doppler", "icon": "Activity", "description": "High resolution fetal & abdominal sonography"},
+            {"name": "Digital X-Ray & Imaging", "icon": "FileText", "description": "Low radiation digital radiography"},
+            {"name": "Automated Blood & Serology Lab", "icon": "FlaskConical", "description": "Fully automated clinical pathology and biochemistry"},
+            {"name": "128-Slice CT Scan", "icon": "FileText", "description": "High-speed computed tomography body scan"},
+            {"name": "High-Speed MRI Scan", "icon": "Brain", "description": "3.0 Tesla neuro and musculoskeletal MRI"},
+            {"name": "Home Sample Collection", "icon": "Droplet", "description": "Doorstep blood sample collection by certified phlebotomists"}
+        ]
+        dservice_objs = {}
+        for ds in diag_services_data:
+            obj = DiagnosticService.objects.create(name=ds["name"], icon=ds["icon"], description=ds["description"])
+            dservice_objs[ds["name"]] = obj
+
+        self.stdout.write("5. Creating Diagnostic Center Categories...")
         sys.stdout.flush()
         cat_private = DiagnosticCenterCategory.objects.create(
             name="Private Diagnostic Chain",
@@ -130,65 +159,18 @@ class Command(BaseCommand):
             description="Cardiovascular screening & Doppler labs"
         )
 
-        self.stdout.write("5. Creating Test Categories (Self-referencing Tree)...")
+        self.stdout.write("6. Creating Test Categories & Tests...")
         sys.stdout.flush()
-        tcat_pathology = TestCategory.objects.create(
-            name="Pathology & Laboratory",
-            icon="FlaskConical",
-            description="Blood, Urine & Body Fluid Profiles",
-            order=1
-        )
-        tcat_radiology = TestCategory.objects.create(
-            name="Radiology & Medical Imaging",
-            icon="FileText",
-            description="CT Scan, MRI, X-Ray & Ultrasound",
-            order=2
-        )
-        tcat_cardiology = TestCategory.objects.create(
-            name="Cardiology Diagnostics",
-            icon="Heart",
-            description="ECG, Lipid & Cardiac Biomarkers",
-            order=3
-        )
+        tcat_pathology = TestCategory.objects.create(name="Pathology & Laboratory", icon="FlaskConical", order=1)
+        tcat_radiology = TestCategory.objects.create(name="Radiology & Medical Imaging", icon="FileText", order=2)
+        tcat_cardiology = TestCategory.objects.create(name="Cardiology Diagnostics", icon="Heart", order=3)
 
-        tcat_blood = TestCategory.objects.create(
-            name="Routine Blood Profiles",
-            parent=tcat_pathology,
-            icon="Droplet",
-            description="CBC, Hemoglobin & ESR",
-            order=1
-        )
-        tcat_hormone = TestCategory.objects.create(
-            name="Hormone & Endocrine Profiles",
-            parent=tcat_pathology,
-            icon="Sparkles",
-            description="Thyroid T3, T4, TSH & Diabetes",
-            order=2
-        )
-        tcat_ct_mri = TestCategory.objects.create(
-            name="CT Scan & MRI Imaging",
-            parent=tcat_radiology,
-            icon="FileText",
-            description="Brain, Chest & Abdomen Scans",
-            order=1
-        )
-        tcat_usg = TestCategory.objects.create(
-            name="Ultrasonography (USG)",
-            parent=tcat_radiology,
-            icon="Activity",
-            description="4D Abdomen & Pelvic Sonography",
-            order=2
-        )
-        tcat_lipid = TestCategory.objects.create(
-            name="Lipid & Cardiac Profiles",
-            parent=tcat_cardiology,
-            icon="Heart",
-            description="Cholesterol, Lipid Panel & Troponin-I",
-            order=1
-        )
+        tcat_blood = TestCategory.objects.create(name="Routine Blood Profiles", parent=tcat_pathology, icon="Droplet", order=1)
+        tcat_hormone = TestCategory.objects.create(name="Hormone & Endocrine Profiles", parent=tcat_pathology, icon="Sparkles", order=2)
+        tcat_ct_mri = TestCategory.objects.create(name="CT Scan & MRI Imaging", parent=tcat_radiology, icon="FileText", order=1)
+        tcat_usg = TestCategory.objects.create(name="Ultrasonography (USG)", parent=tcat_radiology, icon="Activity", order=2)
+        tcat_lipid = TestCategory.objects.create(name="Lipid & Cardiac Profiles", parent=tcat_cardiology, icon="Heart", order=1)
 
-        self.stdout.write("6. Creating Individual Tests...")
-        sys.stdout.flush()
         tests_data = [
             {
                 "name": "Blood Test (CBC)",
@@ -243,23 +225,15 @@ class Command(BaseCommand):
         ]
         test_objs = {}
         for t in tests_data:
-            obj = Test.objects.create(
-                name=t["name"],
-                category=t["category"],
-                code=t["code"],
-                sample_type=t["sample_type"],
-                preparation_instructions=t["preparation_instructions"],
-                fasting_required=t["fasting_required"],
-                report_time_hours=t["report_time_hours"],
-                description=t["description"]
-            )
+            obj = Test.objects.create(**t)
             test_objs[t["name"]] = obj
 
-        self.stdout.write("7. Creating Hospitals...")
+        self.stdout.write("7. Creating Hospitals with Branch & Services...")
         sys.stdout.flush()
         hospitals_data = [
             {
                 "name": "Ibn Sina Healthcare Group",
+                "branch": "Dhanmondi Branch",
                 "description": "Leading nationwide multi-specialty hospital offering inpatient surgery, ICU, and specialist OPD chambers.",
                 "address": "House 48, Road 9/A, Dhanmondi",
                 "district": "Dhaka",
@@ -274,12 +248,13 @@ class Command(BaseCommand):
                 "badge": "Super Partner",
                 "logo": "https://images.unsplash.com/photo-1519494026892-80bbd2d6fd0d?auto=format&fit=crop&w=600&q=80",
                 "image": "https://images.unsplash.com/photo-1519494026892-80bbd2d6fd0d?auto=format&fit=crop&w=600&q=80",
-                "services": ["24/7 ICU & In-patient", "Specialist OPD Consultation", "Surgery & OT", "24/7 Emergency"],
                 "categories": [hcat_objs["Multi-Specialty"]],
+                "services": [hservice_objs["24/7 ICU & In-patient"], hservice_objs["Specialist OPD Consultation"], hservice_objs["Surgery & OT Suite"]],
                 "is_verified": True
             },
             {
                 "name": "National Heart Foundation",
+                "branch": "Mirpur Branch",
                 "description": "Premier specialized cardiac and cardiovascular hospital institute in Bangladesh.",
                 "address": "Mirpur-2",
                 "district": "Dhaka",
@@ -294,12 +269,13 @@ class Command(BaseCommand):
                 "badge": "Cardiac Center",
                 "logo": "https://images.unsplash.com/photo-1519494026892-80bbd2d6fd0d?auto=format&fit=crop&w=600&q=80",
                 "image": "https://images.unsplash.com/photo-1519494026892-80bbd2d6fd0d?auto=format&fit=crop&w=600&q=80",
-                "services": ["Coronary Angiogram", "Bypass Surgery", "Echocardiogram", "24/7 Cardiac Emergency"],
                 "categories": [hcat_objs["Cardiac Hospitals"]],
+                "services": [hservice_objs["24/7 Cardiac Emergency"], hservice_objs["Specialist OPD Consultation"], hservice_objs["24/7 ICU & In-patient"]],
                 "is_verified": True
             },
             {
                 "name": "Ispahani Islamia Eye Institute",
+                "branch": "Farmgate Main Branch",
                 "description": "Pioneer ophthalmic hospital network offering advanced eye surgery and consultations.",
                 "address": "Farmgate, Sher-e-Bangla Nagar",
                 "district": "Dhaka",
@@ -314,23 +290,26 @@ class Command(BaseCommand):
                 "badge": "Eye Center",
                 "logo": "https://images.unsplash.com/photo-1579684385127-1ef15d508118?auto=format&fit=crop&w=600&q=80",
                 "image": "https://images.unsplash.com/photo-1579684385127-1ef15d508118?auto=format&fit=crop&w=600&q=80",
-                "services": ["Phaco Cataract Surgery", "Lasik Vision Correction", "Retina Surgery", "Glaucoma Care"],
                 "categories": [hcat_objs["Eye Hospitals"]],
+                "services": [hservice_objs["Phaco Cataract Surgery"], hservice_objs["Lasik Vision Correction"], hservice_objs["Specialist OPD Consultation"]],
                 "is_verified": True
             }
         ]
         hospital_objs = {}
         for h in hospitals_data:
             cats = h.pop("categories")
+            srvs = h.pop("services")
             obj = Hospital.objects.create(**h)
             obj.categories.set(cats)
+            obj.services.set(srvs)
             hospital_objs[h["name"]] = obj
 
-        self.stdout.write("8. Creating Diagnostic Centers...")
+        self.stdout.write("8. Creating Diagnostic Centers with Branch & Services...")
         sys.stdout.flush()
         centers_data = [
             {
-                "name": "Popular Diagnostic Centre - Panthapath",
+                "name": "Popular Diagnostic Centre",
+                "branch": "Panthapath Branch",
                 "address": "House 16, Road 2, Dhanmondi / Panthapath",
                 "district": "Dhaka",
                 "division": "Dhaka",
@@ -343,13 +322,14 @@ class Command(BaseCommand):
                 "badge": "Verified Partner",
                 "logo": "https://images.unsplash.com/photo-1586773860418-d37222d8fce3?auto=format&fit=crop&w=600&q=80",
                 "image": "https://images.unsplash.com/photo-1586773860418-d37222d8fce3?auto=format&fit=crop&w=600&q=80",
-                "services": ["Specialist Visiting Doctor OPD", "Advanced MRI", "Full Automated Pathology", "128-Slice CT Scan"],
                 "description": "Popular Medical Center providing state-of-the-art diagnostic imaging and visiting doctor chambers.",
                 "categories": [dcc_pathology, dcc_radiology],
+                "services": [dservice_objs["Automated Blood & Serology Lab"], dservice_objs["128-Slice CT Scan"], dservice_objs["High-Speed MRI Scan"], dservice_objs["Home Sample Collection"]],
                 "is_verified": True
             },
             {
-                "name": "Ibn Sina Diagnostic Center - Mirpur",
+                "name": "Ibn Sina Diagnostic Center",
+                "branch": "Mirpur Branch",
                 "address": "Plot 11, Avenue 1, Block A, Mirpur 10",
                 "district": "Dhaka",
                 "division": "Dhaka",
@@ -362,13 +342,14 @@ class Command(BaseCommand):
                 "badge": "Verified Partner",
                 "logo": "https://images.unsplash.com/photo-1538108149393-fbbd81895907?auto=format&fit=crop&w=600&q=80",
                 "image": "https://images.unsplash.com/photo-1538108149393-fbbd81895907?auto=format&fit=crop&w=600&q=80",
-                "services": ["4D USG", "Digital X-Ray", "Blood Collection", "Visiting Specialist OPD"],
                 "description": "Specialized diagnostic testing and visiting doctor OPD sessions in Mirpur.",
                 "categories": [dcc_pathology],
+                "services": [dservice_objs["4D Ultrasonography & Color Doppler"], dservice_objs["Digital X-Ray & Imaging"], dservice_objs["Automated Blood & Serology Lab"], dservice_objs["Home Sample Collection"]],
                 "is_verified": True
             },
             {
-                "name": "Chevron Healthcare - Chittagong",
+                "name": "Chevron Healthcare",
+                "branch": "Panchlaish Branch",
                 "address": "12/12 O.R. Nizam Road, Panchlaish",
                 "district": "Chittagong",
                 "division": "Chittagong",
@@ -381,13 +362,14 @@ class Command(BaseCommand):
                 "badge": "Top Rated",
                 "logo": "https://images.unsplash.com/photo-1629909613654-28e377c37b09?auto=format&fit=crop&w=600&q=80",
                 "image": "https://images.unsplash.com/photo-1629909613654-28e377c37b09?auto=format&fit=crop&w=600&q=80",
-                "services": ["24/7 Emergency OPD", "Digital X-Ray", "Home Sample Collection", "Automated Blood Lab"],
                 "description": "Chevron Clinical Laboratory offering round-the-clock OPD specialist doctor visits and diagnostics.",
                 "categories": [dcc_pathology, dcc_radiology],
+                "services": [dservice_objs["Digital X-Ray & Imaging"], dservice_objs["Automated Blood & Serology Lab"], dservice_objs["Home Sample Collection"]],
                 "is_verified": True
             },
             {
-                "name": "Labaid Diagnostics - Rajshahi",
+                "name": "Labaid Diagnostics",
+                "branch": "Laxmipur Branch",
                 "address": "Laxmipur, Rajshahi",
                 "district": "Rajshahi",
                 "division": "Rajshahi",
@@ -400,24 +382,26 @@ class Command(BaseCommand):
                 "badge": "Super Partner",
                 "logo": "https://images.unsplash.com/photo-1538108149393-fbbd81895907?auto=format&fit=crop&w=600&q=80",
                 "image": "https://images.unsplash.com/photo-1538108149393-fbbd81895907?auto=format&fit=crop&w=600&q=80",
-                "services": ["Nephrology Support", "Gynecology Clinic", "High-Accuracy Pathology"],
                 "description": "Labaid Diagnostic Laxmipur is Rajshahi's premier center for pathology and digital diagnostic radiology.",
                 "categories": [dcc_pathology, dcc_cardiac_center],
+                "services": [dservice_objs["Automated Blood & Serology Lab"], dservice_objs["4D Ultrasonography & Color Doppler"]],
                 "is_verified": True
             }
         ]
         center_objs = {}
         for c in centers_data:
             cats = c.pop("categories")
+            srvs = c.pop("services")
             obj = DiagnosticCenter.objects.create(**c)
             obj.categories.set(cats)
+            obj.services.set(srvs)
             center_objs[c["name"]] = obj
 
         self.stdout.write("9. Linking Tests to Diagnostic Centers (DiagnosticCenterTest)...")
         sys.stdout.flush()
         
         DiagnosticCenterTest.objects.create(
-            center=center_objs["Popular Diagnostic Centre - Panthapath"],
+            center=center_objs["Popular Diagnostic Centre"],
             test=test_objs["Blood Test (CBC)"],
             price=500.00,
             original_price=650.00,
@@ -427,7 +411,7 @@ class Command(BaseCommand):
             home_sample_collection=True
         )
         DiagnosticCenterTest.objects.create(
-            center=center_objs["Popular Diagnostic Centre - Panthapath"],
+            center=center_objs["Popular Diagnostic Centre"],
             test=test_objs["CT Scan (Brain / Chest)"],
             price=4800.00,
             original_price=6200.00,
@@ -437,7 +421,7 @@ class Command(BaseCommand):
             home_sample_collection=False
         )
         DiagnosticCenterTest.objects.create(
-            center=center_objs["Popular Diagnostic Centre - Panthapath"],
+            center=center_objs["Popular Diagnostic Centre"],
             test=test_objs["Thyroid Profile (T3, T4, TSH)"],
             price=1100.00,
             original_price=1500.00,
@@ -448,7 +432,7 @@ class Command(BaseCommand):
         )
 
         DiagnosticCenterTest.objects.create(
-            center=center_objs["Ibn Sina Diagnostic Center - Mirpur"],
+            center=center_objs["Ibn Sina Diagnostic Center"],
             test=test_objs["Blood Test (CBC)"],
             price=400.00,
             original_price=550.00,
@@ -458,7 +442,7 @@ class Command(BaseCommand):
             home_sample_collection=True
         )
         DiagnosticCenterTest.objects.create(
-            center=center_objs["Ibn Sina Diagnostic Center - Mirpur"],
+            center=center_objs["Ibn Sina Diagnostic Center"],
             test=test_objs["USG (Ultrasound Abdomen)"],
             price=1500.00,
             original_price=2000.00,
@@ -468,7 +452,7 @@ class Command(BaseCommand):
             home_sample_collection=False
         )
         DiagnosticCenterTest.objects.create(
-            center=center_objs["Ibn Sina Diagnostic Center - Mirpur"],
+            center=center_objs["Ibn Sina Diagnostic Center"],
             test=test_objs["Lipid Profile (Cholesterol)"],
             price=900.00,
             original_price=1300.00,
@@ -479,7 +463,7 @@ class Command(BaseCommand):
         )
 
         DiagnosticCenterTest.objects.create(
-            center=center_objs["Chevron Healthcare - Chittagong"],
+            center=center_objs["Chevron Healthcare"],
             test=test_objs["Blood Test (CBC)"],
             price=450.00,
             original_price=600.00,
@@ -489,7 +473,7 @@ class Command(BaseCommand):
             home_sample_collection=True
         )
         DiagnosticCenterTest.objects.create(
-            center=center_objs["Chevron Healthcare - Chittagong"],
+            center=center_objs["Chevron Healthcare"],
             test=test_objs["USG (Ultrasound Abdomen)"],
             price=1400.00,
             original_price=1800.00,
@@ -500,7 +484,7 @@ class Command(BaseCommand):
         )
 
         DiagnosticCenterTest.objects.create(
-            center=center_objs["Labaid Diagnostics - Rajshahi"],
+            center=center_objs["Labaid Diagnostics"],
             test=test_objs["Lipid Profile (Cholesterol)"],
             price=950.00,
             original_price=1400.00,
@@ -564,7 +548,7 @@ class Command(BaseCommand):
                 "experience": "25+ Yrs Exp.",
                 "specs": ["Neurologist"],
                 "hospital": None,
-                "dc": center_objs["Popular Diagnostic Centre - Panthapath"],
+                "dc": center_objs["Popular Diagnostic Centre"],
                 "type": "OPD",
                 "fee": 1500,
                 "schedules": [("Sat", 18, 21.5), ("Mon", 18, 21.5)]
@@ -575,7 +559,7 @@ class Command(BaseCommand):
                 "experience": "16+ Yrs Exp.",
                 "specs": ["General Physician"],
                 "hospital": None,
-                "dc": center_objs["Popular Diagnostic Centre - Panthapath"],
+                "dc": center_objs["Popular Diagnostic Centre"],
                 "type": "OPD",
                 "fee": 800,
                 "schedules": [("Mon", 9, 13), ("Tue", 9, 13), ("Wed", 9, 13)]
@@ -586,7 +570,7 @@ class Command(BaseCommand):
                 "experience": "18+ Yrs Exp.",
                 "specs": ["Orthopedic"],
                 "hospital": None,
-                "dc": center_objs["Chevron Healthcare - Chittagong"],
+                "dc": center_objs["Chevron Healthcare"],
                 "type": "OPD",
                 "fee": 1200,
                 "schedules": [("Sun", 17, 21), ("Tue", 17, 21)]
@@ -597,7 +581,7 @@ class Command(BaseCommand):
                 "experience": "17+ Yrs Exp.",
                 "specs": ["Nephrologist"],
                 "hospital": None,
-                "dc": center_objs["Labaid Diagnostics - Rajshahi"],
+                "dc": center_objs["Labaid Diagnostics"],
                 "type": "OPD",
                 "fee": 1200,
                 "schedules": [("Thu", 15, 19.5), ("Fri", 15, 19.5)]
@@ -633,5 +617,5 @@ class Command(BaseCommand):
                     end_time=datetime.time(eh, em)
                 )
 
-        self.stdout.write(self.style.SUCCESS("Successfully populated database with UUID models and mock data!"))
+        self.stdout.write(self.style.SUCCESS("Successfully populated database with UUID models, branches, and services!"))
         sys.stdout.flush()

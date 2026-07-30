@@ -3,15 +3,15 @@ from rest_framework.response import Response
 from rest_framework.views import APIView
 from rest_framework_simplejwt.tokens import RefreshToken
 from .models import (
-    User, DoctorSpecialty, HospitalCategory, Hospital,
-    TestCategory, Test, DiagnosticCenterCategory, DiagnosticCenter, DiagnosticCenterTest,
+    User, DoctorSpecialty, HospitalCategory, HospitalService, Hospital,
+    TestCategory, Test, DiagnosticCenterCategory, DiagnosticService, DiagnosticCenter, DiagnosticCenterTest,
     Doctor, DoctorAffiliation, AffiliationSchedule, DoctorBooking, LabBooking
 )
 from .permissions import IsAdminUserOrReadOnly
 from .serializers import (
     UserSerializer, UserProfileSerializer, RegisterSerializer, LoginSerializer,
-    HospitalCategorySerializer, HospitalSerializer,
-    DiagnosticCenterCategorySerializer, DiagnosticCenterSerializer, DiagnosticCenterTestSerializer,
+    HospitalCategorySerializer, HospitalServiceSerializer, HospitalSerializer,
+    DiagnosticCenterCategorySerializer, DiagnosticServiceSerializer, DiagnosticCenterSerializer, DiagnosticCenterTestSerializer,
     TestCategorySerializer, TestSerializer, DoctorSpecialtySerializer, DoctorSerializer,
     DoctorAffiliationSerializer, DoctorBookingSerializer, LabBookingSerializer
 )
@@ -63,8 +63,13 @@ class HospitalCategoryViewSet(viewsets.ModelViewSet):
     permission_classes = (IsAdminUserOrReadOnly,)
 
 
-# Alias for backward compatibility
 HospitalSpecialtyViewSet = HospitalCategoryViewSet
+
+
+class HospitalServiceViewSet(viewsets.ModelViewSet):
+    queryset = HospitalService.objects.all()
+    serializer_class = HospitalServiceSerializer
+    permission_classes = (IsAdminUserOrReadOnly,)
 
 
 class HospitalViewSet(viewsets.ModelViewSet):
@@ -83,13 +88,19 @@ class HospitalViewSet(viewsets.ModelViewSet):
         if category and category != 'all':
             queryset = queryset.filter(categories__id=category) | queryset.filter(categories__slug=category)
         if search:
-            queryset = queryset.filter(name__icontains=search)
+            queryset = queryset.filter(name__icontains=search) | queryset.filter(branch__icontains=search)
         return queryset.distinct()
 
 
 class DiagnosticCenterCategoryViewSet(viewsets.ModelViewSet):
     queryset = DiagnosticCenterCategory.objects.all()
     serializer_class = DiagnosticCenterCategorySerializer
+    permission_classes = (IsAdminUserOrReadOnly,)
+
+
+class DiagnosticServiceViewSet(viewsets.ModelViewSet):
+    queryset = DiagnosticService.objects.all()
+    serializer_class = DiagnosticServiceSerializer
     permission_classes = (IsAdminUserOrReadOnly,)
 
 
@@ -112,11 +123,10 @@ class DiagnosticCenterViewSet(viewsets.ModelViewSet):
         if category and category != 'all':
             queryset = queryset.filter(categories__id=category) | queryset.filter(categories__slug=category)
         if search:
-            queryset = queryset.filter(name__icontains=search)
+            queryset = queryset.filter(name__icontains=search) | queryset.filter(branch__icontains=search)
         return queryset.distinct()
 
 
-# BranchViewSet alias mapping to DiagnosticCenterViewSet for backward compatibility
 BranchViewSet = DiagnosticCenterViewSet
 
 
@@ -143,7 +153,6 @@ class TestViewSet(viewsets.ModelViewSet):
         return queryset
 
 
-# PathologyTestViewSet alias
 PathologyTestViewSet = TestViewSet
 
 
@@ -155,7 +164,7 @@ class DiagnosticCenterTestViewSet(viewsets.ModelViewSet):
     def get_queryset(self):
         queryset = DiagnosticCenterTest.objects.all()
         center = self.request.query_params.get('center', None)
-        branch = self.request.query_params.get('branch', None)  # alias
+        branch = self.request.query_params.get('branch', None)
         test = self.request.query_params.get('test', None)
 
         center_id = center or branch
@@ -166,7 +175,6 @@ class DiagnosticCenterTestViewSet(viewsets.ModelViewSet):
         return queryset
 
 
-# BranchTestViewSet alias
 BranchTestViewSet = DiagnosticCenterTestViewSet
 
 
@@ -224,7 +232,7 @@ class DoctorAffiliationViewSet(viewsets.ModelViewSet):
         doctor = self.request.query_params.get('doctor', None)
         hospital = self.request.query_params.get('hospital', None)
         diagnostic_center = self.request.query_params.get('diagnostic_center', None)
-        branch = self.request.query_params.get('branch', None)  # backward compat
+        branch = self.request.query_params.get('branch', None)
 
         if consultation_type:
             queryset = queryset.filter(consultation_type=consultation_type)
