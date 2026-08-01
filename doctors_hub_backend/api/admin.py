@@ -83,8 +83,9 @@ class DiagnosticServiceAdmin(admin.ModelAdmin):
 @admin.register(DiagnosticCenter)
 class DiagnosticCenterAdmin(admin.ModelAdmin):
     list_display = ('id', 'name', 'branch', 'district', 'division', 'is_verified', 'is_active', 'rating')
-    list_filter = ('district', 'division', 'is_verified', 'is_active')
+    list_filter = ('district', 'division', 'is_verified', 'is_active', 'categories')
     search_fields = ('name', 'branch', 'district', 'division', 'address')
+    filter_horizontal = ('categories', 'services')
     inlines = [DiagnosticCenterTestInline, DoctorAffiliationInline]
 
 

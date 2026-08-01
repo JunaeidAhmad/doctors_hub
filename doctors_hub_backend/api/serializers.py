@@ -283,24 +283,66 @@ class DiagnosticCenterSerializer(serializers.ModelSerializer):
     )
     offered_tests = DiagnosticCenterTestSerializer(many=True, read_only=True)
     affiliated_doctors = DoctorAffiliationSerializer(many=True, read_only=True)
+    test_category_ids = serializers.ListField(
+        child=serializers.UUIDField(), write_only=True, required=False
+    )
+    test_ids = serializers.ListField(
+        child=serializers.UUIDField(), write_only=True, required=False
+    )
 
     class Meta:
         model = DiagnosticCenter
         fields = '__all__'
 
+    def _attach_tests(self, center, test_category_ids=None, test_ids=None):
+        tests_to_attach = set()
+        if test_ids:
+            tests_to_attach.update(Test.objects.filter(id__in=test_ids))
+        if test_category_ids:
+            cats = TestCategory.objects.filter(id__in=test_category_ids)
+            all_cat_ids = set()
+            for cat in cats:
+                all_cat_ids.add(cat.id)
+                all_cat_ids.update(cat.children.values_list('id', flat=True))
+            tests_to_attach.update(Test.objects.filter(category_id__in=all_cat_ids))
+
+        for idx, test in enumerate(tests_to_attach):
+            base_price = 400 + (idx * 150) % 2500
+            orig_price = base_price + 200
+            DiagnosticCenterTest.objects.get_or_create(
+                center=center,
+                test=test,
+                defaults={
+                    'price': base_price,
+                    'original_price': orig_price,
+                    'discount': '20% OFF',
+                    'report_time': f"{test.report_time_hours or 24} Hours",
+                    'is_available': True,
+                    'home_sample_collection': True
+                }
+            )
+
     def create(self, validated_data):
         categories = validated_data.pop('categories', [])
         services = validated_data.pop('services', [])
+        test_cat_ids = validated_data.pop('test_category_ids', None)
+        t_ids = validated_data.pop('test_ids', None)
+
         center = DiagnosticCenter.objects.create(**validated_data)
         if categories:
             center.categories.set(categories)
         if services:
             center.services.set(services)
+
+        self._attach_tests(center, test_category_ids=test_cat_ids, test_ids=t_ids)
         return center
 
     def update(self, instance, validated_data):
         categories = validated_data.pop('categories', None)
         services = validated_data.pop('services', None)
+        test_cat_ids = validated_data.pop('test_category_ids', None)
+        t_ids = validated_data.pop('test_ids', None)
+
         for attr, value in validated_data.items():
             setattr(instance, attr, value)
         instance.save()
@@ -308,6 +350,9 @@ class DiagnosticCenterSerializer(serializers.ModelSerializer):
             instance.categories.set(categories)
         if services is not None:
             instance.services.set(services)
+
+        if test_cat_ids is not None or t_ids is not None:
+            self._attach_tests(instance, test_category_ids=test_cat_ids, test_ids=t_ids)
         return instance
 
 

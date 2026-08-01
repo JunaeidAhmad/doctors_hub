@@ -1,6 +1,6 @@
 import React, { useState } from 'react';
 import { Stethoscope, FlaskConical, Search, Filter, Sparkles, MapPin, ChevronRight, Building2 } from 'lucide-react';
-import { SPECIALTIES, PATHOLOGY_CATEGORIES, HOSPITAL_SPECIALTIES, LOCATIONS } from '../data/mockData';
+import { SPECIALTIES, TEST_CATEGORIES, HOSPITAL_SPECIALTIES, LOCATIONS } from '../data/mockData';
 
 export default function ThreeWayEngine({
   selectedSpecialty,
@@ -71,7 +71,7 @@ export default function ThreeWayEngine({
                     <option value="">All Specialties (Show All Doctors)</option>
                     {SPECIALTIES.map((spec) => (
                       <option key={spec.id} value={spec.name}>
-                        {spec.name} ({spec.description})
+                        {spec.name} {/*({spec.description})*/}
                       </option>
                     ))}
                   </select>
@@ -150,9 +150,9 @@ export default function ThreeWayEngine({
                     className="w-full bg-white text-slate-800 font-medium text-xs border border-slate-300 rounded-xl px-3 py-2.5 focus:outline-none focus:ring-2 focus:ring-teal-500 focus:border-teal-500 transition-all appearance-none cursor-pointer shadow-xs"
                   >
                     <option value="">All Test Categories</option>
-                    {PATHOLOGY_CATEGORIES.map((cat) => (
+                    {TEST_CATEGORIES.filter((cat) => cat && cat.id !== 'all').map((cat) => (
                       <option key={cat.id} value={cat.id}>
-                        {cat.name} ({cat.description})
+                        {cat.name} {/*({cat.description})*/}
                       </option>
                     ))}
                   </select>
@@ -191,8 +191,8 @@ export default function ThreeWayEngine({
             <div className="pt-2 border-t border-slate-200/60">
               <button
                 onClick={() => {
-                  setActiveEngineTab('pathology');
-                  onSearchExecute('pathology');
+                  setActiveEngineTab('diagnostics');
+                  onSearchExecute('diagnostics');
                 }}
                 className="w-full py-2.5 rounded-lg bg-teal-600 hover:bg-teal-700 text-white font-bold text-xs uppercase tracking-wider transition-all flex items-center justify-center gap-2 shadow-sm active:scale-95"
               >
@@ -233,7 +233,7 @@ export default function ThreeWayEngine({
                     <option value="">All Hospital Categories</option>
                     {HOSPITAL_SPECIALTIES.map((cat) => (
                       <option key={cat.id} value={cat.id}>
-                        {cat.name} ({cat.description})
+                        {cat.name} {/*({cat.description})*/}
                       </option>
                     ))}
                   </select>

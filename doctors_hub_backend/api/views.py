@@ -2,6 +2,7 @@ from rest_framework import viewsets, generics, permissions, status
 from rest_framework.response import Response
 from rest_framework.views import APIView
 from rest_framework_simplejwt.tokens import RefreshToken
+from django.db.models import Q
 from .models import (
     User, DoctorSpecialty, HospitalCategory, HospitalService, Hospital,
     TestCategory, Test, DiagnosticCenterCategory, DiagnosticService, DiagnosticCenter, DiagnosticCenterTest,
@@ -210,7 +211,15 @@ class DoctorViewSet(viewsets.ModelViewSet):
                 queryset.filter(affiliations__diagnostic_center__district__icontains=location)
             )
         if search:
-            queryset = queryset.filter(name__icontains=search)
+            queryset = queryset.filter(
+                Q(name__icontains=search) |
+                Q(qualification__icontains=search) |
+                Q(specialties__name__icontains=search) |
+                Q(affiliations__hospital__name__icontains=search) |
+                Q(affiliations__hospital__branch__icontains=search) |
+                Q(affiliations__diagnostic_center__name__icontains=search) |
+                Q(affiliations__diagnostic_center__branch__icontains=search)
+            )
         if consultation_type:
             queryset = queryset.filter(affiliations__consultation_type=consultation_type)
         if hospital:
