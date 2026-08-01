@@ -49,7 +49,7 @@ export default function SpecialtyGrid({ selectedSpecialty, setSelectedSpecialty,
             Consult Top Specialists
           </h2>
           <p className="text-xs sm:text-sm text-slate-600 mt-1">
-            Choose a clinical discipline to filter visiting doctors in your region.
+            Choose a clinical discipline to filter doctors in your region.
           </p>
         </div>
 

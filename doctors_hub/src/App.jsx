@@ -4,11 +4,11 @@ import TopUtilityStrip from './components/TopUtilityStrip';
 import StickyNavbar from './components/StickyNavbar';
 import HomePage from './pages/HomePage';
 import OpdDoctorSearchPage from './pages/OpdDoctorSearchPage';
-import PathologySearchPage from './pages/PathologySearchPage';
+import DiagnosticsSearchPage from './pages/DiagnosticsSearchPage';
 import DirectSearchPage from './pages/DirectSearchPage';
 import AdminDashboardPage from './pages/AdminDashboardPage';
-import MedicalPartnerDetailPage from './pages/MedicalPartnerDetailPage';
-import MedicalPartnersPage from './pages/MedicalPartnersPage';
+import HospitalDetailPage from './pages/HospitalDetailPage';
+import HospitalsPage from './pages/HospitalsPage';
 import BookingModal from './components/BookingModal';
 import LabBookingModal from './components/LabBookingModal';
 import LoginModal from './components/LoginModal';
@@ -20,10 +20,10 @@ import { api } from './services/api';
 function getPageFromPath(path) {
   if (path === '/admin') return 'admin';
   if (path === '/opd-search') return 'opd-search';
-  if (path === '/pathology-search') return 'pathology-search';
+  if (path === '/diagnostics-search' || path === '/pathology-search') return 'diagnostics-search';
   if (path === '/direct-search') return 'direct-search';
-  if (path === '/partners' || path === '/medical-partners') return 'partners';
-  if (path.startsWith('/partner/') || path.startsWith('/medical-partner/')) return 'partner-detail';
+  if (path === '/hospitals' || path === '/partners' || path === '/medical-partners') return 'hospitals';
+  if (path.startsWith('/hospital/') || path.startsWith('/partner/') || path.startsWith('/medical-partner/')) return 'hospital-detail';
   return 'home';
 }
 
@@ -38,7 +38,8 @@ export default function App() {
     const path = location.pathname;
     if (path === '/admin') return 'admin';
     if (path === '/opd-search') return 'opd-doctors';
-    if (path === '/pathology-search') return 'pathology';
+    if (path === '/diagnostics-search' || path === '/pathology-search') return 'diagnostics';
+    if (path === '/hospitals' || path === '/partners' || path === '/medical-partners') return 'hospitals';
     return 'home';
   });
   const isSectionScroll = useRef(false);
@@ -54,8 +55,8 @@ export default function App() {
     }
     if (currentPage === 'admin') setActiveTab('admin');
     else if (currentPage === 'opd-search') setActiveTab('opd-doctors');
-    else if (currentPage === 'pathology-search') setActiveTab('pathology');
-    else if (currentPage === 'partners' || currentPage === 'partner-detail') setActiveTab('partners');
+    else if (currentPage === 'diagnostics-search') setActiveTab('diagnostics');
+    else if (currentPage === 'hospitals' || currentPage === 'hospital-detail') setActiveTab('hospitals');
     else if (currentPage === 'direct-search') setActiveTab('home');
     else setActiveTab('home');
   }, [currentPage]);
@@ -101,14 +102,14 @@ export default function App() {
       if (param) setSelectedSpecialty(param);
       navigate('/opd-search');
       setActiveTab('opd-doctors');
-    } else if (mode === 'pathology') {
+    } else if (mode === 'pathology' || mode === 'diagnostics') {
       if (param) setSelectedTest(param); // Or we could use setSearchKeyword if tests use it
-      navigate('/pathology-search');
-      setActiveTab('pathology');
+      navigate('/diagnostics-search');
+      setActiveTab('diagnostics');
     } else if (mode === 'hospital') {
       if (param) setSearchKeyword(param);
-      navigate('/partners');
-      setActiveTab('partners');
+      navigate('/hospitals');
+      setActiveTab('hospitals');
     } else {
       if (searchKeyword.trim() !== '') {
         navigate('/direct-search');
@@ -126,12 +127,12 @@ export default function App() {
       navigate('/admin');
     } else if (tabId === 'home') {
       navigate('/');
-    } else if (tabId === 'partners') {
-      navigate('/partners');
+    } else if (tabId === 'hospitals' || tabId === 'partners') {
+      navigate('/hospitals');
     } else if (tabId === 'opd-doctors') {
       navigate('/opd-search');
-    } else if (tabId === 'pathology') {
-      navigate('/pathology-search');
+    } else if (tabId === 'pathology' || tabId === 'diagnostics') {
+      navigate('/diagnostics-search');
     } else {
       isSectionScroll.current = true;
       navigate('/');
@@ -143,9 +144,9 @@ export default function App() {
     window.scrollTo({ top: 0, behavior: 'smooth' });
   };
 
-  const handleSelectPartner = (partnerId) => {
-    setActiveTab('partners');
-    navigate(`/partner/${partnerId}`);
+  const handleSelectHospital = (hospitalId) => {
+    setActiveTab('hospitals');
+    navigate(`/hospital/${hospitalId}`);
     window.scrollTo({ top: 0, behavior: 'smooth' });
   };
 
@@ -163,8 +164,10 @@ export default function App() {
     );
   };
 
-  // Helper to extract partner ID from URL path /partner/:id or /medical-partner/:id
-  const currentPartnerId = location.pathname.startsWith('/partner/')
+  // Helper to extract hospital ID from URL path /hospital/:id, /partner/:id or /medical-partner/:id
+  const currentHospitalId = location.pathname.startsWith('/hospital/')
+    ? location.pathname.replace('/hospital/', '')
+    : location.pathname.startsWith('/partner/')
     ? location.pathname.replace('/partner/', '')
     : location.pathname.replace('/medical-partner/', '');
 
@@ -221,26 +224,26 @@ export default function App() {
             onExecuteSearch={handleExecuteSearch}
             onBookDoctorSlot={(chamber, doctor) => setBookingDoctorState({ chamber, doctor })}
             onBookLabTest={(test) => setBookingLabState(test)}
-            onSelectPartner={handleSelectPartner}
+            onSelectHospital={handleSelectHospital}
             showToast={showToast}
           />
         )}
 
-        {currentPage === 'partners' && (
-          <MedicalPartnersPage
+        {currentPage === 'hospitals' && (
+          <HospitalsPage
             initialKeyword={searchKeyword}
-            onSelectPartner={handleSelectPartner}
+            onSelectHospital={handleSelectHospital}
             onNavigateHome={() => handleNavClick('home')}
           />
         )}
 
-        {currentPage === 'partner-detail' && (
-          <MedicalPartnerDetailPage
-            partnerId={currentPartnerId}
+        {currentPage === 'hospital-detail' && (
+          <HospitalDetailPage
+            hospitalId={currentHospitalId}
             onBookDoctorSlot={(chamber, doctor) => setBookingDoctorState({ chamber, doctor })}
             onBookLabTest={(test) => setBookingLabState(test)}
             onNavigateHome={() => handleNavClick('home')}
-            onNavigatePartners={() => handleNavClick('partners')}
+            onNavigateHospitals={() => handleNavClick('hospitals')}
           />
         )}
 
@@ -250,13 +253,13 @@ export default function App() {
             initialLocation={selectedLocation}
             initialKeyword={searchKeyword}
             onBookDoctorSlot={(chamber, doctor) => setBookingDoctorState({ chamber, doctor })}
-            onSelectPartner={handleSelectPartner}
+            onSelectHospital={handleSelectHospital}
             onNavigateHome={() => handleNavClick('home')}
           />
         )}
 
-        {currentPage === 'pathology-search' && (
-          <PathologySearchPage
+        {currentPage === 'diagnostics-search' && (
+          <DiagnosticsSearchPage
             initialTest={selectedTest || searchKeyword}
             onBookLabTest={(test) => setBookingLabState(test)}
             onNavigateHome={() => handleNavClick('home')}

@@ -78,7 +78,7 @@ export default function DirectSearchPage({
                 {keyword ? `Search Results for "${keyword}"` : 'Direct Search Engine'}
               </h1>
               <p className="text-xs sm:text-sm text-slate-300 mt-1">
-                Found <strong className="text-emerald-400">{matchingDoctorsList.length} Doctors</strong>, <strong className="text-teal-300">{matchingChambersList.length} Chambers</strong>, and <strong className="text-cyan-300">{matchingPathologyList.length} Pathology Packages</strong>.
+                Found <strong className="text-emerald-400">{matchingDoctorsList.length} Doctors</strong>, <strong className="text-teal-300">{matchingChambersList.length} Chambers</strong>, and <strong className="text-cyan-300">{matchingPathologyList.length} Diagnostic Tests</strong>.
               </p>
             </div>
 

@@ -21,7 +21,7 @@ export default function HomePage({
   onExecuteSearch,
   onBookDoctorSlot,
   onBookLabTest,
-  onSelectPartner,
+  onSelectHospital,
   showToast
 }) {
   return (

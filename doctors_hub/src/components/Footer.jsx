@@ -55,7 +55,7 @@ export default function Footer({ onSelectLocation }) {
             </h4>
             <ul className="space-y-2">
               <li><a href="#opd-doctors" className="hover:text-emerald-400 transition-colors">Search OPD Doctors</a></li>
-              <li><a href="#pathology" className="hover:text-emerald-400 transition-colors">Test Pathology Packages</a></li>
+              <li><a href="#diagnostics" className="hover:text-emerald-400 transition-colors">Diagnostic & Lab Tests</a></li>
               <li><a href="#about" className="hover:text-emerald-400 transition-colors">About DoctorHub BD</a></li>
               <li><a href="#contact" className="hover:text-emerald-400 transition-colors">Patient Help & Support</a></li>
               <li><a href="#contact" className="hover:text-emerald-400 transition-colors">24/7 Hotline 16263</a></li>
@@ -74,7 +74,7 @@ export default function Footer({ onSelectLocation }) {
               </li>
               <li className="flex items-center gap-2">
                 <Mail className="w-3.5 h-3.5 text-emerald-400" />
-                <span>support@doctorhub.com.bd</span>
+                <span>support@doctorshub.com.bd</span>
               </li>
               <li className="flex items-center gap-2">
                 <Clock className="w-3.5 h-3.5 text-emerald-400" />
@@ -88,7 +88,7 @@ export default function Footer({ onSelectLocation }) {
         {/* Bottom Disclaimer & Copyright */}
         <div className="pt-8 flex flex-col sm:flex-row items-center justify-between gap-4 text-[11px] text-slate-500">
           <div>
-            © 2026 DoctorHub.com.bd. All rights reserved. Designed for healthcare access in Bangladesh.
+            © 2026 DoctorsHub.com.bd. All rights reserved. Designed for healthcare access in Bangladesh.
           </div>
           <div className="flex items-center gap-1">
             <span>Built with care for patients & OPD chambers</span>

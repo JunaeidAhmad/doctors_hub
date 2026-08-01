@@ -2,7 +2,7 @@ import React, { useState } from 'react';
 import { Building2, MapPin, Phone, Clock, ShieldCheck, Stethoscope, Calendar, CheckCircle, Star, ArrowRight, UserCheck, Heart, Sparkles, FlaskConical, Activity } from 'lucide-react';
 import { HOSPITAL_SPECIALTIES } from '../data/mockData';
 
-const partnerIconMap = {
+const hospitalIconMap = {
   Building2: Building2,
   Heart: Heart,
   Sparkles: Sparkles,
@@ -13,7 +13,7 @@ const partnerIconMap = {
 
 export default function OpdMonitorGrid({ onSelectCategory }) {
   return (
-    <section id="partners" className="py-16 px-4 sm:px-8 bg-slate-50">
+    <section id="hospitals" className="py-16 px-4 sm:px-8 bg-slate-50">
       <div className="max-w-7xl mx-auto">
         
         {/* Section Header */}
@@ -25,14 +25,14 @@ export default function OpdMonitorGrid({ onSelectCategory }) {
             Hospitals
           </h2>
           <p className="mt-1 text-sm text-slate-600">
-            Verified hospital networks, specialized institutes & diagnostic clinics across Bangladesh.
+            Verified hospital networks & specialized institutes across Bangladesh.
           </p>
         </div>
 
         {/* HOSPITAL & DIAGNOSTIC SPECIALTY GRID VIEW */}
         <div className="grid grid-cols-2 sm:grid-cols-3 md:grid-cols-6 gap-4">
           {HOSPITAL_SPECIALTIES.map((spec) => {
-            const IconComp = partnerIconMap[spec.icon] || Building2;
+            const IconComp = hospitalIconMap[spec.icon] || Building2;
 
             return (
               <div
@@ -54,7 +54,7 @@ export default function OpdMonitorGrid({ onSelectCategory }) {
                 </div>
 
                 <div className="mt-3 text-[10px] font-bold px-2 py-0.5 rounded-full bg-slate-100 text-slate-600">
-                  {spec.count} Partners
+                  {spec.count} Hospitals
                 </div>
               </div>
             );

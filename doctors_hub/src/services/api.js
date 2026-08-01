@@ -1,5 +1,30 @@
 const BASE_URL = import.meta.env.VITE_API_BASE_URL || 'https://doctors-hub.onrender.com/api';
 
+async function fetchWithTimeout(url, options = {}, timeoutMs = null) {
+  if (!timeoutMs || typeof timeoutMs !== 'number' || timeoutMs <= 0) {
+    return fetch(url, options);
+  }
+  const controller = new AbortController();
+  const id = setTimeout(() => controller.abort(), timeoutMs);
+  try {
+    const response = await fetch(url, {
+      ...options,
+      signal: controller.signal
+    });
+    clearTimeout(id);
+    return response;
+  } catch (err) {
+    clearTimeout(id);
+    throw err;
+  }
+}
+
+export function ensureArray(val, fallback = []) {
+  if (Array.isArray(val) && val.length > 0) return val;
+  if (val && typeof val === 'object' && Array.isArray(val.results) && val.results.length > 0) return val.results;
+  return fallback;
+}
+
 /**
  * Helper to handle fetch responses and errors
  */
@@ -56,7 +81,7 @@ export const api = {
     localStorage.removeItem('access_token');
     localStorage.removeItem('refresh_token');
     localStorage.removeItem('user');
-    const res = await fetch(`${BASE_URL}/auth/login/`, {
+    const res = await fetchWithTimeout(`${BASE_URL}/auth/login/`, {
       method: 'POST',
       headers: { 'Content-Type': 'application/json' },
       body: JSON.stringify({ phone_number, password }),
@@ -71,7 +96,7 @@ export const api = {
   },
 
   async register(phone_number, password, first_name = '', last_name = '') {
-    const res = await fetch(`${BASE_URL}/auth/register/`, {
+    const res = await fetchWithTimeout(`${BASE_URL}/auth/register/`, {
       method: 'POST',
       headers: getHeaders(),
       body: JSON.stringify({ phone_number, password, first_name, last_name }),
@@ -101,7 +126,7 @@ export const api = {
   },
 
   async updateProfile(profileData) {
-    const res = await fetch(`${BASE_URL}/auth/me/`, {
+    const res = await fetchWithTimeout(`${BASE_URL}/auth/me/`, {
       method: 'PATCH',
       headers: getHeaders(),
       body: JSON.stringify(profileData),
@@ -115,13 +140,13 @@ export const api = {
 
   // Doctor Specialties
   async getSpecialties() {
-    const res = await fetch(`${BASE_URL}/specialties/`, {
+    const res = await fetchWithTimeout(`${BASE_URL}/specialties/`, {
       headers: getHeaders(),
     });
     return handleResponse(res);
   },
   async createSpecialty(data) {
-    const res = await fetch(`${BASE_URL}/specialties/`, {
+    const res = await fetchWithTimeout(`${BASE_URL}/specialties/`, {
       method: 'POST',
       headers: getHeaders(),
       body: JSON.stringify(data),
@@ -129,7 +154,7 @@ export const api = {
     return handleResponse(res);
   },
   async updateSpecialty(id, data) {
-    const res = await fetch(`${BASE_URL}/specialties/${id}/`, {
+    const res = await fetchWithTimeout(`${BASE_URL}/specialties/${id}/`, {
       method: 'PUT',
       headers: getHeaders(),
       body: JSON.stringify(data),
@@ -137,7 +162,7 @@ export const api = {
     return handleResponse(res);
   },
   async deleteSpecialty(id) {
-    const res = await fetch(`${BASE_URL}/specialties/${id}/`, {
+    const res = await fetchWithTimeout(`${BASE_URL}/specialties/${id}/`, {
       method: 'DELETE',
       headers: getHeaders(),
     });
@@ -147,13 +172,13 @@ export const api = {
 
   // Hospital Categories (renamed from HospitalSpecialty)
   async getHospitalCategories() {
-    const res = await fetch(`${BASE_URL}/hospital-categories/`, {
+    const res = await fetchWithTimeout(`${BASE_URL}/hospital-categories/`, {
       headers: getHeaders(),
     });
     return handleResponse(res);
   },
   async createHospitalCategory(data) {
-    const res = await fetch(`${BASE_URL}/hospital-categories/`, {
+    const res = await fetchWithTimeout(`${BASE_URL}/hospital-categories/`, {
       method: 'POST',
       headers: getHeaders(),
       body: JSON.stringify(data),
@@ -161,7 +186,7 @@ export const api = {
     return handleResponse(res);
   },
   async updateHospitalCategory(id, data) {
-    const res = await fetch(`${BASE_URL}/hospital-categories/${id}/`, {
+    const res = await fetchWithTimeout(`${BASE_URL}/hospital-categories/${id}/`, {
       method: 'PUT',
       headers: getHeaders(),
       body: JSON.stringify(data),
@@ -169,7 +194,7 @@ export const api = {
     return handleResponse(res);
   },
   async deleteHospitalCategory(id) {
-    const res = await fetch(`${BASE_URL}/hospital-categories/${id}/`, {
+    const res = await fetchWithTimeout(`${BASE_URL}/hospital-categories/${id}/`, {
       method: 'DELETE',
       headers: getHeaders(),
     });
@@ -184,13 +209,13 @@ export const api = {
 
   // Hospital Services
   async getHospitalServices() {
-    const res = await fetch(`${BASE_URL}/hospital-services/`, {
+    const res = await fetchWithTimeout(`${BASE_URL}/hospital-services/`, {
       headers: getHeaders(),
     });
     return handleResponse(res);
   },
   async createHospitalService(data) {
-    const res = await fetch(`${BASE_URL}/hospital-services/`, {
+    const res = await fetchWithTimeout(`${BASE_URL}/hospital-services/`, {
       method: 'POST',
       headers: getHeaders(),
       body: JSON.stringify(data),
@@ -198,7 +223,7 @@ export const api = {
     return handleResponse(res);
   },
   async updateHospitalService(id, data) {
-    const res = await fetch(`${BASE_URL}/hospital-services/${id}/`, {
+    const res = await fetchWithTimeout(`${BASE_URL}/hospital-services/${id}/`, {
       method: 'PUT',
       headers: getHeaders(),
       body: JSON.stringify(data),
@@ -206,7 +231,7 @@ export const api = {
     return handleResponse(res);
   },
   async deleteHospitalService(id) {
-    const res = await fetch(`${BASE_URL}/hospital-services/${id}/`, {
+    const res = await fetchWithTimeout(`${BASE_URL}/hospital-services/${id}/`, {
       method: 'DELETE',
       headers: getHeaders(),
     });
@@ -216,13 +241,13 @@ export const api = {
 
   // Diagnostic Services
   async getDiagnosticServices() {
-    const res = await fetch(`${BASE_URL}/diagnostic-services/`, {
+    const res = await fetchWithTimeout(`${BASE_URL}/diagnostic-services/`, {
       headers: getHeaders(),
     });
     return handleResponse(res);
   },
   async createDiagnosticService(data) {
-    const res = await fetch(`${BASE_URL}/diagnostic-services/`, {
+    const res = await fetchWithTimeout(`${BASE_URL}/diagnostic-services/`, {
       method: 'POST',
       headers: getHeaders(),
       body: JSON.stringify(data),
@@ -230,7 +255,7 @@ export const api = {
     return handleResponse(res);
   },
   async updateDiagnosticService(id, data) {
-    const res = await fetch(`${BASE_URL}/diagnostic-services/${id}/`, {
+    const res = await fetchWithTimeout(`${BASE_URL}/diagnostic-services/${id}/`, {
       method: 'PUT',
       headers: getHeaders(),
       body: JSON.stringify(data),
@@ -238,7 +263,7 @@ export const api = {
     return handleResponse(res);
   },
   async deleteDiagnosticService(id) {
-    const res = await fetch(`${BASE_URL}/diagnostic-services/${id}/`, {
+    const res = await fetchWithTimeout(`${BASE_URL}/diagnostic-services/${id}/`, {
       method: 'DELETE',
       headers: getHeaders(),
     });
@@ -248,13 +273,13 @@ export const api = {
 
   // Diagnostic Center Categories
   async getDiagnosticCenterCategories() {
-    const res = await fetch(`${BASE_URL}/diagnostic-center-categories/`, {
+    const res = await fetchWithTimeout(`${BASE_URL}/diagnostic-center-categories/`, {
       headers: getHeaders(),
     });
     return handleResponse(res);
   },
   async createDiagnosticCenterCategory(data) {
-    const res = await fetch(`${BASE_URL}/diagnostic-center-categories/`, {
+    const res = await fetchWithTimeout(`${BASE_URL}/diagnostic-center-categories/`, {
       method: 'POST',
       headers: getHeaders(),
       body: JSON.stringify(data),
@@ -262,7 +287,7 @@ export const api = {
     return handleResponse(res);
   },
   async updateDiagnosticCenterCategory(id, data) {
-    const res = await fetch(`${BASE_URL}/diagnostic-center-categories/${id}/`, {
+    const res = await fetchWithTimeout(`${BASE_URL}/diagnostic-center-categories/${id}/`, {
       method: 'PUT',
       headers: getHeaders(),
       body: JSON.stringify(data),
@@ -270,7 +295,7 @@ export const api = {
     return handleResponse(res);
   },
   async deleteDiagnosticCenterCategory(id) {
-    const res = await fetch(`${BASE_URL}/diagnostic-center-categories/${id}/`, {
+    const res = await fetchWithTimeout(`${BASE_URL}/diagnostic-center-categories/${id}/`, {
       method: 'DELETE',
       headers: getHeaders(),
     });
@@ -284,15 +309,15 @@ export const api = {
     if (location && location !== 'All Bangladesh') url.searchParams.append('location', location);
     if (category) url.searchParams.append('category', category);
     if (search) url.searchParams.append('search', search);
-    const res = await fetch(url, { headers: getHeaders() });
+    const res = await fetchWithTimeout(url, { headers: getHeaders() });
     return handleResponse(res);
   },
   async getDiagnosticCenterById(id) {
-    const res = await fetch(`${BASE_URL}/diagnostic-centers/${id}/`, { headers: getHeaders() });
+    const res = await fetchWithTimeout(`${BASE_URL}/diagnostic-centers/${id}/`, { headers: getHeaders() });
     return handleResponse(res);
   },
   async createDiagnosticCenter(data) {
-    const res = await fetch(`${BASE_URL}/diagnostic-centers/`, {
+    const res = await fetchWithTimeout(`${BASE_URL}/diagnostic-centers/`, {
       method: 'POST',
       headers: getHeaders(),
       body: JSON.stringify(data),
@@ -300,7 +325,7 @@ export const api = {
     return handleResponse(res);
   },
   async updateDiagnosticCenter(id, data) {
-    const res = await fetch(`${BASE_URL}/diagnostic-centers/${id}/`, {
+    const res = await fetchWithTimeout(`${BASE_URL}/diagnostic-centers/${id}/`, {
       method: 'PUT',
       headers: getHeaders(),
       body: JSON.stringify(data),
@@ -308,7 +333,7 @@ export const api = {
     return handleResponse(res);
   },
   async deleteDiagnosticCenter(id) {
-    const res = await fetch(`${BASE_URL}/diagnostic-centers/${id}/`, {
+    const res = await fetchWithTimeout(`${BASE_URL}/diagnostic-centers/${id}/`, {
       method: 'DELETE',
       headers: getHeaders(),
     });
@@ -321,11 +346,11 @@ export const api = {
     const url = new URL(`${BASE_URL}/diagnostic-center-tests/`);
     if (center || branch) url.searchParams.append('center', center || branch);
     if (test) url.searchParams.append('test', test);
-    const res = await fetch(url, { headers: getHeaders() });
+    const res = await fetchWithTimeout(url, { headers: getHeaders() });
     return handleResponse(res);
   },
   async createDiagnosticCenterTest(data) {
-    const res = await fetch(`${BASE_URL}/diagnostic-center-tests/`, {
+    const res = await fetchWithTimeout(`${BASE_URL}/diagnostic-center-tests/`, {
       method: 'POST',
       headers: getHeaders(),
       body: JSON.stringify(data),
@@ -333,7 +358,7 @@ export const api = {
     return handleResponse(res);
   },
   async deleteDiagnosticCenterTest(id) {
-    const res = await fetch(`${BASE_URL}/diagnostic-center-tests/${id}/`, {
+    const res = await fetchWithTimeout(`${BASE_URL}/diagnostic-center-tests/${id}/`, {
       method: 'DELETE',
       headers: getHeaders(),
     });
@@ -347,13 +372,13 @@ export const api = {
 
   // Test Categories
   async getTestCategories() {
-    const res = await fetch(`${BASE_URL}/test-categories/`, {
+    const res = await fetchWithTimeout(`${BASE_URL}/test-categories/`, {
       headers: getHeaders(),
     });
     return handleResponse(res);
   },
   async createTestCategory(data) {
-    const res = await fetch(`${BASE_URL}/test-categories/`, {
+    const res = await fetchWithTimeout(`${BASE_URL}/test-categories/`, {
       method: 'POST',
       headers: getHeaders(),
       body: JSON.stringify(data),
@@ -361,7 +386,7 @@ export const api = {
     return handleResponse(res);
   },
   async updateTestCategory(id, data) {
-    const res = await fetch(`${BASE_URL}/test-categories/${id}/`, {
+    const res = await fetchWithTimeout(`${BASE_URL}/test-categories/${id}/`, {
       method: 'PUT',
       headers: getHeaders(),
       body: JSON.stringify(data),
@@ -369,7 +394,7 @@ export const api = {
     return handleResponse(res);
   },
   async deleteTestCategory(id) {
-    const res = await fetch(`${BASE_URL}/test-categories/${id}/`, {
+    const res = await fetchWithTimeout(`${BASE_URL}/test-categories/${id}/`, {
       method: 'DELETE',
       headers: getHeaders(),
     });
@@ -382,11 +407,11 @@ export const api = {
     const url = new URL(`${BASE_URL}/tests/`);
     if (search) url.searchParams.append('search', search);
     if (category) url.searchParams.append('category', category);
-    const res = await fetch(url, { headers: getHeaders() });
+    const res = await fetchWithTimeout(url, { headers: getHeaders() });
     return handleResponse(res);
   },
   async createTest(testData) {
-    const res = await fetch(`${BASE_URL}/tests/`, {
+    const res = await fetchWithTimeout(`${BASE_URL}/tests/`, {
       method: 'POST',
       headers: getHeaders(),
       body: JSON.stringify(testData),
@@ -394,7 +419,7 @@ export const api = {
     return handleResponse(res);
   },
   async updateTest(id, testData) {
-    const res = await fetch(`${BASE_URL}/tests/${id}/`, {
+    const res = await fetchWithTimeout(`${BASE_URL}/tests/${id}/`, {
       method: 'PUT',
       headers: getHeaders(),
       body: JSON.stringify(testData),
@@ -402,7 +427,7 @@ export const api = {
     return handleResponse(res);
   },
   async deleteTest(id) {
-    const res = await fetch(`${BASE_URL}/tests/${id}/`, {
+    const res = await fetchWithTimeout(`${BASE_URL}/tests/${id}/`, {
       method: 'DELETE',
       headers: getHeaders(),
     });
@@ -416,15 +441,15 @@ export const api = {
     if (location && location !== 'All Bangladesh') url.searchParams.append('location', location);
     if (category) url.searchParams.append('category', category);
     if (search) url.searchParams.append('search', search);
-    const res = await fetch(url, { headers: getHeaders() });
+    const res = await fetchWithTimeout(url, { headers: getHeaders() });
     return handleResponse(res);
   },
   async getHospitalById(id) {
-    const res = await fetch(`${BASE_URL}/hospitals/${id}/`, { headers: getHeaders() });
+    const res = await fetchWithTimeout(`${BASE_URL}/hospitals/${id}/`, { headers: getHeaders() });
     return handleResponse(res);
   },
   async createHospital(data) {
-    const res = await fetch(`${BASE_URL}/hospitals/`, {
+    const res = await fetchWithTimeout(`${BASE_URL}/hospitals/`, {
       method: 'POST',
       headers: getHeaders(),
       body: JSON.stringify(data),
@@ -432,7 +457,7 @@ export const api = {
     return handleResponse(res);
   },
   async updateHospital(id, data) {
-    const res = await fetch(`${BASE_URL}/hospitals/${id}/`, {
+    const res = await fetchWithTimeout(`${BASE_URL}/hospitals/${id}/`, {
       method: 'PUT',
       headers: getHeaders(),
       body: JSON.stringify(data),
@@ -440,7 +465,7 @@ export const api = {
     return handleResponse(res);
   },
   async deleteHospital(id) {
-    const res = await fetch(`${BASE_URL}/hospitals/${id}/`, {
+    const res = await fetchWithTimeout(`${BASE_URL}/hospitals/${id}/`, {
       method: 'DELETE',
       headers: getHeaders(),
     });
@@ -483,11 +508,11 @@ export const api = {
     if (consultation_type) url.searchParams.append('consultation_type', consultation_type);
     if (hospital) url.searchParams.append('hospital', hospital);
     if (diagnostic_center) url.searchParams.append('diagnostic_center', diagnostic_center);
-    const res = await fetch(url, { headers: getHeaders() });
+    const res = await fetchWithTimeout(url, { headers: getHeaders() });
     return handleResponse(res);
   },
   async createDoctor(doctorData) {
-    const res = await fetch(`${BASE_URL}/doctors/`, {
+    const res = await fetchWithTimeout(`${BASE_URL}/doctors/`, {
       method: 'POST',
       headers: getHeaders(),
       body: JSON.stringify(doctorData),
@@ -495,7 +520,7 @@ export const api = {
     return handleResponse(res);
   },
   async updateDoctor(id, doctorData) {
-    const res = await fetch(`${BASE_URL}/doctors/${id}/`, {
+    const res = await fetchWithTimeout(`${BASE_URL}/doctors/${id}/`, {
       method: 'PUT',
       headers: getHeaders(),
       body: JSON.stringify(doctorData),
@@ -503,7 +528,7 @@ export const api = {
     return handleResponse(res);
   },
   async deleteDoctor(id) {
-    const res = await fetch(`${BASE_URL}/doctors/${id}/`, {
+    const res = await fetchWithTimeout(`${BASE_URL}/doctors/${id}/`, {
       method: 'DELETE',
       headers: getHeaders(),
     });
@@ -513,7 +538,7 @@ export const api = {
 
   // Doctor Booking
   async createDoctorBooking(bookingData) {
-    const res = await fetch(`${BASE_URL}/bookings/doctor/`, {
+    const res = await fetchWithTimeout(`${BASE_URL}/bookings/doctor/`, {
       method: 'POST',
       headers: getHeaders(),
       body: JSON.stringify(bookingData),
@@ -523,7 +548,7 @@ export const api = {
 
   // Lab Booking
   async createLabBooking(labData) {
-    const res = await fetch(`${BASE_URL}/bookings/lab/`, {
+    const res = await fetchWithTimeout(`${BASE_URL}/bookings/lab/`, {
       method: 'POST',
       headers: getHeaders(),
       body: JSON.stringify(labData),
@@ -533,14 +558,14 @@ export const api = {
 
   // Bookings Admin Management
   async getDoctorBookings() {
-    const res = await fetch(`${BASE_URL}/bookings/doctor/`, {
+    const res = await fetchWithTimeout(`${BASE_URL}/bookings/doctor/`, {
       headers: getHeaders(),
     });
     return handleResponse(res);
   },
 
   async updateDoctorBookingStatus(id, status) {
-    const res = await fetch(`${BASE_URL}/bookings/doctor/${id}/`, {
+    const res = await fetchWithTimeout(`${BASE_URL}/bookings/doctor/${id}/`, {
       method: 'PATCH',
       headers: getHeaders(),
       body: JSON.stringify({ status }),
@@ -549,14 +574,14 @@ export const api = {
   },
 
   async getLabBookings() {
-    const res = await fetch(`${BASE_URL}/bookings/lab/`, {
+    const res = await fetchWithTimeout(`${BASE_URL}/bookings/lab/`, {
       headers: getHeaders(),
     });
     return handleResponse(res);
   },
 
   async updateLabBookingStatus(id, status) {
-    const res = await fetch(`${BASE_URL}/bookings/lab/${id}/`, {
+    const res = await fetchWithTimeout(`${BASE_URL}/bookings/lab/${id}/`, {
       method: 'PATCH',
       headers: getHeaders(),
       body: JSON.stringify({ status }),

@@ -1,14 +1,23 @@
 import React, { useState, useMemo, useEffect } from 'react';
 import { Stethoscope, MapPin, Filter, ArrowLeft, Building2, ShieldCheck, Calendar, Clock, ArrowRight, X, Heart, Award } from 'lucide-react';
 import { SPECIALTIES as MOCK_SPECIALTIES, LOCATIONS, OPD_CHAMBERS as MOCK_CHAMBERS, CITY_THANAS } from '../data/mockData';
-import { api } from '../services/api';
+import { api, ensureArray } from '../services/api';
+
+function formatTime(timeStr) {
+  if (!timeStr) return '';
+  const [h, m] = String(timeStr).split(':').map(Number);
+  if (!h || Number.isNaN(h)) return timeStr;
+  const period = h >= 12 ? 'PM' : 'AM';
+  const hour = h % 12 === 0 ? 12 : h % 12;
+  return `${hour}:${String(m || 0).padStart(2, '0')} ${period}`;
+}
 
 export default function OpdDoctorSearchPage({
   initialSpecialty = '',
   initialLocation = 'All Bangladesh',
   initialKeyword = '',
   onBookDoctorSlot,
-  onSelectPartner,
+  onSelectHospital,
   onNavigateHome
 }) {
   const [specialty, setSpecialty] = useState(initialSpecialty);
@@ -26,14 +35,24 @@ export default function OpdDoctorSearchPage({
   useEffect(() => {
     let isMounted = true;
 
-    // Fetch OPD doctors specifically
-    api.getDoctors({ consultation_type: 'OPD' })
-      .then((data) => {
-        if (isMounted && Array.isArray(data) && data.length > 0) {
-          setDoctors(data);
-        }
+    // Debounced generic keyword + location search for OPD doctors
+    const timer = setTimeout(() => {
+      api.getDoctors({
+        consultation_type: 'OPD',
+        location,
+        search: keyword.trim() || undefined,
       })
-      .catch(() => {});
+        .then((data) => {
+          if (isMounted) setDoctors(ensureArray(data));
+        })
+        .catch(() => {});
+    }, 350);
+
+    return () => { isMounted = false; clearTimeout(timer); };
+  }, [location, keyword]);
+
+  useEffect(() => {
+    let isMounted = true;
 
     api.getBranches({ location })
       .then((data) => {
@@ -55,34 +74,44 @@ export default function OpdDoctorSearchPage({
   // Combine doctor affiliations with chambers for OPD display
   const opdChambersList = useMemo(() => {
     if (doctors.length > 0) {
-      // Build chamber map from doctors' OPD affiliations
+      // Build chamber map from doctors' OPD affiliations, keyed by the real hospital/diagnostic center
       const map = {};
       doctors.forEach((doc) => {
         const affiliations = (doc.affiliations || []).filter(a => a.consultation_type === 'OPD');
         affiliations.forEach((aff) => {
-          const bId = aff.branch_id || aff.branch || 'general-branch';
-          if (!map[bId]) {
-            map[bId] = {
-              id: bId,
-              name: aff.branch_name || 'Medical Center OPD',
-              city: aff.city || 'Dhaka',
-              location: aff.branch_name || 'Main Location',
+          const facilityId = aff.hospital || aff.diagnostic_center || 'general-branch';
+          const facilityName = aff.facility_name || 'Medical Center OPD';
+          const nameParts = String(facilityName).split(' - ');
+          const baseName = nameParts[0] || 'Medical Center OPD';
+          const branchName = nameParts.slice(1).join(' - ') || aff.hospital_branch || aff.diagnostic_center_branch || '';
+          const city = aff.city || 'Dhaka';
+
+          if (!map[facilityId]) {
+            map[facilityId] = {
+              id: facilityId,
+              name: baseName,
+              branch: branchName,
+              city,
+              location: branchName ? `${baseName} - ${branchName}` : baseName,
               verified: true,
               rating: 4.9,
               doctors: []
             };
           }
-          map[bId].doctors.push({
+          map[facilityId].doctors.push({
             ...doc,
             affiliationId: aff.id,
-            fee: aff.fee || doc.fee || 1000,
+            facilityId,
+            facilityName,
+            branchName,
+            city,
+            fee: Number(aff.fee) || doc.fee || 1000,
             schedules: aff.schedules || [],
-            branchName: aff.branch_name,
             visitDays: aff.schedules && aff.schedules.length > 0 
               ? aff.schedules.map(s => s.day_of_week).join(', ') 
               : 'Sat, Mon, Wed',
             visitTime: aff.schedules && aff.schedules.length > 0 
-              ? `${aff.schedules[0].start_time} - ${aff.schedules[0].end_time}` 
+              ? `${formatTime(aff.schedules[0].start_time)} - ${formatTime(aff.schedules[0].end_time)}` 
               : '05:00 PM - 09:00 PM',
             slots: ['05:00 PM', '05:30 PM', '06:00 PM', '06:30 PM', '07:00 PM']
           });
@@ -99,9 +128,9 @@ export default function OpdDoctorSearchPage({
         const aff = (doc.affiliations || []).find(a => a.consultation_type === 'OPD') || (doc.affiliations && doc.affiliations[0]);
         return {
           ...doc,
-          fee: doc.fee || (aff ? aff.fee : 1000),
+          fee: doc.fee || (aff ? Number(aff.fee) : 1000),
           visitDays: doc.visitDays || doc.visit_days || (aff && aff.schedules ? aff.schedules.map(s => s.day_of_week).join(', ') : 'Sat, Mon, Wed'),
-          visitTime: doc.visitTime || doc.visit_time || (aff && aff.schedules && aff.schedules[0] ? `${aff.schedules[0].start_time} - ${aff.schedules[0].end_time}` : '05:00 PM - 09:00 PM'),
+          visitTime: doc.visitTime || doc.visit_time || (aff && aff.schedules && aff.schedules[0] ? `${formatTime(aff.schedules[0].start_time)} - ${formatTime(aff.schedules[0].end_time)}` : '05:00 PM - 09:00 PM'),
           slots: Array.isArray(doc.slots) && doc.slots.length > 0 
             ? doc.slots 
             : ['05:00 PM', '05:30 PM', '06:00 PM', '06:30 PM', '07:00 PM']
@@ -137,14 +166,24 @@ export default function OpdDoctorSearchPage({
           }
         }
 
-        // Keyword match
+        // Generic keyword match across doctor + associated facility fields
         if (keyword.trim()) {
           const q = keyword.toLowerCase();
-          const matchesDoc = doc.name.toLowerCase().includes(q) || 
-            (doc.qualification && doc.qualification.toLowerCase().includes(q)) || 
-            docSpecs.some(s => s.toLowerCase().includes(q));
-          const matchesChamber = chamber.name.toLowerCase().includes(q) || (chamber.location && chamber.location.toLowerCase().includes(q));
-          if (!matchesDoc && !matchesChamber) return false;
+          const searchable = [
+            doc.name,
+            doc.qualification,
+            doc.experience,
+            ...docSpecs,
+            doc.facilityName,
+            doc.branchName,
+            doc.city,
+            chamber.name,
+            chamber.branch,
+            chamber.location,
+            chamber.city
+          ].filter(Boolean);
+          const matches = searchable.some(s => s.toLowerCase().includes(q));
+          if (!matches) return false;
         }
         return true;
       });
@@ -201,13 +240,13 @@ export default function OpdDoctorSearchPage({
             <div>
               <div className="inline-flex items-center gap-2 px-3 py-1 rounded-full bg-emerald-500/10 border border-emerald-500/30 text-emerald-400 text-xs font-bold uppercase tracking-wider mb-2">
                 <Stethoscope className="w-3.5 h-3.5" />
-                <span>Dedicated OPD Doctor Search</span>
+                <span>Find Your Doctor</span>
               </div>
               <h1 className="text-2xl sm:text-3xl lg:text-4xl font-black text-white">
-                {specialty ? `${specialty} OPD Doctors` : 'OPD Visiting Specialist Doctors'}
+                {specialty ? `${specialty} OPD Doctors` : 'Specialist Doctors'}
               </h1>
               <p className="text-xs sm:text-sm text-slate-300 mt-1">
-                Showing <strong className="text-emerald-400">{totalMatchingDoctors} OPD visiting doctors</strong> across <strong className="text-emerald-400">{filteredChambers.length} chambers/branches</strong> in {location}.
+                Showing <strong className="text-emerald-400">{totalMatchingDoctors} doctors</strong> across <strong className="text-emerald-400">{filteredChambers.length} chambers/branches</strong> in {location}.
               </p>
             </div>
 
@@ -260,7 +299,7 @@ export default function OpdDoctorSearchPage({
               <div className="w-full sm:w-auto">
                 <input
                   type="text"
-                  placeholder="Doctor / chamber..."
+                  placeholder="Doctor, specialty, hospital/chamber..."
                   value={keyword}
                   onChange={(e) => setKeyword(e.target.value)}
                   className="w-full bg-slate-900 text-white text-xs border border-slate-700 rounded-xl px-3 py-2.5 placeholder-slate-500 focus:outline-none focus:border-emerald-500"
@@ -365,9 +404,9 @@ export default function OpdDoctorSearchPage({
             {filteredChambers.length === 0 ? (
               <div className="bg-white p-12 rounded-2xl border border-slate-200 text-center space-y-3">
                 <Stethoscope className="w-12 h-12 text-slate-300 mx-auto" />
-                <h3 className="text-lg font-bold text-slate-800">No OPD Doctors Found</h3>
+                <h3 className="text-lg font-bold text-slate-800">No Doctors Found</h3>
                 <p className="text-xs text-slate-500 max-w-md mx-auto">
-                  We couldn't find OPD specialist doctors matching your selected criteria. Try adjusting your specialty or location filters.
+                  We couldn't find Specialist Doctors matching your selected criteria. Try adjusting your specialty or location filters.
                 </p>
               </div>
             ) : (
@@ -379,14 +418,14 @@ export default function OpdDoctorSearchPage({
                       <Building2 className="w-5 h-5 text-emerald-400 shrink-0" />
                       <div>
                         <h2 
-                          onClick={() => onSelectPartner && onSelectPartner(chamber.id)}
+                          onClick={() => onSelectHospital && onSelectHospital(chamber.id)}
                           className="font-extrabold text-white text-base hover:text-emerald-400 cursor-pointer transition-colors"
                         >
                           {chamber.name}
                         </h2>
                         <p className="text-xs text-slate-400 flex items-center gap-1">
                           <MapPin className="w-3 h-3 text-slate-500" />
-                          {chamber.location} ({chamber.city})
+                          {chamber.branch ? `${chamber.branch} (${chamber.city})` : `${chamber.location} (${chamber.city})`}
                         </p>
                       </div>
                     </div>

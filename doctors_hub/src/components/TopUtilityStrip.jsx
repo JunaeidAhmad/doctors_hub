@@ -26,11 +26,11 @@ export default function TopUtilityStrip({ selectedLocation, setSelectedLocation 
 
           {/* Support Email */}
           <a
-            href="mailto:support@doctorhub.com.bd"
+            href="mailto:support@doctorshub.com.bd"
             className="hidden md:flex items-center gap-1.5 hover:text-emerald-400 transition-colors"
           >
             <Mail className="w-3.5 h-3.5 text-emerald-400" />
-            <span>support@doctorhub.com.bd</span>
+            <span>support@doctorshub.com.bd</span>
           </a>
         </div>
 

@@ -6,8 +6,8 @@ import {
 import { api } from '../services/api';
 import { OPD_CHAMBERS, PATHOLOGY_TESTS, BRANCH_TESTS } from '../data/mockData';
 
-export default function MedicalPartnerDetailPage({ partnerId, onBookDoctorSlot, onBookLabTest, onNavigateHome, onNavigatePartners }) {
-  const [partner, setPartner] = useState(null);
+export default function HospitalDetailPage({ hospitalId, onBookDoctorSlot, onBookLabTest, onNavigateHome, onNavigateHospitals }) {
+  const [hospital, setHospital] = useState(null);
   const [loading, setLoading] = useState(true);
   const [activeTab, setActiveTab] = useState('doctors'); // 'doctors' | 'services' | 'tests' | 'info'
   const [doctorConsultationFilter, setDoctorConsultationFilter] = useState('In-patient'); // Default to In-patient when searching hospital
@@ -17,12 +17,12 @@ export default function MedicalPartnerDetailPage({ partnerId, onBookDoctorSlot, 
 
   useEffect(() => {
     let isMounted = true;
-    async function loadPartner() {
+    async function loadHospital() {
       setLoading(true);
       try {
-        const data = await api.getBranchById(partnerId);
+        const data = await api.getBranchById(hospitalId);
         if (isMounted && data && data.id) {
-          setPartner(data);
+          setHospital(data);
           if (data.offered_tests && data.offered_tests.length > 0) {
             setBranchTests(data.offered_tests);
           }
@@ -33,19 +33,19 @@ export default function MedicalPartnerDetailPage({ partnerId, onBookDoctorSlot, 
         // Fallback to local mock data
       }
       
-      const foundMock = OPD_CHAMBERS.find(c => c.id === partnerId) || OPD_CHAMBERS[0];
+      const foundMock = OPD_CHAMBERS.find(c => c.id === hospitalId) || OPD_CHAMBERS[0];
       if (isMounted) {
-        setPartner(foundMock);
+        setHospital(foundMock);
         // Fallback branch tests for mock
-        const filteredMockTests = BRANCH_TESTS.filter(bt => bt.branch_id === partnerId || bt.branch_id === foundMock.id);
+        const filteredMockTests = BRANCH_TESTS.filter(bt => bt.branch_id === hospitalId || bt.branch_id === foundMock.id);
         setBranchTests(filteredMockTests.length > 0 ? filteredMockTests : BRANCH_TESTS);
         setLoading(false);
       }
     }
-    loadPartner();
+    loadHospital();
     window.scrollTo({ top: 0, behavior: 'smooth' });
     return () => { isMounted = false; };
-  }, [partnerId]);
+  }, [hospitalId]);
 
   if (loading) {
     return (
@@ -58,27 +58,27 @@ export default function MedicalPartnerDetailPage({ partnerId, onBookDoctorSlot, 
     );
   }
 
-  if (!partner) {
+  if (!hospital) {
     return (
       <div className="min-h-screen bg-slate-50 flex items-center justify-center p-8">
         <div className="bg-white p-8 rounded-2xl border border-slate-200 text-center max-w-md">
           <Building2 className="w-16 h-16 text-slate-300 mx-auto mb-4" />
-          <h2 className="text-xl font-bold text-slate-800">Medical Partner Not Found</h2>
+          <h2 className="text-xl font-bold text-slate-800">Hospital Not Found</h2>
           <p className="text-xs text-slate-500 mt-2 mb-6">
-            The requested medical partner branch could not be loaded.
+            The requested hospital branch could not be loaded.
           </p>
           <button
-            onClick={onNavigatePartners || onNavigateHome}
+            onClick={onNavigateHospitals || onNavigateHome}
             className="px-5 py-2.5 bg-emerald-600 text-white rounded-xl font-bold text-xs shadow-md hover:bg-emerald-700 transition-all"
           >
-            Return to Medical Partners
+            Return to Hospitals
           </button>
         </div>
       </div>
     );
   }
 
-  const allDoctors = partner.doctors || [];
+  const allDoctors = hospital.doctors || [];
   
   // Filter doctors based on consultation_type (In-patient for hospital view, or OPD)
   const doctorsList = allDoctors.filter(doc => {
@@ -88,18 +88,8 @@ export default function MedicalPartnerDetailPage({ partnerId, onBookDoctorSlot, 
     return true; // Fallback
   });
 
-  const servicesList = partner.services && partner.services.length > 0 
-    ? partner.services 
-    : [
-        "24/7 Specialist Inpatient Consultation",
-        "High-Resolution Radiology & CT Scan",
-        "4D Ultrasonography & Color Doppler",
-        "Automated Clinical Pathology Lab",
-        "Emergency Ambulance & ICU Support"
-      ];
-
-  const facilityBadges = partner.facility_types && partner.facility_types.length > 0
-    ? partner.facility_types
+  const facilityBadges = hospital.facility_types && hospital.facility_types.length > 0
+    ? hospital.facility_types
     : ["Hospital", "Diagnostic Center"];
 
   const specialties = ['All', ...new Set(doctorsList.map(d => {
@@ -131,14 +121,14 @@ export default function MedicalPartnerDetailPage({ partnerId, onBookDoctorSlot, 
         <div className="max-w-7xl mx-auto flex items-center justify-between text-xs">
           <div className="flex items-center gap-2">
             <button 
-              onClick={onNavigatePartners || onNavigateHome}
+              onClick={onNavigateHospitals || onNavigateHome}
               className="flex items-center gap-1 hover:text-emerald-400 font-semibold transition-colors"
             >
               <ArrowLeft className="w-4 h-4" />
-              <span>Medical Partners</span>
+              <span>Hospitals</span>
             </button>
             <ChevronRight className="w-3.5 h-3.5 text-slate-600" />
-            <span className="text-slate-100 font-bold truncate max-w-[200px] sm:max-w-xs">{partner.name}</span>
+            <span className="text-slate-100 font-bold truncate max-w-[200px] sm:max-w-xs">{hospital.name}</span>
           </div>
           <div className="flex items-center gap-2">
             {facilityBadges.map((badge) => (
@@ -151,32 +141,32 @@ export default function MedicalPartnerDetailPage({ partnerId, onBookDoctorSlot, 
         </div>
       </div>
 
-      {/* 2. HERO PARTNER BANNER */}
+      {/* 2. HERO HOSPITAL BANNER */}
       <div className="relative bg-slate-950 text-white overflow-hidden border-b border-slate-800">
         <div className="max-w-7xl mx-auto px-4 sm:px-8 py-10 relative z-10">
           <div className="flex flex-col md:flex-row md:items-center justify-between gap-6">
             <div className="space-y-3">
               <div className="flex items-center gap-2 flex-wrap">
                 <span className="bg-emerald-500/20 text-emerald-400 px-3 py-1 rounded-full text-xs font-bold uppercase tracking-wider border border-emerald-500/30">
-                  {partner.hospital_name || 'Verified Hospital Partner'}
+                  {hospital.hospital_name || 'Verified Hospital'}
                 </span>
               </div>
 
-              <h1 className="text-3xl sm:text-4xl font-black text-white">{partner.name}</h1>
+              <h1 className="text-3xl sm:text-4xl font-black text-white">{hospital.name}</h1>
 
               <p className="text-sm text-slate-300 flex items-center gap-1.5">
                 <MapPin className="w-4 h-4 text-emerald-400 shrink-0" />
-                <span>{partner.location} ({partner.city})</span>
+                <span>{hospital.location} ({hospital.city})</span>
               </p>
 
               <div className="flex items-center gap-4 text-xs text-slate-300 pt-1">
                 <span className="flex items-center gap-1 bg-slate-800/80 px-3 py-1.5 rounded-lg border border-slate-700">
                   <Clock className="w-3.5 h-3.5 text-emerald-400" />
-                  {partner.openTiming || '08:00 AM - 10:00 PM'}
+                  {hospital.openTiming || '08:00 AM - 10:00 PM'}
                 </span>
                 <span className="flex items-center gap-1 bg-slate-800/80 px-3 py-1.5 rounded-lg border border-slate-700">
                   <Phone className="w-3.5 h-3.5 text-emerald-400" />
-                  {partner.contactPhone || '+880 9610-000000'}
+                  {hospital.contactPhone || '+880 9610-000000'}
                 </span>
               </div>
             </div>
@@ -353,7 +343,7 @@ export default function MedicalPartnerDetailPage({ partnerId, onBookDoctorSlot, 
                         <button
                           onClick={() => onBookDoctorSlot && onBookDoctorSlot({
                             doctor: doc,
-                            chamber: partner,
+                            chamber: hospital,
                             slot: selectedSlot,
                             fee: fee
                           })}
@@ -373,7 +363,7 @@ export default function MedicalPartnerDetailPage({ partnerId, onBookDoctorSlot, 
 
         {activeTab === 'tests' && (
           <div className="space-y-6">
-            <h2 className="text-lg font-extrabold text-slate-900">Diagnostic Tests Offered at {partner.name}</h2>
+            <h2 className="text-lg font-extrabold text-slate-900">Diagnostic Tests Offered at {hospital.name}</h2>
             
             <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
               {branchTests.map((bt) => {
@@ -383,7 +373,7 @@ export default function MedicalPartnerDetailPage({ partnerId, onBookDoctorSlot, 
                   <div key={bt.id} className="bg-white p-5 rounded-2xl border border-slate-200 flex flex-col justify-between space-y-4">
                     <div>
                       <span className="text-[10px] font-bold text-emerald-800 bg-emerald-100 px-2 py-0.5 rounded uppercase">
-                        {testObj.category || 'Pathology Test'}
+                        {typeof testObj.category === 'object' ? (testObj.category.name || 'Pathology Test') : (testObj.category || 'Pathology Test')}
                       </span>
 
                       <h3 className="text-base font-bold text-slate-900 mt-2">{testObj.name || 'Lab Test'}</h3>
@@ -406,7 +396,7 @@ export default function MedicalPartnerDetailPage({ partnerId, onBookDoctorSlot, 
                         onClick={() => onBookLabTest && onBookLabTest({
                           test: testObj,
                           branchTest: bt,
-                          branch: partner
+                          branch: hospital
                         })}
                         className="px-4 py-2 bg-emerald-600 text-white rounded-xl text-xs font-bold hover:bg-emerald-700 transition-colors"
                       >

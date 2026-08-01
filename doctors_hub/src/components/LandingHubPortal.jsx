@@ -42,7 +42,7 @@ export default function LandingHubPortal() {
             </div>
           </div>
 
-          {/* FEATURE CARD 2: DIAGNOSTICS & PATHOLOGY */}
+          {/* FEATURE CARD 2: DIAGNOSTICS & TESTS */}
           <div className="p-6 rounded-2xl bg-slate-800/80 border border-slate-700 hover:border-emerald-500/50 transition-all duration-300">
             <div className="p-3.5 rounded-xl bg-teal-500/20 text-teal-400 w-fit mb-4">
               <Activity className="w-6 h-6" />
