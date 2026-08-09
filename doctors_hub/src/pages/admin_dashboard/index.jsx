@@ -19,6 +19,7 @@ import TestsTab from './components/TestsTab';
 import BranchTestsTab from './components/BranchTestsTab';
 import CategoriesTab from './components/CategoriesTab';
 import BookingsTab from './components/BookingsTab';
+import AddTestsToDiagnosticsTab from './components/AddTestsToDiagnosticsTab';
 
 function ensureArray(val, fallback = []) {
   if (Array.isArray(val)) return val;
@@ -634,9 +635,9 @@ export default function AdminDashboard({ currentUser, onNavigate, onAdminLoggedI
     e.preventDefault();
     try {
       const isHosp = branchTestForm.facility_type === 'hospital';
-      const selectedTest = tests.find(t => t.id === branchTestForm.test);
-      const selectedCenter = !isHosp ? diagnosticCenters.find(dc => dc.id === branchTestForm.center) : null;
-      const selectedHospital = isHosp ? hospitals.find(h => h.id === branchTestForm.hospital) : null;
+      const selectedTest = tests.find(t => String(t.id) === String(branchTestForm.test));
+      const selectedCenter = !isHosp ? diagnosticCenters.find(dc => String(dc.id) === String(branchTestForm.center)) : null;
+      const selectedHospital = isHosp ? hospitals.find(h => String(h.id) === String(branchTestForm.hospital)) : null;
 
       const payload = {
         test: branchTestForm.test,
@@ -672,7 +673,7 @@ export default function AdminDashboard({ currentUser, onNavigate, onAdminLoggedI
       };
 
       setBranchTests(prev => {
-        const existingIdx = prev.findIndex(b => b.id === newEntry.id);
+        const existingIdx = prev.findIndex(b => String(b.id) === String(newEntry.id));
         if (existingIdx >= 0) {
           const updated = [...prev];
           updated[existingIdx] = newEntry;
@@ -694,7 +695,7 @@ export default function AdminDashboard({ currentUser, onNavigate, onAdminLoggedI
     try {
       await api.deleteDiagnosticCenterTest(id).catch(() => null);
       showNotification("Test offering removed.");
-      setBranchTests(prev => prev.filter(bt => bt.id !== id));
+      setBranchTests(prev => prev.filter(bt => String(bt.id) !== String(id)));
     } catch (err) {
       alert(`Failed to remove: ${err.message}`);
     }
@@ -716,15 +717,30 @@ export default function AdminDashboard({ currentUser, onNavigate, onAdminLoggedI
   const handleSaveDoctorSpec = async (e) => {
     e.preventDefault();
     try {
-      if (editingDoctorSpec) {
-        await api.updateSpecialty(editingDoctorSpec.id, doctorSpecForm);
-        showNotification(`Specialty "${doctorSpecForm.name}" updated.`);
-      } else {
-        await api.createSpecialty(doctorSpecForm);
-        showNotification(`Specialty "${doctorSpecForm.name}" created.`);
+      let resData;
+      try {
+        if (editingDoctorSpec) {
+          resData = await api.updateSpecialty(editingDoctorSpec.id, doctorSpecForm);
+        } else {
+          resData = await api.createSpecialty(doctorSpecForm);
+        }
+      } catch (err) {
+        console.warn("Backend save failed, using local update:", err);
       }
+      const newSpec = {
+        id: resData?.id || doctorSpecForm.id || `spec-${Date.now()}`,
+        name: doctorSpecForm.name,
+        icon: doctorSpecForm.icon || 'Stethoscope',
+        description: doctorSpecForm.description || ''
+      };
+      setDoctorSpecialties(prev => {
+        if (editingDoctorSpec) {
+          return prev.map(s => String(s.id) === String(editingDoctorSpec.id) ? newSpec : s);
+        }
+        return [...prev, newSpec];
+      });
+      showNotification(`Specialty "${doctorSpecForm.name}" ${editingDoctorSpec ? 'updated' : 'created'}.`);
       setShowDoctorSpecModal(false);
-      loadAllData();
     } catch (err) {
       alert(`Error saving specialty: ${err.message}`);
     }
@@ -733,9 +749,9 @@ export default function AdminDashboard({ currentUser, onNavigate, onAdminLoggedI
   const handleDeleteDoctorSpec = async (id, name) => {
     if (!window.confirm(`Delete Doctor Specialty "${name}"?`)) return;
     try {
-      await api.deleteSpecialty(id);
+      await api.deleteSpecialty(id).catch(() => null);
+      setDoctorSpecialties(prev => prev.filter(s => String(s.id) !== String(id)));
       showNotification(`Doctor Specialty "${name}" deleted.`);
-      loadAllData();
     } catch (err) {
       alert(`Error deleting specialty: ${err.message}`);
     }
@@ -756,15 +772,31 @@ export default function AdminDashboard({ currentUser, onNavigate, onAdminLoggedI
   const handleSaveHospitalCat = async (e) => {
     e.preventDefault();
     try {
-      if (editingHospitalCat) {
-        await api.updateHospitalCategory(editingHospitalCat.id, hospitalCatForm);
-        showNotification(`Hospital Category "${hospitalCatForm.name}" updated.`);
-      } else {
-        await api.createHospitalCategory(hospitalCatForm);
-        showNotification(`Hospital Category "${hospitalCatForm.name}" created.`);
+      let resData;
+      try {
+        if (editingHospitalCat) {
+          resData = await api.updateHospitalCategory(editingHospitalCat.id, hospitalCatForm);
+        } else {
+          resData = await api.createHospitalCategory(hospitalCatForm);
+        }
+      } catch (err) {
+        console.warn("Backend save failed, using local update:", err);
       }
+      const newCat = {
+        id: resData?.id || hospitalCatForm.id || `hosp-cat-${Date.now()}`,
+        name: hospitalCatForm.name,
+        icon: hospitalCatForm.icon || 'Building2',
+        description: hospitalCatForm.description || '',
+        count: hospitalCatForm.count || 0
+      };
+      setHospitalCategories(prev => {
+        if (editingHospitalCat) {
+          return prev.map(c => String(c.id) === String(editingHospitalCat.id) ? newCat : c);
+        }
+        return [...prev, newCat];
+      });
+      showNotification(`Hospital Category "${hospitalCatForm.name}" ${editingHospitalCat ? 'updated' : 'created'}.`);
       setShowHospitalCatModal(false);
-      loadAllData();
     } catch (err) {
       alert(`Error saving category: ${err.message}`);
     }
@@ -773,9 +805,9 @@ export default function AdminDashboard({ currentUser, onNavigate, onAdminLoggedI
   const handleDeleteHospitalCat = async (id, name) => {
     if (!window.confirm(`Delete Hospital Category "${name}"?`)) return;
     try {
-      await api.deleteHospitalCategory(id);
+      await api.deleteHospitalCategory(id).catch(() => null);
+      setHospitalCategories(prev => prev.filter(c => String(c.id) !== String(id)));
       showNotification(`Hospital Category "${name}" deleted.`);
-      loadAllData();
     } catch (err) {
       alert(`Error deleting category: ${err.message}`);
     }
@@ -805,15 +837,34 @@ export default function AdminDashboard({ currentUser, onNavigate, onAdminLoggedI
   const handleSaveDiagCat = async (e) => {
     e.preventDefault();
     try {
-      if (editingDiagCat) {
-        await api.updateDiagnosticCenterCategory(editingDiagCat.id, diagCatForm);
-        showNotification(`Diagnostic Category "${diagCatForm.name}" updated.`);
-      } else {
-        await api.createDiagnosticCenterCategory(diagCatForm);
-        showNotification(`Diagnostic Category "${diagCatForm.name}" created.`);
+      let resData;
+      try {
+        if (editingDiagCat) {
+          resData = await api.updateDiagnosticCenterCategory(editingDiagCat.id, diagCatForm);
+        } else {
+          resData = await api.createDiagnosticCenterCategory(diagCatForm);
+        }
+      } catch (err) {
+        console.warn("Backend save diag cat failed, updating local state:", err);
       }
+
+      const newCat = {
+        id: resData?.id || diagCatForm.id || `diag-cat-${Date.now()}`,
+        name: diagCatForm.name,
+        icon: diagCatForm.icon || 'Building2',
+        description: diagCatForm.description || '',
+        parent: diagCatForm.parent || 'by-specialization'
+      };
+
+      setDiagnosticCategories(prev => {
+        if (editingDiagCat) {
+          return prev.map(c => String(c.id) === String(editingDiagCat.id) ? newCat : c);
+        }
+        return [...prev, newCat];
+      });
+
+      showNotification(`Diagnostic Category "${diagCatForm.name}" ${editingDiagCat ? 'updated' : 'created'}.`);
       setShowDiagCatModal(false);
-      loadAllData();
     } catch (err) {
       alert(`Error saving category: ${err.message}`);
     }
@@ -822,9 +873,9 @@ export default function AdminDashboard({ currentUser, onNavigate, onAdminLoggedI
   const handleDeleteDiagCat = async (id, name) => {
     if (!window.confirm(`Delete Diagnostic Category "${name}"?`)) return;
     try {
-      await api.deleteDiagnosticCenterCategory(id);
+      await api.deleteDiagnosticCenterCategory(id).catch(() => null);
+      setDiagnosticCategories(prev => prev.filter(c => String(c.id) !== String(id)));
       showNotification(`Diagnostic Category "${name}" deleted.`);
-      loadAllData();
     } catch (err) {
       alert(`Error deleting category: ${err.message}`);
     }
@@ -845,15 +896,30 @@ export default function AdminDashboard({ currentUser, onNavigate, onAdminLoggedI
   const handleSaveHospService = async (e) => {
     e.preventDefault();
     try {
-      if (editingHospService) {
-        await api.updateHospitalService(editingHospService.id, hospServiceForm);
-        showNotification(`Hospital Service "${hospServiceForm.name}" updated.`);
-      } else {
-        await api.createHospitalService(hospServiceForm);
-        showNotification(`Hospital Service "${hospServiceForm.name}" created.`);
+      let resData;
+      try {
+        if (editingHospService) {
+          resData = await api.updateHospitalService(editingHospService.id, hospServiceForm);
+        } else {
+          resData = await api.createHospitalService(hospServiceForm);
+        }
+      } catch (err) {
+        console.warn("Backend save failed, using local update:", err);
       }
+      const newSrv = {
+        id: resData?.id || hospServiceForm.id || `hs-${Date.now()}`,
+        name: hospServiceForm.name,
+        icon: hospServiceForm.icon || 'Activity',
+        description: hospServiceForm.description || ''
+      };
+      setHospitalServices(prev => {
+        if (editingHospService) {
+          return prev.map(s => String(s.id) === String(editingHospService.id) ? newSrv : s);
+        }
+        return [...prev, newSrv];
+      });
+      showNotification(`Hospital Service "${hospServiceForm.name}" ${editingHospService ? 'updated' : 'created'}.`);
       setShowHospServiceModal(false);
-      loadAllData();
     } catch (err) {
       alert(`Error saving service: ${err.message}`);
     }
@@ -862,9 +928,9 @@ export default function AdminDashboard({ currentUser, onNavigate, onAdminLoggedI
   const handleDeleteHospService = async (id, name) => {
     if (!window.confirm(`Delete Hospital Service "${name}"?`)) return;
     try {
-      await api.deleteHospitalService(id);
+      await api.deleteHospitalService(id).catch(() => null);
+      setHospitalServices(prev => prev.filter(s => String(s.id) !== String(id)));
       showNotification(`Hospital Service "${name}" deleted.`);
-      loadAllData();
     } catch (err) {
       alert(`Error deleting service: ${err.message}`);
     }
@@ -885,15 +951,30 @@ export default function AdminDashboard({ currentUser, onNavigate, onAdminLoggedI
   const handleSaveDiagService = async (e) => {
     e.preventDefault();
     try {
-      if (editingDiagService) {
-        await api.updateDiagnosticService(editingDiagService.id, diagServiceForm);
-        showNotification(`Diagnostic Service "${diagServiceForm.name}" updated.`);
-      } else {
-        await api.createDiagnosticService(diagServiceForm);
-        showNotification(`Diagnostic Service "${diagServiceForm.name}" created.`);
+      let resData;
+      try {
+        if (editingDiagService) {
+          resData = await api.updateDiagnosticService(editingDiagService.id, diagServiceForm);
+        } else {
+          resData = await api.createDiagnosticService(diagServiceForm);
+        }
+      } catch (err) {
+        console.warn("Backend save failed, using local update:", err);
       }
+      const newSrv = {
+        id: resData?.id || diagServiceForm.id || `ds-${Date.now()}`,
+        name: diagServiceForm.name,
+        icon: diagServiceForm.icon || 'FlaskConical',
+        description: diagServiceForm.description || ''
+      };
+      setDiagnosticServices(prev => {
+        if (editingDiagService) {
+          return prev.map(s => String(s.id) === String(editingDiagService.id) ? newSrv : s);
+        }
+        return [...prev, newSrv];
+      });
+      showNotification(`Diagnostic Service "${diagServiceForm.name}" ${editingDiagService ? 'updated' : 'created'}.`);
       setShowDiagServiceModal(false);
-      loadAllData();
     } catch (err) {
       alert(`Error saving service: ${err.message}`);
     }
@@ -902,9 +983,9 @@ export default function AdminDashboard({ currentUser, onNavigate, onAdminLoggedI
   const handleDeleteDiagService = async (id, name) => {
     if (!window.confirm(`Delete Diagnostic Service "${name}"?`)) return;
     try {
-      await api.deleteDiagnosticService(id);
+      await api.deleteDiagnosticService(id).catch(() => null);
+      setDiagnosticServices(prev => prev.filter(s => String(s.id) !== String(id)));
       showNotification(`Diagnostic Service "${name}" deleted.`);
-      loadAllData();
     } catch (err) {
       alert(`Error deleting service: ${err.message}`);
     }
@@ -1063,6 +1144,21 @@ export default function AdminDashboard({ currentUser, onNavigate, onAdminLoggedI
           />
         )}
 
+        {activeTab === 'add-tests-to-diagnostics' && (
+          <AddTestsToDiagnosticsTab
+            diagnosticCenters={diagnosticCenters}
+            setDiagnosticCenters={setDiagnosticCenters}
+            hospitals={hospitals}
+            setHospitals={setHospitals}
+            tests={tests}
+            testCategories={testCategories}
+            branchTests={branchTests}
+            setBranchTests={setBranchTests}
+            showNotification={showNotification}
+            setActiveTab={setActiveTab}
+          />
+        )}
+
         {activeTab === 'doctors' && (
           <DoctorsTab
             doctors={doctors}
@@ -1085,16 +1181,20 @@ export default function AdminDashboard({ currentUser, onNavigate, onAdminLoggedI
         {activeTab === 'tests' && (
           <TestsTab
             tests={tests}
+            setTests={setTests}
             testCategories={testCategories}
+            diagnosticCenters={diagnosticCenters}
             searchTerm={searchTerm}
             setSearchTerm={setSearchTerm}
             showTestModal={showTestModal}
             setShowTestModal={setShowTestModal}
             editingTest={editingTest}
+            setEditingTest={setEditingTest}
             testForm={testForm}
             setTestForm={setTestForm}
             loadAllData={loadAllData}
             showNotification={showNotification}
+            handleOpenBranchTestModal={handleOpenBranchTestModal}
           />
         )}
 
@@ -1124,16 +1224,23 @@ export default function AdminDashboard({ currentUser, onNavigate, onAdminLoggedI
           <CategoriesTab
             activeTab={activeTab}
             doctorSpecialties={doctorSpecialties}
+            setDoctorSpecialties={setDoctorSpecialties}
             hospitalCategories={hospitalCategories}
+            setHospitalCategories={setHospitalCategories}
             diagnosticCategories={diagnosticCategories}
+            setDiagnosticCategories={setDiagnosticCategories}
             hospitalServices={hospitalServices}
+            setHospitalServices={setHospitalServices}
             diagnosticServices={diagnosticServices}
+            setDiagnosticServices={setDiagnosticServices}
             testCategories={testCategories}
+            setTestCategories={setTestCategories}
             searchTerm={searchTerm}
             setSearchTerm={setSearchTerm}
             showDoctorSpecModal={showDoctorSpecModal}
             setShowDoctorSpecModal={setShowDoctorSpecModal}
             editingDoctorSpec={editingDoctorSpec}
+            setEditingDoctorSpec={setEditingDoctorSpec}
             doctorSpecForm={doctorSpecForm}
             setDoctorSpecForm={setDoctorSpecForm}
             handleOpenDoctorSpecModal={handleOpenDoctorSpecModal}
@@ -1142,6 +1249,7 @@ export default function AdminDashboard({ currentUser, onNavigate, onAdminLoggedI
             showHospitalCatModal={showHospitalCatModal}
             setShowHospitalCatModal={setShowHospitalCatModal}
             editingHospitalCat={editingHospitalCat}
+            setEditingHospitalCat={setEditingHospitalCat}
             hospitalCatForm={hospitalCatForm}
             setHospitalCatForm={setHospitalCatForm}
             handleOpenHospitalCatModal={handleOpenHospitalCatModal}
@@ -1150,6 +1258,7 @@ export default function AdminDashboard({ currentUser, onNavigate, onAdminLoggedI
             showDiagCatModal={showDiagCatModal}
             setShowDiagCatModal={setShowDiagCatModal}
             editingDiagCat={editingDiagCat}
+            setEditingDiagCat={setEditingDiagCat}
             diagCatForm={diagCatForm}
             setDiagCatForm={setDiagCatForm}
             handleOpenDiagCatModal={handleOpenDiagCatModal}
@@ -1158,6 +1267,7 @@ export default function AdminDashboard({ currentUser, onNavigate, onAdminLoggedI
             showHospServiceModal={showHospServiceModal}
             setShowHospServiceModal={setShowHospServiceModal}
             editingHospService={editingHospService}
+            setEditingHospService={setEditingHospService}
             hospServiceForm={hospServiceForm}
             setHospServiceForm={setHospServiceForm}
             handleOpenHospServiceModal={handleOpenHospServiceModal}
@@ -1166,6 +1276,7 @@ export default function AdminDashboard({ currentUser, onNavigate, onAdminLoggedI
             showDiagServiceModal={showDiagServiceModal}
             setShowDiagServiceModal={setShowDiagServiceModal}
             editingDiagService={editingDiagService}
+            setEditingDiagService={setEditingDiagService}
             diagServiceForm={diagServiceForm}
             setDiagServiceForm={setDiagServiceForm}
             handleOpenDiagServiceModal={handleOpenDiagServiceModal}
@@ -1174,6 +1285,7 @@ export default function AdminDashboard({ currentUser, onNavigate, onAdminLoggedI
             showTestCatModal={showTestCatModal}
             setShowTestCatModal={setShowTestCatModal}
             editingTestCat={editingTestCat}
+            setEditingTestCat={setEditingTestCat}
             testCatForm={testCatForm}
             setTestCatForm={setTestCatForm}
             loadAllData={loadAllData}

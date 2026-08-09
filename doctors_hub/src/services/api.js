@@ -1,6 +1,6 @@
 const BASE_URL = import.meta.env.VITE_API_BASE_URL || 'https://doctors-hub.onrender.com/api';
 
-async function fetchWithTimeout(url, options = {}, timeoutMs = 2500) {
+async function fetchWithTimeout(url, options = {}, timeoutMs = 15000) {
   if (!timeoutMs || typeof timeoutMs !== 'number' || timeoutMs <= 0) {
     return fetch(url, options);
   }
@@ -15,6 +15,13 @@ async function fetchWithTimeout(url, options = {}, timeoutMs = 2500) {
     return response;
   } catch (err) {
     clearTimeout(id);
+    if (
+      err.name === 'AbortError' ||
+      err.name === 'DOMException' ||
+      (err.message && err.message.toLowerCase().includes('aborted'))
+    ) {
+      throw new Error('Server response timed out. Please try again.');
+    }
     throw err;
   }
 }

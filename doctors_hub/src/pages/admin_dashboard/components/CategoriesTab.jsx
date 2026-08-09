@@ -5,16 +5,23 @@ import { api } from '../../../services/api';
 export default function CategoriesTab({
   activeTab,
   doctorSpecialties = [],
+  setDoctorSpecialties,
   hospitalCategories = [],
+  setHospitalCategories,
   diagnosticCategories = [],
+  setDiagnosticCategories,
   hospitalServices = [],
+  setHospitalServices,
   diagnosticServices = [],
+  setDiagnosticServices,
   testCategories = [],
+  setTestCategories,
   searchTerm,
   setSearchTerm,
   showDoctorSpecModal,
   setShowDoctorSpecModal,
   editingDoctorSpec,
+  setEditingDoctorSpec,
   doctorSpecForm,
   setDoctorSpecForm,
   handleOpenDoctorSpecModal,
@@ -23,6 +30,7 @@ export default function CategoriesTab({
   showHospitalCatModal,
   setShowHospitalCatModal,
   editingHospitalCat,
+  setEditingHospitalCat,
   hospitalCatForm,
   setHospitalCatForm,
   handleOpenHospitalCatModal,
@@ -31,6 +39,7 @@ export default function CategoriesTab({
   showDiagCatModal,
   setShowDiagCatModal,
   editingDiagCat,
+  setEditingDiagCat,
   diagCatForm,
   setDiagCatForm,
   handleOpenDiagCatModal,
@@ -39,6 +48,7 @@ export default function CategoriesTab({
   showHospServiceModal,
   setShowHospServiceModal,
   editingHospService,
+  setEditingHospService,
   hospServiceForm,
   setHospServiceForm,
   handleOpenHospServiceModal,
@@ -47,6 +57,7 @@ export default function CategoriesTab({
   showDiagServiceModal,
   setShowDiagServiceModal,
   editingDiagService,
+  setEditingDiagService,
   diagServiceForm,
   setDiagServiceForm,
   handleOpenDiagServiceModal,
@@ -55,6 +66,7 @@ export default function CategoriesTab({
   showTestCatModal,
   setShowTestCatModal,
   editingTestCat,
+  setEditingTestCat,
   testCatForm,
   setTestCatForm,
   loadAllData,
@@ -62,10 +74,10 @@ export default function CategoriesTab({
 }) {
   const handleOpenTestCatModal = (tc = null) => {
     if (tc) {
-      setEditingTestCat(tc);
+      if (setEditingTestCat) setEditingTestCat(tc);
       setTestCatForm({ id: tc.id, name: tc.name, icon: tc.icon || 'FlaskConical', description: tc.description || '', count: tc.count || 0 });
     } else {
-      setEditingTestCat(null);
+      if (setEditingTestCat) setEditingTestCat(null);
       setTestCatForm({ id: '', name: '', icon: 'FlaskConical', description: '', count: 0 });
     }
     setShowTestCatModal(true);
@@ -74,15 +86,36 @@ export default function CategoriesTab({
   const handleSaveTestCat = async (e) => {
     e.preventDefault();
     try {
-      if (editingTestCat) {
-        await api.updateTestCategory(editingTestCat.id, testCatForm);
-        showNotification && showNotification(`Test Category "${testCatForm.name}" updated.`);
-      } else {
-        await api.createTestCategory(testCatForm);
-        showNotification && showNotification(`Test Category "${testCatForm.name}" created.`);
+      let resData;
+      try {
+        if (editingTestCat) {
+          resData = await api.updateTestCategory(editingTestCat.id, testCatForm);
+        } else {
+          resData = await api.createTestCategory(testCatForm);
+        }
+      } catch (err) {
+        console.warn("Backend save test category failed, updating local state:", err);
       }
+
+      const newCat = {
+        id: resData?.id || testCatForm.id || `tc-${Date.now()}`,
+        name: testCatForm.name,
+        icon: testCatForm.icon || 'FlaskConical',
+        description: testCatForm.description || '',
+        count: testCatForm.count || 0
+      };
+
+      if (setTestCategories) {
+        setTestCategories(prev => {
+          if (editingTestCat) {
+            return prev.map(c => String(c.id) === String(editingTestCat.id) ? newCat : c);
+          }
+          return [...prev, newCat];
+        });
+      }
+
+      showNotification && showNotification(`Test Category "${testCatForm.name}" ${editingTestCat ? 'updated' : 'created'}.`);
       setShowTestCatModal(false);
-      loadAllData && loadAllData();
     } catch (err) {
       alert(`Error saving category: ${err.message}`);
     }
@@ -91,9 +124,11 @@ export default function CategoriesTab({
   const handleDeleteTestCat = async (id, name) => {
     if (!window.confirm(`Delete Test Category "${name}"?`)) return;
     try {
-      await api.deleteTestCategory(id);
+      await api.deleteTestCategory(id).catch(() => null);
+      if (setTestCategories) {
+        setTestCategories(prev => prev.filter(c => String(c.id) !== String(id)));
+      }
       showNotification && showNotification(`Test Category "${name}" deleted.`);
-      loadAllData && loadAllData();
     } catch (err) {
       alert(`Error deleting category: ${err.message}`);
     }

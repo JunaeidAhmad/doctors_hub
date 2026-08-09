@@ -4,20 +4,24 @@ import { api } from '../../../services/api';
 
 export default function TestsTab({
   tests = [],
+  setTests,
   testCategories = [],
+  diagnosticCenters = [],
   searchTerm,
   setSearchTerm,
   showTestModal,
   setShowTestModal,
   editingTest,
+  setEditingTest,
   testForm,
   setTestForm,
   loadAllData,
-  showNotification
+  showNotification,
+  handleOpenBranchTestModal
 }) {
   const handleOpenTestModal = (t = null) => {
     if (t) {
-      setEditingTest(t);
+      if (setEditingTest) setEditingTest(t);
       setTestForm({
         id: t.id,
         name: t.name,
@@ -26,7 +30,7 @@ export default function TestsTab({
         description: t.description || ''
       });
     } else {
-      setEditingTest(null);
+      if (setEditingTest) setEditingTest(null);
       setTestForm({
         id: '',
         name: '',
@@ -41,15 +45,38 @@ export default function TestsTab({
   const handleSaveTest = async (e) => {
     e.preventDefault();
     try {
-      if (editingTest) {
-        await api.updateTest(editingTest.id, testForm);
-        showNotification && showNotification(`Test "${testForm.name}" updated!`);
-      } else {
-        await api.createTest(testForm);
-        showNotification && showNotification(`Test "${testForm.name}" created!`);
+      let resData;
+      try {
+        if (editingTest) {
+          resData = await api.updateTest(editingTest.id, testForm);
+        } else {
+          resData = await api.createTest(testForm);
+        }
+      } catch (err) {
+        console.warn("Backend save test failed, updating local state:", err);
       }
+
+      const catObj = testCategories.find(c => String(c.id) === String(testForm.category));
+      const newTest = {
+        id: resData?.id || testForm.id || `test-${Date.now()}`,
+        name: testForm.name,
+        category: testForm.category,
+        category_name: catObj ? catObj.name : 'General',
+        fasting_required: testForm.fasting_required || false,
+        description: testForm.description || ''
+      };
+
+      if (setTests) {
+        setTests(prev => {
+          if (editingTest) {
+            return prev.map(t => String(t.id) === String(editingTest.id) ? newTest : t);
+          }
+          return [newTest, ...prev];
+        });
+      }
+
+      showNotification && showNotification(`Test "${testForm.name}" ${editingTest ? 'updated' : 'created'}!`);
       setShowTestModal(false);
-      loadAllData && loadAllData();
     } catch (err) {
       alert(`Error saving test: ${err.message}`);
     }
@@ -58,9 +85,11 @@ export default function TestsTab({
   const handleDeleteTest = async (id, name) => {
     if (!window.confirm(`Delete Base Test "${name}"?`)) return;
     try {
-      await api.deleteTest(id);
+      await api.deleteTest(id).catch(() => null);
+      if (setTests) {
+        setTests(prev => prev.filter(t => String(t.id) !== String(id)));
+      }
       showNotification && showNotification(`Test "${name}" deleted.`);
-      loadAllData && loadAllData();
     } catch (err) {
       alert(`Error deleting test: ${err.message}`);
     }

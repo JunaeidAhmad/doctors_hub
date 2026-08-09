@@ -1,7 +1,7 @@
 import React, { useRef } from 'react';
 import { 
   Users, Building2, FlaskConical, Stethoscope, Activity, TestTube, 
-  Calculator, Calendar, ChevronLeft, ChevronRight 
+  Calculator, Calendar, ChevronLeft, ChevronRight, Layers 
 } from 'lucide-react';
 
 export default function AdminNavStrip({
@@ -15,17 +15,18 @@ export default function AdminNavStrip({
   const tabs = [
     { id: 'overview', label: 'Overview', icon: Users },
     { id: 'hospitals', label: `Hospitals (${counts.hospitals || 0})`, icon: Building2 },
-    { id: 'diagnostics', label: `Diagnostics & Branches (${counts.diagnostics || 0})`, icon: FlaskConical },
+    { id: 'hospital-specs', label: `Hospital Categories (${counts.hospitalSpecs || 0})`, icon: Building2 },
+    { id: 'hosp-services', label: `Hospital Services (${counts.hospServices || 0})`, icon: Activity },
     { id: 'doctors', label: `Specialist Doctors (${counts.doctors || 0})`, icon: Stethoscope },
     { id: 'doctor-specs', label: `Doctor Specialties (${counts.doctorSpecs || 0})`, icon: Stethoscope },
-    { id: 'hospital-specs', label: `Hospital Categories (${counts.hospitalSpecs || 0})`, icon: Building2 },
+    { id: 'doc-bookings', label: `Doctor Bookings (${counts.docBookings || 0})`, icon: Calendar },
+    { id: 'diagnostics', label: `Diagnostics & Branches (${counts.diagnostics || 0})`, icon: FlaskConical },
     { id: 'diag-cats', label: `Diagnostics Categories (${counts.diagCats || 0})`, icon: FlaskConical },
-    { id: 'hosp-services', label: `Hospital Services (${counts.hospServices || 0})`, icon: Activity },
     { id: 'diag-services', label: `Diagnostic Services (${counts.diagServices || 0})`, icon: FlaskConical },
     { id: 'tests', label: `Add Test (${counts.tests || 0})`, icon: TestTube },
     { id: 'test-cats', label: `Test Categories (${counts.testCats || 0})`, icon: TestTube },
+    { id: 'add-tests-to-diagnostics', label: 'Add Tests to Diagnostics', icon: Layers },
     { id: 'branch-tests', label: `Diagnostic Test Prices (${counts.branchTests || 0})`, icon: Calculator },
-    { id: 'doc-bookings', label: `Doctor Bookings (${counts.docBookings || 0})`, icon: Calendar },
     { id: 'lab-bookings', label: `Lab Bookings (${counts.labBookings || 0})`, icon: Calendar },
   ];
 
