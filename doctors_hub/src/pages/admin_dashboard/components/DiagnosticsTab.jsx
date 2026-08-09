@@ -1,5 +1,5 @@
 import React from 'react';
-import { Search, Plus, Edit, Trash2, XCircle, CheckCircle } from 'lucide-react';
+import { Search, Plus, Edit, Trash2, XCircle, CheckCircle, FlaskConical } from 'lucide-react';
 import { CITY_THANAS, LOCATIONS } from '../../../data/mockData';
 
 export default function DiagnosticsTab({
@@ -18,7 +18,8 @@ export default function DiagnosticsTab({
   handleSaveDiagnostic,
   handleDeleteDiagnostic,
   toggleDiagnosticServiceSelection,
-  toggleDiagnosticTestCategorySelection
+  toggleDiagnosticTestCategorySelection,
+  handleOpenBranchTestModal
 }) {
   return (
     <>
@@ -79,6 +80,13 @@ export default function DiagnosticsTab({
                       <div className="text-slate-400 font-bold">{dc.district}</div>
                     </td>
                     <td className="py-4 px-4 text-right space-x-2 whitespace-nowrap">
+                      <button
+                        onClick={() => handleOpenBranchTestModal && handleOpenBranchTestModal(null, 'diagnostic', dc.id)}
+                        title="Add Test Offering to this Diagnostic Center"
+                        className="px-2.5 py-1.5 bg-cyan-500/20 text-cyan-300 rounded-lg hover:bg-cyan-500/30 inline-flex items-center gap-1 text-[11px] font-bold border border-cyan-500/30 transition"
+                      >
+                        <FlaskConical className="w-3.5 h-3.5" /> + Test
+                      </button>
                       <button onClick={() => handleOpenDiagnosticModal(dc)} className="p-2 bg-slate-800 text-slate-300 rounded-lg hover:bg-slate-700">
                         <Edit className="w-4 h-4" />
                       </button>

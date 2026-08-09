@@ -19,7 +19,7 @@ export default function StickyNavbar({ activeTab, setActiveTab, user, onOpenLogi
 
   const navLinks = [
     { name: 'Home', id: 'home' },
-    { name: 'Doctors', id: 'opd-doctors' },
+    { name: 'Doctors', id: 'doctors' },
     { name: 'Diagnostics', id: 'diagnostics' },
     { name: 'Hospitals', id: 'hospitals' },
     { name: 'Contact', id: 'contact' },
@@ -60,7 +60,7 @@ export default function StickyNavbar({ activeTab, setActiveTab, user, onOpenLogi
               <span className="text-[10px] bg-emerald-100 text-emerald-800 font-bold px-1.5 py-0.5 rounded uppercase tracking-wider">.bd</span>
             </div>
             <p className="text-[11px] text-slate-500 font-medium tracking-wide">
-              Doctors & Diagnostics Portal Bangladesh
+              Doctors, Diagnostics & Hospitals Portal Bangladesh
             </p>
           </div>
         </div>

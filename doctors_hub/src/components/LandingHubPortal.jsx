@@ -27,14 +27,14 @@ export default function LandingHubPortal() {
         {/* PATIENT HIGHLIGHT FEATURE CARDS */}
         <div className="grid md:grid-cols-3 gap-6 max-w-5xl mx-auto">
           
-          {/* FEATURE CARD 1: OPD DOCTOR APPOINTMENTS */}
+          {/* FEATURE CARD 1: DOCTOR APPOINTMENTS */}
           <div className="p-6 rounded-2xl bg-slate-800/80 border border-slate-700 hover:border-emerald-500/50 transition-all duration-300">
             <div className="p-3.5 rounded-xl bg-emerald-500/20 text-emerald-400 w-fit mb-4">
               <Stethoscope className="w-6 h-6" />
             </div>
-            <h3 className="text-lg font-bold text-white mb-2">Instant OPD Doctor Serials</h3>
+            <h3 className="text-lg font-bold text-white mb-2">Instant Doctor Serials</h3>
             <p className="text-slate-300 text-xs sm:text-sm leading-relaxed">
-              Find specialist professors, check live chamber visit timings, and book guaranteed OPD serial slots online without waiting in long queues.
+              Find specialist professors, check live chamber visit timings, and book guaranteed serial slots online without waiting in long queues.
             </p>
             <div className="mt-4 pt-4 border-t border-slate-700/60 flex items-center gap-2 text-xs text-emerald-400 font-semibold">
               <Clock className="w-4 h-4" />

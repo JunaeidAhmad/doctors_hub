@@ -1,22 +1,37 @@
-import React, { useState, useEffect } from 'react';
+import React, { useState, useEffect, useMemo, useRef } from 'react';
+import { useSearchParams } from 'react-router-dom';
 import { 
   Building2, MapPin, Clock, ShieldCheck, CheckCircle, 
-  Star, ArrowRight, Search, UserCheck, ChevronRight, Filter
+  Star, ArrowRight, Search, UserCheck, ChevronRight, Filter,
+  ArrowDownAZ, ArrowUpAZ
 } from 'lucide-react';
 import { api } from '../services/api';
 import { HOSPITALS, DIAGNOSTIC_CENTERS, LOCATIONS, HOSPITAL_CATEGORIES, CITY_THANAS } from '../data/mockData';
+import Pagination from '../components/Pagination';
 
 export default function HospitalsPage({ initialKeyword = '', onSelectHospital, onNavigateHome }) {
   const [hospitals, setHospitals] = useState([]);
   const [diagnosticCenters, setDiagnosticCenters] = useState([]);
   const [hospitalCategories, setHospitalCategories] = useState(HOSPITAL_CATEGORIES);
   const [loading, setLoading] = useState(true);
+
+  // URL-serialized state (filters, pagination, sort)
+  const [searchParams, setSearchParams] = useSearchParams();
+  const getParam = (key, fallback) => {
+    const v = searchParams.get(key);
+    return v === null || v === undefined ? fallback : v;
+  };
+  const hasUrlFilters = searchParams.toString().length > 0;
+
+  const [page, setPage] = useState(() => Math.max(1, parseInt(getParam('page', '1'), 10) || 1));
+  const [sortOrder, setSortOrder] = useState(() => (getParam('sort', 'asc') === 'desc' ? 'desc' : 'asc'));
+  const pageSize = 9;
   
   // Filter states
-  const [selectedLocation, setSelectedLocation] = useState('All Bangladesh');
-  const [selectedArea, setSelectedArea] = useState('All Areas');
-  const [selectedCategory, setSelectedCategory] = useState('all');
-  const [searchKeyword, setSearchKeyword] = useState(initialKeyword);
+  const [selectedLocation, setSelectedLocation] = useState(() => getParam('loc', 'All Bangladesh'));
+  const [selectedArea, setSelectedArea] = useState(() => getParam('area', 'All Areas'));
+  const [selectedCategory, setSelectedCategory] = useState(() => getParam('cat', 'all'));
+  const [searchKeyword, setSearchKeyword] = useState(() => getParam('q', initialKeyword));
 
   useEffect(() => {
     let isMounted = true;
@@ -52,6 +67,7 @@ export default function HospitalsPage({ initialKeyword = '', onSelectHospital, o
   }, [selectedLocation]);
 
   useEffect(() => {
+    if (hasUrlFilters) return;
     if (initialKeyword) {
       const str = initialKeyword.toLowerCase().trim();
       const catMatch = hospitalCategories.find(c => 
@@ -66,7 +82,7 @@ export default function HospitalsPage({ initialKeyword = '', onSelectHospital, o
         setSearchKeyword(initialKeyword);
       }
     }
-  }, [initialKeyword, hospitalCategories]);
+  }, [initialKeyword, hospitalCategories, hasUrlFilters]);
 
   // Reset area filter when location switches
   const handleLocationChange = (loc) => {
@@ -119,6 +135,47 @@ export default function HospitalsPage({ initialKeyword = '', onSelectHospital, o
     return true;
   });
 
+  // Serialize filters/pagination/sort to URL
+  useEffect(() => {
+    const params = new URLSearchParams();
+    if (selectedCategory && selectedCategory !== 'all') params.set('cat', selectedCategory);
+    if (selectedLocation && selectedLocation !== 'All Bangladesh') params.set('loc', selectedLocation);
+    if (selectedArea && selectedArea !== 'All Areas') params.set('area', selectedArea);
+    if (searchKeyword.trim()) params.set('q', searchKeyword.trim());
+    if (page > 1) params.set('page', String(page));
+    if (sortOrder !== 'asc') params.set('sort', sortOrder);
+
+    const next = params.toString();
+    if (next !== searchParams.toString()) {
+      setSearchParams(params, { replace: true });
+    }
+  }, [selectedCategory, selectedLocation, selectedArea, searchKeyword, page, sortOrder, searchParams, setSearchParams]);
+
+  // Alphabetical sorting + pagination
+  const sortedHospitals = useMemo(() => {
+    const sorted = [...filteredHospitals].sort((a, b) => {
+      const cmp = (a.name || '').localeCompare(b.name || '');
+      return sortOrder === 'asc' ? cmp : -cmp;
+    });
+    return sorted;
+  }, [filteredHospitals, sortOrder]);
+
+  const totalHospitalPages = Math.max(1, Math.ceil(sortedHospitals.length / pageSize));
+  const safeHospitalPage = Math.min(page, totalHospitalPages);
+  const paginatedHospitals = useMemo(() => {
+    const start = (safeHospitalPage - 1) * pageSize;
+    return sortedHospitals.slice(start, start + pageSize);
+  }, [sortedHospitals, safeHospitalPage, pageSize]);
+
+  const didMountRef = useRef(false);
+  useEffect(() => {
+    if (!didMountRef.current) {
+      didMountRef.current = true;
+      return;
+    }
+    setPage(1);
+  }, [selectedCategory, selectedLocation, selectedArea, searchKeyword]);
+
   return (
     <div className="min-h-screen bg-slate-50 pb-20">
       
@@ -161,7 +218,7 @@ export default function HospitalsPage({ initialKeyword = '', onSelectHospital, o
             <div className="flex items-center justify-between text-xs font-extrabold uppercase tracking-wider text-slate-400 pb-2 border-b border-slate-700/60">
               <div className="flex items-center gap-2">
                 <Filter className="w-4 h-4 text-emerald-400" />
-                <span>Search & Filter Controls</span>
+                <span>Hospital Search & Filter</span>
               </div>
               {(selectedCategory !== 'all' || selectedLocation !== 'All Bangladesh' || selectedArea !== 'All Areas' || searchKeyword) && (
                 <button
@@ -178,56 +235,8 @@ export default function HospitalsPage({ initialKeyword = '', onSelectHospital, o
               )}
             </div>
 
-            <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-3">
+            <div className={`grid grid-cols-1 sm:grid-cols-2 ${selectedLocation !== 'All Bangladesh' ? 'lg:grid-cols-4' : 'lg:grid-cols-3'} gap-3`}>
               
-              {/* Search Keyword */}
-              <div className="relative">
-                <label className="block text-[11px] font-bold text-slate-400 mb-1">Keyword Search</label>
-                <div className="relative">
-                  <Search className="w-4 h-4 text-slate-400 absolute left-3 top-1/2 -translate-y-1/2" />
-                  <input
-                    type="text"
-                    placeholder="Search hospital or diagnostic..."
-                    value={searchKeyword}
-                    onChange={(e) => setSearchKeyword(e.target.value)}
-                    className="w-full bg-slate-900 border border-slate-700 rounded-xl pl-9 pr-3 py-2.5 text-xs text-white placeholder-slate-400 focus:outline-none focus:border-emerald-500 font-medium"
-                  />
-                </div>
-              </div>
-
-              {/* City / Location */}
-              <div>
-                <label className="block text-[11px] font-bold text-slate-400 mb-1">City Location</label>
-                <select
-                  value={selectedLocation}
-                  onChange={(e) => handleLocationChange(e.target.value)}
-                  className="w-full bg-slate-900 border border-slate-700 rounded-xl px-3 py-2.5 text-xs text-white focus:outline-none focus:border-emerald-500 font-bold"
-                >
-                  {LOCATIONS.map(loc => (
-                    <option key={loc} value={loc}>{loc}</option>
-                  ))}
-                </select>
-              </div>
-
-              {/* Area / Thana Filter */}
-              {selectedLocation !== 'All Bangladesh' ? (
-                <div>
-                  <label className="block text-[11px] font-bold text-emerald-400 mb-1">Area / Thana ({selectedLocation})</label>
-                  <select
-                    value={selectedArea}
-                    onChange={(e) => setSelectedArea(e.target.value)}
-                    className="w-full bg-slate-900 border border-emerald-500/80 rounded-xl px-3 py-2.5 text-xs text-white focus:outline-none focus:border-emerald-400 font-bold"
-                  >
-                    <option value="All Areas">All Areas in {selectedLocation}</option>
-                    {(CITY_THANAS[selectedLocation] || []).map(th => (
-                      <option key={th} value={th}>{th}</option>
-                    ))}
-                  </select>
-                </div>
-              ) : (
-                <div className="hidden lg:block"></div>
-              )}
-
               {/* Category Filter */}
               <div>
                 <label className="block text-[11px] font-bold text-slate-400 mb-1">Hospital Category</label>
@@ -244,6 +253,52 @@ export default function HospitalsPage({ initialKeyword = '', onSelectHospital, o
                     <option key={cat.id} value={cat.id}>{cat.name}</option>
                   ))}
                 </select>
+              </div>
+
+              {/* City / Location */}
+              <div>
+                <label className="block text-[11px] font-bold text-slate-400 mb-1">Location</label>
+                <select
+                  value={selectedLocation}
+                  onChange={(e) => handleLocationChange(e.target.value)}
+                  className="w-full bg-slate-900 border border-slate-700 rounded-xl px-3 py-2.5 text-xs text-white focus:outline-none focus:border-emerald-500 font-bold"
+                >
+                  {LOCATIONS.map(loc => (
+                    <option key={loc} value={loc}>{loc}</option>
+                  ))}
+                </select>
+              </div>
+
+              {/* Area / Thana Filter */}
+              {selectedLocation !== 'All Bangladesh' && (
+                <div>
+                  <label className="block text-[11px] font-bold text-emerald-400 mb-1">Area / Thana ({selectedLocation})</label>
+                  <select
+                    value={selectedArea}
+                    onChange={(e) => setSelectedArea(e.target.value)}
+                    className="w-full bg-slate-900 border border-emerald-500/80 rounded-xl px-3 py-2.5 text-xs text-white focus:outline-none focus:border-emerald-400 font-bold"
+                  >
+                    <option value="All Areas">All Areas in {selectedLocation}</option>
+                    {(CITY_THANAS[selectedLocation] || []).map(th => (
+                      <option key={th} value={th}>{th}</option>
+                    ))}
+                  </select>
+                </div>
+              )}
+
+              {/* Search Keyword */}
+              <div className="relative">
+                <label className="block text-[11px] font-bold text-slate-400 mb-1">Search</label>
+                <div className="relative">
+                  <Search className="w-4 h-4 text-slate-400 absolute left-3 top-1/2 -translate-y-1/2" />
+                  <input
+                    type="text"
+                    placeholder="Search hospital or diagnostic..."
+                    value={searchKeyword}
+                    onChange={(e) => setSearchKeyword(e.target.value)}
+                    className="w-full bg-slate-900 border border-slate-700 rounded-xl pl-9 pr-3 py-2.5 text-xs text-white placeholder-slate-400 focus:outline-none focus:border-emerald-500 font-medium"
+                  />
+                </div>
               </div>
 
             </div>
@@ -269,8 +324,31 @@ export default function HospitalsPage({ initialKeyword = '', onSelectHospital, o
             </p>
           </div>
         ) : (
+          <>
+          {/* Sort Control */}
+          <div className="flex flex-wrap items-center justify-between gap-3 mb-6 bg-white rounded-2xl border border-slate-200/90 p-4 shadow-xs">
+            <p className="text-xs font-semibold text-slate-600">
+              Showing <strong className="text-emerald-700">{paginatedHospitals.length}</strong> of{' '}
+              <strong className="text-slate-900">{filteredHospitals.length}</strong> hospitals & diagnostic centers
+            </p>
+            <div className="flex items-center gap-2">
+              <span className="text-[10px] font-bold text-slate-500 uppercase tracking-wider">Sort:</span>
+              <button
+                onClick={() => setSortOrder(sortOrder === 'asc' ? 'desc' : 'asc')}
+                className={`flex items-center gap-1 text-xs font-bold px-2.5 py-1.5 rounded-lg transition-all ${
+                  sortOrder === 'asc'
+                    ? 'bg-emerald-600 text-white shadow-xs'
+                    : 'bg-slate-50 text-slate-600 hover:bg-slate-100 border border-slate-200'
+                }`}
+              >
+                {sortOrder === 'asc' ? <ArrowDownAZ className="w-3.5 h-3.5" /> : <ArrowUpAZ className="w-3.5 h-3.5" />}
+                <span>{sortOrder === 'asc' ? 'A-Z' : 'Z-A'}</span>
+              </button>
+            </div>
+          </div>
+
           <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-8">
-            {filteredHospitals.map((hospital) => {
+            {paginatedHospitals.map((hospital) => {
               const docCount = (hospital.affiliated_doctors || hospital.doctors || []).length;
               const testCount = (hospital.offered_tests || hospital.tests || []).length;
               return (
@@ -340,7 +418,7 @@ export default function HospitalsPage({ initialKeyword = '', onSelectHospital, o
                       </div>
                       <div className="flex flex-wrap gap-1.5">
                         {((hospital.services && hospital.services.length > 0 ? hospital.services : [
-                          "Specialist OPD Consultation",
+                          "Specialist Consultation",
                           "Automated Lab Testing",
                           "Radiology & Ultrasound"
                         ])).slice(0, 3).map((srv, idx) => {
@@ -364,6 +442,13 @@ export default function HospitalsPage({ initialKeyword = '', onSelectHospital, o
               );
             })}
           </div>
+
+          <Pagination
+            page={safeHospitalPage}
+            totalPages={totalHospitalPages}
+            onPageChange={setPage}
+          />
+          </>
         )}
 
       </div>

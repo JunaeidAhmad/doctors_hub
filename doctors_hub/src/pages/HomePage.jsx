@@ -1,11 +1,11 @@
 import React from 'react';
 import LandingHubPortal from '../components/LandingHubPortal';
 import ThreeWayEngine from '../components/ThreeWayEngine';
-import OpdMonitorGrid from '../components/OpdMonitorGrid';
-import PathologySection from '../components/PathologySection';
+import DoctorMonitorGrid from '../components/DoctorMonitorGrid';
+import DiagnosticsSection from '../components/DiagnosticsSection';
 import SpecialtyGrid from '../components/SpecialtyGrid';
 import AppDownloadBanner from '../components/AppDownloadBanner';
-import { OPD_CHAMBERS } from '../data/mockData';
+import { DOCTOR_CHAMBERS } from '../data/mockData';
 
 export default function HomePage({
   selectedSpecialty,
@@ -46,7 +46,7 @@ export default function HomePage({
         <div className="grid grid-cols-2 md:grid-cols-4 gap-4 text-center">
           <div className="bg-white p-4 rounded-xl border border-slate-200 shadow-2xs">
             <div className="text-2xl font-black text-emerald-600">500+</div>
-            <div className="text-xs font-semibold text-slate-600">OPD Chamber Clinics</div>
+            <div className="text-xs font-semibold text-slate-600">Chamber Clinics</div>
           </div>
           <div className="bg-white p-4 rounded-xl border border-slate-200 shadow-2xs">
             <div className="text-2xl font-black text-teal-600">2,500+</div>
@@ -72,15 +72,15 @@ export default function HomePage({
         }}
       />
 
-      {/* 6. LAB TEST GRID (PATHOLOGY DIAGNOSTICS SECTION) */}
-      <PathologySection
+      {/* 6. LAB TEST GRID (DIAGNOSTICS SECTION) */}
+      <DiagnosticsSection
         onSelectCategory={(catId) => {
-          onExecuteSearch('pathology', catId);
+          onExecuteSearch('diagnostics', catId);
         }}
       />
 
-      {/* 7. HOSPITALS AND DIAGNOSTICS GRID (REAL-TIME OPD MONITOR GRID) */}
-      <OpdMonitorGrid
+      {/* 7. HOSPITALS AND DIAGNOSTICS GRID */}
+      <DoctorMonitorGrid
         onSelectCategory={(specId) => {
           onExecuteSearch('hospital', specId);
         }}

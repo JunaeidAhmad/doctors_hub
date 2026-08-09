@@ -1,7 +1,8 @@
 import React, { useState, useMemo, useEffect } from 'react';
-import { Stethoscope, MapPin, Filter, ArrowLeft, Building2, ShieldCheck, Calendar, Clock, ArrowRight, X, Heart, Award } from 'lucide-react';
-import { SPECIALTIES as MOCK_SPECIALTIES, LOCATIONS, OPD_CHAMBERS as MOCK_CHAMBERS, CITY_THANAS } from '../data/mockData';
+import { Stethoscope, MapPin, Filter, ArrowLeft, Building2, ShieldCheck, Calendar, Clock, ArrowRight, X, Heart, Award, ArrowDownAZ, ArrowUpAZ } from 'lucide-react';
+import { SPECIALTIES as MOCK_SPECIALTIES, LOCATIONS, DOCTOR_CHAMBERS as MOCK_CHAMBERS, CITY_THANAS } from '../data/mockData';
 import { api, ensureArray } from '../services/api';
+import Pagination from '../components/Pagination';
 
 function formatTime(timeStr) {
   if (!timeStr) return '';
@@ -12,7 +13,7 @@ function formatTime(timeStr) {
   return `${hour}:${String(m || 0).padStart(2, '0')} ${period}`;
 }
 
-export default function OpdDoctorSearchPage({
+export default function DoctorSearchPage({
   initialSpecialty = '',
   initialLocation = 'All Bangladesh',
   initialKeyword = '',
@@ -32,13 +33,18 @@ export default function OpdDoctorSearchPage({
   const [doctors, setDoctors] = useState([]);
   const [selectedSlots, setSelectedSlots] = useState({});
 
+  // Pagination & Sorting
+  const [currentPage, setCurrentPage] = useState(1);
+  const [sortOrder, setSortOrder] = useState('asc');
+  const pageSize = 5;
+
   useEffect(() => {
     let isMounted = true;
 
-    // Debounced generic keyword + location search for OPD doctors
+    // Debounced generic keyword + location search for doctors
     const timer = setTimeout(() => {
       api.getDoctors({
-        consultation_type: 'OPD',
+        consultation_type: 'Doctor',
         location,
         search: keyword.trim() || undefined,
       })
@@ -71,18 +77,18 @@ export default function OpdDoctorSearchPage({
     return () => { isMounted = false; };
   }, [location]);
 
-  // Combine doctor affiliations with chambers for OPD display
-  const opdChambersList = useMemo(() => {
+  // Combine doctor affiliations with chambers for display
+  const doctorChambersList = useMemo(() => {
     if (doctors.length > 0) {
-      // Build chamber map from doctors' OPD affiliations, keyed by the real hospital/diagnostic center
+      // Build chamber map from doctors' affiliations, keyed by the real hospital/diagnostic center
       const map = {};
       doctors.forEach((doc) => {
-        const affiliations = (doc.affiliations || []).filter(a => a.consultation_type === 'OPD');
+        const affiliations = (doc.affiliations || []).filter(a => !a.consultation_type || a.consultation_type === 'Doctor' || a.consultation_type === 'OPD');
         affiliations.forEach((aff) => {
           const facilityId = aff.hospital || aff.diagnostic_center || 'general-branch';
-          const facilityName = aff.facility_name || 'Medical Center OPD';
+          const facilityName = aff.facility_name || 'Medical Center Chamber';
           const nameParts = String(facilityName).split(' - ');
-          const baseName = nameParts[0] || 'Medical Center OPD';
+          const baseName = nameParts[0] || 'Medical Center Chamber';
           const branchName = nameParts.slice(1).join(' - ') || aff.hospital_branch || aff.diagnostic_center_branch || '';
           const city = aff.city || 'Dhaka';
 
@@ -125,7 +131,7 @@ export default function OpdDoctorSearchPage({
     return chambers.map((ch) => ({
       ...ch,
       doctors: (ch.doctors || []).map((doc) => {
-        const aff = (doc.affiliations || []).find(a => a.consultation_type === 'OPD') || (doc.affiliations && doc.affiliations[0]);
+        const aff = (doc.affiliations || []).find(a => !a.consultation_type || a.consultation_type === 'Doctor' || a.consultation_type === 'OPD') || (doc.affiliations && doc.affiliations[0]);
         return {
           ...doc,
           fee: doc.fee || (aff ? Number(aff.fee) : 1000),
@@ -141,7 +147,7 @@ export default function OpdDoctorSearchPage({
 
   // Filter logic
   const filteredChambers = useMemo(() => {
-    return opdChambersList.map((chamber) => {
+    return doctorChambersList.map((chamber) => {
       const matchingDoctors = (chamber.doctors || []).filter((doc) => {
         // Specialty match (array of specialties or single)
         const docSpecs = Array.isArray(doc.specialties) 
@@ -208,11 +214,40 @@ export default function OpdDoctorSearchPage({
         doctors: matchingDoctors
       };
     }).filter(Boolean);
-  }, [opdChambersList, specialty, location, area, keyword, maxFee, selectedDay]);
+  }, [doctorChambersList, specialty, location, area, keyword, maxFee, selectedDay]);
 
   const totalMatchingDoctors = useMemo(() => {
     return filteredChambers.reduce((acc, c) => acc + c.doctors.length, 0);
   }, [filteredChambers]);
+
+  // Alphabetically sort chambers and their doctors (asc/desc)
+  const sortedChambers = useMemo(() => {
+    const sorted = [...filteredChambers]
+      .map((ch) => ({
+        ...ch,
+        doctors: [...(ch.doctors || [])].sort((a, b) => {
+          const cmp = (a.name || '').localeCompare(b.name || '');
+          return sortOrder === 'asc' ? cmp : -cmp;
+        })
+      }))
+      .sort((a, b) => {
+        const cmp = (a.name || '').localeCompare(b.name || '');
+        return sortOrder === 'asc' ? cmp : -cmp;
+      });
+    return sorted;
+  }, [filteredChambers, sortOrder]);
+
+  // Pagination over chamber groups
+  const totalPages = Math.max(1, Math.ceil(sortedChambers.length / pageSize));
+  const safePage = Math.min(currentPage, totalPages);
+  const paginatedChambers = useMemo(() => {
+    const start = (safePage - 1) * pageSize;
+    return sortedChambers.slice(start, start + pageSize);
+  }, [sortedChambers, safePage, pageSize]);
+
+  useEffect(() => {
+    setCurrentPage(1);
+  }, [specialty, location, area, keyword, maxFee, selectedDay]);
 
   const handleSelectSlot = (docId, slotTime) => {
     setSelectedSlots(prev => ({
@@ -243,10 +278,10 @@ export default function OpdDoctorSearchPage({
                 <span>Find Your Doctor</span>
               </div>
               <h1 className="text-2xl sm:text-3xl lg:text-4xl font-black text-white">
-                {specialty ? `${specialty} OPD Doctors` : 'Specialist Doctors'}
+                {specialty ? `${specialty} ` : 'Specialist Doctors'}
               </h1>
               <p className="text-xs sm:text-sm text-slate-300 mt-1">
-                Showing <strong className="text-emerald-400">{totalMatchingDoctors} doctors</strong> across <strong className="text-emerald-400">{filteredChambers.length} chambers/branches</strong> in {location}.
+                Showing <strong className="text-emerald-400">{totalMatchingDoctors} doctors</strong> across <strong className="text-emerald-400">{filteredChambers.length} chambers</strong> in {location}.
               </p>
             </div>
 
@@ -410,7 +445,30 @@ export default function OpdDoctorSearchPage({
                 </p>
               </div>
             ) : (
-              filteredChambers.map((chamber) => (
+              <>
+              {/* Sort Control */}
+              <div className="flex flex-wrap items-center justify-between gap-3">
+                <p className="text-xs font-semibold text-slate-600">
+                  Showing <strong className="text-emerald-700">{paginatedChambers.length}</strong> of{' '}
+                  <strong className="text-slate-900">{filteredChambers.length}</strong> chambers/branches
+                </p>
+                <div className="flex items-center gap-2 bg-white border border-slate-200 rounded-xl px-2 py-1 shadow-xs">
+                  <span className="text-[10px] font-bold text-slate-500 uppercase tracking-wider pl-1">Sort:</span>
+                  <button
+                    onClick={() => setSortOrder(sortOrder === 'asc' ? 'desc' : 'asc')}
+                    className={`flex items-center gap-1 text-xs font-bold px-2.5 py-1.5 rounded-lg transition-all ${
+                      sortOrder === 'asc'
+                        ? 'bg-emerald-600 text-white shadow-xs'
+                        : 'bg-slate-50 text-slate-600 hover:bg-slate-100'
+                    }`}
+                  >
+                    {sortOrder === 'asc' ? <ArrowDownAZ className="w-3.5 h-3.5" /> : <ArrowUpAZ className="w-3.5 h-3.5" />}
+                    <span>{sortOrder === 'asc' ? 'A-Z' : 'Z-A'}</span>
+                  </button>
+                </div>
+              </div>
+
+              {paginatedChambers.map((chamber) => (
                 <div key={chamber.id} className="bg-white rounded-2xl border border-slate-200 overflow-hidden shadow-xs hover:shadow-md transition-shadow">
                   {/* Chamber Header */}
                   <div className="bg-slate-900 text-white p-4 px-6 flex items-center justify-between flex-wrap gap-2 border-b border-slate-800">
@@ -429,10 +487,6 @@ export default function OpdDoctorSearchPage({
                         </p>
                       </div>
                     </div>
-
-                    <span className="text-xs bg-emerald-500/20 text-emerald-400 px-2.5 py-1 rounded-full font-bold border border-emerald-500/30">
-                      OPD Facility
-                    </span>
                   </div>
 
                   {/* Doctor List under Chamber */}
@@ -453,9 +507,6 @@ export default function OpdDoctorSearchPage({
                           {/* Doctor Profile Info */}
                           <div className="space-y-2 flex-1">
                             <div className="flex items-center gap-2">
-                              <span className="px-2 py-0.5 rounded bg-emerald-100 text-emerald-800 font-extrabold text-[10px] uppercase tracking-wider">
-                                OPD Doctor
-                              </span>
                               <span className="text-xs font-bold text-slate-500">{doc.experience}</span>
                             </div>
 
@@ -510,7 +561,7 @@ export default function OpdDoctorSearchPage({
                           {/* Fee & Action */}
                           <div className="md:text-right shrink-0 space-y-3 pt-4 md:pt-0 border-t md:border-t-0 border-slate-100">
                             <div>
-                              <div className="text-xs text-slate-500">OPD Consultation Fee</div>
+                              <div className="text-xs text-slate-500">Consultation Fee</div>
                               <div className="text-2xl font-black text-slate-900">{doc.fee} BDT</div>
                             </div>
 
@@ -531,7 +582,14 @@ export default function OpdDoctorSearchPage({
                     })}
                   </div>
                 </div>
-              ))
+              ))}
+
+              <Pagination
+                page={safePage}
+                totalPages={totalPages}
+                onPageChange={setCurrentPage}
+              />
+              </>
             )}
           </div>
         </div>

@@ -1,6 +1,6 @@
 const BASE_URL = import.meta.env.VITE_API_BASE_URL || 'https://doctors-hub.onrender.com/api';
 
-async function fetchWithTimeout(url, options = {}, timeoutMs = null) {
+async function fetchWithTimeout(url, options = {}, timeoutMs = 2500) {
   if (!timeoutMs || typeof timeoutMs !== 'number' || timeoutMs <= 0) {
     return fetch(url, options);
   }
@@ -342,9 +342,10 @@ export const api = {
   },
 
   // Diagnostic Center Tests (prices per center)
-  async getDiagnosticCenterTests({ center = '', test = '', branch = '' } = {}) {
+  async getDiagnosticCenterTests({ center = '', hospital = '', test = '', branch = '' } = {}) {
     const url = new URL(`${BASE_URL}/diagnostic-center-tests/`);
     if (center || branch) url.searchParams.append('center', center || branch);
+    if (hospital) url.searchParams.append('hospital', hospital);
     if (test) url.searchParams.append('test', test);
     const res = await fetchWithTimeout(url, { headers: getHeaders() });
     return handleResponse(res);

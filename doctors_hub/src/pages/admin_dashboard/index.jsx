@@ -2,7 +2,8 @@ import React, { useState, useEffect } from 'react';
 import { api } from '../../services/api';
 import { 
   SPECIALTIES, HOSPITAL_CATEGORIES, DIAGNOSTIC_CENTER_CATEGORIES, 
-  HOSPITAL_SERVICES, DIAGNOSTIC_SERVICES, TEST_CATEGORIES 
+  HOSPITAL_SERVICES, DIAGNOSTIC_SERVICES, TEST_CATEGORIES,
+  HOSPITALS, DIAGNOSTIC_CENTERS, DOCTORS, TESTS, DIAGNOSTIC_CENTER_TESTS
 } from '../../data/mockData';
 import { 
   ShieldAlert, RefreshCw, CheckCircle, AlertCircle 
@@ -97,12 +98,12 @@ export default function AdminDashboard({ currentUser, onNavigate, onAdminLoggedI
     email: 'info@ibnsina.com.bd',
     rating: 4.9,
     reviews_count: 320,
-    open_timing: '24/7 Inpatient & OPD',
-    tagline: 'Premier Multispecialty OPD & Inpatient Hospital in Dhanmondi',
+    open_timing: '24/7 Inpatient & Doctor Services',
+    tagline: 'Premier Multispecialty Doctor & Inpatient Hospital in Dhanmondi',
     badge: 'Super Hospital',
     logo: 'https://images.unsplash.com/photo-1519494026892-80bbd2d6fd0d?auto=format&fit=crop&w=600&q=80',
     image: 'https://images.unsplash.com/photo-1519494026892-80bbd2d6fd0d?auto=format&fit=crop&w=600&q=80',
-    description: 'Leading hospital offering inpatient and OPD consultation.',
+    description: 'Leading hospital offering inpatient and doctor consultation.',
     is_verified: true
   });
 
@@ -159,7 +160,9 @@ export default function AdminDashboard({ currentUser, onNavigate, onAdminLoggedI
   const [editingBranchTest, setEditingBranchTest] = useState(null);
   const [branchTestForm, setBranchTestForm] = useState({
     id: '',
+    facility_type: 'diagnostic_center',
     center: '',
+    hospital: '',
     test: '',
     original_price: '700',
     discount: '25% OFF',
@@ -171,60 +174,41 @@ export default function AdminDashboard({ currentUser, onNavigate, onAdminLoggedI
   const isStaff = currentUser?.is_staff || currentUser?.is_superuser || currentUser?.phone === '01700000000' || false;
 
   useEffect(() => {
-    loadAllData();
+    loadInitialData();
   }, []);
 
-  const loadAllData = async () => {
+  const loadInitialData = async () => {
     setLoading(true);
     setError('');
     try {
       const [
-        hospsData, diagsData, docsData, testsData, specsData, 
-        hospCatsData, diagCatsData, hospSrvsData, diagSrvsData, testCatsData,
-        branchTestsData, docBksData, labBksData
+        hospsData, diagsData, docsData, testsData, branchTestsData
       ] = await Promise.all([
         api.getHospitals().catch(() => HOSPITALS),
         api.getDiagnosticCenters().catch(() => DIAGNOSTIC_CENTERS),
         api.getDoctors().catch(() => DOCTORS),
         api.getTests().catch(() => TESTS),
-        api.getSpecialties().catch(() => SPECIALTIES),
-        api.getHospitalCategories().catch(() => HOSPITAL_CATEGORIES),
-        api.getDiagnosticCenterCategories().catch(() => DIAGNOSTIC_CENTER_CATEGORIES),
-        api.getHospitalServices().catch(() => HOSPITAL_SERVICES),
-        api.getDiagnosticServices().catch(() => DIAGNOSTIC_SERVICES),
-        api.getTestCategories().catch(() => TEST_CATEGORIES),
-        api.getDiagnosticCenterTests().catch(() => DIAGNOSTIC_CENTER_TESTS),
-        api.getDoctorBookings().catch(() => []),
-        api.getLabBookings().catch(() => [])
+        api.getDiagnosticCenterTests().catch(() => DIAGNOSTIC_CENTER_TESTS)
       ]);
 
       setHospitals(ensureArray(hospsData, HOSPITALS));
       setDiagnosticCenters(ensureArray(diagsData, DIAGNOSTIC_CENTERS));
       setDoctors(ensureArray(docsData, DOCTORS));
       setTests(ensureArray(testsData, TESTS));
-      setDoctorSpecialties(ensureArray(specsData, SPECIALTIES));
-      setHospitalCategories(ensureArray(hospCatsData, HOSPITAL_CATEGORIES));
-      setDiagnosticCategories(ensureArray(diagCatsData, DIAGNOSTIC_CENTER_CATEGORIES));
-      setHospitalServices(ensureArray(hospSrvsData, HOSPITAL_SERVICES));
-      setDiagnosticServices(ensureArray(diagSrvsData, DIAGNOSTIC_SERVICES));
-      setTestCategories(ensureArray(testCatsData, TEST_CATEGORIES));
       setBranchTests(ensureArray(branchTestsData, DIAGNOSTIC_CENTER_TESTS));
-      setDoctorBookings(ensureArray(docBksData, []));
-      setLabBookings(ensureArray(labBksData, []));
-
-      if (hospCatsData?.length && !hospitalForm.category_id) {
-        const catList = ensureArray(hospCatsData, HOSPITAL_CATEGORIES);
-        if (catList[0]?.id) {
-          setHospitalForm(prev => ({ ...prev, category_id: catList[0].id }));
-        }
-      }
     } catch (err) {
-      console.error("Error loading admin dashboard data:", err);
-      {/*setError("Failed to load dashboard data from backend.");*/}
+      console.warn("Backend load failed or timed out, loading local mock data:", err);
+      setHospitals(HOSPITALS);
+      setDiagnosticCenters(DIAGNOSTIC_CENTERS);
+      setDoctors(DOCTORS);
+      setTests(TESTS);
+      setBranchTests(DIAGNOSTIC_CENTER_TESTS);
     } finally {
       setLoading(false);
     }
   };
+
+  const loadAllData = () => loadInitialData();
 
   const showNotification = (msg) => {
     setSuccessMsg(msg);
@@ -255,7 +239,7 @@ export default function AdminDashboard({ currentUser, onNavigate, onAdminLoggedI
         email: h.email || '',
         rating: h.rating || 4.9,
         reviews_count: h.reviews_count || 100,
-        open_timing: h.open_timing || '24/7 Inpatient & OPD',
+        open_timing: h.open_timing || '24/7 Inpatient & Doctor Services',
         tagline: h.tagline || '',
         badge: h.badge || '',
         logo: h.logo || '',
@@ -279,7 +263,7 @@ export default function AdminDashboard({ currentUser, onNavigate, onAdminLoggedI
         email: '',
         rating: 4.9,
         reviews_count: 150,
-        open_timing: '24/7 Inpatient & OPD',
+        open_timing: '24/7 Inpatient & Doctor Services',
         tagline: '',
         badge: 'Hospital',
         logo: 'https://images.unsplash.com/photo-1519494026892-80bbd2d6fd0d?auto=format&fit=crop&w=600&q=80',
@@ -533,7 +517,7 @@ export default function AdminDashboard({ currentUser, onNavigate, onAdminLoggedI
         ? doc.affiliations.map(a => ({
             hospital: a.hospital?.id || a.hospital || null,
             diagnostic_center: a.diagnostic_center?.id || a.diagnostic_center || null,
-            consultation_type: a.consultation_type || 'OPD',
+            consultation_type: a.consultation_type || 'Doctor',
             fee: a.fee || '1200',
             schedules: Array.isArray(a.schedules) ? a.schedules : []
           }))
@@ -559,7 +543,7 @@ export default function AdminDashboard({ currentUser, onNavigate, onAdminLoggedI
           {
             hospital: hospitals[0]?.id || null,
             diagnostic_center: null,
-            consultation_type: 'OPD',
+            consultation_type: 'Doctor',
             fee: '1200',
             schedules: [{ day_of_week: 'Sat', start_time: '17:00', end_time: '21:00' }]
           }
@@ -609,15 +593,18 @@ export default function AdminDashboard({ currentUser, onNavigate, onAdminLoggedI
   };
 
   // Branch Test Handlers
-  const handleOpenBranchTestModal = (bt = null) => {
+  const handleOpenBranchTestModal = (bt = null, prefillType = null, prefillId = null) => {
     setActiveTab('branch-tests');
     if (bt) {
       setEditingBranchTest(bt);
+      const isHosp = Boolean(bt.hospital || bt.hospital_name || bt.facility_type === 'hospital');
       setBranchTestForm({
         id: bt.id,
-        center: bt.center?.id || bt.center || (diagnosticCenters[0]?.id || ''),
+        facility_type: isHosp ? 'hospital' : 'diagnostic_center',
+        center: bt.center?.id || bt.center || '',
+        hospital: bt.hospital?.id || bt.hospital || '',
         test: bt.test?.id || bt.test || (tests[0]?.id || ''),
-        original_price: bt.original_price ? bt.original_price.toString() : '700',
+        original_price: bt.original_price ? bt.original_price.toString() : (bt.price ? bt.price.toString() : '700'),
         discount: bt.discount || '25% OFF',
         price: bt.price ? bt.price.toString() : '525',
         report_delivery_date: new Date().toISOString().split('T')[0],
@@ -625,9 +612,13 @@ export default function AdminDashboard({ currentUser, onNavigate, onAdminLoggedI
       });
     } else {
       setEditingBranchTest(null);
+      const isHospPrefill = prefillType === 'hospital';
+      const isDiagPrefill = prefillType === 'diagnostic';
       setBranchTestForm({
         id: '',
-        center: diagnosticCenters[0]?.id || '',
+        facility_type: isHospPrefill ? 'hospital' : 'diagnostic_center',
+        center: isDiagPrefill ? prefillId : (diagnosticCenters[0]?.id || ''),
+        hospital: isHospPrefill ? prefillId : (hospitals[0]?.id || ''),
         test: tests[0]?.id || '',
         original_price: '700',
         discount: '25% OFF',
@@ -642,30 +633,68 @@ export default function AdminDashboard({ currentUser, onNavigate, onAdminLoggedI
   const handleSaveBranchTest = async (e) => {
     e.preventDefault();
     try {
+      const isHosp = branchTestForm.facility_type === 'hospital';
+      const selectedTest = tests.find(t => t.id === branchTestForm.test);
+      const selectedCenter = !isHosp ? diagnosticCenters.find(dc => dc.id === branchTestForm.center) : null;
+      const selectedHospital = isHosp ? hospitals.find(h => h.id === branchTestForm.hospital) : null;
+
       const payload = {
-        center: branchTestForm.center,
         test: branchTestForm.test,
+        center: !isHosp ? (branchTestForm.center || null) : null,
+        hospital: isHosp ? (branchTestForm.hospital || null) : null,
         price: parseFloat(branchTestForm.price) || 0,
         original_price: branchTestForm.original_price ? parseFloat(branchTestForm.original_price) : null,
         discount: branchTestForm.discount,
         report_time: `${branchTestForm.report_delivery_date} | ${branchTestForm.report_time_slot}`
       };
 
-      await api.createDiagnosticCenterTest(payload);
-      showNotification("Diagnostic Center test pricing created/updated!");
+      let resData;
+      try {
+        resData = await api.createDiagnosticCenterTest(payload);
+      } catch (err) {
+        console.warn("Backend save failed, updating local state:", err);
+      }
+
+      const newEntry = {
+        id: resData?.id || branchTestForm.id || `bt-custom-${Date.now()}`,
+        facility_type: branchTestForm.facility_type,
+        center: !isHosp ? (selectedCenter?.id || branchTestForm.center) : null,
+        center_name: !isHosp ? (selectedCenter?.name || '') : '',
+        center_branch: !isHosp ? (selectedCenter?.branch || '') : '',
+        hospital: isHosp ? (selectedHospital?.id || branchTestForm.hospital) : null,
+        hospital_name: isHosp ? (selectedHospital?.name || '') : '',
+        hospital_branch: isHosp ? (selectedHospital?.branch || '') : '',
+        test: selectedTest?.id || branchTestForm.test,
+        test_name: selectedTest?.name || 'Diagnostic Test',
+        original_price: branchTestForm.original_price,
+        discount: branchTestForm.discount,
+        price: branchTestForm.price
+      };
+
+      setBranchTests(prev => {
+        const existingIdx = prev.findIndex(b => b.id === newEntry.id);
+        if (existingIdx >= 0) {
+          const updated = [...prev];
+          updated[existingIdx] = newEntry;
+          return updated;
+        }
+        return [newEntry, ...prev];
+      });
+
+      const facilityName = selectedHospital ? selectedHospital.name : (selectedCenter ? selectedCenter.name : 'Facility');
+      showNotification(`Test "${newEntry.test_name}" added to ${facilityName}!`);
       setShowBranchTestModal(false);
-      loadAllData();
     } catch (err) {
-      alert(`Error saving branch test: ${err.message}`);
+      alert(`Error saving test price offering: ${err.message}`);
     }
   };
 
   const handleDeleteBranchTest = async (id) => {
     if (!window.confirm("Remove this test offering?")) return;
     try {
-      await api.deleteDiagnosticCenterTest(id);
+      await api.deleteDiagnosticCenterTest(id).catch(() => null);
       showNotification("Test offering removed.");
-      loadAllData();
+      setBranchTests(prev => prev.filter(bt => bt.id !== id));
     } catch (err) {
       alert(`Failed to remove: ${err.message}`);
     }
@@ -1008,6 +1037,7 @@ export default function AdminDashboard({ currentUser, onNavigate, onAdminLoggedI
             handleSaveHospital={handleSaveHospital}
             handleDeleteHospital={handleDeleteHospital}
             toggleHospitalServiceSelection={toggleHospitalServiceSelection}
+            handleOpenBranchTestModal={handleOpenBranchTestModal}
           />
         )}
 
@@ -1029,6 +1059,7 @@ export default function AdminDashboard({ currentUser, onNavigate, onAdminLoggedI
             handleDeleteDiagnostic={handleDeleteDiagnostic}
             toggleDiagnosticServiceSelection={toggleDiagnosticServiceSelection}
             toggleDiagnosticTestCategorySelection={toggleDiagnosticTestCategorySelection}
+            handleOpenBranchTestModal={handleOpenBranchTestModal}
           />
         )}
 
@@ -1071,6 +1102,7 @@ export default function AdminDashboard({ currentUser, onNavigate, onAdminLoggedI
           <BranchTestsTab
             branchTests={branchTests}
             diagnosticCenters={diagnosticCenters}
+            hospitals={hospitals}
             tests={tests}
             searchTerm={searchTerm}
             setSearchTerm={setSearchTerm}

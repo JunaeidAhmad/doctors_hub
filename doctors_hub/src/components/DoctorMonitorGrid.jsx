@@ -11,7 +11,7 @@ const hospitalIconMap = {
   Stethoscope: Stethoscope
 };
 
-export default function OpdMonitorGrid({ onSelectCategory }) {
+export default function DoctorMonitorGrid({ onSelectCategory }) {
   return (
     <section id="hospitals" className="py-16 px-4 sm:px-8 bg-slate-50">
       <div className="max-w-7xl mx-auto">

@@ -101,8 +101,6 @@ class TestSerializer(serializers.ModelSerializer):
         fields = '__all__'
 
 
-PathologyTestSerializer = TestSerializer
-
 
 class DiagnosticCenterCategorySerializer(serializers.ModelSerializer):
     parent_name = serializers.CharField(source='parent.name', read_only=True, default='')
@@ -114,9 +112,11 @@ class DiagnosticCenterCategorySerializer(serializers.ModelSerializer):
 
 class DiagnosticCenterTestSerializer(serializers.ModelSerializer):
     test_details = TestSerializer(source='test', read_only=True)
-    center_name = serializers.CharField(source='center.name', read_only=True)
+    center_name = serializers.CharField(source='center.name', read_only=True, default='')
     center_branch = serializers.CharField(source='center.branch', read_only=True, default='')
     center_district = serializers.CharField(source='center.district', read_only=True, default='')
+    hospital_name = serializers.CharField(source='hospital.name', read_only=True, default='')
+    hospital_branch = serializers.CharField(source='hospital.branch', read_only=True, default='')
 
     class Meta:
         model = DiagnosticCenterTest
@@ -244,6 +244,7 @@ class HospitalSerializer(serializers.ModelSerializer):
         queryset=HospitalService.objects.all(), many=True, write_only=True, source='services', required=False
     )
     affiliated_doctors = DoctorAffiliationSerializer(many=True, read_only=True)
+    offered_tests = DiagnosticCenterTestSerializer(many=True, read_only=True)
 
     class Meta:
         model = Hospital

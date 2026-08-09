@@ -55,7 +55,7 @@ export default function TopUtilityStrip({ selectedLocation, setSelectedLocation 
 
           <div className="hidden lg:flex items-center gap-1 text-emerald-400 font-medium">
             <ShieldCheck className="w-3.5 h-3.5" />
-            <span>DGHS & BMDC Reg. OPD Platform</span>
+            <span>DGHS & BMDC Reg. Platform</span>
           </div>
         </div>
       </div>

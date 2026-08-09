@@ -3,10 +3,9 @@ import { useNavigate, useLocation } from 'react-router-dom';
 import TopUtilityStrip from './components/TopUtilityStrip';
 import StickyNavbar from './components/StickyNavbar';
 import HomePage from './pages/HomePage';
-import OpdDoctorSearchPage from './pages/OpdDoctorSearchPage';
+import DoctorSearchPage from './pages/DoctorSearchPage';
 import DiagnosticsSearchPage from './pages/DiagnosticsSearchPage';
-import DirectSearchPage from './pages/DirectSearchPage';
-import AdminDashboardPage from './pages/AdminDashboardPage';
+import AdminDashboardPage from './pages/admin_dashboard';
 import HospitalDetailPage from './pages/HospitalDetailPage';
 import HospitalsPage from './pages/HospitalsPage';
 import BookingModal from './components/BookingModal';
@@ -19,11 +18,10 @@ import { api } from './services/api';
 
 function getPageFromPath(path) {
   if (path === '/admin') return 'admin';
-  if (path === '/opd-search') return 'opd-search';
-  if (path === '/diagnostics-search' || path === '/pathology-search') return 'diagnostics-search';
-  if (path === '/direct-search') return 'direct-search';
-  if (path === '/hospitals' || path === '/partners' || path === '/medical-partners') return 'hospitals';
-  if (path.startsWith('/hospital/') || path.startsWith('/partner/') || path.startsWith('/medical-partner/')) return 'hospital-detail';
+  if (path === '/doctor-search') return 'doctor-search';
+  if (path === '/diagnostics-search') return 'diagnostics-search';
+  if (path === '/hospitals') return 'hospitals';
+  if (path.startsWith('/hospital/')) return 'hospital-detail';
   return 'home';
 }
 
@@ -37,9 +35,9 @@ export default function App() {
   const [activeTab, setActiveTab] = useState(() => {
     const path = location.pathname;
     if (path === '/admin') return 'admin';
-    if (path === '/opd-search') return 'opd-doctors';
-    if (path === '/diagnostics-search' || path === '/pathology-search') return 'diagnostics';
-    if (path === '/hospitals' || path === '/partners' || path === '/medical-partners') return 'hospitals';
+    if (path === '/doctor-search') return 'doctors';
+    if (path === '/diagnostics-search') return 'diagnostics';
+    if (path === '/hospitals') return 'hospitals';
     return 'home';
   });
   const isSectionScroll = useRef(false);
@@ -54,10 +52,9 @@ export default function App() {
       return;
     }
     if (currentPage === 'admin') setActiveTab('admin');
-    else if (currentPage === 'opd-search') setActiveTab('opd-doctors');
+    else if (currentPage === 'doctor-search') setActiveTab('doctors');
     else if (currentPage === 'diagnostics-search') setActiveTab('diagnostics');
     else if (currentPage === 'hospitals' || currentPage === 'hospital-detail') setActiveTab('hospitals');
-    else if (currentPage === 'direct-search') setActiveTab('home');
     else setActiveTab('home');
   }, [currentPage]);
 
@@ -97,25 +94,35 @@ export default function App() {
   };
 
   // Execute Search Navigation Handler
-  const handleExecuteSearch = (mode, param) => {
+  const handleExecuteSearch = (mode, param, locationOverride) => {
+    if (locationOverride) {
+      setSelectedLocation(locationOverride);
+    }
+    const loc = locationOverride || selectedLocation;
+
     if (mode === 'doctor') {
       if (param) setSelectedSpecialty(param);
-      navigate('/opd-search');
-      setActiveTab('opd-doctors');
-    } else if (mode === 'pathology' || mode === 'diagnostics') {
-      if (param) setSelectedTest(param); // Or we could use setSearchKeyword if tests use it
-      navigate('/diagnostics-search');
+      navigate('/doctor-search');
+      setActiveTab('doctors');
+    } else if (mode === 'diagnostics') {
+      if (param) {
+        setSelectedTest(param);
+        navigate(`/diagnostics-search?loc=${encodeURIComponent(loc)}&testcat=${encodeURIComponent(param)}`);
+      } else {
+        navigate(`/diagnostics-search?loc=${encodeURIComponent(loc)}`);
+      }
       setActiveTab('diagnostics');
     } else if (mode === 'hospital') {
       if (param) setSearchKeyword(param);
-      navigate('/hospitals');
+      navigate(`/hospitals?loc=${encodeURIComponent(loc)}`);
       setActiveTab('hospitals');
     } else {
       if (searchKeyword.trim() !== '') {
-        navigate('/direct-search');
+        navigate(`/diagnostics-search?loc=${encodeURIComponent(loc)}`);
+        setActiveTab('diagnostics');
       } else {
-        navigate('/opd-search');
-        setActiveTab('opd-doctors');
+        navigate('/doctor-search');
+        setActiveTab('doctors');
       }
     }
     window.scrollTo({ top: 0, behavior: 'smooth' });
@@ -127,11 +134,11 @@ export default function App() {
       navigate('/admin');
     } else if (tabId === 'home') {
       navigate('/');
-    } else if (tabId === 'hospitals' || tabId === 'partners') {
+    } else if (tabId === 'hospitals') {
       navigate('/hospitals');
-    } else if (tabId === 'opd-doctors') {
-      navigate('/opd-search');
-    } else if (tabId === 'pathology' || tabId === 'diagnostics') {
+    } else if (tabId === 'doctors') {
+      navigate('/doctor-search');
+    } else if (tabId === 'diagnostics') {
       navigate('/diagnostics-search');
     } else {
       isSectionScroll.current = true;
@@ -164,12 +171,10 @@ export default function App() {
     );
   };
 
-  // Helper to extract hospital ID from URL path /hospital/:id, /partner/:id or /medical-partner/:id
+  // Helper to extract hospital ID from URL path /hospital/:id
   const currentHospitalId = location.pathname.startsWith('/hospital/')
     ? location.pathname.replace('/hospital/', '')
-    : location.pathname.startsWith('/partner/')
-    ? location.pathname.replace('/partner/', '')
-    : location.pathname.replace('/medical-partner/', '');
+    : '';
 
   return (
     <div className="min-h-screen bg-slate-50 flex flex-col font-sans text-slate-800 antialiased selection:bg-emerald-500 selection:text-white">
@@ -247,8 +252,8 @@ export default function App() {
           />
         )}
 
-        {currentPage === 'opd-search' && (
-          <OpdDoctorSearchPage
+        {currentPage === 'doctor-search' && (
+          <DoctorSearchPage
             initialSpecialty={selectedSpecialty}
             initialLocation={selectedLocation}
             initialKeyword={searchKeyword}
@@ -266,21 +271,13 @@ export default function App() {
           />
         )}
 
-        {currentPage === 'direct-search' && (
-          <DirectSearchPage
-            initialKeyword={searchKeyword}
-            onBookDoctorSlot={(chamber, doctor) => setBookingDoctorState({ chamber, doctor })}
-            onBookLabTest={(test) => setBookingLabState(test)}
-            onNavigateHome={() => handleNavClick('home')}
-          />
-        )}
       </main>
 
       {/* FOOTER */}
       {currentPage !== 'admin' && (
         <Footer onSelectLocation={(loc) => {
           setSelectedLocation(loc);
-          navigate('/opd-search');
+          navigate('/doctor-search');
           window.scrollTo({ top: 0, behavior: 'smooth' });
         }} />
       )}

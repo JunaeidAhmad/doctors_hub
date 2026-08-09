@@ -1,4 +1,4 @@
-import React, { useState } from 'react';
+import React, { useState, useEffect } from 'react';
 import { Stethoscope, FlaskConical, Search, Filter, Sparkles, MapPin, ChevronRight, Building2 } from 'lucide-react';
 import { SPECIALTIES, TEST_CATEGORIES, HOSPITAL_SPECIALTIES, LOCATIONS } from '../data/mockData';
 
@@ -16,6 +16,18 @@ export default function ThreeWayEngine({
   setActiveEngineTab
 }) {
   const [selectedHospitalCategory, setSelectedHospitalCategory] = useState('');
+  
+  const [doctorLoc, setDoctorLoc] = useState(selectedLocation || 'All Bangladesh');
+  const [diagnosticsLoc, setDiagnosticsLoc] = useState(selectedLocation || 'All Bangladesh');
+  const [hospitalLoc, setHospitalLoc] = useState(selectedLocation || 'All Bangladesh');
+
+  useEffect(() => {
+    if (selectedLocation) {
+      setDoctorLoc(selectedLocation);
+      setDiagnosticsLoc(selectedLocation);
+      setHospitalLoc(selectedLocation);
+    }
+  }, [selectedLocation]);
 
   return (
     <div className="relative pt-8 mt-2 z-30 max-w-7xl mx-auto px-4 sm:px-8">
@@ -60,7 +72,7 @@ export default function ThreeWayEngine({
               {/* Specialty Dropdown */}
               <div className="mb-3">
                 <label className="block text-xs font-semibold text-slate-600 mb-1">
-                  Select Specialist Category:
+                  Specialization:
                 </label>
                 <div className="relative">
                   <select
@@ -85,12 +97,12 @@ export default function ThreeWayEngine({
               <div>
                 <label className="block text-xs font-semibold text-slate-600 mb-1 flex items-center gap-1">
                   <MapPin className="w-3.5 h-3.5 text-emerald-600" />
-                  <span>Select Location:</span>
+                  <span>Location:</span>
                 </label>
                 <div className="relative">
                   <select
-                    value={selectedLocation || 'All Bangladesh'}
-                    onChange={(e) => setSelectedLocation && setSelectedLocation(e.target.value)}
+                    value={doctorLoc}
+                    onChange={(e) => setDoctorLoc(e.target.value)}
                     className="w-full bg-white text-slate-800 font-medium text-xs border border-slate-300 rounded-xl px-3 py-2.5 focus:outline-none focus:ring-2 focus:ring-emerald-500 focus:border-emerald-500 transition-all appearance-none cursor-pointer shadow-xs"
                   >
                     {LOCATIONS.map((loc) => (
@@ -111,7 +123,7 @@ export default function ThreeWayEngine({
               <button
                 onClick={() => {
                   setActiveEngineTab('doctor');
-                  onSearchExecute('doctor');
+                  onSearchExecute('doctor', selectedSpecialty, doctorLoc);
                 }}
                 className="w-full py-2.5 rounded-lg bg-emerald-600 hover:bg-emerald-700 text-white font-bold text-xs uppercase tracking-wider transition-all flex items-center justify-center gap-2 shadow-sm active:scale-95"
               >
@@ -133,7 +145,7 @@ export default function ThreeWayEngine({
                     Search Diagnostics
                   </h3>
                   <p className="text-[11px] text-slate-500">
-                    Filter Diagnostic Profiles & Location
+                    Filter by Lab Test & Location
                   </p>
                 </div>
               </div>
@@ -141,7 +153,7 @@ export default function ThreeWayEngine({
               {/* Lab Test Category Dropdown */}
               <div className="mb-3">
                 <label className="block text-xs font-semibold text-slate-600 mb-1">
-                  Select Lab Test Category:
+                  Types:
                 </label>
                 <div className="relative">
                   <select
@@ -150,6 +162,7 @@ export default function ThreeWayEngine({
                     className="w-full bg-white text-slate-800 font-medium text-xs border border-slate-300 rounded-xl px-3 py-2.5 focus:outline-none focus:ring-2 focus:ring-teal-500 focus:border-teal-500 transition-all appearance-none cursor-pointer shadow-xs"
                   >
                     <option value="">All Test Categories</option>
+
                     {TEST_CATEGORIES.filter((cat) => cat && cat.id !== 'all').map((cat) => (
                       <option key={cat.id} value={cat.id}>
                         {cat.name} {/*({cat.description})*/}
@@ -166,12 +179,12 @@ export default function ThreeWayEngine({
               <div>
                 <label className="block text-xs font-semibold text-slate-600 mb-1 flex items-center gap-1">
                   <MapPin className="w-3.5 h-3.5 text-teal-600" />
-                  <span>Select Location:</span>
+                  <span>Location:</span>
                 </label>
                 <div className="relative">
                   <select
-                    value={selectedLocation || 'All Bangladesh'}
-                    onChange={(e) => setSelectedLocation && setSelectedLocation(e.target.value)}
+                    value={diagnosticsLoc}
+                    onChange={(e) => setDiagnosticsLoc(e.target.value)}
                     className="w-full bg-white text-slate-800 font-medium text-xs border border-slate-300 rounded-xl px-3 py-2.5 focus:outline-none focus:ring-2 focus:ring-teal-500 focus:border-teal-500 transition-all appearance-none cursor-pointer shadow-xs"
                   >
                     {LOCATIONS.map((loc) => (
@@ -192,7 +205,7 @@ export default function ThreeWayEngine({
               <button
                 onClick={() => {
                   setActiveEngineTab('diagnostics');
-                  onSearchExecute('diagnostics');
+                  onSearchExecute('diagnostics', selectedTest, diagnosticsLoc);
                 }}
                 className="w-full py-2.5 rounded-lg bg-teal-600 hover:bg-teal-700 text-white font-bold text-xs uppercase tracking-wider transition-all flex items-center justify-center gap-2 shadow-sm active:scale-95"
               >
@@ -222,7 +235,7 @@ export default function ThreeWayEngine({
               {/* Hospital Category Dropdown */}
               <div className="mb-3">
                 <label className="block text-xs font-semibold text-slate-600 mb-1">
-                  Select Hospital Category:
+                  Category:
                 </label>
                 <div className="relative">
                   <select
@@ -247,12 +260,12 @@ export default function ThreeWayEngine({
               <div>
                 <label className="block text-xs font-semibold text-slate-600 mb-1 flex items-center gap-1">
                   <MapPin className="w-3.5 h-3.5 text-blue-600" />
-                  <span>Select Location:</span>
+                  <span>Location:</span>
                 </label>
                 <div className="relative">
                   <select
-                    value={selectedLocation || 'All Bangladesh'}
-                    onChange={(e) => setSelectedLocation && setSelectedLocation(e.target.value)}
+                    value={hospitalLoc}
+                    onChange={(e) => setHospitalLoc(e.target.value)}
                     className="w-full bg-white text-slate-800 font-medium text-xs border border-slate-300 rounded-xl px-3 py-2.5 focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-blue-500 transition-all appearance-none cursor-pointer shadow-xs"
                   >
                     {LOCATIONS.map((loc) => (
@@ -273,7 +286,7 @@ export default function ThreeWayEngine({
               <button
                 onClick={() => {
                   setActiveEngineTab('hospital');
-                  onSearchExecute('hospital', selectedHospitalCategory);
+                  onSearchExecute('hospital', selectedHospitalCategory, hospitalLoc);
                 }}
                 className="w-full py-2.5 rounded-lg bg-blue-600 hover:bg-blue-700 text-white font-bold text-xs uppercase tracking-wider transition-all flex items-center justify-center gap-2 shadow-sm active:scale-95"
               >

@@ -20,7 +20,7 @@ export default function Footer({ onSelectLocation }) {
               </span>
             </div>
             <p className="text-slate-400 text-xs leading-relaxed max-w-sm">
-              DoctorHub BD is Bangladesh's leading digital healthcare aggregator connecting patients to DGHS & BMDC verified OPD chamber diagnostic centers, specialist doctors, and NABL/ISO accredited laboratories.
+              DoctorsHub BD is Bangladesh's leading digital healthcare aggregator connecting patients to DGHS & BMDC verified hospitals, diagnostic centers, specialist doctors, and NABL/ISO accredited laboratories.
             </p>
             <div className="flex items-center gap-3 text-emerald-400 font-semibold">
               <ShieldCheck className="w-4 h-4" />
@@ -41,7 +41,7 @@ export default function Footer({ onSelectLocation }) {
                     className="hover:text-emerald-400 transition-colors flex items-center gap-1.5"
                   >
                     <MapPin className="w-3 h-3 text-emerald-500" />
-                    <span>OPD Chambers in {loc}</span>
+                    <span>Doctor Chambers in {loc}</span>
                   </button>
                 </li>
               ))}
@@ -54,9 +54,9 @@ export default function Footer({ onSelectLocation }) {
               Quick Portals
             </h4>
             <ul className="space-y-2">
-              <li><a href="#opd-doctors" className="hover:text-emerald-400 transition-colors">Search OPD Doctors</a></li>
+              <li><a href="#search-doctors" className="hover:text-emerald-400 transition-colors">Search Doctors</a></li>
               <li><a href="#diagnostics" className="hover:text-emerald-400 transition-colors">Diagnostic & Lab Tests</a></li>
-              <li><a href="#about" className="hover:text-emerald-400 transition-colors">About DoctorHub BD</a></li>
+              <li><a href="#about" className="hover:text-emerald-400 transition-colors">About DoctorsHub BD</a></li>
               <li><a href="#contact" className="hover:text-emerald-400 transition-colors">Patient Help & Support</a></li>
               <li><a href="#contact" className="hover:text-emerald-400 transition-colors">24/7 Hotline 16263</a></li>
             </ul>
@@ -91,7 +91,7 @@ export default function Footer({ onSelectLocation }) {
             © 2026 DoctorsHub.com.bd. All rights reserved. Designed for healthcare access in Bangladesh.
           </div>
           <div className="flex items-center gap-1">
-            <span>Built with care for patients & OPD chambers</span>
+            <span>Built with care for patients </span>
             <Heart className="w-3 h-3 text-red-500 fill-red-500 inline" />
           </div>
         </div>

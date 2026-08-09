@@ -14,7 +14,7 @@ export default function AppDownloadBanner({ showToast }) {
           </div>
 
           <h2 className="text-3xl sm:text-4xl font-black text-white leading-tight">
-            Book OPD Doctors On The Go With The <span className="text-emerald-400">DoctorHub App</span>
+            Book Doctors On The Go With The <span className="text-emerald-400">DoctorsHub App</span>
           </h2>
 
           <p className="mt-3 text-slate-300 text-sm leading-relaxed">
@@ -25,7 +25,7 @@ export default function AppDownloadBanner({ showToast }) {
           <div className="mt-6 grid grid-cols-2 gap-3 text-xs font-medium text-slate-200">
             <div className="flex items-center gap-2">
               <CheckCircle2 className="w-4 h-4 text-emerald-400 shrink-0" />
-              <span>Real-Time OPD Queue Track</span>
+              <span>Real-Time Doctors Queue Track</span>
             </div>
             <div className="flex items-center gap-2">
               <CheckCircle2 className="w-4 h-4 text-emerald-400 shrink-0" />

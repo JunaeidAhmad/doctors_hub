@@ -165,12 +165,15 @@ class DiagnosticCenterTestViewSet(viewsets.ModelViewSet):
     def get_queryset(self):
         queryset = DiagnosticCenterTest.objects.all()
         center = self.request.query_params.get('center', None)
+        hospital = self.request.query_params.get('hospital', None)
         branch = self.request.query_params.get('branch', None)
         test = self.request.query_params.get('test', None)
 
         center_id = center or branch
         if center_id:
             queryset = queryset.filter(center_id=center_id)
+        if hospital:
+            queryset = queryset.filter(hospital_id=hospital)
         if test:
             queryset = queryset.filter(test_id=test)
         return queryset

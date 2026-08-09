@@ -1,5 +1,5 @@
 import React from 'react';
-import { Search, Plus, Edit, Trash2, XCircle, CheckCircle } from 'lucide-react';
+import { Search, Plus, Edit, Trash2, XCircle, CheckCircle, Building2 } from 'lucide-react';
 import { CITY_THANAS, LOCATIONS } from '../../../data/mockData';
 
 export default function HospitalsTab({
@@ -16,7 +16,8 @@ export default function HospitalsTab({
   handleOpenHospitalModal,
   handleSaveHospital,
   handleDeleteHospital,
-  toggleHospitalServiceSelection
+  toggleHospitalServiceSelection,
+  handleOpenBranchTestModal
 }) {
   return (
     <>
@@ -77,6 +78,13 @@ export default function HospitalsTab({
                       <div className="text-slate-400 font-bold">{h.city}</div>
                     </td>
                     <td className="py-4 px-4 text-right space-x-2 whitespace-nowrap">
+                      <button
+                        onClick={() => handleOpenBranchTestModal && handleOpenBranchTestModal(null, 'hospital', h.id)}
+                        title="Add Diagnostic Test to this Hospital's Internal Lab"
+                        className="px-2.5 py-1.5 bg-emerald-500/20 text-emerald-300 rounded-lg hover:bg-emerald-500/30 inline-flex items-center gap-1 text-[11px] font-bold border border-emerald-500/30 transition"
+                      >
+                        <Building2 className="w-3.5 h-3.5" /> + Test
+                      </button>
                       <button onClick={() => handleOpenHospitalModal(h)} className="p-2 bg-slate-800 text-slate-300 rounded-lg hover:bg-slate-700">
                         <Edit className="w-4 h-4" />
                       </button>

@@ -78,7 +78,7 @@ export default function DoctorsTab({
                       <div className="text-slate-300 text-[11px]">
                         {(d.affiliations || []).map((aff, idx) => (
                           <div key={idx} className="truncate max-w-xs">
-                            • {aff.hospital?.name || aff.diagnostic_center?.name || 'Private Chamber'} ({aff.consultation_type || 'OPD'})
+                            • {aff.hospital?.name || aff.diagnostic_center?.name || 'Private Chamber'} ({aff.consultation_type || 'Doctor'})
                           </div>
                         ))}
                       </div>

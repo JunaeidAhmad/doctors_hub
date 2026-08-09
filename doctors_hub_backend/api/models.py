@@ -5,6 +5,10 @@ from django.utils import timezone
 from django.utils.text import slugify
 
 
+# ──────────────────────────────────────────────
+#  AUTH / USER
+# ──────────────────────────────────────────────
+
 class UserManager(BaseUserManager):
     def create_user(self, phone_number, password=None, **extra_fields):
         if not phone_number:
@@ -38,6 +42,10 @@ class User(AbstractBaseUser, PermissionsMixin):
         return self.phone_number
 
 
+# ──────────────────────────────────────────────
+#  DOCTOR
+# ──────────────────────────────────────────────
+
 class DoctorSpecialty(models.Model):
     """Doctor Specialty"""
     id = models.UUIDField(primary_key=True, default=uuid.uuid4, editable=False)
@@ -57,6 +65,60 @@ class DoctorSpecialty(models.Model):
     def __str__(self):
         return self.name
 
+
+class Doctor(models.Model):
+    id = models.UUIDField(primary_key=True, default=uuid.uuid4, editable=False)
+    name = models.CharField(max_length=200)
+    specialties = models.ManyToManyField(DoctorSpecialty, related_name='doctors')
+    qualification = models.TextField()
+    experience = models.CharField(max_length=50)
+
+    def __str__(self):
+        return self.name
+
+
+class DoctorAffiliation(models.Model):
+    CONSULTATION_TYPES = [
+        ('OPD', 'OPD'),
+        ('In-patient', 'In-patient'),
+    ]
+    id = models.UUIDField(primary_key=True, default=uuid.uuid4, editable=False)
+    doctor = models.ForeignKey(Doctor, on_delete=models.CASCADE, related_name='affiliations')
+    hospital = models.ForeignKey('Hospital', on_delete=models.CASCADE, related_name='affiliated_doctors', null=True, blank=True)
+    diagnostic_center = models.ForeignKey('DiagnosticCenter', on_delete=models.CASCADE, related_name='affiliated_doctors', null=True, blank=True)
+    consultation_type = models.CharField(max_length=50, choices=CONSULTATION_TYPES, default='OPD')
+    fee = models.DecimalField(max_digits=8, decimal_places=2)
+
+    def __str__(self):
+        facility = self.hospital.name if self.hospital else (self.diagnostic_center.name if self.diagnostic_center else "Facility")
+        return f"{self.doctor.name} at {facility} ({self.consultation_type})"
+
+
+class AffiliationSchedule(models.Model):
+    id = models.UUIDField(primary_key=True, default=uuid.uuid4, editable=False)
+    affiliation = models.ForeignKey(DoctorAffiliation, on_delete=models.CASCADE, related_name='schedules')
+    day_of_week = models.CharField(max_length=20)
+    start_time = models.TimeField()
+    end_time = models.TimeField()
+
+    def __str__(self):
+        return f"{self.affiliation.doctor.name} - {self.day_of_week} ({self.start_time} - {self.end_time})"
+
+
+class DoctorBooking(models.Model):
+    id = models.UUIDField(primary_key=True, default=uuid.uuid4, editable=False)
+    user = models.ForeignKey(User, on_delete=models.CASCADE, related_name='doctor_bookings')
+    affiliation = models.ForeignKey(DoctorAffiliation, on_delete=models.CASCADE, related_name='bookings')
+    date = models.DateField()
+    slot = models.CharField(max_length=50)
+    patient_name = models.CharField(max_length=100)
+    status = models.CharField(max_length=50, default='Confirmed')
+    created_at = models.DateTimeField(auto_now_add=True)
+
+
+# ──────────────────────────────────────────────
+#  HOSPITAL
+# ──────────────────────────────────────────────
 
 class HospitalCategory(models.Model):
     """Hospital Category (formerly HospitalSpecialty)"""
@@ -115,6 +177,7 @@ class Hospital(models.Model):
     tagline = models.CharField(max_length=255, blank=True)
     badge = models.CharField(max_length=50, blank=True)
     services = models.ManyToManyField(HospitalService, related_name='hospitals', blank=True)
+    has_diagnostic_center = models.BooleanField(default=True)
     is_verified = models.BooleanField(default=False)
     is_active = models.BooleanField(default=True)
     created_at = models.DateTimeField(auto_now_add=True)
@@ -129,6 +192,10 @@ class Hospital(models.Model):
         b_str = f" ({self.branch})" if self.branch else ""
         return f"{self.name}{b_str}"
 
+
+# ──────────────────────────────────────────────
+#  LAB TEST
+# ──────────────────────────────────────────────
 
 class TestCategory(models.Model):
     """
@@ -198,6 +265,10 @@ class Test(models.Model):
     def __str__(self):
         return self.name
 
+
+# ──────────────────────────────────────────────
+#  DIAGNOSTIC CENTER
+# ──────────────────────────────────────────────
 
 class DiagnosticCenterCategory(models.Model):
     """
@@ -292,11 +363,12 @@ class DiagnosticCenter(models.Model):
 class DiagnosticCenterTest(models.Model):
     """
     THROUGH model — this is the key piece.
-    Same test costs differently at different centers, 
+    Same test costs differently at different centers/hospitals, 
     and not every center offers every test.
     """
     id = models.UUIDField(primary_key=True, default=uuid.uuid4, editable=False)
-    center = models.ForeignKey(DiagnosticCenter, on_delete=models.CASCADE, related_name='offered_tests')
+    center = models.ForeignKey(DiagnosticCenter, on_delete=models.CASCADE, related_name='offered_tests', null=True, blank=True)
+    hospital = models.ForeignKey(Hospital, on_delete=models.CASCADE, related_name='offered_tests', null=True, blank=True)
     test = models.ForeignKey(Test, on_delete=models.CASCADE, related_name='offered_at')
     price = models.DecimalField(max_digits=10, decimal_places=2)
     discounted_price = models.DecimalField(max_digits=10, decimal_places=2, null=True, blank=True)
@@ -307,62 +379,14 @@ class DiagnosticCenterTest(models.Model):
     home_sample_collection = models.BooleanField(default=False)
     updated_at = models.DateTimeField(auto_now=True)
 
-    class Meta:
-        unique_together = ('center', 'test')
-
     def __str__(self):
-        return f"{self.test.name} @ {self.center.name} — ৳{self.price}"
+        facility_name = self.hospital.name if self.hospital else (self.center.name if self.center else "Facility")
+        return f"{self.test.name} @ {facility_name} — ৳{self.price}"
 
 
-class Doctor(models.Model):
-    id = models.UUIDField(primary_key=True, default=uuid.uuid4, editable=False)
-    name = models.CharField(max_length=200)
-    specialties = models.ManyToManyField(DoctorSpecialty, related_name='doctors')
-    qualification = models.TextField()
-    experience = models.CharField(max_length=50)
-
-    def __str__(self):
-        return self.name
-
-
-class DoctorAffiliation(models.Model):
-    CONSULTATION_TYPES = [
-        ('OPD', 'OPD'),
-        ('In-patient', 'In-patient'),
-    ]
-    id = models.UUIDField(primary_key=True, default=uuid.uuid4, editable=False)
-    doctor = models.ForeignKey(Doctor, on_delete=models.CASCADE, related_name='affiliations')
-    hospital = models.ForeignKey(Hospital, on_delete=models.CASCADE, related_name='affiliated_doctors', null=True, blank=True)
-    diagnostic_center = models.ForeignKey(DiagnosticCenter, on_delete=models.CASCADE, related_name='affiliated_doctors', null=True, blank=True)
-    consultation_type = models.CharField(max_length=50, choices=CONSULTATION_TYPES, default='OPD')
-    fee = models.DecimalField(max_digits=8, decimal_places=2)
-
-    def __str__(self):
-        facility = self.hospital.name if self.hospital else (self.diagnostic_center.name if self.diagnostic_center else "Facility")
-        return f"{self.doctor.name} at {facility} ({self.consultation_type})"
-
-
-class AffiliationSchedule(models.Model):
-    id = models.UUIDField(primary_key=True, default=uuid.uuid4, editable=False)
-    affiliation = models.ForeignKey(DoctorAffiliation, on_delete=models.CASCADE, related_name='schedules')
-    day_of_week = models.CharField(max_length=20)
-    start_time = models.TimeField()
-    end_time = models.TimeField()
-
-    def __str__(self):
-        return f"{self.affiliation.doctor.name} - {self.day_of_week} ({self.start_time} - {self.end_time})"
-
-
-class DoctorBooking(models.Model):
-    id = models.UUIDField(primary_key=True, default=uuid.uuid4, editable=False)
-    user = models.ForeignKey(User, on_delete=models.CASCADE, related_name='doctor_bookings')
-    affiliation = models.ForeignKey(DoctorAffiliation, on_delete=models.CASCADE, related_name='bookings')
-    date = models.DateField()
-    slot = models.CharField(max_length=50)
-    patient_name = models.CharField(max_length=100)
-    status = models.CharField(max_length=50, default='Confirmed')
-    created_at = models.DateTimeField(auto_now_add=True)
-
+# ──────────────────────────────────────────────
+#  BOOKING
+# ──────────────────────────────────────────────
 
 class LabBooking(models.Model):
     id = models.UUIDField(primary_key=True, default=uuid.uuid4, editable=False)

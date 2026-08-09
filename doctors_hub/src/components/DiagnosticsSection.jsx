@@ -19,7 +19,7 @@ const categoryIconMap = {
   'hospital-affiliated-lab': Award
 };
 
-export default function PathologySection({ onSelectCategory }) {
+export default function DiagnosticsSection({ onSelectCategory }) {
   const [categories, setCategories] = useState([]);
 
   useEffect(() => {

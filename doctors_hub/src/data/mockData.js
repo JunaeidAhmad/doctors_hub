@@ -79,7 +79,7 @@ export const HOSPITAL_SPECIALTIES = HOSPITAL_CATEGORIES;
 
 export const HOSPITAL_SERVICES = [
   { id: "hs-1", name: "24/7 ICU & In-patient", icon: "Activity", description: "Round the clock intensive care and bed admission" },
-  { id: "hs-2", name: "Specialist OPD Consultation", icon: "Stethoscope", description: "Out-patient specialist doctor visit chambers" },
+  { id: "hs-2", name: "Specialist Doctor Consultation", icon: "Stethoscope", description: "Out-patient specialist doctor visit chambers" },
   { id: "hs-3", name: "Surgery & OT Suite", icon: "ShieldCheck", description: "Modern operation theater and laparoscopic surgery" },
   { id: "hs-4", name: "24/7 Emergency & Ambulance", icon: "Clock", description: "Emergency triage and rapid ambulance response" },
   { id: "hs-5", name: "Phaco Cataract Surgery", icon: "Eye", description: "Advanced stitchless cataract surgery" },
@@ -96,167 +96,145 @@ export const DIAGNOSTIC_SERVICES = [
 ];
 
 export const TEST_TREE = {
-    "Blood Tests": {
-        "children": {
-            "Hematology": [
-                ["Complete Blood Count (CBC)", "Blood", false, 6],
-                ["ESR (Erythrocyte Sedimentation Rate)", "Blood", false, 6],
-                ["Blood Grouping & Rh Factor", "Blood", false, 4],
-                ["Coagulation Profile (PT, APTT, INR)", "Blood", false, 12],
-                ["Peripheral Blood Smear", "Blood", false, 24],
-                ["Reticulocyte Count", "Blood", false, 12],
-            ],
-            "Biochemistry": [
-                ["Blood Sugar - Fasting", "Blood", true, 4],
-                ["Blood Sugar - Random", "Blood", false, 4],
-                ["Blood Sugar - PP (Post Prandial)", "Blood", false, 4],
-                ["HbA1c", "Blood", false, 24],
-                ["Lipid Profile (Cholesterol, Triglycerides, HDL, LDL)", "Blood", true, 12],
-                ["Liver Function Test (LFT)", "Blood", true, 12],
-                ["Kidney Function Test (KFT/RFT)", "Blood", false, 12],
-                ["Thyroid Profile (T3, T4, TSH)", "Blood", false, 24],
-                ["Electrolytes (Sodium, Potassium, Chloride)", "Blood", false, 6],
-                ["Cardiac Enzymes (Troponin, CK-MB)", "Blood", false, 4],
-                ["Vitamin Profile (D3, B12)", "Blood", false, 48],
-                ["Iron Studies (Serum Iron, Ferritin, TIBC)", "Blood", true, 24],
-            ],
-            "Serology": [
-                ["Widal Test (Typhoid)", "Blood", false, 12],
-                ["Dengue NS1/IgM/IgG", "Blood", false, 6],
-                ["HBsAg (Hepatitis B)", "Blood", false, 12],
-                ["HCV (Hepatitis C)", "Blood", false, 12],
-                ["HIV Test", "Blood", false, 24],
-                ["VDRL/RPR (Syphilis)", "Blood", false, 12],
-                ["CRP (C-Reactive Protein)", "Blood", false, 12],
-                ["RA Factor", "Blood", false, 12],
-                ["ASO Titer", "Blood", false, 12],
-            ],
-            "Microbiology": [
-                ["Urine Culture & Sensitivity", "Urine", false, 72],
-                ["Blood Culture", "Blood", false, 72],
-                ["Sputum Culture", "Sputum", false, 72],
-                ["Stool Routine & Culture", "Stool", false, 48],
-                ["Throat Swab Culture", "Swab", false, 48],
-                ["Wound Swab Culture", "Swab", false, 48],
-            ],
-        }
-    },
-    "Radiology & Imaging": {
-        "children": {
-            "X-ray": [
-                ["Chest X-ray", "N/A", false, 2],
-                ["Bone/Skeletal X-ray", "N/A", false, 2],
-                ["Abdominal X-ray", "N/A", false, 2],
-                ["Spine X-ray", "N/A", false, 2],
-                ["Dental X-ray (OPG)", "N/A", false, 2],
-            ],
-            "Ultrasound/USG": [
-                ["Abdominal USG (Whole Abdomen)", "N/A", true, 2],
-                ["Pelvic USG", "N/A", true, 2],
-                ["Pregnancy/Obstetric USG", "N/A", false, 2],
-                ["Thyroid USG", "N/A", false, 2],
-                ["Breast USG", "N/A", false, 2],
-                ["Doppler USG (Vascular)", "N/A", false, 4],
-                ["Transvaginal USG", "N/A", false, 2],
-            ],
-            "CT Scan": [
-                ["CT Brain", "N/A", false, 4],
-                ["CT Chest", "N/A", false, 4],
-                ["CT Abdomen/Pelvis", "N/A", true, 4],
-                ["CT Angiography", "N/A", true, 6],
-                ["CT Spine", "N/A", false, 4],
-                ["HRCT (High-Resolution CT)", "N/A", false, 4],
-            ],
-            "MRI": [
-                ["MRI Brain", "N/A", false, 6],
-                ["MRI Spine", "N/A", false, 6],
-                ["MRI Joint (Knee, Shoulder)", "N/A", false, 6],
-                ["MRI Whole Abdomen", "N/A", true, 6],
-                ["MRI Angiography (MRA)", "N/A", false, 8],
-                ["Functional MRI (fMRI)", "N/A", false, 24],
-            ],
-            "Mammography": [
-                ["Screening Mammogram", "N/A", false, 4],
-                ["Specialized Mammogram", "N/A", false, 4],
-                ["Digital Breast Tomosynthesis", "N/A", false, 4],
-            ],
-        }
-    },
-    "Cardiac Tests": {
-        "tests": [
-            ["ECG (Resting)", "N/A", false, 1],
-            ["2D Echo", "N/A", false, 2],
-            ["Doppler Echo", "N/A", false, 2],
-            ["Stress Echo", "N/A", false, 4],
-            ["TMT (Treadmill Test)", "N/A", false, 2],
-            ["Holter Monitor (24-hour ECG)", "N/A", false, 48],
-            ["Cardiac CT/Calcium Scoring", "N/A", true, 6],
-            ["Ambulatory BP Monitoring (ABPM)", "N/A", false, 48],
-            ["Coronary Angiography", "N/A", true, 24],
-        ]
-    },
-    "Neuro Tests": {
-        "tests": [
-            ["EEG - Routine", "N/A", false, 4],
-            ["EEG - Sleep-deprived", "N/A", false, 12],
-            ["EEG - Video", "N/A", false, 48],
-            ["EMG (Electromyography)", "N/A", false, 4],
-            ["NCV (Nerve Conduction Velocity)", "N/A", false, 4],
-            ["Evoked Potential Studies (VEP, BAEP, SSEP)", "N/A", false, 6],
-            ["Polysomnography (Sleep Study)", "N/A", false, 48],
-        ]
-    },
-    "Endoscopy/Colonoscopy": {
-        "tests": [
-            ["Upper GI Endoscopy (Gastroscopy)", "N/A", true, 4],
-            ["Colonoscopy", "N/A", true, 4],
-            ["Sigmoidoscopy", "N/A", true, 4],
-            ["ERCP", "N/A", true, 24],
-            ["Bronchoscopy", "N/A", true, 24],
-            ["Cystoscopy", "N/A", false, 4],
-            ["Capsule Endoscopy", "N/A", true, 24],
-        ]
-    },
-    "Pulmonary Function Test (PFT)": {
-        "tests": [
-            ["Spirometry", "N/A", false, 2],
-            ["Lung Volume Test", "N/A", false, 2],
-            ["Diffusion Capacity Test (DLCO)", "N/A", false, 2],
-            ["Bronchial Provocation Test", "N/A", false, 4],
-            ["Arterial Blood Gas (ABG) Analysis", "Blood", false, 1],
-        ]
-    },
-    "Genetic & Molecular": {
-        "tests": [
-            ["PCR Test (viral/bacterial detection)", "Swab/Blood", false, 24],
-            ["DNA Fingerprinting/Paternity Test", "Blood/Swab", false, 168],
-            ["Karyotyping (Chromosomal Analysis)", "Blood", false, 336],
-            ["NIPT (Non-Invasive Prenatal Testing)", "Blood", false, 168],
-            ["BRCA Gene Testing", "Blood", false, 336],
-            ["HLA Typing", "Blood", false, 168],
-        ]
-    },
-    "Histopathology / Biopsy": {
-        "tests": [
-            ["Tissue Biopsy", "Tissue", false, 168],
-            ["FNAC (Fine Needle Aspiration Cytology)", "Tissue", false, 72],
-            ["Pap Smear", "Cervical Sample", false, 72],
-            ["Bone Marrow Biopsy", "Tissue", false, 168],
-            ["Frozen Section Biopsy", "Tissue", false, 1],
-            ["Immunohistochemistry (IHC)", "Tissue", false, 168],
-        ]
-    },
-    "Nuclear Medicine": {
-        "tests": [
-            ["PET Scan", "N/A", true, 24],
-            ["PET-CT Scan", "N/A", true, 24],
-            ["Bone Scan", "N/A", false, 6],
-            ["Thyroid Scan", "N/A", false, 6],
-            ["Renal Scan (DTPA/DMSA)", "N/A", false, 6],
-            ["Cardiac Perfusion Scan (MPI)", "N/A", true, 24],
-            ["Lung Ventilation-Perfusion Scan (V/Q Scan)", "N/A", false, 6],
-        ]
-    },
+    "Hematology": [
+        ["Complete Blood Count (CBC)", "Blood", false, 6],
+        ["ESR (Erythrocyte Sedimentation Rate)", "Blood", false, 6],
+        ["Blood Grouping & Rh Factor", "Blood", false, 4],
+        ["Coagulation Profile (PT, APTT, INR)", "Blood", false, 12],
+        ["Peripheral Blood Smear", "Blood", false, 24],
+        ["Reticulocyte Count", "Blood", false, 12]
+    ],
+    "Biochemistry": [
+        ["Blood Sugar - Fasting", "Blood", true, 4],
+        ["Blood Sugar - Random", "Blood", false, 4],
+        ["Blood Sugar - PP (Post Prandial)", "Blood", false, 4],
+        ["HbA1c", "Blood", false, 24],
+        ["Lipid Profile (Cholesterol, Triglycerides, HDL, LDL)", "Blood", true, 12],
+        ["Liver Function Test (LFT)", "Blood", true, 12],
+        ["Kidney Function Test (KFT/RFT)", "Blood", false, 12],
+        ["Thyroid Profile (T3, T4, TSH)", "Blood", false, 24],
+        ["Electrolytes (Sodium, Potassium, Chloride)", "Blood", false, 6],
+        ["Cardiac Enzymes (Troponin, CK-MB)", "Blood", false, 4],
+        ["Vitamin Profile (D3, B12)", "Blood", false, 48],
+        ["Iron Studies (Serum Iron, Ferritin, TIBC)", "Blood", true, 24]
+    ],
+    "Serology": [
+        ["Widal Test (Typhoid)", "Blood", false, 12],
+        ["Dengue NS1/IgM/IgG", "Blood", false, 6],
+        ["HBsAg (Hepatitis B)", "Blood", false, 12],
+        ["HCV (Hepatitis C)", "Blood", false, 12],
+        ["HIV Test", "Blood", false, 24],
+        ["VDRL/RPR (Syphilis)", "Blood", false, 12],
+        ["CRP (C-Reactive Protein)", "Blood", false, 12],
+        ["RA Factor", "Blood", false, 12],
+        ["ASO Titer", "Blood", false, 12]
+    ],
+    "Microbiology": [
+        ["Urine Culture & Sensitivity", "Urine", false, 72],
+        ["Blood Culture", "Blood", false, 72],
+        ["Sputum Culture", "Sputum", false, 72],
+        ["Stool Routine & Culture", "Stool", false, 48],
+        ["Throat Swab Culture", "Swab", false, 48],
+        ["Wound Swab Culture", "Swab", false, 48]
+    ],
+    "X-ray": [
+        ["Chest X-ray", "N/A", false, 2],
+        ["Bone/Skeletal X-ray", "N/A", false, 2],
+        ["Abdominal X-ray", "N/A", false, 2],
+        ["Spine X-ray", "N/A", false, 2],
+        ["Dental X-ray (OPG)", "N/A", false, 2]
+    ],
+    "Ultrasound/USG": [
+        ["Abdominal USG (Whole Abdomen)", "N/A", true, 2],
+        ["Pelvic USG", "N/A", true, 2],
+        ["Pregnancy/Obstetric USG", "N/A", false, 2],
+        ["Thyroid USG", "N/A", false, 2],
+        ["Breast USG", "N/A", false, 2],
+        ["Doppler USG (Vascular)", "N/A", false, 4],
+        ["Transvaginal USG", "N/A", false, 2]
+    ],
+    "CT Scan": [
+        ["CT Brain", "N/A", false, 4],
+        ["CT Chest", "N/A", false, 4],
+        ["CT Abdomen/Pelvis", "N/A", true, 4],
+        ["CT Angiography", "N/A", true, 6],
+        ["CT Spine", "N/A", false, 4],
+        ["HRCT (High-Resolution CT)", "N/A", false, 4]
+    ],
+    "MRI": [
+        ["MRI Brain", "N/A", false, 6],
+        ["MRI Spine", "N/A", false, 6],
+        ["MRI Joint (Knee, Shoulder)", "N/A", false, 6],
+        ["MRI Whole Abdomen", "N/A", true, 6],
+        ["MRI Angiography (MRA)", "N/A", false, 8],
+        ["Functional MRI (fMRI)", "N/A", false, 24]
+    ],
+    "Mammography": [
+        ["Screening Mammogram", "N/A", false, 4],
+        ["Specialized Mammogram", "N/A", false, 4],
+        ["Digital Breast Tomosynthesis", "N/A", false, 4]
+    ],
+    "Cardiac Tests": [
+        ["ECG (Resting)", "N/A", false, 1],
+        ["2D Echo", "N/A", false, 2],
+        ["Doppler Echo", "N/A", false, 2],
+        ["Stress Echo", "N/A", false, 4],
+        ["TMT (Treadmill Test)", "N/A", false, 2],
+        ["Holter Monitor (24-hour ECG)", "N/A", false, 48],
+        ["Cardiac CT/Calcium Scoring", "N/A", true, 6],
+        ["Ambulatory BP Monitoring (ABPM)", "N/A", false, 48],
+        ["Coronary Angiography", "N/A", true, 24]
+    ],
+    "Neuro Tests": [
+        ["EEG - Routine", "N/A", false, 4],
+        ["EEG - Sleep-deprived", "N/A", false, 12],
+        ["EEG - Video", "N/A", false, 48],
+        ["EMG (Electromyography)", "N/A", false, 4],
+        ["NCV (Nerve Conduction Velocity)", "N/A", false, 4],
+        ["Evoked Potential Studies (VEP, BAEP, SSEP)", "N/A", false, 6],
+        ["Polysomnography (Sleep Study)", "N/A", false, 48]
+    ],
+    "Endoscopy/Colonoscopy": [
+        ["Upper GI Endoscopy (Gastroscopy)", "N/A", true, 4],
+        ["Colonoscopy", "N/A", true, 4],
+        ["Sigmoidoscopy", "N/A", true, 4],
+        ["ERCP", "N/A", true, 24],
+        ["Bronchoscopy", "N/A", true, 24],
+        ["Cystoscopy", "N/A", false, 4],
+        ["Capsule Endoscopy", "N/A", true, 24]
+    ],
+    "Pulmonary Function Test (PFT)": [
+        ["Spirometry", "N/A", false, 2],
+        ["Lung Volume Test", "N/A", false, 2],
+        ["Diffusion Capacity Test (DLCO)", "N/A", false, 2],
+        ["Bronchial Provocation Test", "N/A", false, 4],
+        ["Arterial Blood Gas (ABG) Analysis", "Blood", false, 1]
+    ],
+    "Genetic & Molecular": [
+        ["PCR Test (viral/bacterial detection)", "Swab/Blood", false, 24],
+        ["DNA Fingerprinting/Paternity Test", "Blood/Swab", false, 168],
+        ["Karyotyping (Chromosomal Analysis)", "Blood", false, 336],
+        ["NIPT (Non-Invasive Prenatal Testing)", "Blood", false, 168],
+        ["BRCA Gene Testing", "Blood", false, 336],
+        ["HLA Typing", "Blood", false, 168]
+    ],
+    "Histopathology / Biopsy": [
+        ["Tissue Biopsy", "Tissue", false, 168],
+        ["FNAC (Fine Needle Aspiration Cytology)", "Tissue", false, 72],
+        ["Pap Smear", "Cervical Sample", false, 72],
+        ["Bone Marrow Biopsy", "Tissue", false, 168],
+        ["Frozen Section Biopsy", "Tissue", false, 1],
+        ["Immunohistochemistry (IHC)", "Tissue", false, 168]
+    ],
+    "Nuclear Medicine": [
+        ["PET Scan", "N/A", true, 24],
+        ["PET-CT Scan", "N/A", true, 24],
+        ["Bone Scan", "N/A", false, 6],
+        ["Thyroid Scan", "N/A", false, 6],
+        ["Renal Scan (DTPA/DMSA)", "N/A", false, 6],
+        ["Cardiac Perfusion Scan (MPI)", "N/A", true, 24],
+        ["Lung Ventilation-Perfusion Scan (V/Q Scan)", "N/A", false, 6]
+    ]
 };
 
 export const CENTER_CATEGORY_TREE = {
@@ -404,7 +382,7 @@ export const HOSPITALS = [
       "24/7 Trauma & Emergency ICU",
       "Comprehensive Cardiac Surgery",
       "Advanced Radiology & CT 128 Slice",
-      "Modern Outpatient OPD Clinics"
+      "Modern Outpatient Doctor Clinics"
     ]
   },
   {
@@ -456,7 +434,7 @@ export const HOSPITALS = [
     image: "https://images.unsplash.com/photo-1519494026892-80bbd2d6fd0d?auto=format&fit=crop&w=600&q=80",
     rating: 4.95,
     reviews_count: 520,
-    open_timing: "24/7 Emergency & OPD",
+    open_timing: "24/7 Emergency & Doctor Services",
     services: [HOSPITAL_SERVICES[3], HOSPITAL_SERVICES[1]],
     is_verified: true
   }
@@ -522,7 +500,7 @@ export const DIAGNOSTIC_CENTERS = [
     phone: "+880 31-652533",
     rating: 4.9,
     reviews_count: 260,
-    open_timing: "24/7 OPD & Diagnostic Service",
+    open_timing: "24/7 Doctor & Diagnostic Service",
     tagline: "Chittagong's Most Trusted Diagnostic Center",
     badge: "Top Rated",
     image: "https://images.unsplash.com/photo-1629909613654-28e377c37b09?auto=format&fit=crop&w=600&q=80",
@@ -548,7 +526,7 @@ export const DIAGNOSTIC_CENTERS = [
     open_timing: "08:00 AM - 09:30 PM",
     tagline: "Super Specialist Diagnostic & Clinical Lab",
     badge: "Super Partner",
-    image: "https://images.unsplash.com/photo-1538108149393-fbbd81895907?auto=format&fit=crop&w=600&q=80",
+    image: "https://images.unsplash.com/photo-1538108149393-fbbd8category1895907?auto=format&fit=crop&w=600&q=80",
     services: [DIAGNOSTIC_SERVICES[0], DIAGNOSTIC_SERVICES[2]],
     is_verified: true,
     categories: [
@@ -629,7 +607,8 @@ export const DIAGNOSTIC_CENTERS = [
   }
 ];
 
-export const OPD_CHAMBERS = DIAGNOSTIC_CENTERS;
+export const DOCTOR_CHAMBERS = DIAGNOSTIC_CENTERS;
+export const OPD_CHAMBERS = DOCTOR_CHAMBERS;
 
 export const PATHOLOGY_TESTS = TESTS;
 
@@ -831,13 +810,15 @@ export const DIAGNOSTIC_CENTER_TESTS = [
 
 export const BRANCH_TESTS = DIAGNOSTIC_CENTER_TESTS;
 
+export const DOCTORS = [];
+
 export const TESTIMONIALS = [
   {
     id: 1,
     name: "Tanvir Hossain",
     location: "Uttara, Dhaka",
     role: "Patient",
-    comment: "DoctorHub BD made finding diagnostic center tests and specialist doctors super smooth!",
+    comment: "DoctorsHub BD made finding diagnostic center tests and specialist doctors super smooth!",
     rating: 5
   }
 ];
