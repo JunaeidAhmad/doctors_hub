@@ -1,7 +1,8 @@
 import React, { useState, useMemo, useEffect } from 'react';
+import { useSearchParams, useLocation } from 'react-router-dom';
 import { Stethoscope, MapPin, Filter, ArrowLeft, Building2, ShieldCheck, Calendar, Clock, ArrowRight, X, Heart, Award, ArrowDownAZ, ArrowUpAZ } from 'lucide-react';
 import { SPECIALTIES as MOCK_SPECIALTIES, LOCATIONS, DOCTOR_CHAMBERS as MOCK_CHAMBERS, CITY_THANAS } from '../data/mockData';
-import { api, ensureArray } from '../services/api';
+import { api, ensureArray, isPageReload, getIsInitialLoad } from '../services/api';
 import Pagination from '../components/Pagination';
 
 function formatTime(timeStr) {
@@ -21,12 +22,79 @@ export default function DoctorSearchPage({
   onSelectHospital,
   onNavigateHome
 }) {
-  const [specialty, setSpecialty] = useState(initialSpecialty);
-  const [location, setLocation] = useState(initialLocation);
-  const [area, setArea] = useState('All Areas');
-  const [keyword, setKeyword] = useState(initialKeyword);
+  const [searchParams, setSearchParams] = useSearchParams();
+  const routerLocation = useLocation();
+  const [isRefresh] = useState(() => getIsInitialLoad() && isPageReload());
+
+  const getParam = (key, fallback) => {
+    const v = searchParams.get(key);
+    return v === null || v === undefined ? fallback : v;
+  };
+
+  const [specialty, setSpecialty] = useState(() => {
+    if (isRefresh) return '';
+    return getParam('spec', initialSpecialty);
+  });
+  const [location, setLocation] = useState(() => {
+    if (isRefresh) return 'All Bangladesh';
+    return getParam('loc', initialLocation);
+  });
+  const [area, setArea] = useState(() => {
+    if (isRefresh) return 'All Areas';
+    return getParam('area', 'All Areas');
+  });
+  const [keyword, setKeyword] = useState(() => {
+    if (isRefresh) return '';
+    return getParam('q', initialKeyword);
+  });
   const [maxFee, setMaxFee] = useState(2500);
   const [selectedDay, setSelectedDay] = useState('All');
+
+  useEffect(() => {
+    if (isRefresh) {
+      setSpecialty('');
+      setLocation('All Bangladesh');
+      setArea('All Areas');
+      setKeyword('');
+      setMaxFee(2500);
+      setSelectedDay('All');
+      setSearchParams({}, { replace: true });
+    }
+  }, []);
+
+  useEffect(() => {
+    if (isRefresh) return;
+
+    const urlSpec = searchParams.get('spec');
+    const urlLoc = searchParams.get('loc');
+    const urlQ = searchParams.get('q');
+    const urlArea = searchParams.get('area');
+
+    if (urlSpec !== null) setSpecialty(urlSpec);
+    else if (initialSpecialty) setSpecialty(initialSpecialty);
+
+    if (urlLoc !== null) setLocation(urlLoc);
+    else if (initialLocation) setLocation(initialLocation);
+
+    if (urlQ !== null) setKeyword(urlQ);
+
+    if (urlArea !== null) setArea(urlArea);
+  }, [searchParams, initialSpecialty, initialLocation]);
+
+  useEffect(() => {
+    if (isRefresh) return;
+
+    const params = new URLSearchParams();
+    if (specialty) params.set('spec', specialty);
+    if (location && location !== 'All Bangladesh') params.set('loc', location);
+    if (area && area !== 'All Areas') params.set('area', area);
+    if (keyword.trim()) params.set('q', keyword.trim());
+
+    const next = params.toString();
+    if (next !== searchParams.toString()) {
+      setSearchParams(params, { replace: true });
+    }
+  }, [specialty, location, area, keyword, searchParams, setSearchParams]);
 
   const [chambers, setChambers] = useState(MOCK_CHAMBERS);
   const [specialties, setSpecialties] = useState(MOCK_SPECIALTIES);

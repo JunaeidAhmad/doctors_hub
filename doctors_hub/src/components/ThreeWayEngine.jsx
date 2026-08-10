@@ -7,6 +7,8 @@ export default function ThreeWayEngine({
   setSelectedSpecialty,
   selectedTest,
   setSelectedTest,
+  selectedHospitalCategory: propHospitalCat,
+  setSelectedHospitalCategory: propSetHospitalCat,
   searchKeyword,
   setSearchKeyword,
   selectedLocation,
@@ -15,7 +17,9 @@ export default function ThreeWayEngine({
   activeEngineTab,
   setActiveEngineTab
 }) {
-  const [selectedHospitalCategory, setSelectedHospitalCategory] = useState('');
+  const [internalHospitalCat, setInternalHospitalCat] = useState('');
+  const selectedHospitalCategory = propHospitalCat !== undefined ? propHospitalCat : internalHospitalCat;
+  const setSelectedHospitalCategory = propSetHospitalCat || setInternalHospitalCat;
   
   const [doctorLoc, setDoctorLoc] = useState(selectedLocation || 'All Bangladesh');
   const [diagnosticsLoc, setDiagnosticsLoc] = useState(selectedLocation || 'All Bangladesh');

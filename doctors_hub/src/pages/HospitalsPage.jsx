@@ -1,65 +1,175 @@
 import React, { useState, useEffect, useMemo, useRef } from 'react';
-import { useSearchParams } from 'react-router-dom';
+import { useSearchParams, useLocation } from 'react-router-dom';
 import { 
   Building2, MapPin, Clock, ShieldCheck, CheckCircle, 
   Star, ArrowRight, Search, UserCheck, ChevronRight, Filter,
   ArrowDownAZ, ArrowUpAZ
 } from 'lucide-react';
-import { api } from '../services/api';
+import { api, isPageReload, getIsInitialLoad } from '../services/api';
 import { HOSPITALS, DIAGNOSTIC_CENTERS, LOCATIONS, HOSPITAL_CATEGORIES, CITY_THANAS } from '../data/mockData';
 import Pagination from '../components/Pagination';
 
-export default function HospitalsPage({ initialKeyword = '', onSelectHospital, onNavigateHome }) {
-  const [hospitals, setHospitals] = useState([]);
-  const [diagnosticCenters, setDiagnosticCenters] = useState([]);
+function HospitalCardImage({ hospital }) {
+  const [loaded, setLoaded] = useState(false);
+  const [error, setError] = useState(false);
+
+  let rawImg = hospital.image || hospital.logo || "https://images.unsplash.com/photo-1519494026892-80bbd2d6fd0d?auto=format&fit=crop&w=500&q=70&fm=webp";
+
+  if (rawImg.includes('unsplash.com')) {
+    if (!rawImg.includes('w=')) rawImg += '&w=500';
+    else rawImg = rawImg.replace(/w=\d+/, 'w=500');
+    if (!rawImg.includes('q=')) rawImg += '&q=70';
+    else rawImg = rawImg.replace(/q=\d+/, 'q=70');
+    if (!rawImg.includes('fm=')) rawImg += '&fm=webp';
+  }
+
+  const fallbackImg = "https://images.unsplash.com/photo-1519494026892-80bbd2d6fd0d?auto=format&fit=crop&w=500&q=70&fm=webp";
+
+  return (
+    <div className="relative h-48 overflow-hidden bg-slate-900">
+      {!loaded && !error && (
+        <div className="absolute inset-0 bg-slate-800 animate-pulse flex items-center justify-center">
+          <Building2 className="w-8 h-8 text-slate-600 animate-pulse" />
+        </div>
+      )}
+
+      <img
+        src={error ? fallbackImg : rawImg}
+        alt={hospital.name}
+        loading="lazy"
+        decoding="async"
+        onLoad={() => setLoaded(true)}
+        onError={() => setError(true)}
+        className={`w-full h-full object-cover transition-all duration-500 group-hover:scale-105 ${
+          loaded ? 'opacity-80 scale-100 blur-0' : 'opacity-0 scale-105 blur-xs'
+        }`}
+      />
+      <div className="absolute inset-0 bg-gradient-to-t from-slate-950 via-slate-950/40 to-transparent"></div>
+
+      <div className="absolute top-3 left-3 right-3 flex items-center justify-between">
+        <div className="inline-flex items-center gap-1 bg-slate-900/90 backdrop-blur-md border border-emerald-500/40 text-emerald-400 text-xs font-extrabold px-3 py-1 rounded-full">
+          <ShieldCheck className="w-3.5 h-3.5 text-emerald-400" />
+          <span>{typeof hospital.badge === 'string' ? hospital.badge : (hospital.badge?.name || hospital.type)}</span>
+        </div>
+        <div className="bg-slate-900/90 backdrop-blur-md text-amber-400 text-xs font-bold px-2.5 py-1 rounded-full border border-amber-500/30 flex items-center gap-1">
+          <Star className="w-3.5 h-3.5 fill-amber-400" />
+          <span>{hospital.rating || 4.8} ({hospital.reviews_count || hospital.reviewsCount || 250})</span>
+        </div>
+      </div>
+
+      <div className="absolute bottom-3 left-4 right-4 text-white">
+        <h3 className="text-lg font-extrabold text-white group-hover:text-emerald-300 transition-colors flex items-center gap-2">
+          <span>{hospital.name}{hospital.branch ? ` - ${hospital.branch}` : ''}</span>
+          {hospital.is_verified && (
+            <CheckCircle className="w-4 h-4 text-emerald-400 shrink-0" />
+          )}
+        </h3>
+        <p className="text-xs text-slate-300 font-medium line-clamp-1 mt-0.5">
+          {typeof hospital.tagline === 'string' ? hospital.tagline : (hospital.description || '')}
+        </p>
+      </div>
+    </div>
+  );
+}
+
+export default function HospitalsPage({ initialCategory = '', initialKeyword = '', onSelectHospital, onNavigateHome }) {
+  const [hospitals, setHospitals] = useState(HOSPITALS);
+  const [diagnosticCenters, setDiagnosticCenters] = useState(DIAGNOSTIC_CENTERS);
   const [hospitalCategories, setHospitalCategories] = useState(HOSPITAL_CATEGORIES);
-  const [loading, setLoading] = useState(true);
+  const [loading, setLoading] = useState(false);
+  const [isSyncing, setIsSyncing] = useState(false);
 
   // URL-serialized state (filters, pagination, sort)
   const [searchParams, setSearchParams] = useSearchParams();
+  const routerLocation = useLocation();
+  const [isRefresh] = useState(() => getIsInitialLoad() && isPageReload());
+
   const getParam = (key, fallback) => {
     const v = searchParams.get(key);
     return v === null || v === undefined ? fallback : v;
   };
-  const hasUrlFilters = searchParams.toString().length > 0;
 
   const [page, setPage] = useState(() => Math.max(1, parseInt(getParam('page', '1'), 10) || 1));
   const [sortOrder, setSortOrder] = useState(() => (getParam('sort', 'asc') === 'desc' ? 'desc' : 'asc'));
   const pageSize = 9;
   
   // Filter states
-  const [selectedLocation, setSelectedLocation] = useState(() => getParam('loc', 'All Bangladesh'));
-  const [selectedArea, setSelectedArea] = useState(() => getParam('area', 'All Areas'));
-  const [selectedCategory, setSelectedCategory] = useState(() => getParam('cat', 'all'));
-  const [searchKeyword, setSearchKeyword] = useState(() => getParam('q', initialKeyword));
+  const [selectedLocation, setSelectedLocation] = useState(() => {
+    if (isRefresh) return 'All Bangladesh';
+    return getParam('loc', 'All Bangladesh');
+  });
+  const [selectedArea, setSelectedArea] = useState(() => {
+    if (isRefresh) return 'All Areas';
+    return getParam('area', 'All Areas');
+  });
+  const [selectedCategory, setSelectedCategory] = useState(() => {
+    if (isRefresh) return 'all';
+    const urlCat = getParam('cat', '');
+    if (urlCat) return urlCat;
+    if (initialCategory) return initialCategory;
+    if (initialKeyword) {
+      const str = initialKeyword.toLowerCase().trim();
+      const catMatch = HOSPITAL_CATEGORIES.find(c => 
+        c.id.toString().toLowerCase() === str || 
+        c.name.toLowerCase().includes(str)
+      );
+      if (catMatch && catMatch.id !== 'all') {
+        return catMatch.id;
+      }
+    }
+    return 'all';
+  });
+
+  const [searchKeyword, setSearchKeyword] = useState(() => {
+    if (isRefresh) return '';
+    const urlQ = getParam('q', '');
+    if (urlQ) return urlQ;
+    if (getParam('cat', '')) return '';
+    if (initialCategory) return '';
+    if (initialKeyword) {
+      const str = initialKeyword.toLowerCase().trim();
+      const catMatch = HOSPITAL_CATEGORIES.find(c => 
+        c.id.toString().toLowerCase() === str || 
+        c.name.toLowerCase().includes(str)
+      );
+      if (catMatch && catMatch.id !== 'all') {
+        return '';
+      }
+      return initialKeyword;
+    }
+    return '';
+  });
+
+  useEffect(() => {
+    if (isRefresh) {
+      setSelectedCategory('all');
+      setSelectedLocation('All Bangladesh');
+      setSelectedArea('All Areas');
+      setSearchKeyword('');
+      setSearchParams({}, { replace: true });
+    }
+  }, []);
 
   useEffect(() => {
     let isMounted = true;
     async function loadData() {
-      setLoading(true);
+      setIsSyncing(true);
       try {
-        const [hospData, dcData, catData] = await Promise.all([
-          api.getHospitals({ location: selectedLocation }).catch(() => []),
-          api.getDiagnosticCenters({ location: selectedLocation }).catch(() => []),
-          api.getHospitalCategories().catch(() => [])
-        ]);
+        const hospPromise = api.getHospitals({ location: selectedLocation }).catch(() => null);
+        const dcPromise = api.getDiagnosticCenters({ location: selectedLocation }).catch(() => null);
+        const catPromise = api.getHospitalCategories().catch(() => null);
+
+        const [hospData, dcData, catData] = await Promise.all([hospPromise, dcPromise, catPromise]);
+
         if (isMounted) {
-          setHospitals(Array.isArray(hospData) && hospData.length > 0 ? hospData : HOSPITALS);
-          setDiagnosticCenters(Array.isArray(dcData) && dcData.length > 0 ? dcData : DIAGNOSTIC_CENTERS);
-          if (Array.isArray(catData) && catData.length > 0) {
-            setHospitalCategories(catData);
-          }
-          setLoading(false);
-          return;
+          if (Array.isArray(hospData) && hospData.length > 0) setHospitals(hospData);
+          if (Array.isArray(dcData) && dcData.length > 0) setDiagnosticCenters(dcData);
+          if (Array.isArray(catData) && catData.length > 0) setHospitalCategories(catData);
         }
       } catch {
-        // Fallback
-      }
-
-      if (isMounted) {
-        setHospitals(HOSPITALS);
-        setDiagnosticCenters(DIAGNOSTIC_CENTERS);
-        setLoading(false);
+        // Keep initial fallback state intact
+      } finally {
+        if (isMounted) setIsSyncing(false);
       }
     }
 
@@ -67,8 +177,17 @@ export default function HospitalsPage({ initialKeyword = '', onSelectHospital, o
   }, [selectedLocation]);
 
   useEffect(() => {
-    if (hasUrlFilters) return;
-    if (initialKeyword) {
+    if (isRefresh) return;
+
+    const urlCat = searchParams.get('cat');
+    const urlQ = searchParams.get('q');
+    
+    if (urlCat) {
+      setSelectedCategory(urlCat);
+      if (urlQ === null) setSearchKeyword('');
+    } else if (initialCategory) {
+      setSelectedCategory(initialCategory);
+    } else if (initialKeyword) {
       const str = initialKeyword.toLowerCase().trim();
       const catMatch = hospitalCategories.find(c => 
         c.id.toString().toLowerCase() === str || 
@@ -77,12 +196,15 @@ export default function HospitalsPage({ initialKeyword = '', onSelectHospital, o
       if (catMatch && catMatch.id !== 'all') {
         setSelectedCategory(catMatch.id);
         setSearchKeyword('');
-      } else {
+      } else if (!urlQ) {
         setSelectedCategory('all');
         setSearchKeyword(initialKeyword);
       }
     }
-  }, [initialKeyword, hospitalCategories, hasUrlFilters]);
+    if (urlQ !== null && urlQ !== undefined) {
+      setSearchKeyword(urlQ);
+    }
+  }, [searchParams, initialCategory, initialKeyword, hospitalCategories]);
 
   // Reset area filter when location switches
   const handleLocationChange = (loc) => {
@@ -205,10 +327,10 @@ export default function HospitalsPage({ initialKeyword = '', onSelectHospital, o
             </div>
 
             <div className="bg-slate-800/80 backdrop-blur-md p-3.5 rounded-2xl border border-slate-700 text-xs flex items-center gap-3 shrink-0">
-              <div className="w-3 h-3 rounded-full bg-emerald-400 animate-ping"></div>
+              <div className={`w-3 h-3 rounded-full ${isSyncing ? 'bg-amber-400 animate-spin border-2 border-amber-300 border-t-transparent' : 'bg-emerald-400 animate-ping'}`}></div>
               <div>
                 <div className="font-extrabold text-white">{filteredHospitals.length} Active Hospitals</div>
-                <div className="text-slate-400">Hospitals</div>
+                <div className="text-slate-400">{isSyncing ? 'Updating live network data...' : 'Hospitals'}</div>
               </div>
             </div>
           </div>
@@ -359,37 +481,7 @@ export default function HospitalsPage({ initialKeyword = '', onSelectHospital, o
                 >
                   <div>
                     {/* Top Image */}
-                    <div className="relative h-48 overflow-hidden bg-slate-900">
-                      <img
-                        src={hospital.image || hospital.logo || "https://images.unsplash.com/photo-1519494026892-80bbd2d6fd0d?auto=format&fit=crop&w=600&q=80"}
-                        alt={hospital.name}
-                        className="w-full h-full object-cover opacity-80 group-hover:scale-105 transition-transform duration-500"
-                      />
-                      <div className="absolute inset-0 bg-gradient-to-t from-slate-950 via-slate-950/40 to-transparent"></div>
-
-                      <div className="absolute top-3 left-3 right-3 flex items-center justify-between">
-                        <div className="inline-flex items-center gap-1 bg-slate-900/90 backdrop-blur-md border border-emerald-500/40 text-emerald-400 text-xs font-extrabold px-3 py-1 rounded-full">
-                          <ShieldCheck className="w-3.5 h-3.5 text-emerald-400" />
-                          <span>{typeof hospital.badge === 'string' ? hospital.badge : (hospital.badge?.name || hospital.type)}</span>
-                        </div>
-                        <div className="bg-slate-900/90 backdrop-blur-md text-amber-400 text-xs font-bold px-2.5 py-1 rounded-full border border-amber-500/30 flex items-center gap-1">
-                          <Star className="w-3.5 h-3.5 fill-amber-400" />
-                          <span>{hospital.rating || 4.8} ({hospital.reviews_count || hospital.reviewsCount || 250})</span>
-                        </div>
-                      </div>
-
-                      <div className="absolute bottom-3 left-4 right-4 text-white">
-                        <h3 className="text-lg font-extrabold text-white group-hover:text-emerald-300 transition-colors flex items-center gap-2">
-                          <span>{hospital.name}{hospital.branch ? ` - ${hospital.branch}` : ''}</span>
-                          {hospital.is_verified && (
-                            <CheckCircle className="w-4 h-4 text-emerald-400 shrink-0" />
-                          )}
-                        </h3>
-                        <p className="text-xs text-slate-300 font-medium line-clamp-1 mt-0.5">
-                          {typeof hospital.tagline === 'string' ? hospital.tagline : (hospital.description || '')}
-                        </p>
-                      </div>
-                    </div>
+                    <HospitalCardImage hospital={hospital} />
 
                     {/* Details Strip */}
                     <div className="p-4 bg-slate-50 border-b border-slate-200 text-xs text-slate-600 space-y-2">

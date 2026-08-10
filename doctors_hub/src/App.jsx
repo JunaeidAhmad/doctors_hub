@@ -14,7 +14,7 @@ import LoginModal from './components/LoginModal';
 import UserSettingsModal from './components/UserSettingsModal';
 import Footer from './components/Footer';
 import ToastNotification from './components/ToastNotification';
-import { api } from './services/api';
+import { api, isPageReload, setInitialLoadComplete } from './services/api';
 
 function getPageFromPath(path) {
   if (path === '/admin') return 'admin';
@@ -45,6 +45,23 @@ export default function App() {
   // User auth state
   const [user, setUser] = useState(() => api.getCurrentUser());
 
+  // Reset filters to base state on page reload
+  useEffect(() => {
+    if (isPageReload()) {
+      setSelectedLocation('All Bangladesh');
+      setSelectedSpecialty('');
+      setSelectedTest('');
+      setSelectedHospitalCategory('');
+      setDoctorKeyword('');
+      setDiagnosticsKeyword('');
+      setHospitalKeyword('');
+      
+      // Clear URL search params if it's a page reload
+      navigate(location.pathname, { replace: true });
+    }
+    setInitialLoadComplete();
+  }, []);
+
   // Sync activeTab when URL changes via browser back/forward
   useEffect(() => {
     if (isSectionScroll.current) {
@@ -58,11 +75,14 @@ export default function App() {
     else setActiveTab('home');
   }, [currentPage]);
 
-  // Global Search Filters
+  // Global Search Filters (Domain Separated)
   const [selectedLocation, setSelectedLocation] = useState('All Bangladesh');
   const [selectedSpecialty, setSelectedSpecialty] = useState('');
   const [selectedTest, setSelectedTest] = useState('');
-  const [searchKeyword, setSearchKeyword] = useState('');
+  const [selectedHospitalCategory, setSelectedHospitalCategory] = useState('');
+  const [doctorKeyword, setDoctorKeyword] = useState('');
+  const [diagnosticsKeyword, setDiagnosticsKeyword] = useState('');
+  const [hospitalKeyword, setHospitalKeyword] = useState('');
   const [activeEngineTab, setActiveEngineTab] = useState('doctor');
 
   // Modals & Toast State
@@ -93,7 +113,7 @@ export default function App() {
     setUser(updatedUser);
   };
 
-  // Execute Search Navigation Handler
+  // Execute Search Navigation Handler (Decoupled per Domain)
   const handleExecuteSearch = (mode, param, locationOverride) => {
     if (locationOverride) {
       setSelectedLocation(locationOverride);
@@ -101,29 +121,35 @@ export default function App() {
     const loc = locationOverride || selectedLocation;
 
     if (mode === 'doctor') {
-      if (param) setSelectedSpecialty(param);
-      navigate('/doctor-search');
+      if (param !== undefined && param !== null) setSelectedSpecialty(param);
+      const targetSpec = param !== undefined && param !== null ? param : selectedSpecialty;
+      const queryParams = new URLSearchParams();
+      if (loc && loc !== 'All Bangladesh') queryParams.set('loc', loc);
+      if (targetSpec) queryParams.set('spec', targetSpec);
+      const queryStr = queryParams.toString();
+      navigate(`/doctor-search${queryStr ? `?${queryStr}` : ''}`);
       setActiveTab('doctors');
     } else if (mode === 'diagnostics') {
-      if (param) {
-        setSelectedTest(param);
-        navigate(`/diagnostics-search?loc=${encodeURIComponent(loc)}&testcat=${encodeURIComponent(param)}`);
-      } else {
-        navigate(`/diagnostics-search?loc=${encodeURIComponent(loc)}`);
-      }
+      if (param !== undefined && param !== null) setSelectedTest(param);
+      const targetTest = param !== undefined && param !== null ? param : selectedTest;
+      const queryParams = new URLSearchParams();
+      if (loc && loc !== 'All Bangladesh') queryParams.set('loc', loc);
+      if (targetTest) queryParams.set('testcat', targetTest);
+      const queryStr = queryParams.toString();
+      navigate(`/diagnostics-search${queryStr ? `?${queryStr}` : ''}`);
       setActiveTab('diagnostics');
     } else if (mode === 'hospital') {
-      if (param) setSearchKeyword(param);
-      navigate(`/hospitals?loc=${encodeURIComponent(loc)}`);
+      if (param !== undefined && param !== null) setSelectedHospitalCategory(param);
+      const targetCat = param !== undefined && param !== null ? param : selectedHospitalCategory;
+      const queryParams = new URLSearchParams();
+      if (loc && loc !== 'All Bangladesh') queryParams.set('loc', loc);
+      if (targetCat) queryParams.set('cat', targetCat);
+      const queryStr = queryParams.toString();
+      navigate(`/hospitals${queryStr ? `?${queryStr}` : ''}`);
       setActiveTab('hospitals');
     } else {
-      if (searchKeyword.trim() !== '') {
-        navigate(`/diagnostics-search?loc=${encodeURIComponent(loc)}`);
-        setActiveTab('diagnostics');
-      } else {
-        navigate('/doctor-search');
-        setActiveTab('doctors');
-      }
+      navigate('/doctor-search');
+      setActiveTab('doctors');
     }
     window.scrollTo({ top: 0, behavior: 'smooth' });
   };
@@ -220,8 +246,10 @@ export default function App() {
             setSelectedSpecialty={setSelectedSpecialty}
             selectedTest={selectedTest}
             setSelectedTest={setSelectedTest}
-            searchKeyword={searchKeyword}
-            setSearchKeyword={setSearchKeyword}
+            selectedHospitalCategory={selectedHospitalCategory}
+            setSelectedHospitalCategory={setSelectedHospitalCategory}
+            doctorKeyword={doctorKeyword}
+            setDoctorKeyword={setDoctorKeyword}
             selectedLocation={selectedLocation}
             setSelectedLocation={setSelectedLocation}
             activeEngineTab={activeEngineTab}
@@ -236,7 +264,8 @@ export default function App() {
 
         {currentPage === 'hospitals' && (
           <HospitalsPage
-            initialKeyword={searchKeyword}
+            initialCategory={selectedHospitalCategory}
+            initialKeyword={hospitalKeyword}
             onSelectHospital={handleSelectHospital}
             onNavigateHome={() => handleNavClick('home')}
           />
@@ -256,7 +285,7 @@ export default function App() {
           <DoctorSearchPage
             initialSpecialty={selectedSpecialty}
             initialLocation={selectedLocation}
-            initialKeyword={searchKeyword}
+            initialKeyword={doctorKeyword}
             onBookDoctorSlot={(chamber, doctor) => setBookingDoctorState({ chamber, doctor })}
             onSelectHospital={handleSelectHospital}
             onNavigateHome={() => handleNavClick('home')}
@@ -265,7 +294,7 @@ export default function App() {
 
         {currentPage === 'diagnostics-search' && (
           <DiagnosticsSearchPage
-            initialTest={selectedTest || searchKeyword}
+            initialTest={selectedTest}
             onBookLabTest={(test) => setBookingLabState(test)}
             onNavigateHome={() => handleNavClick('home')}
           />

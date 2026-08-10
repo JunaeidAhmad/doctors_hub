@@ -12,8 +12,10 @@ export default function HomePage({
   setSelectedSpecialty,
   selectedTest,
   setSelectedTest,
-  searchKeyword,
-  setSearchKeyword,
+  selectedHospitalCategory,
+  setSelectedHospitalCategory,
+  doctorKeyword,
+  setDoctorKeyword,
   selectedLocation,
   setSelectedLocation,
   activeEngineTab,
@@ -32,8 +34,10 @@ export default function HomePage({
         setSelectedSpecialty={setSelectedSpecialty}
         selectedTest={selectedTest}
         setSelectedTest={setSelectedTest}
-        searchKeyword={searchKeyword}
-        setSearchKeyword={setSearchKeyword}
+        selectedHospitalCategory={selectedHospitalCategory}
+        setSelectedHospitalCategory={setSelectedHospitalCategory}
+        doctorKeyword={doctorKeyword}
+        setDoctorKeyword={setDoctorKeyword}
         selectedLocation={selectedLocation}
         setSelectedLocation={setSelectedLocation}
         onSearchExecute={onExecuteSearch}

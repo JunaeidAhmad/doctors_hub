@@ -1,6 +1,6 @@
 const BASE_URL = import.meta.env.VITE_API_BASE_URL || 'https://doctors-hub.onrender.com/api';
 
-async function fetchWithTimeout(url, options = {}, timeoutMs = 15000) {
+async function fetchWithTimeout(url, options = {}, timeoutMs = 30000) {
   if (!timeoutMs || typeof timeoutMs !== 'number' || timeoutMs <= 0) {
     return fetch(url, options);
   }
@@ -31,6 +31,42 @@ export function ensureArray(val, fallback = []) {
   if (val && typeof val === 'object' && Array.isArray(val.results) && val.results.length > 0) return val.results;
   return fallback;
 }
+
+export function isPageReload() {
+  if (typeof window === 'undefined') return false;
+  try {
+    const navEntries = window.performance?.getEntriesByType?.('navigation');
+    if (navEntries && navEntries.length > 0) {
+      return navEntries[0].type === 'reload';
+    }
+    return window.performance?.navigation?.type === 1;
+  } catch {
+    return false;
+  }
+}
+
+let initialLoad = true;
+export function getIsInitialLoad() {
+  return initialLoad;
+}
+export function setInitialLoadComplete() {
+  initialLoad = false;
+}
+
+const memoryCache = new Map();
+function getCached(key, ttlMs = 300000) {
+  const entry = memoryCache.get(key);
+  if (!entry) return null;
+  if (Date.now() - entry.timestamp > ttlMs) {
+    memoryCache.delete(key);
+    return null;
+  }
+  return entry.data;
+}
+function setCached(key, data) {
+  memoryCache.set(key, { timestamp: Date.now(), data });
+}
+
 
 /**
  * Helper to handle fetch responses and errors
@@ -179,10 +215,15 @@ export const api = {
 
   // Hospital Categories (renamed from HospitalSpecialty)
   async getHospitalCategories() {
+    const cacheKey = 'hospital-categories';
+    const cached = getCached(cacheKey);
+    if (cached) return cached;
     const res = await fetchWithTimeout(`${BASE_URL}/hospital-categories/`, {
       headers: getHeaders(),
     });
-    return handleResponse(res);
+    const data = await handleResponse(res);
+    if (data) setCached(cacheKey, data);
+    return data;
   },
   async createHospitalCategory(data) {
     const res = await fetchWithTimeout(`${BASE_URL}/hospital-categories/`, {
@@ -312,12 +353,17 @@ export const api = {
 
   // Diagnostic Centers
   async getDiagnosticCenters({ location = '', category = '', search = '' } = {}) {
+    const cacheKey = `diagnostic-centers-${location}-${category}-${search}`;
+    const cached = getCached(cacheKey);
+    if (cached) return cached;
     const url = new URL(`${BASE_URL}/diagnostic-centers/`);
     if (location && location !== 'All Bangladesh') url.searchParams.append('location', location);
     if (category) url.searchParams.append('category', category);
     if (search) url.searchParams.append('search', search);
     const res = await fetchWithTimeout(url, { headers: getHeaders() });
-    return handleResponse(res);
+    const data = await handleResponse(res);
+    if (data) setCached(cacheKey, data);
+    return data;
   },
   async getDiagnosticCenterById(id) {
     const res = await fetchWithTimeout(`${BASE_URL}/diagnostic-centers/${id}/`, { headers: getHeaders() });
@@ -445,12 +491,17 @@ export const api = {
 
   // Hospitals
   async getHospitals({ location = '', category = '', search = '' } = {}) {
+    const cacheKey = `hospitals-${location}-${category}-${search}`;
+    const cached = getCached(cacheKey);
+    if (cached) return cached;
     const url = new URL(`${BASE_URL}/hospitals/`);
     if (location && location !== 'All Bangladesh') url.searchParams.append('location', location);
     if (category) url.searchParams.append('category', category);
     if (search) url.searchParams.append('search', search);
     const res = await fetchWithTimeout(url, { headers: getHeaders() });
-    return handleResponse(res);
+    const data = await handleResponse(res);
+    if (data) setCached(cacheKey, data);
+    return data;
   },
   async getHospitalById(id) {
     const res = await fetchWithTimeout(`${BASE_URL}/hospitals/${id}/`, { headers: getHeaders() });
@@ -487,9 +538,9 @@ export const api = {
   },
   async getBranchById(id) {
     try {
-      return await this.getDiagnosticCenterById(id);
-    } catch {
       return await this.getHospitalById(id);
+    } catch {
+      return await this.getDiagnosticCenterById(id);
     }
   },
   async getChambers(location = '') {

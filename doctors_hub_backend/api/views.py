@@ -73,6 +73,9 @@ class HospitalServiceViewSet(viewsets.ModelViewSet):
     permission_classes = (IsAdminUserOrReadOnly,)
 
 
+import uuid
+from rest_framework.exceptions import NotFound
+
 class HospitalViewSet(viewsets.ModelViewSet):
     queryset = Hospital.objects.all()
     serializer_class = HospitalSerializer
@@ -91,6 +94,32 @@ class HospitalViewSet(viewsets.ModelViewSet):
         if search:
             queryset = queryset.filter(name__icontains=search) | queryset.filter(branch__icontains=search)
         return queryset.distinct()
+
+    def get_object(self):
+        queryset = self.filter_queryset(self.get_queryset())
+        lookup_url_kwarg = self.lookup_url_kwarg or self.lookup_field
+        lookup_val = self.kwargs.get(lookup_url_kwarg, '')
+
+        # 1. Try exact UUID pk lookup
+        try:
+            val_uuid = uuid.UUID(str(lookup_val))
+            obj = queryset.filter(pk=val_uuid).first()
+            if obj:
+                self.check_object_permissions(self.request, obj)
+                return obj
+        except (ValueError, TypeError):
+            pass
+
+        # 2. Try slug lookup
+        obj = queryset.filter(slug=lookup_val).first()
+        if not obj:
+            obj = queryset.filter(slug__icontains=lookup_val).first()
+
+        if obj:
+            self.check_object_permissions(self.request, obj)
+            return obj
+
+        raise NotFound(f"No Hospital found matching '{lookup_val}'")
 
 
 class DiagnosticCenterCategoryViewSet(viewsets.ModelViewSet):
@@ -126,6 +155,32 @@ class DiagnosticCenterViewSet(viewsets.ModelViewSet):
         if search:
             queryset = queryset.filter(name__icontains=search) | queryset.filter(branch__icontains=search)
         return queryset.distinct()
+
+    def get_object(self):
+        queryset = self.filter_queryset(self.get_queryset())
+        lookup_url_kwarg = self.lookup_url_kwarg or self.lookup_field
+        lookup_val = self.kwargs.get(lookup_url_kwarg, '')
+
+        # 1. Try exact UUID pk lookup
+        try:
+            val_uuid = uuid.UUID(str(lookup_val))
+            obj = queryset.filter(pk=val_uuid).first()
+            if obj:
+                self.check_object_permissions(self.request, obj)
+                return obj
+        except (ValueError, TypeError):
+            pass
+
+        # 2. Try slug lookup
+        obj = queryset.filter(slug=lookup_val).first()
+        if not obj:
+            obj = queryset.filter(slug__icontains=lookup_val).first()
+
+        if obj:
+            self.check_object_permissions(self.request, obj)
+            return obj
+
+        raise NotFound(f"No Diagnostic Center found matching '{lookup_val}'")
 
 
 BranchViewSet = DiagnosticCenterViewSet

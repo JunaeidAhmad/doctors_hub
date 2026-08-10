@@ -4,7 +4,7 @@ import {
   Star, ArrowLeft, UserCheck, Activity, TestTube, ChevronRight, Award, Info, Sparkles, Filter, ArrowRight, Search, AlertCircle, HeartPulse, Eye, FlaskConical
 } from 'lucide-react';
 import { api } from '../services/api';
-import { DOCTOR_CHAMBERS, PATHOLOGY_TESTS, BRANCH_TESTS, HOSPITAL_SERVICES } from '../data/mockData';
+import { DOCTOR_CHAMBERS, HOSPITALS, PATHOLOGY_TESTS, BRANCH_TESTS, HOSPITAL_SERVICES } from '../data/mockData';
 
 export default function HospitalDetailPage({ hospitalId, onBookDoctorSlot, onBookLabTest, onNavigateHome, onNavigateHospitals }) {
   const [hospital, setHospital] = useState(null);
@@ -35,7 +35,11 @@ export default function HospitalDetailPage({ hospitalId, onBookDoctorSlot, onBoo
         // Fallback to local mock data
       }
       
-      const foundMock = DOCTOR_CHAMBERS.find(c => c.id === hospitalId) || DOCTOR_CHAMBERS[0];
+      const foundMock = HOSPITALS.find(h => h.id === hospitalId || h.slug === hospitalId)
+        || DOCTOR_CHAMBERS.find(c => c.id === hospitalId || c.slug === hospitalId)
+        || HOSPITALS[0]
+        || DOCTOR_CHAMBERS[0];
+        
       if (isMounted) {
         setHospital(foundMock);
         // Fallback branch tests for mock

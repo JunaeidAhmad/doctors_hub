@@ -1,5 +1,5 @@
 import React, { useState, useMemo, useEffect, useRef } from 'react';
-import { useSearchParams } from 'react-router-dom';
+import { useSearchParams, useLocation } from 'react-router-dom';
 import { 
   FlaskConical, Clock, ArrowLeft, Filter, Search, Building2, ShieldCheck, 
   MapPin, CheckCircle, Home, FileText, ChevronRight, ChevronDown, Tag, Stethoscope
@@ -8,7 +8,7 @@ import {
   TESTS, DIAGNOSTIC_CENTER_TESTS, DIAGNOSTIC_CENTERS, LOCATIONS, 
   CITY_THANAS, TEST_CATEGORIES, DIAGNOSTIC_CENTER_CATEGORIES 
 } from '../data/mockData';
-import { api, ensureArray } from '../services/api';
+import { api, ensureArray, isPageReload, getIsInitialLoad } from '../services/api';
 
 export default function DiagnosticsSearchPage({
   initialTest = '',
@@ -23,6 +23,9 @@ export default function DiagnosticsSearchPage({
 
   // URL-serialized state (filters)
   const [searchParams, setSearchParams] = useSearchParams();
+  const routerLocation = useLocation();
+  const [isRefresh] = useState(() => getIsInitialLoad() && isPageReload());
+
   const getParam = (key, fallback) => {
     const v = searchParams.get(key);
     return v === null || v === undefined ? fallback : v;
@@ -35,10 +38,17 @@ export default function DiagnosticsSearchPage({
   const hasUrlFilters = searchParams.toString().length > 0;
 
   // Filter states
-  const [selectedLocation, setSelectedLocation] = useState(() => getParam('loc', 'All Bangladesh'));
-  const [selectedArea, setSelectedArea] = useState(() => getParam('area', 'All Areas'));
+  const [selectedLocation, setSelectedLocation] = useState(() => {
+    if (isRefresh) return 'All Bangladesh';
+    return getParam('loc', 'All Bangladesh');
+  });
+  const [selectedArea, setSelectedArea] = useState(() => {
+    if (isRefresh) return 'All Areas';
+    return getParam('area', 'All Areas');
+  });
 
   const [selectedTestCategory, setSelectedTestCategory] = useState(() => {
+    if (isRefresh) return 'all';
     const urlCat = getParam('testcat', '');
     if (urlCat) return urlCat;
     if (initialTest) {
@@ -50,6 +60,7 @@ export default function DiagnosticsSearchPage({
   });
 
   const [selectedCenterCategories, setSelectedCenterCategories] = useState(() => {
+    if (isRefresh) return [];
     const fromUrl = [...getParamList('spec'), ...getParamList('owner')];
     if (fromUrl.length > 0) return fromUrl;
     if (!initialTest) return [];
@@ -67,6 +78,17 @@ export default function DiagnosticsSearchPage({
   const ownerDropdownRef = useRef(null);
 
   useEffect(() => {
+    if (isRefresh) {
+      setSelectedTestCategory('all');
+      setSelectedCenterCategories([]);
+      setSelectedLocation('All Bangladesh');
+      setSelectedArea('All Areas');
+      setSearchKeyword('');
+      setSearchParams({}, { replace: true });
+    }
+  }, []);
+
+  useEffect(() => {
     function handleClickOutside(event) {
       if (specDropdownRef.current && !specDropdownRef.current.contains(event.target)) {
         setSpecDropdownOpen(false);
@@ -80,6 +102,7 @@ export default function DiagnosticsSearchPage({
   }, []);
 
   const [searchKeyword, setSearchKeyword] = useState(() => {
+    if (isRefresh) return '';
     const urlQ = getParam('q', '');
     if (urlQ) return urlQ;
     if (!initialTest) return '';
