@@ -199,20 +199,11 @@ class Hospital(models.Model):
 
 class TestCategory(models.Model):
     """
-    Self-referencing category tree for LAB TESTS.
-    Works for both top-level categories (Pathology) and 
-    sub-categories (Hematology) — same model, parent=null vs parent=set.
+    Category tree for LAB TESTS.
     """
     id = models.UUIDField(primary_key=True, default=uuid.uuid4, editable=False)
     name = models.CharField(max_length=150)
     slug = models.SlugField(max_length=170, unique=True, blank=True)
-    parent = models.ForeignKey(
-        'self',
-        null=True,
-        blank=True,
-        related_name='children',
-        on_delete=models.CASCADE
-    )
     icon = models.CharField(max_length=100, blank=True)
     description = models.TextField(blank=True)
     is_active = models.BooleanField(default=True)
@@ -223,16 +214,12 @@ class TestCategory(models.Model):
         ordering = ['order', 'name']
 
     def __str__(self):
-        return f"{self.parent.name} > {self.name}" if self.parent else self.name
+        return self.name
 
     def save(self, *args, **kwargs):
         if not self.slug:
             self.slug = slugify(self.name)
         super().save(*args, **kwargs)
-
-    @property
-    def is_leaf_level(self):
-        return not self.children.exists()
 
 
 class Test(models.Model):
@@ -259,7 +246,7 @@ class Test(models.Model):
 
     def save(self, *args, **kwargs):
         if not self.slug:
-            self.slug = slugify(self.name)
+            self.slug = f"{slugify(self.name)}-{uuid.uuid4().hex[:6]}"
         super().save(*args, **kwargs)
 
     def __str__(self):

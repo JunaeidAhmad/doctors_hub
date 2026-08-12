@@ -1,7 +1,7 @@
 from django.urls import path, include
 from rest_framework.routers import DefaultRouter
 from .views import (
-    RegisterAPIView, LoginAPIView, UserProfileAPIView,
+    RegisterAPIView, LoginAPIView, UserProfileAPIView, AdminInitAPIView, SearchMetadataAPIView,
     HospitalViewSet, HospitalCategoryViewSet, HospitalServiceViewSet,
     DiagnosticCenterCategoryViewSet, DiagnosticServiceViewSet, DiagnosticCenterViewSet, DiagnosticCenterTestViewSet,
     TestCategoryViewSet, TestViewSet, DoctorSpecialtyViewSet, DoctorViewSet, DoctorAffiliationViewSet,
@@ -38,5 +38,8 @@ urlpatterns = [
     path('auth/register/', RegisterAPIView.as_view(), name='register'),
     path('auth/login/', LoginAPIView.as_view(), name='login'),
     path('auth/me/', UserProfileAPIView.as_view(), name='user-profile'),
+    path('admin/dashboard-init/', AdminInitAPIView.as_view(), name='admin-dashboard-init'),
+    path('search-metadata/', SearchMetadataAPIView.as_view(), name='search-metadata'),
     path('', include(router.urls)),
 ]
+

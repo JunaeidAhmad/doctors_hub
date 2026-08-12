@@ -1,6 +1,6 @@
 const BASE_URL = import.meta.env.VITE_API_BASE_URL || 'https://doctors-hub.onrender.com/api';
 
-async function fetchWithTimeout(url, options = {}, timeoutMs = 30000) {
+async function fetchWithTimeout(url, options = {}, timeoutMs = 60000) {
   if (!timeoutMs || typeof timeoutMs !== 'number' || timeoutMs <= 0) {
     return fetch(url, options);
   }
@@ -27,8 +27,8 @@ async function fetchWithTimeout(url, options = {}, timeoutMs = 30000) {
 }
 
 export function ensureArray(val, fallback = []) {
-  if (Array.isArray(val) && val.length > 0) return val;
-  if (val && typeof val === 'object' && Array.isArray(val.results) && val.results.length > 0) return val.results;
+  if (Array.isArray(val)) return val;
+  if (val && typeof val === 'object' && Array.isArray(val.results)) return val.results;
   return fallback;
 }
 
@@ -54,17 +54,48 @@ export function setInitialLoadComplete() {
 }
 
 const memoryCache = new Map();
+export function clearCache() {
+  memoryCache.clear();
+  try {
+    const keysToRemove = [];
+    for (let i = 0; i < localStorage.length; i++) {
+      const k = localStorage.key(i);
+      if (k && k.startsWith('cache_')) keysToRemove.push(k);
+    }
+    keysToRemove.forEach(k => localStorage.removeItem(k));
+  } catch (e) {}
+}
 function getCached(key, ttlMs = 300000) {
   const entry = memoryCache.get(key);
-  if (!entry) return null;
-  if (Date.now() - entry.timestamp > ttlMs) {
+  if (entry) {
+    if (Date.now() - entry.timestamp <= ttlMs) {
+      return entry.data;
+    }
     memoryCache.delete(key);
-    return null;
   }
-  return entry.data;
+  if (typeof window !== 'undefined') {
+    try {
+      const local = localStorage.getItem(`cache_${key}`);
+      if (local) {
+        const parsed = JSON.parse(local);
+        if (Date.now() - parsed.timestamp <= ttlMs) {
+          memoryCache.set(key, parsed);
+          return parsed.data;
+        }
+        localStorage.removeItem(`cache_${key}`);
+      }
+    } catch (e) {}
+  }
+  return null;
 }
 function setCached(key, data) {
-  memoryCache.set(key, { timestamp: Date.now(), data });
+  const entry = { timestamp: Date.now(), data };
+  memoryCache.set(key, entry);
+  if (typeof window !== 'undefined') {
+    try {
+      localStorage.setItem(`cache_${key}`, JSON.stringify(entry));
+    } catch (e) {}
+  }
 }
 
 
@@ -119,6 +150,14 @@ function getHeaders(token = null) {
 }
 
 export const api = {
+  // Admin Bootstrap (BFF pattern)
+  async getAdminDashboardInit() {
+    const res = await fetchWithTimeout(`${BASE_URL}/admin/dashboard-init/`, {
+      headers: getHeaders(),
+    });
+    return handleResponse(res);
+  },
+
   // Auth
   async login(phone_number, password) {
     localStorage.removeItem('access_token');
@@ -215,15 +254,10 @@ export const api = {
 
   // Hospital Categories (renamed from HospitalSpecialty)
   async getHospitalCategories() {
-    const cacheKey = 'hospital-categories';
-    const cached = getCached(cacheKey);
-    if (cached) return cached;
     const res = await fetchWithTimeout(`${BASE_URL}/hospital-categories/`, {
       headers: getHeaders(),
     });
-    const data = await handleResponse(res);
-    if (data) setCached(cacheKey, data);
-    return data;
+    return handleResponse(res);
   },
   async createHospitalCategory(data) {
     const res = await fetchWithTimeout(`${BASE_URL}/hospital-categories/`, {
@@ -351,19 +385,29 @@ export const api = {
     return handleResponse(res);
   },
 
+  // Search Metadata / Bootstrap Endpoint
+  async getSearchMetadata() {
+    const res = await fetchWithTimeout(`${BASE_URL}/search-metadata/`, {
+      headers: getHeaders(),
+    });
+    return handleResponse(res);
+  },
+
   // Diagnostic Centers
-  async getDiagnosticCenters({ location = '', category = '', search = '' } = {}) {
-    const cacheKey = `diagnostic-centers-${location}-${category}-${search}`;
-    const cached = getCached(cacheKey);
-    if (cached) return cached;
+  async getDiagnosticCenters({ location = '', district = '', area = '', category = '', spec = '', owner = '', testcat = '', search = '', page = 1, page_size = 10 } = {}) {
     const url = new URL(`${BASE_URL}/diagnostic-centers/`);
     if (location && location !== 'All Bangladesh') url.searchParams.append('location', location);
+    if (district) url.searchParams.append('district', district);
+    if (area && area !== 'All Areas') url.searchParams.append('area', area);
     if (category) url.searchParams.append('category', category);
+    if (spec) url.searchParams.append('spec', spec);
+    if (owner) url.searchParams.append('owner', owner);
+    if (testcat) url.searchParams.append('testcat', testcat);
     if (search) url.searchParams.append('search', search);
+    if (page) url.searchParams.append('page', page);
+    if (page_size) url.searchParams.append('page_size', page_size);
     const res = await fetchWithTimeout(url, { headers: getHeaders() });
-    const data = await handleResponse(res);
-    if (data) setCached(cacheKey, data);
-    return data;
+    return handleResponse(res);
   },
   async getDiagnosticCenterById(id) {
     const res = await fetchWithTimeout(`${BASE_URL}/diagnostic-centers/${id}/`, { headers: getHeaders() });
@@ -380,6 +424,14 @@ export const api = {
   async updateDiagnosticCenter(id, data) {
     const res = await fetchWithTimeout(`${BASE_URL}/diagnostic-centers/${id}/`, {
       method: 'PUT',
+      headers: getHeaders(),
+      body: JSON.stringify(data),
+    });
+    return handleResponse(res);
+  },
+  async patchDiagnosticCenter(id, data) {
+    const res = await fetchWithTimeout(`${BASE_URL}/diagnostic-centers/${id}/`, {
+      method: 'PATCH',
       headers: getHeaders(),
       body: JSON.stringify(data),
     });
@@ -490,18 +542,16 @@ export const api = {
   },
 
   // Hospitals
-  async getHospitals({ location = '', category = '', search = '' } = {}) {
-    const cacheKey = `hospitals-${location}-${category}-${search}`;
-    const cached = getCached(cacheKey);
-    if (cached) return cached;
+  async getHospitals({ location = '', area = '', category = '', search = '', page = 1, page_size = 10 } = {}) {
     const url = new URL(`${BASE_URL}/hospitals/`);
     if (location && location !== 'All Bangladesh') url.searchParams.append('location', location);
+    if (area && area !== 'All Areas') url.searchParams.append('area', area);
     if (category) url.searchParams.append('category', category);
     if (search) url.searchParams.append('search', search);
+    if (page) url.searchParams.append('page', page);
+    if (page_size) url.searchParams.append('page_size', page_size);
     const res = await fetchWithTimeout(url, { headers: getHeaders() });
-    const data = await handleResponse(res);
-    if (data) setCached(cacheKey, data);
-    return data;
+    return handleResponse(res);
   },
   async getHospitalById(id) {
     const res = await fetchWithTimeout(`${BASE_URL}/hospitals/${id}/`, { headers: getHeaders() });
@@ -518,6 +568,14 @@ export const api = {
   async updateHospital(id, data) {
     const res = await fetchWithTimeout(`${BASE_URL}/hospitals/${id}/`, {
       method: 'PUT',
+      headers: getHeaders(),
+      body: JSON.stringify(data),
+    });
+    return handleResponse(res);
+  },
+  async patchHospital(id, data) {
+    const res = await fetchWithTimeout(`${BASE_URL}/hospitals/${id}/`, {
+      method: 'PATCH',
       headers: getHeaders(),
       body: JSON.stringify(data),
     });
@@ -557,16 +615,19 @@ export const api = {
   async deleteChamber(id) { return this.deleteDiagnosticCenter(id); },
 
   // Doctors
-  async getDoctors({ specialty = '', location = '', search = '', consultation_type = '', hospital = '', diagnostic_center = '' } = {}) {
+  async getDoctors({ specialty = '', location = '', area = '', search = '', consultation_type = '', hospital = '', diagnostic_center = '', fee_max = '', day = '', page = 1, page_size = 10 } = {}) {
     const url = new URL(`${BASE_URL}/doctors/`);
     if (specialty) url.searchParams.append('specialty', specialty);
-    if (location && location !== 'All Bangladesh') {
-      url.searchParams.append('location', location);
-    }
+    if (location && location !== 'All Bangladesh') url.searchParams.append('location', location);
+    if (area && area !== 'All Areas') url.searchParams.append('area', area);
     if (search) url.searchParams.append('search', search);
     if (consultation_type) url.searchParams.append('consultation_type', consultation_type);
     if (hospital) url.searchParams.append('hospital', hospital);
     if (diagnostic_center) url.searchParams.append('diagnostic_center', diagnostic_center);
+    if (fee_max) url.searchParams.append('fee_max', fee_max);
+    if (day && day !== 'All') url.searchParams.append('day', day);
+    if (page) url.searchParams.append('page', page);
+    if (page_size) url.searchParams.append('page_size', page_size);
     const res = await fetchWithTimeout(url, { headers: getHeaders() });
     return handleResponse(res);
   },

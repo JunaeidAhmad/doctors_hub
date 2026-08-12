@@ -1,6 +1,6 @@
 import React from 'react';
 import { HeartPulse, MapPin, Phone, Mail, Clock, ShieldCheck, Heart } from 'lucide-react';
-import { LOCATIONS } from '../data/mockData';
+import { LOCATIONS } from '../data/constants';
 
 export default function Footer({ onSelectLocation }) {
   return (

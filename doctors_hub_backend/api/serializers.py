@@ -84,8 +84,6 @@ class DiagnosticServiceSerializer(serializers.ModelSerializer):
 
 
 class TestCategorySerializer(serializers.ModelSerializer):
-    parent_name = serializers.CharField(source='parent.name', read_only=True, default='')
-    is_leaf_level = serializers.BooleanField(read_only=True)
 
     class Meta:
         model = TestCategory
@@ -145,7 +143,10 @@ class DoctorAffiliationSerializer(serializers.ModelSerializer):
     facility_name = serializers.SerializerMethodField()
     city = serializers.SerializerMethodField()
     schedules = AffiliationScheduleSerializer(many=True, required=False)
-    doctor_name = serializers.CharField(source='doctor.name', read_only=True)
+    doctor_name = serializers.CharField(source='doctor.name', read_only=True, default='')
+    qualification = serializers.CharField(source='doctor.qualification', read_only=True, default='')
+    experience = serializers.CharField(source='doctor.experience', read_only=True, default='')
+    specialties = DoctorSpecialtySerializer(source='doctor.specialties', many=True, read_only=True)
 
     class Meta:
         model = DoctorAffiliation
@@ -245,24 +246,120 @@ class HospitalSerializer(serializers.ModelSerializer):
     )
     affiliated_doctors = DoctorAffiliationSerializer(many=True, read_only=True)
     offered_tests = DiagnosticCenterTestSerializer(many=True, read_only=True)
+    test_prices = serializers.JSONField(write_only=True, required=False)
 
     class Meta:
         model = Hospital
         fields = '__all__'
 
+    def _attach_tests(self, hospital, test_category_ids=None, test_ids=None, test_prices=None):
+        tests_to_attach = set()
+        if test_ids:
+            tests_to_attach.update(Test.objects.filter(id__in=test_ids))
+        if test_category_ids:
+            cats = TestCategory.objects.filter(id__in=test_category_ids).prefetch_related('children')
+            all_cat_ids = set()
+            for cat in cats:
+                all_cat_ids.add(cat.id)
+                all_cat_ids.update(cat.children.values_list('id', flat=True))
+            tests_to_attach.update(Test.objects.filter(category_id__in=all_cat_ids))
+
+        prices_dict = {}
+        if test_prices:
+            if isinstance(test_prices, dict):
+                prices_dict = test_prices
+            elif isinstance(test_prices, list):
+                for item in test_prices:
+                    if isinstance(item, dict):
+                        tid = item.get('test_id') or item.get('id') or item.get('test')
+                        if tid:
+                            prices_dict[str(tid)] = item
+            if prices_dict:
+                tests_to_attach.update(Test.objects.filter(id__in=list(prices_dict.keys())))
+
+        if not tests_to_attach:
+            return
+
+        existing_tests = DiagnosticCenterTest.objects.filter(hospital=hospital, test__in=tests_to_attach)
+        existing_test_map = {dct.test_id: dct for dct in existing_tests}
+
+        new_objs = []
+        updated_objs = []
+        for idx, test in enumerate(tests_to_attach):
+            price_val = None
+            orig_price_val = None
+
+            if prices_dict:
+                raw_val = prices_dict.get(str(test.id))
+                if raw_val is None:
+                    raw_val = prices_dict.get(test.id)
+
+                if raw_val is not None:
+                    if isinstance(raw_val, dict):
+                        price_val = raw_val.get('price')
+                        orig_price_val = raw_val.get('original_price')
+                    else:
+                        price_val = raw_val
+
+            if test.id in existing_test_map:
+                if price_val is not None:
+                    dct = existing_test_map[test.id]
+                    dct.price = price_val
+                    if orig_price_val is not None:
+                        dct.original_price = orig_price_val
+                    updated_objs.append(dct)
+            else:
+                if price_val is not None:
+                    base_price = price_val
+                    try:
+                        orig_price = orig_price_val if orig_price_val is not None else (float(price_val) + 200)
+                    except (ValueError, TypeError):
+                        orig_price = base_price
+                else:
+                    base_price = 400 + (idx * 150) % 2500
+                    orig_price = base_price + 200
+
+                report_time_hours = getattr(test, 'report_time_hours', 24) or 24
+                new_objs.append(
+                    DiagnosticCenterTest(
+                        hospital=hospital,
+                        test=test,
+                        price=base_price,
+                        original_price=orig_price,
+                        discount='20% OFF',
+                        report_time=f"{report_time_hours} Hours",
+                        is_available=True,
+                        home_sample_collection=True
+                    )
+                )
+
+        if new_objs:
+            DiagnosticCenterTest.objects.bulk_create(new_objs)
+        if updated_objs:
+            DiagnosticCenterTest.objects.bulk_update(updated_objs, ['price', 'original_price'])
+
     def create(self, validated_data):
         categories = validated_data.pop('categories', [])
         services = validated_data.pop('services', [])
+        test_cat_ids = validated_data.pop('test_category_ids', None)
+        t_ids = validated_data.pop('test_ids', None)
+        t_prices = validated_data.pop('test_prices', None)
+
         hospital = Hospital.objects.create(**validated_data)
         if categories:
             hospital.categories.set(categories)
         if services:
             hospital.services.set(services)
+        self._attach_tests(hospital, test_category_ids=test_cat_ids, test_ids=t_ids, test_prices=t_prices)
         return hospital
 
     def update(self, instance, validated_data):
         categories = validated_data.pop('categories', None)
         services = validated_data.pop('services', None)
+        test_cat_ids = validated_data.pop('test_category_ids', None)
+        t_ids = validated_data.pop('test_ids', None)
+        t_prices = validated_data.pop('test_prices', None)
+
         for attr, value in validated_data.items():
             setattr(instance, attr, value)
         instance.save()
@@ -270,6 +367,9 @@ class HospitalSerializer(serializers.ModelSerializer):
             instance.categories.set(categories)
         if services is not None:
             instance.services.set(services)
+
+        if test_cat_ids is not None or t_ids is not None or t_prices is not None:
+            self._attach_tests(instance, test_category_ids=test_cat_ids, test_ids=t_ids, test_prices=t_prices)
         return instance
 
 
@@ -282,7 +382,7 @@ class DiagnosticCenterSerializer(serializers.ModelSerializer):
     service_ids = serializers.PrimaryKeyRelatedField(
         queryset=DiagnosticService.objects.all(), many=True, write_only=True, source='services', required=False
     )
-    offered_tests = DiagnosticCenterTestSerializer(many=True, read_only=True)
+    offered_tests = serializers.SerializerMethodField()
     affiliated_doctors = DoctorAffiliationSerializer(many=True, read_only=True)
     test_category_ids = serializers.ListField(
         child=serializers.UUIDField(), write_only=True, required=False
@@ -290,44 +390,115 @@ class DiagnosticCenterSerializer(serializers.ModelSerializer):
     test_ids = serializers.ListField(
         child=serializers.UUIDField(), write_only=True, required=False
     )
+    test_prices = serializers.JSONField(
+        write_only=True, required=False
+    )
 
     class Meta:
         model = DiagnosticCenter
         fields = '__all__'
 
-    def _attach_tests(self, center, test_category_ids=None, test_ids=None):
+    def get_offered_tests(self, obj):
+        tests = obj.offered_tests.all()
+        request = self.context.get('request')
+        if request:
+            testcat = request.query_params.get('testcat', None)
+            if testcat and testcat != 'all':
+                from django.db.models import Q
+                from .views import is_valid_uuid
+                q = Q(test__category__slug=testcat) | Q(test__category__name__icontains=testcat)
+                if is_valid_uuid(testcat):
+                    q |= Q(test__category_id=testcat)
+                tests = tests.filter(q)
+        return DiagnosticCenterTestSerializer(tests, many=True, context=self.context).data
+
+    def _attach_tests(self, center, test_category_ids=None, test_ids=None, test_prices=None):
         tests_to_attach = set()
         if test_ids:
             tests_to_attach.update(Test.objects.filter(id__in=test_ids))
         if test_category_ids:
-            cats = TestCategory.objects.filter(id__in=test_category_ids)
-            all_cat_ids = set()
-            for cat in cats:
-                all_cat_ids.add(cat.id)
-                all_cat_ids.update(cat.children.values_list('id', flat=True))
-            tests_to_attach.update(Test.objects.filter(category_id__in=all_cat_ids))
+            tests_to_attach.update(Test.objects.filter(category_id__in=test_category_ids))
 
+        prices_dict = {}
+        if test_prices:
+            if isinstance(test_prices, dict):
+                prices_dict = test_prices
+            elif isinstance(test_prices, list):
+                for item in test_prices:
+                    if isinstance(item, dict):
+                        tid = item.get('test_id') or item.get('id') or item.get('test')
+                        if tid:
+                            prices_dict[str(tid)] = item
+            if prices_dict:
+                tests_to_attach.update(Test.objects.filter(id__in=list(prices_dict.keys())))
+
+        if not tests_to_attach:
+            return
+
+        existing_tests = DiagnosticCenterTest.objects.filter(center=center, test__in=tests_to_attach)
+        existing_test_map = {dct.test_id: dct for dct in existing_tests}
+
+        new_objs = []
+        updated_objs = []
         for idx, test in enumerate(tests_to_attach):
-            base_price = 400 + (idx * 150) % 2500
-            orig_price = base_price + 200
-            DiagnosticCenterTest.objects.get_or_create(
-                center=center,
-                test=test,
-                defaults={
-                    'price': base_price,
-                    'original_price': orig_price,
-                    'discount': '20% OFF',
-                    'report_time': f"{test.report_time_hours or 24} Hours",
-                    'is_available': True,
-                    'home_sample_collection': True
-                }
-            )
+            price_val = None
+            orig_price_val = None
+
+            if prices_dict:
+                raw_val = prices_dict.get(str(test.id))
+                if raw_val is None:
+                    raw_val = prices_dict.get(test.id)
+
+                if raw_val is not None:
+                    if isinstance(raw_val, dict):
+                        price_val = raw_val.get('price')
+                        orig_price_val = raw_val.get('original_price')
+                    else:
+                        price_val = raw_val
+
+            if test.id in existing_test_map:
+                if price_val is not None:
+                    dct = existing_test_map[test.id]
+                    dct.price = price_val
+                    if orig_price_val is not None:
+                        dct.original_price = orig_price_val
+                    updated_objs.append(dct)
+            else:
+                if price_val is not None:
+                    base_price = price_val
+                    try:
+                        orig_price = orig_price_val if orig_price_val is not None else (float(price_val) + 200)
+                    except (ValueError, TypeError):
+                        orig_price = base_price
+                else:
+                    base_price = 400 + (idx * 150) % 2500
+                    orig_price = base_price + 200
+
+                report_time_hours = getattr(test, 'report_time_hours', 24) or 24
+                new_objs.append(
+                    DiagnosticCenterTest(
+                        center=center,
+                        test=test,
+                        price=base_price,
+                        original_price=orig_price,
+                        discount='20% OFF',
+                        report_time=f"{report_time_hours} Hours",
+                        is_available=True,
+                        home_sample_collection=True
+                    )
+                )
+
+        if new_objs:
+            DiagnosticCenterTest.objects.bulk_create(new_objs)
+        if updated_objs:
+            DiagnosticCenterTest.objects.bulk_update(updated_objs, ['price', 'original_price'])
 
     def create(self, validated_data):
         categories = validated_data.pop('categories', [])
         services = validated_data.pop('services', [])
         test_cat_ids = validated_data.pop('test_category_ids', None)
         t_ids = validated_data.pop('test_ids', None)
+        t_prices = validated_data.pop('test_prices', None)
 
         center = DiagnosticCenter.objects.create(**validated_data)
         if categories:
@@ -335,7 +506,7 @@ class DiagnosticCenterSerializer(serializers.ModelSerializer):
         if services:
             center.services.set(services)
 
-        self._attach_tests(center, test_category_ids=test_cat_ids, test_ids=t_ids)
+        self._attach_tests(center, test_category_ids=test_cat_ids, test_ids=t_ids, test_prices=t_prices)
         return center
 
     def update(self, instance, validated_data):
@@ -343,6 +514,7 @@ class DiagnosticCenterSerializer(serializers.ModelSerializer):
         services = validated_data.pop('services', None)
         test_cat_ids = validated_data.pop('test_category_ids', None)
         t_ids = validated_data.pop('test_ids', None)
+        t_prices = validated_data.pop('test_prices', None)
 
         for attr, value in validated_data.items():
             setattr(instance, attr, value)
@@ -352,8 +524,8 @@ class DiagnosticCenterSerializer(serializers.ModelSerializer):
         if services is not None:
             instance.services.set(services)
 
-        if test_cat_ids is not None or t_ids is not None:
-            self._attach_tests(instance, test_category_ids=test_cat_ids, test_ids=t_ids)
+        if test_cat_ids is not None or t_ids is not None or t_prices is not None:
+            self._attach_tests(instance, test_category_ids=test_cat_ids, test_ids=t_ids, test_prices=t_prices)
         return instance
 
 

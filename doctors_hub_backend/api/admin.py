@@ -55,8 +55,8 @@ class HospitalAdmin(admin.ModelAdmin):
 
 @admin.register(TestCategory)
 class TestCategoryAdmin(admin.ModelAdmin):
-    list_display = ('id', 'name', 'parent', 'slug', 'order', 'is_active', 'is_leaf_level')
-    list_filter = ('is_active', 'parent')
+    list_display = ('id', 'name', 'slug', 'order', 'is_active')
+    list_filter = ('is_active',)
     search_fields = ('name', 'slug')
 
 

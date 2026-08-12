@@ -1,6 +1,6 @@
 import React from 'react';
 import { Phone, Mail, Clock, MapPin, ShieldCheck } from 'lucide-react';
-import { LOCATIONS } from '../data/mockData';
+import { LOCATIONS } from '../data/constants';
 
 export default function TopUtilityStrip({ selectedLocation, setSelectedLocation }) {
   return (

@@ -2,12 +2,12 @@ import React, { useState, useEffect, useRef } from 'react';
 import { useNavigate, useLocation } from 'react-router-dom';
 import TopUtilityStrip from './components/TopUtilityStrip';
 import StickyNavbar from './components/StickyNavbar';
-import HomePage from './pages/HomePage';
-import DoctorSearchPage from './pages/DoctorSearchPage';
-import DiagnosticsSearchPage from './pages/DiagnosticsSearchPage';
-import AdminDashboardPage from './pages/admin_dashboard';
-import HospitalDetailPage from './pages/HospitalDetailPage';
-import HospitalsPage from './pages/HospitalsPage';
+import HomePage from './views/Home/HomePage';
+import DoctorSearchPage from './views/DoctorSearch/DoctorSearchPage';
+import DiagnosticsSearchPage from './views/DiagnosticsSearch/DiagnosticsSearchPage';
+import AdminDashboardPage from './views/AdminDashboard';
+import HospitalDetailPage from './views/HospitalDetail/HospitalDetailPage';
+import HospitalsPage from './views/Hospitals/HospitalsPage';
 import BookingModal from './components/BookingModal';
 import LabBookingModal from './components/LabBookingModal';
 import LoginModal from './components/LoginModal';
@@ -45,21 +45,11 @@ export default function App() {
   // User auth state
   const [user, setUser] = useState(() => api.getCurrentUser());
 
-  // Reset filters to base state on page reload
   useEffect(() => {
-    if (isPageReload()) {
-      setSelectedLocation('All Bangladesh');
-      setSelectedSpecialty('');
-      setSelectedTest('');
-      setSelectedHospitalCategory('');
-      setDoctorKeyword('');
-      setDiagnosticsKeyword('');
-      setHospitalKeyword('');
-      
-      // Clear URL search params if it's a page reload
-      navigate(location.pathname, { replace: true });
-    }
-    setInitialLoadComplete();
+    // Mark initial load complete after first render
+    setTimeout(() => {
+      setInitialLoadComplete(true);
+    }, 100);
   }, []);
 
   // Sync activeTab when URL changes via browser back/forward
@@ -135,6 +125,13 @@ export default function App() {
       const queryParams = new URLSearchParams();
       if (loc && loc !== 'All Bangladesh') queryParams.set('loc', loc);
       if (targetTest) queryParams.set('testcat', targetTest);
+      const queryStr = queryParams.toString();
+      navigate(`/diagnostics-search${queryStr ? `?${queryStr}` : ''}`);
+      setActiveTab('diagnostics');
+    } else if (mode === 'diagnostics_center') {
+      const queryParams = new URLSearchParams();
+      if (loc && loc !== 'All Bangladesh') queryParams.set('loc', loc);
+      if (param) queryParams.set('spec', param);
       const queryStr = queryParams.toString();
       navigate(`/diagnostics-search${queryStr ? `?${queryStr}` : ''}`);
       setActiveTab('diagnostics');
@@ -274,7 +271,13 @@ export default function App() {
         {currentPage === 'hospital-detail' && (
           <HospitalDetailPage
             hospitalId={currentHospitalId}
-            onBookDoctorSlot={(chamber, doctor) => setBookingDoctorState({ chamber, doctor })}
+            onBookDoctorSlot={(arg1, arg2) => {
+              if (arg1 && typeof arg1 === 'object' && arg1.chamber && arg1.doctor) {
+                setBookingDoctorState({ chamber: arg1.chamber, doctor: arg1.doctor });
+              } else {
+                setBookingDoctorState({ chamber: arg1, doctor: arg2 });
+              }
+            }}
             onBookLabTest={(test) => setBookingLabState(test)}
             onNavigateHome={() => handleNavClick('home')}
             onNavigateHospitals={() => handleNavClick('hospitals')}

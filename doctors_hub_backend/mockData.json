@@ -1,0 +1,3415 @@
+{
+  "CITY_THANAS": {
+    "Dhaka": [
+      "Dhanmondi",
+      "Mirpur",
+      "Uttara",
+      "Gulshan",
+      "Banani",
+      "Panthapath",
+      "Motijheel",
+      "Mohammadpur",
+      "Badda",
+      "Savar",
+      "Farmgate",
+      "Tejgaon",
+      "Malibagh",
+      "Shyamoli",
+      "Rampura",
+      "Jatrabari",
+      "Lalbagh",
+      "Khilgaon",
+      "Keraniganj",
+      "Gazipur",
+      "Narayanganj"
+    ],
+    "Chittagong": [
+      "Panchlaish",
+      "Agrabad",
+      "GEC Circle",
+      "Halishahar",
+      "Nasirabad",
+      "Chawkbazar",
+      "Pahartali",
+      "Khulshi",
+      "Kotwali",
+      "Patenga",
+      "Sitakunda",
+      "Hathazari"
+    ],
+    "Sylhet": [
+      "Zindabazar",
+      "Nayasarak",
+      "Amberkhana",
+      "Chauhatta",
+      "Subidbazar",
+      "Tilagarh",
+      "Shibganj",
+      "Kadamtali",
+      "Shahjalal Uposahar"
+    ],
+    "Rajshahi": [
+      "Laxmipur",
+      "Kazla",
+      "Motihar",
+      "Boalia",
+      "Rajputra",
+      "Shaheb Bazar",
+      "New Market",
+      "Upashahar"
+    ],
+    "Khulna": [
+      "KDA Avenue",
+      "Sonadanga",
+      "Boyra",
+      "Khalishpur",
+      "Daulatpur",
+      "Rupsha",
+      "Gollamari",
+      "Khan Jahan Ali"
+    ],
+    "Barisal": [
+      "Sadar Road",
+      "Rupatali",
+      "Natun Bazar",
+      "C&B Road",
+      "Alekanda",
+      "Jordan Road",
+      "Kashipur"
+    ],
+    "Rangpur": [
+      "Park More",
+      "Medical East Gate",
+      "Jahaj Company More",
+      "Dhap",
+      "Carmel Road",
+      "Pairaband"
+    ],
+    "Mymensingh": [
+      "Charpara",
+      "Ganginarpar",
+      "Town Hall",
+      "Maskanda",
+      "Akua",
+      "Kewatkhali",
+      "Patuakhali Road"
+    ],
+    "Comilla": [
+      "Kandirpar",
+      "Jhawtala",
+      "Badurtala",
+      "Tomsom Bridge",
+      "Ramghat",
+      "Bagichagaon",
+      "Dharmpur"
+    ]
+  },
+  "LOCATIONS": [
+    "All Bangladesh",
+    "Dhaka",
+    "Chittagong",
+    "Sylhet",
+    "Rajshahi",
+    "Khulna",
+    "Barisal",
+    "Rangpur",
+    "Mymensingh",
+    "Comilla"
+  ],
+  "SPECIALTIES": [
+    {
+      "id": "cardiology",
+      "name": "Cardiologist",
+      "icon": "Heart",
+      "description": "Heart & Vascular Care",
+      "count": 48
+    },
+    {
+      "id": "neurology",
+      "name": "Neurologist",
+      "icon": "Brain",
+      "description": "Brain & Nervous System",
+      "count": 32
+    },
+    {
+      "id": "gynecology",
+      "name": "Gynecologist",
+      "icon": "User",
+      "description": "Women's Health & Maternity",
+      "count": 75
+    },
+    {
+      "id": "orthopedics",
+      "name": "Orthopedic",
+      "icon": "Activity",
+      "description": "Bones, Joints & Spine",
+      "count": 60
+    },
+    {
+      "id": "dermatology",
+      "name": "Dermatologist",
+      "icon": "Sparkles",
+      "description": "Skin, Hair & Aesthetics",
+      "count": 45
+    },
+    {
+      "id": "pediatrics",
+      "name": "Pediatrician",
+      "icon": "Baby",
+      "description": "Child & Infant Care",
+      "count": 52
+    },
+    {
+      "id": "medicine",
+      "name": "General Physician",
+      "icon": "Stethoscope",
+      "description": "General Health & Fever",
+      "count": 95
+    },
+    {
+      "id": "gastroenterology",
+      "name": "Gastroenterologist",
+      "icon": "Flame",
+      "description": "Digestive & Liver Care",
+      "count": 38
+    },
+    {
+      "id": "ent",
+      "name": "ENT Specialist",
+      "icon": "Ear",
+      "description": "Ear, Nose & Throat",
+      "count": 40
+    },
+    {
+      "id": "oncology",
+      "name": "Oncologist",
+      "icon": "ShieldAlert",
+      "description": "Cancer Care & Chemotherapy",
+      "count": 22
+    },
+    {
+      "id": "pulmonology",
+      "name": "Pulmonologist",
+      "icon": "Wind",
+      "description": "Lungs & Respiratory Care",
+      "count": 29
+    },
+    {
+      "id": "nephrology",
+      "name": "Nephrologist",
+      "icon": "Droplet",
+      "description": "Kidney Care & Dialysis",
+      "count": 20
+    }
+  ],
+  "HOSPITAL_CATEGORIES": [
+    {
+      "id": "cardiac",
+      "name": "Cardiac Hospitals",
+      "icon": "Heart",
+      "description": "Specialized Heart Institutes",
+      "count": 4
+    },
+    {
+      "id": "eye",
+      "name": "Eye Hospitals",
+      "icon": "Sparkles",
+      "description": "Ophthalmology & Vision Care",
+      "count": 3
+    },
+    {
+      "id": "multispecialty",
+      "name": "Multi-Specialty",
+      "icon": "Building2",
+      "description": "General & In-Patient Hubs",
+      "count": 8
+    },
+    {
+      "id": "orthopedic",
+      "name": "Orthopedic Centers",
+      "icon": "Activity",
+      "description": "Bone, Joint & Spine Care",
+      "count": 3
+    }
+  ],
+  "HOSPITAL_SERVICES": [
+    {
+      "id": "hs-1",
+      "name": "24/7 ICU & In-patient",
+      "icon": "Activity",
+      "description": "Round the clock intensive care and bed admission"
+    },
+    {
+      "id": "hs-2",
+      "name": "Specialist Doctor Consultation",
+      "icon": "Stethoscope",
+      "description": "Out-patient specialist doctor visit chambers"
+    },
+    {
+      "id": "hs-3",
+      "name": "Surgery & OT Suite",
+      "icon": "ShieldCheck",
+      "description": "Modern operation theater and laparoscopic surgery"
+    },
+    {
+      "id": "hs-4",
+      "name": "24/7 Emergency & Ambulance",
+      "icon": "Clock",
+      "description": "Emergency triage and rapid ambulance response"
+    },
+    {
+      "id": "hs-5",
+      "name": "Phaco Cataract Surgery",
+      "icon": "Eye",
+      "description": "Advanced stitchless cataract surgery"
+    },
+    {
+      "id": "hs-6",
+      "name": "Lasik Vision Correction",
+      "icon": "Sparkles",
+      "description": "Laser refractive eye vision correction"
+    }
+  ],
+  "DIAGNOSTIC_SERVICES": [
+    {
+      "id": "ds-1",
+      "name": "4D Ultrasonography & Color Doppler",
+      "icon": "Activity",
+      "description": "High resolution fetal & abdominal sonography"
+    },
+    {
+      "id": "ds-2",
+      "name": "Digital X-Ray & Imaging",
+      "icon": "FileText",
+      "description": "Low radiation digital radiography"
+    },
+    {
+      "id": "ds-3",
+      "name": "Automated Blood & Serology Lab",
+      "icon": "FlaskConical",
+      "description": "Fully automated clinical pathology and biochemistry"
+    },
+    {
+      "id": "ds-4",
+      "name": "128-Slice CT Scan",
+      "icon": "FileText",
+      "description": "High-speed computed tomography body scan"
+    },
+    {
+      "id": "ds-5",
+      "name": "High-Speed MRI Scan",
+      "icon": "Brain",
+      "description": "3.0 Tesla neuro and musculoskeletal MRI"
+    },
+    {
+      "id": "ds-6",
+      "name": "Home Sample Collection",
+      "icon": "Droplet",
+      "description": "Doorstep blood sample collection by certified phlebotomists"
+    }
+  ],
+  "TESTS": [
+    {
+      "id": "test-1",
+      "name": "Complete Blood Count (CBC)",
+      "category": "Hematology",
+      "categoryGroup": "hematology",
+      "sampleType": "Blood",
+      "fastingRequired": false,
+      "reportTimeHours": 6,
+      "price": 600,
+      "originalPrice": 800,
+      "discount": "20% OFF",
+      "reportTime": "6 Hours",
+      "description": "Diagnostic test for Complete Blood Count (CBC)."
+    },
+    {
+      "id": "test-2",
+      "name": "ESR (Erythrocyte Sedimentation Rate)",
+      "category": "Hematology",
+      "categoryGroup": "hematology",
+      "sampleType": "Blood",
+      "fastingRequired": false,
+      "reportTimeHours": 6,
+      "price": 650,
+      "originalPrice": 850,
+      "discount": "20% OFF",
+      "reportTime": "6 Hours",
+      "description": "Diagnostic test for ESR (Erythrocyte Sedimentation Rate)."
+    },
+    {
+      "id": "test-3",
+      "name": "Blood Grouping & Rh Factor",
+      "category": "Hematology",
+      "categoryGroup": "hematology",
+      "sampleType": "Blood",
+      "fastingRequired": false,
+      "reportTimeHours": 4,
+      "price": 700,
+      "originalPrice": 900,
+      "discount": "20% OFF",
+      "reportTime": "4 Hours",
+      "description": "Diagnostic test for Blood Grouping & Rh Factor."
+    },
+    {
+      "id": "test-4",
+      "name": "Coagulation Profile (PT, APTT, INR)",
+      "category": "Hematology",
+      "categoryGroup": "hematology",
+      "sampleType": "Blood",
+      "fastingRequired": false,
+      "reportTimeHours": 12,
+      "price": 750,
+      "originalPrice": 950,
+      "discount": "20% OFF",
+      "reportTime": "12 Hours",
+      "description": "Diagnostic test for Coagulation Profile (PT, APTT, INR)."
+    },
+    {
+      "id": "test-5",
+      "name": "Peripheral Blood Smear",
+      "category": "Hematology",
+      "categoryGroup": "hematology",
+      "sampleType": "Blood",
+      "fastingRequired": false,
+      "reportTimeHours": 24,
+      "price": 800,
+      "originalPrice": 1000,
+      "discount": "20% OFF",
+      "reportTime": "24 Hours",
+      "description": "Diagnostic test for Peripheral Blood Smear."
+    },
+    {
+      "id": "test-6",
+      "name": "Reticulocyte Count",
+      "category": "Hematology",
+      "categoryGroup": "hematology",
+      "sampleType": "Blood",
+      "fastingRequired": false,
+      "reportTimeHours": 12,
+      "price": 850,
+      "originalPrice": 1050,
+      "discount": "20% OFF",
+      "reportTime": "12 Hours",
+      "description": "Diagnostic test for Reticulocyte Count."
+    },
+    {
+      "id": "test-7",
+      "name": "Blood Sugar - Fasting",
+      "category": "Biochemistry",
+      "categoryGroup": "biochemistry",
+      "sampleType": "Blood",
+      "fastingRequired": true,
+      "reportTimeHours": 4,
+      "price": 900,
+      "originalPrice": 1100,
+      "discount": "20% OFF",
+      "reportTime": "4 Hours",
+      "description": "Diagnostic test for Blood Sugar - Fasting."
+    },
+    {
+      "id": "test-8",
+      "name": "Blood Sugar - Random",
+      "category": "Biochemistry",
+      "categoryGroup": "biochemistry",
+      "sampleType": "Blood",
+      "fastingRequired": false,
+      "reportTimeHours": 4,
+      "price": 950,
+      "originalPrice": 1150,
+      "discount": "20% OFF",
+      "reportTime": "4 Hours",
+      "description": "Diagnostic test for Blood Sugar - Random."
+    },
+    {
+      "id": "test-9",
+      "name": "Blood Sugar - PP (Post Prandial)",
+      "category": "Biochemistry",
+      "categoryGroup": "biochemistry",
+      "sampleType": "Blood",
+      "fastingRequired": false,
+      "reportTimeHours": 4,
+      "price": 1000,
+      "originalPrice": 1200,
+      "discount": "20% OFF",
+      "reportTime": "4 Hours",
+      "description": "Diagnostic test for Blood Sugar - PP (Post Prandial)."
+    },
+    {
+      "id": "test-10",
+      "name": "HbA1c",
+      "category": "Biochemistry",
+      "categoryGroup": "biochemistry",
+      "sampleType": "Blood",
+      "fastingRequired": false,
+      "reportTimeHours": 24,
+      "price": 1050,
+      "originalPrice": 1250,
+      "discount": "20% OFF",
+      "reportTime": "24 Hours",
+      "description": "Diagnostic test for HbA1c."
+    },
+    {
+      "id": "test-11",
+      "name": "Lipid Profile (Cholesterol, Triglycerides, HDL, LDL)",
+      "category": "Biochemistry",
+      "categoryGroup": "biochemistry",
+      "sampleType": "Blood",
+      "fastingRequired": true,
+      "reportTimeHours": 12,
+      "price": 1100,
+      "originalPrice": 1300,
+      "discount": "20% OFF",
+      "reportTime": "12 Hours",
+      "description": "Diagnostic test for Lipid Profile (Cholesterol, Triglycerides, HDL, LDL)."
+    },
+    {
+      "id": "test-12",
+      "name": "Liver Function Test (LFT)",
+      "category": "Biochemistry",
+      "categoryGroup": "biochemistry",
+      "sampleType": "Blood",
+      "fastingRequired": true,
+      "reportTimeHours": 12,
+      "price": 1150,
+      "originalPrice": 1350,
+      "discount": "20% OFF",
+      "reportTime": "12 Hours",
+      "description": "Diagnostic test for Liver Function Test (LFT)."
+    },
+    {
+      "id": "test-13",
+      "name": "Kidney Function Test (KFT/RFT)",
+      "category": "Biochemistry",
+      "categoryGroup": "biochemistry",
+      "sampleType": "Blood",
+      "fastingRequired": false,
+      "reportTimeHours": 12,
+      "price": 1200,
+      "originalPrice": 1400,
+      "discount": "20% OFF",
+      "reportTime": "12 Hours",
+      "description": "Diagnostic test for Kidney Function Test (KFT/RFT)."
+    },
+    {
+      "id": "test-14",
+      "name": "Thyroid Profile (T3, T4, TSH)",
+      "category": "Biochemistry",
+      "categoryGroup": "biochemistry",
+      "sampleType": "Blood",
+      "fastingRequired": false,
+      "reportTimeHours": 24,
+      "price": 1250,
+      "originalPrice": 1450,
+      "discount": "20% OFF",
+      "reportTime": "24 Hours",
+      "description": "Diagnostic test for Thyroid Profile (T3, T4, TSH)."
+    },
+    {
+      "id": "test-15",
+      "name": "Electrolytes (Sodium, Potassium, Chloride)",
+      "category": "Biochemistry",
+      "categoryGroup": "biochemistry",
+      "sampleType": "Blood",
+      "fastingRequired": false,
+      "reportTimeHours": 6,
+      "price": 1300,
+      "originalPrice": 1500,
+      "discount": "20% OFF",
+      "reportTime": "6 Hours",
+      "description": "Diagnostic test for Electrolytes (Sodium, Potassium, Chloride)."
+    },
+    {
+      "id": "test-16",
+      "name": "Cardiac Enzymes (Troponin, CK-MB)",
+      "category": "Biochemistry",
+      "categoryGroup": "biochemistry",
+      "sampleType": "Blood",
+      "fastingRequired": false,
+      "reportTimeHours": 4,
+      "price": 1350,
+      "originalPrice": 1550,
+      "discount": "20% OFF",
+      "reportTime": "4 Hours",
+      "description": "Diagnostic test for Cardiac Enzymes (Troponin, CK-MB)."
+    },
+    {
+      "id": "test-17",
+      "name": "Vitamin Profile (D3, B12)",
+      "category": "Biochemistry",
+      "categoryGroup": "biochemistry",
+      "sampleType": "Blood",
+      "fastingRequired": false,
+      "reportTimeHours": 48,
+      "price": 1400,
+      "originalPrice": 1600,
+      "discount": "20% OFF",
+      "reportTime": "48 Hours",
+      "description": "Diagnostic test for Vitamin Profile (D3, B12)."
+    },
+    {
+      "id": "test-18",
+      "name": "Iron Studies (Serum Iron, Ferritin, TIBC)",
+      "category": "Biochemistry",
+      "categoryGroup": "biochemistry",
+      "sampleType": "Blood",
+      "fastingRequired": true,
+      "reportTimeHours": 24,
+      "price": 1450,
+      "originalPrice": 1650,
+      "discount": "20% OFF",
+      "reportTime": "24 Hours",
+      "description": "Diagnostic test for Iron Studies (Serum Iron, Ferritin, TIBC)."
+    },
+    {
+      "id": "test-19",
+      "name": "Widal Test (Typhoid)",
+      "category": "Serology",
+      "categoryGroup": "serology",
+      "sampleType": "Blood",
+      "fastingRequired": false,
+      "reportTimeHours": 12,
+      "price": 1500,
+      "originalPrice": 1700,
+      "discount": "20% OFF",
+      "reportTime": "12 Hours",
+      "description": "Diagnostic test for Widal Test (Typhoid)."
+    },
+    {
+      "id": "test-20",
+      "name": "Dengue NS1/IgM/IgG",
+      "category": "Serology",
+      "categoryGroup": "serology",
+      "sampleType": "Blood",
+      "fastingRequired": false,
+      "reportTimeHours": 6,
+      "price": 1550,
+      "originalPrice": 1750,
+      "discount": "20% OFF",
+      "reportTime": "6 Hours",
+      "description": "Diagnostic test for Dengue NS1/IgM/IgG."
+    },
+    {
+      "id": "test-21",
+      "name": "HBsAg (Hepatitis B)",
+      "category": "Serology",
+      "categoryGroup": "serology",
+      "sampleType": "Blood",
+      "fastingRequired": false,
+      "reportTimeHours": 12,
+      "price": 1600,
+      "originalPrice": 1800,
+      "discount": "20% OFF",
+      "reportTime": "12 Hours",
+      "description": "Diagnostic test for HBsAg (Hepatitis B)."
+    },
+    {
+      "id": "test-22",
+      "name": "HCV (Hepatitis C)",
+      "category": "Serology",
+      "categoryGroup": "serology",
+      "sampleType": "Blood",
+      "fastingRequired": false,
+      "reportTimeHours": 12,
+      "price": 1650,
+      "originalPrice": 1850,
+      "discount": "20% OFF",
+      "reportTime": "12 Hours",
+      "description": "Diagnostic test for HCV (Hepatitis C)."
+    },
+    {
+      "id": "test-23",
+      "name": "HIV Test",
+      "category": "Serology",
+      "categoryGroup": "serology",
+      "sampleType": "Blood",
+      "fastingRequired": false,
+      "reportTimeHours": 24,
+      "price": 1700,
+      "originalPrice": 1900,
+      "discount": "20% OFF",
+      "reportTime": "24 Hours",
+      "description": "Diagnostic test for HIV Test."
+    },
+    {
+      "id": "test-24",
+      "name": "VDRL/RPR (Syphilis)",
+      "category": "Serology",
+      "categoryGroup": "serology",
+      "sampleType": "Blood",
+      "fastingRequired": false,
+      "reportTimeHours": 12,
+      "price": 1750,
+      "originalPrice": 1950,
+      "discount": "20% OFF",
+      "reportTime": "12 Hours",
+      "description": "Diagnostic test for VDRL/RPR (Syphilis)."
+    },
+    {
+      "id": "test-25",
+      "name": "CRP (C-Reactive Protein)",
+      "category": "Serology",
+      "categoryGroup": "serology",
+      "sampleType": "Blood",
+      "fastingRequired": false,
+      "reportTimeHours": 12,
+      "price": 1800,
+      "originalPrice": 2000,
+      "discount": "20% OFF",
+      "reportTime": "12 Hours",
+      "description": "Diagnostic test for CRP (C-Reactive Protein)."
+    },
+    {
+      "id": "test-26",
+      "name": "RA Factor",
+      "category": "Serology",
+      "categoryGroup": "serology",
+      "sampleType": "Blood",
+      "fastingRequired": false,
+      "reportTimeHours": 12,
+      "price": 1850,
+      "originalPrice": 2050,
+      "discount": "20% OFF",
+      "reportTime": "12 Hours",
+      "description": "Diagnostic test for RA Factor."
+    },
+    {
+      "id": "test-27",
+      "name": "ASO Titer",
+      "category": "Serology",
+      "categoryGroup": "serology",
+      "sampleType": "Blood",
+      "fastingRequired": false,
+      "reportTimeHours": 12,
+      "price": 1900,
+      "originalPrice": 2100,
+      "discount": "20% OFF",
+      "reportTime": "12 Hours",
+      "description": "Diagnostic test for ASO Titer."
+    },
+    {
+      "id": "test-28",
+      "name": "Urine Culture & Sensitivity",
+      "category": "Microbiology",
+      "categoryGroup": "microbiology",
+      "sampleType": "Urine",
+      "fastingRequired": false,
+      "reportTimeHours": 72,
+      "price": 1950,
+      "originalPrice": 2150,
+      "discount": "20% OFF",
+      "reportTime": "72 Hours",
+      "description": "Diagnostic test for Urine Culture & Sensitivity."
+    },
+    {
+      "id": "test-29",
+      "name": "Blood Culture",
+      "category": "Microbiology",
+      "categoryGroup": "microbiology",
+      "sampleType": "Blood",
+      "fastingRequired": false,
+      "reportTimeHours": 72,
+      "price": 2000,
+      "originalPrice": 2200,
+      "discount": "20% OFF",
+      "reportTime": "72 Hours",
+      "description": "Diagnostic test for Blood Culture."
+    },
+    {
+      "id": "test-30",
+      "name": "Sputum Culture",
+      "category": "Microbiology",
+      "categoryGroup": "microbiology",
+      "sampleType": "Sputum",
+      "fastingRequired": false,
+      "reportTimeHours": 72,
+      "price": 2050,
+      "originalPrice": 2250,
+      "discount": "20% OFF",
+      "reportTime": "72 Hours",
+      "description": "Diagnostic test for Sputum Culture."
+    },
+    {
+      "id": "test-31",
+      "name": "Stool Routine & Culture",
+      "category": "Microbiology",
+      "categoryGroup": "microbiology",
+      "sampleType": "Stool",
+      "fastingRequired": false,
+      "reportTimeHours": 48,
+      "price": 2100,
+      "originalPrice": 2300,
+      "discount": "20% OFF",
+      "reportTime": "48 Hours",
+      "description": "Diagnostic test for Stool Routine & Culture."
+    },
+    {
+      "id": "test-32",
+      "name": "Throat Swab Culture",
+      "category": "Microbiology",
+      "categoryGroup": "microbiology",
+      "sampleType": "Swab",
+      "fastingRequired": false,
+      "reportTimeHours": 48,
+      "price": 2150,
+      "originalPrice": 2350,
+      "discount": "20% OFF",
+      "reportTime": "48 Hours",
+      "description": "Diagnostic test for Throat Swab Culture."
+    },
+    {
+      "id": "test-33",
+      "name": "Wound Swab Culture",
+      "category": "Microbiology",
+      "categoryGroup": "microbiology",
+      "sampleType": "Swab",
+      "fastingRequired": false,
+      "reportTimeHours": 48,
+      "price": 2200,
+      "originalPrice": 2400,
+      "discount": "20% OFF",
+      "reportTime": "48 Hours",
+      "description": "Diagnostic test for Wound Swab Culture."
+    },
+    {
+      "id": "test-34",
+      "name": "Chest X-ray",
+      "category": "X-ray",
+      "categoryGroup": "x-ray",
+      "sampleType": "N/A",
+      "fastingRequired": false,
+      "reportTimeHours": 2,
+      "price": 2250,
+      "originalPrice": 2450,
+      "discount": "20% OFF",
+      "reportTime": "2 Hours",
+      "description": "Diagnostic test for Chest X-ray."
+    },
+    {
+      "id": "test-35",
+      "name": "Bone/Skeletal X-ray",
+      "category": "X-ray",
+      "categoryGroup": "x-ray",
+      "sampleType": "N/A",
+      "fastingRequired": false,
+      "reportTimeHours": 2,
+      "price": 2300,
+      "originalPrice": 2500,
+      "discount": "20% OFF",
+      "reportTime": "2 Hours",
+      "description": "Diagnostic test for Bone/Skeletal X-ray."
+    },
+    {
+      "id": "test-36",
+      "name": "Abdominal X-ray",
+      "category": "X-ray",
+      "categoryGroup": "x-ray",
+      "sampleType": "N/A",
+      "fastingRequired": false,
+      "reportTimeHours": 2,
+      "price": 2350,
+      "originalPrice": 2550,
+      "discount": "20% OFF",
+      "reportTime": "2 Hours",
+      "description": "Diagnostic test for Abdominal X-ray."
+    },
+    {
+      "id": "test-37",
+      "name": "Spine X-ray",
+      "category": "X-ray",
+      "categoryGroup": "x-ray",
+      "sampleType": "N/A",
+      "fastingRequired": false,
+      "reportTimeHours": 2,
+      "price": 2400,
+      "originalPrice": 2600,
+      "discount": "20% OFF",
+      "reportTime": "2 Hours",
+      "description": "Diagnostic test for Spine X-ray."
+    },
+    {
+      "id": "test-38",
+      "name": "Dental X-ray (OPG)",
+      "category": "X-ray",
+      "categoryGroup": "x-ray",
+      "sampleType": "N/A",
+      "fastingRequired": false,
+      "reportTimeHours": 2,
+      "price": 2450,
+      "originalPrice": 2650,
+      "discount": "20% OFF",
+      "reportTime": "2 Hours",
+      "description": "Diagnostic test for Dental X-ray (OPG)."
+    },
+    {
+      "id": "test-39",
+      "name": "Abdominal USG (Whole Abdomen)",
+      "category": "Ultrasound/USG",
+      "categoryGroup": "ultrasound-usg",
+      "sampleType": "N/A",
+      "fastingRequired": true,
+      "reportTimeHours": 2,
+      "price": 2500,
+      "originalPrice": 2700,
+      "discount": "20% OFF",
+      "reportTime": "2 Hours",
+      "description": "Diagnostic test for Abdominal USG (Whole Abdomen)."
+    },
+    {
+      "id": "test-40",
+      "name": "Pelvic USG",
+      "category": "Ultrasound/USG",
+      "categoryGroup": "ultrasound-usg",
+      "sampleType": "N/A",
+      "fastingRequired": true,
+      "reportTimeHours": 2,
+      "price": 2550,
+      "originalPrice": 2750,
+      "discount": "20% OFF",
+      "reportTime": "2 Hours",
+      "description": "Diagnostic test for Pelvic USG."
+    },
+    {
+      "id": "test-41",
+      "name": "Pregnancy/Obstetric USG",
+      "category": "Ultrasound/USG",
+      "categoryGroup": "ultrasound-usg",
+      "sampleType": "N/A",
+      "fastingRequired": false,
+      "reportTimeHours": 2,
+      "price": 2600,
+      "originalPrice": 2800,
+      "discount": "20% OFF",
+      "reportTime": "2 Hours",
+      "description": "Diagnostic test for Pregnancy/Obstetric USG."
+    },
+    {
+      "id": "test-42",
+      "name": "Thyroid USG",
+      "category": "Ultrasound/USG",
+      "categoryGroup": "ultrasound-usg",
+      "sampleType": "N/A",
+      "fastingRequired": false,
+      "reportTimeHours": 2,
+      "price": 2650,
+      "originalPrice": 2850,
+      "discount": "20% OFF",
+      "reportTime": "2 Hours",
+      "description": "Diagnostic test for Thyroid USG."
+    },
+    {
+      "id": "test-43",
+      "name": "Breast USG",
+      "category": "Ultrasound/USG",
+      "categoryGroup": "ultrasound-usg",
+      "sampleType": "N/A",
+      "fastingRequired": false,
+      "reportTimeHours": 2,
+      "price": 2700,
+      "originalPrice": 2900,
+      "discount": "20% OFF",
+      "reportTime": "2 Hours",
+      "description": "Diagnostic test for Breast USG."
+    },
+    {
+      "id": "test-44",
+      "name": "Doppler USG (Vascular)",
+      "category": "Ultrasound/USG",
+      "categoryGroup": "ultrasound-usg",
+      "sampleType": "N/A",
+      "fastingRequired": false,
+      "reportTimeHours": 4,
+      "price": 2750,
+      "originalPrice": 2950,
+      "discount": "20% OFF",
+      "reportTime": "4 Hours",
+      "description": "Diagnostic test for Doppler USG (Vascular)."
+    },
+    {
+      "id": "test-45",
+      "name": "Transvaginal USG",
+      "category": "Ultrasound/USG",
+      "categoryGroup": "ultrasound-usg",
+      "sampleType": "N/A",
+      "fastingRequired": false,
+      "reportTimeHours": 2,
+      "price": 2800,
+      "originalPrice": 3000,
+      "discount": "20% OFF",
+      "reportTime": "2 Hours",
+      "description": "Diagnostic test for Transvaginal USG."
+    },
+    {
+      "id": "test-46",
+      "name": "CT Brain",
+      "category": "CT Scan",
+      "categoryGroup": "ct-scan",
+      "sampleType": "N/A",
+      "fastingRequired": false,
+      "reportTimeHours": 4,
+      "price": 2850,
+      "originalPrice": 3050,
+      "discount": "20% OFF",
+      "reportTime": "4 Hours",
+      "description": "Diagnostic test for CT Brain."
+    },
+    {
+      "id": "test-47",
+      "name": "CT Chest",
+      "category": "CT Scan",
+      "categoryGroup": "ct-scan",
+      "sampleType": "N/A",
+      "fastingRequired": false,
+      "reportTimeHours": 4,
+      "price": 2900,
+      "originalPrice": 3100,
+      "discount": "20% OFF",
+      "reportTime": "4 Hours",
+      "description": "Diagnostic test for CT Chest."
+    },
+    {
+      "id": "test-48",
+      "name": "CT Abdomen/Pelvis",
+      "category": "CT Scan",
+      "categoryGroup": "ct-scan",
+      "sampleType": "N/A",
+      "fastingRequired": true,
+      "reportTimeHours": 4,
+      "price": 2950,
+      "originalPrice": 3150,
+      "discount": "20% OFF",
+      "reportTime": "4 Hours",
+      "description": "Diagnostic test for CT Abdomen/Pelvis."
+    },
+    {
+      "id": "test-49",
+      "name": "CT Angiography",
+      "category": "CT Scan",
+      "categoryGroup": "ct-scan",
+      "sampleType": "N/A",
+      "fastingRequired": true,
+      "reportTimeHours": 6,
+      "price": 3000,
+      "originalPrice": 3200,
+      "discount": "20% OFF",
+      "reportTime": "6 Hours",
+      "description": "Diagnostic test for CT Angiography."
+    },
+    {
+      "id": "test-50",
+      "name": "CT Spine",
+      "category": "CT Scan",
+      "categoryGroup": "ct-scan",
+      "sampleType": "N/A",
+      "fastingRequired": false,
+      "reportTimeHours": 4,
+      "price": 3050,
+      "originalPrice": 3250,
+      "discount": "20% OFF",
+      "reportTime": "4 Hours",
+      "description": "Diagnostic test for CT Spine."
+    },
+    {
+      "id": "test-51",
+      "name": "HRCT (High-Resolution CT)",
+      "category": "CT Scan",
+      "categoryGroup": "ct-scan",
+      "sampleType": "N/A",
+      "fastingRequired": false,
+      "reportTimeHours": 4,
+      "price": 3100,
+      "originalPrice": 3300,
+      "discount": "20% OFF",
+      "reportTime": "4 Hours",
+      "description": "Diagnostic test for HRCT (High-Resolution CT)."
+    },
+    {
+      "id": "test-52",
+      "name": "MRI Brain",
+      "category": "MRI",
+      "categoryGroup": "mri",
+      "sampleType": "N/A",
+      "fastingRequired": false,
+      "reportTimeHours": 6,
+      "price": 3150,
+      "originalPrice": 3350,
+      "discount": "20% OFF",
+      "reportTime": "6 Hours",
+      "description": "Diagnostic test for MRI Brain."
+    },
+    {
+      "id": "test-53",
+      "name": "MRI Spine",
+      "category": "MRI",
+      "categoryGroup": "mri",
+      "sampleType": "N/A",
+      "fastingRequired": false,
+      "reportTimeHours": 6,
+      "price": 3200,
+      "originalPrice": 3400,
+      "discount": "20% OFF",
+      "reportTime": "6 Hours",
+      "description": "Diagnostic test for MRI Spine."
+    },
+    {
+      "id": "test-54",
+      "name": "MRI Joint (Knee, Shoulder)",
+      "category": "MRI",
+      "categoryGroup": "mri",
+      "sampleType": "N/A",
+      "fastingRequired": false,
+      "reportTimeHours": 6,
+      "price": 3250,
+      "originalPrice": 3450,
+      "discount": "20% OFF",
+      "reportTime": "6 Hours",
+      "description": "Diagnostic test for MRI Joint (Knee, Shoulder)."
+    },
+    {
+      "id": "test-55",
+      "name": "MRI Whole Abdomen",
+      "category": "MRI",
+      "categoryGroup": "mri",
+      "sampleType": "N/A",
+      "fastingRequired": true,
+      "reportTimeHours": 6,
+      "price": 3300,
+      "originalPrice": 3500,
+      "discount": "20% OFF",
+      "reportTime": "6 Hours",
+      "description": "Diagnostic test for MRI Whole Abdomen."
+    },
+    {
+      "id": "test-56",
+      "name": "MRI Angiography (MRA)",
+      "category": "MRI",
+      "categoryGroup": "mri",
+      "sampleType": "N/A",
+      "fastingRequired": false,
+      "reportTimeHours": 8,
+      "price": 3350,
+      "originalPrice": 3550,
+      "discount": "20% OFF",
+      "reportTime": "8 Hours",
+      "description": "Diagnostic test for MRI Angiography (MRA)."
+    },
+    {
+      "id": "test-57",
+      "name": "Functional MRI (fMRI)",
+      "category": "MRI",
+      "categoryGroup": "mri",
+      "sampleType": "N/A",
+      "fastingRequired": false,
+      "reportTimeHours": 24,
+      "price": 3400,
+      "originalPrice": 3600,
+      "discount": "20% OFF",
+      "reportTime": "24 Hours",
+      "description": "Diagnostic test for Functional MRI (fMRI)."
+    },
+    {
+      "id": "test-58",
+      "name": "Screening Mammogram",
+      "category": "Mammography",
+      "categoryGroup": "mammography",
+      "sampleType": "N/A",
+      "fastingRequired": false,
+      "reportTimeHours": 4,
+      "price": 3450,
+      "originalPrice": 3650,
+      "discount": "20% OFF",
+      "reportTime": "4 Hours",
+      "description": "Diagnostic test for Screening Mammogram."
+    },
+    {
+      "id": "test-59",
+      "name": "Specialized Mammogram",
+      "category": "Mammography",
+      "categoryGroup": "mammography",
+      "sampleType": "N/A",
+      "fastingRequired": false,
+      "reportTimeHours": 4,
+      "price": 500,
+      "originalPrice": 3700,
+      "discount": "20% OFF",
+      "reportTime": "4 Hours",
+      "description": "Diagnostic test for Specialized Mammogram."
+    },
+    {
+      "id": "test-60",
+      "name": "Digital Breast Tomosynthesis",
+      "category": "Mammography",
+      "categoryGroup": "mammography",
+      "sampleType": "N/A",
+      "fastingRequired": false,
+      "reportTimeHours": 4,
+      "price": 550,
+      "originalPrice": 3750,
+      "discount": "20% OFF",
+      "reportTime": "4 Hours",
+      "description": "Diagnostic test for Digital Breast Tomosynthesis."
+    },
+    {
+      "id": "test-61",
+      "name": "ECG (Resting)",
+      "category": "Cardiac Tests",
+      "categoryGroup": "cardiac-tests",
+      "sampleType": "N/A",
+      "fastingRequired": false,
+      "reportTimeHours": 1,
+      "price": 600,
+      "originalPrice": 3800,
+      "discount": "20% OFF",
+      "reportTime": "1 Hours",
+      "description": "Diagnostic test for ECG (Resting)."
+    },
+    {
+      "id": "test-62",
+      "name": "2D Echo",
+      "category": "Cardiac Tests",
+      "categoryGroup": "cardiac-tests",
+      "sampleType": "N/A",
+      "fastingRequired": false,
+      "reportTimeHours": 2,
+      "price": 650,
+      "originalPrice": 3850,
+      "discount": "20% OFF",
+      "reportTime": "2 Hours",
+      "description": "Diagnostic test for 2D Echo."
+    },
+    {
+      "id": "test-63",
+      "name": "Doppler Echo",
+      "category": "Cardiac Tests",
+      "categoryGroup": "cardiac-tests",
+      "sampleType": "N/A",
+      "fastingRequired": false,
+      "reportTimeHours": 2,
+      "price": 700,
+      "originalPrice": 3900,
+      "discount": "20% OFF",
+      "reportTime": "2 Hours",
+      "description": "Diagnostic test for Doppler Echo."
+    },
+    {
+      "id": "test-64",
+      "name": "Stress Echo",
+      "category": "Cardiac Tests",
+      "categoryGroup": "cardiac-tests",
+      "sampleType": "N/A",
+      "fastingRequired": false,
+      "reportTimeHours": 4,
+      "price": 750,
+      "originalPrice": 3950,
+      "discount": "20% OFF",
+      "reportTime": "4 Hours",
+      "description": "Diagnostic test for Stress Echo."
+    },
+    {
+      "id": "test-65",
+      "name": "TMT (Treadmill Test)",
+      "category": "Cardiac Tests",
+      "categoryGroup": "cardiac-tests",
+      "sampleType": "N/A",
+      "fastingRequired": false,
+      "reportTimeHours": 2,
+      "price": 800,
+      "originalPrice": 4000,
+      "discount": "20% OFF",
+      "reportTime": "2 Hours",
+      "description": "Diagnostic test for TMT (Treadmill Test)."
+    },
+    {
+      "id": "test-66",
+      "name": "Holter Monitor (24-hour ECG)",
+      "category": "Cardiac Tests",
+      "categoryGroup": "cardiac-tests",
+      "sampleType": "N/A",
+      "fastingRequired": false,
+      "reportTimeHours": 48,
+      "price": 850,
+      "originalPrice": 4050,
+      "discount": "20% OFF",
+      "reportTime": "48 Hours",
+      "description": "Diagnostic test for Holter Monitor (24-hour ECG)."
+    },
+    {
+      "id": "test-67",
+      "name": "Cardiac CT/Calcium Scoring",
+      "category": "Cardiac Tests",
+      "categoryGroup": "cardiac-tests",
+      "sampleType": "N/A",
+      "fastingRequired": true,
+      "reportTimeHours": 6,
+      "price": 900,
+      "originalPrice": 4100,
+      "discount": "20% OFF",
+      "reportTime": "6 Hours",
+      "description": "Diagnostic test for Cardiac CT/Calcium Scoring."
+    },
+    {
+      "id": "test-68",
+      "name": "Ambulatory BP Monitoring (ABPM)",
+      "category": "Cardiac Tests",
+      "categoryGroup": "cardiac-tests",
+      "sampleType": "N/A",
+      "fastingRequired": false,
+      "reportTimeHours": 48,
+      "price": 950,
+      "originalPrice": 4150,
+      "discount": "20% OFF",
+      "reportTime": "48 Hours",
+      "description": "Diagnostic test for Ambulatory BP Monitoring (ABPM)."
+    },
+    {
+      "id": "test-69",
+      "name": "Coronary Angiography",
+      "category": "Cardiac Tests",
+      "categoryGroup": "cardiac-tests",
+      "sampleType": "N/A",
+      "fastingRequired": true,
+      "reportTimeHours": 24,
+      "price": 1000,
+      "originalPrice": 4200,
+      "discount": "20% OFF",
+      "reportTime": "24 Hours",
+      "description": "Diagnostic test for Coronary Angiography."
+    },
+    {
+      "id": "test-70",
+      "name": "EEG - Routine",
+      "category": "Neuro Tests",
+      "categoryGroup": "neuro-tests",
+      "sampleType": "N/A",
+      "fastingRequired": false,
+      "reportTimeHours": 4,
+      "price": 1050,
+      "originalPrice": 4250,
+      "discount": "20% OFF",
+      "reportTime": "4 Hours",
+      "description": "Diagnostic test for EEG - Routine."
+    },
+    {
+      "id": "test-71",
+      "name": "EEG - Sleep-deprived",
+      "category": "Neuro Tests",
+      "categoryGroup": "neuro-tests",
+      "sampleType": "N/A",
+      "fastingRequired": false,
+      "reportTimeHours": 12,
+      "price": 1100,
+      "originalPrice": 4300,
+      "discount": "20% OFF",
+      "reportTime": "12 Hours",
+      "description": "Diagnostic test for EEG - Sleep-deprived."
+    },
+    {
+      "id": "test-72",
+      "name": "EEG - Video",
+      "category": "Neuro Tests",
+      "categoryGroup": "neuro-tests",
+      "sampleType": "N/A",
+      "fastingRequired": false,
+      "reportTimeHours": 48,
+      "price": 1150,
+      "originalPrice": 4350,
+      "discount": "20% OFF",
+      "reportTime": "48 Hours",
+      "description": "Diagnostic test for EEG - Video."
+    },
+    {
+      "id": "test-73",
+      "name": "EMG (Electromyography)",
+      "category": "Neuro Tests",
+      "categoryGroup": "neuro-tests",
+      "sampleType": "N/A",
+      "fastingRequired": false,
+      "reportTimeHours": 4,
+      "price": 1200,
+      "originalPrice": 4400,
+      "discount": "20% OFF",
+      "reportTime": "4 Hours",
+      "description": "Diagnostic test for EMG (Electromyography)."
+    },
+    {
+      "id": "test-74",
+      "name": "NCV (Nerve Conduction Velocity)",
+      "category": "Neuro Tests",
+      "categoryGroup": "neuro-tests",
+      "sampleType": "N/A",
+      "fastingRequired": false,
+      "reportTimeHours": 4,
+      "price": 1250,
+      "originalPrice": 4450,
+      "discount": "20% OFF",
+      "reportTime": "4 Hours",
+      "description": "Diagnostic test for NCV (Nerve Conduction Velocity)."
+    },
+    {
+      "id": "test-75",
+      "name": "Evoked Potential Studies (VEP, BAEP, SSEP)",
+      "category": "Neuro Tests",
+      "categoryGroup": "neuro-tests",
+      "sampleType": "N/A",
+      "fastingRequired": false,
+      "reportTimeHours": 6,
+      "price": 1300,
+      "originalPrice": 4500,
+      "discount": "20% OFF",
+      "reportTime": "6 Hours",
+      "description": "Diagnostic test for Evoked Potential Studies (VEP, BAEP, SSEP)."
+    },
+    {
+      "id": "test-76",
+      "name": "Polysomnography (Sleep Study)",
+      "category": "Neuro Tests",
+      "categoryGroup": "neuro-tests",
+      "sampleType": "N/A",
+      "fastingRequired": false,
+      "reportTimeHours": 48,
+      "price": 1350,
+      "originalPrice": 4550,
+      "discount": "20% OFF",
+      "reportTime": "48 Hours",
+      "description": "Diagnostic test for Polysomnography (Sleep Study)."
+    },
+    {
+      "id": "test-77",
+      "name": "Upper GI Endoscopy (Gastroscopy)",
+      "category": "Endoscopy/Colonoscopy",
+      "categoryGroup": "endoscopy-colonoscopy",
+      "sampleType": "N/A",
+      "fastingRequired": true,
+      "reportTimeHours": 4,
+      "price": 1400,
+      "originalPrice": 4600,
+      "discount": "20% OFF",
+      "reportTime": "4 Hours",
+      "description": "Diagnostic test for Upper GI Endoscopy (Gastroscopy)."
+    },
+    {
+      "id": "test-78",
+      "name": "Colonoscopy",
+      "category": "Endoscopy/Colonoscopy",
+      "categoryGroup": "endoscopy-colonoscopy",
+      "sampleType": "N/A",
+      "fastingRequired": true,
+      "reportTimeHours": 4,
+      "price": 1450,
+      "originalPrice": 4650,
+      "discount": "20% OFF",
+      "reportTime": "4 Hours",
+      "description": "Diagnostic test for Colonoscopy."
+    },
+    {
+      "id": "test-79",
+      "name": "Sigmoidoscopy",
+      "category": "Endoscopy/Colonoscopy",
+      "categoryGroup": "endoscopy-colonoscopy",
+      "sampleType": "N/A",
+      "fastingRequired": true,
+      "reportTimeHours": 4,
+      "price": 1500,
+      "originalPrice": 700,
+      "discount": "20% OFF",
+      "reportTime": "4 Hours",
+      "description": "Diagnostic test for Sigmoidoscopy."
+    },
+    {
+      "id": "test-80",
+      "name": "ERCP",
+      "category": "Endoscopy/Colonoscopy",
+      "categoryGroup": "endoscopy-colonoscopy",
+      "sampleType": "N/A",
+      "fastingRequired": true,
+      "reportTimeHours": 24,
+      "price": 1550,
+      "originalPrice": 750,
+      "discount": "20% OFF",
+      "reportTime": "24 Hours",
+      "description": "Diagnostic test for ERCP."
+    },
+    {
+      "id": "test-81",
+      "name": "Bronchoscopy",
+      "category": "Endoscopy/Colonoscopy",
+      "categoryGroup": "endoscopy-colonoscopy",
+      "sampleType": "N/A",
+      "fastingRequired": true,
+      "reportTimeHours": 24,
+      "price": 1600,
+      "originalPrice": 800,
+      "discount": "20% OFF",
+      "reportTime": "24 Hours",
+      "description": "Diagnostic test for Bronchoscopy."
+    },
+    {
+      "id": "test-82",
+      "name": "Cystoscopy",
+      "category": "Endoscopy/Colonoscopy",
+      "categoryGroup": "endoscopy-colonoscopy",
+      "sampleType": "N/A",
+      "fastingRequired": false,
+      "reportTimeHours": 4,
+      "price": 1650,
+      "originalPrice": 850,
+      "discount": "20% OFF",
+      "reportTime": "4 Hours",
+      "description": "Diagnostic test for Cystoscopy."
+    },
+    {
+      "id": "test-83",
+      "name": "Capsule Endoscopy",
+      "category": "Endoscopy/Colonoscopy",
+      "categoryGroup": "endoscopy-colonoscopy",
+      "sampleType": "N/A",
+      "fastingRequired": true,
+      "reportTimeHours": 24,
+      "price": 1700,
+      "originalPrice": 900,
+      "discount": "20% OFF",
+      "reportTime": "24 Hours",
+      "description": "Diagnostic test for Capsule Endoscopy."
+    },
+    {
+      "id": "test-84",
+      "name": "Spirometry",
+      "category": "Pulmonary Function Test (PFT)",
+      "categoryGroup": "pulmonary-function-test-pft-",
+      "sampleType": "N/A",
+      "fastingRequired": false,
+      "reportTimeHours": 2,
+      "price": 1750,
+      "originalPrice": 950,
+      "discount": "20% OFF",
+      "reportTime": "2 Hours",
+      "description": "Diagnostic test for Spirometry."
+    },
+    {
+      "id": "test-85",
+      "name": "Lung Volume Test",
+      "category": "Pulmonary Function Test (PFT)",
+      "categoryGroup": "pulmonary-function-test-pft-",
+      "sampleType": "N/A",
+      "fastingRequired": false,
+      "reportTimeHours": 2,
+      "price": 1800,
+      "originalPrice": 1000,
+      "discount": "20% OFF",
+      "reportTime": "2 Hours",
+      "description": "Diagnostic test for Lung Volume Test."
+    },
+    {
+      "id": "test-86",
+      "name": "Diffusion Capacity Test (DLCO)",
+      "category": "Pulmonary Function Test (PFT)",
+      "categoryGroup": "pulmonary-function-test-pft-",
+      "sampleType": "N/A",
+      "fastingRequired": false,
+      "reportTimeHours": 2,
+      "price": 1850,
+      "originalPrice": 1050,
+      "discount": "20% OFF",
+      "reportTime": "2 Hours",
+      "description": "Diagnostic test for Diffusion Capacity Test (DLCO)."
+    },
+    {
+      "id": "test-87",
+      "name": "Bronchial Provocation Test",
+      "category": "Pulmonary Function Test (PFT)",
+      "categoryGroup": "pulmonary-function-test-pft-",
+      "sampleType": "N/A",
+      "fastingRequired": false,
+      "reportTimeHours": 4,
+      "price": 1900,
+      "originalPrice": 1100,
+      "discount": "20% OFF",
+      "reportTime": "4 Hours",
+      "description": "Diagnostic test for Bronchial Provocation Test."
+    },
+    {
+      "id": "test-88",
+      "name": "Arterial Blood Gas (ABG) Analysis",
+      "category": "Pulmonary Function Test (PFT)",
+      "categoryGroup": "pulmonary-function-test-pft-",
+      "sampleType": "Blood",
+      "fastingRequired": false,
+      "reportTimeHours": 1,
+      "price": 1950,
+      "originalPrice": 1150,
+      "discount": "20% OFF",
+      "reportTime": "1 Hours",
+      "description": "Diagnostic test for Arterial Blood Gas (ABG) Analysis."
+    },
+    {
+      "id": "test-89",
+      "name": "PCR Test (viral/bacterial detection)",
+      "category": "Genetic & Molecular",
+      "categoryGroup": "genetic-molecular",
+      "sampleType": "Swab/Blood",
+      "fastingRequired": false,
+      "reportTimeHours": 24,
+      "price": 2000,
+      "originalPrice": 1200,
+      "discount": "20% OFF",
+      "reportTime": "24 Hours",
+      "description": "Diagnostic test for PCR Test (viral/bacterial detection)."
+    },
+    {
+      "id": "test-90",
+      "name": "DNA Fingerprinting/Paternity Test",
+      "category": "Genetic & Molecular",
+      "categoryGroup": "genetic-molecular",
+      "sampleType": "Blood/Swab",
+      "fastingRequired": false,
+      "reportTimeHours": 168,
+      "price": 2050,
+      "originalPrice": 1250,
+      "discount": "20% OFF",
+      "reportTime": "168 Hours",
+      "description": "Diagnostic test for DNA Fingerprinting/Paternity Test."
+    },
+    {
+      "id": "test-91",
+      "name": "Karyotyping (Chromosomal Analysis)",
+      "category": "Genetic & Molecular",
+      "categoryGroup": "genetic-molecular",
+      "sampleType": "Blood",
+      "fastingRequired": false,
+      "reportTimeHours": 336,
+      "price": 2100,
+      "originalPrice": 1300,
+      "discount": "20% OFF",
+      "reportTime": "336 Hours",
+      "description": "Diagnostic test for Karyotyping (Chromosomal Analysis)."
+    },
+    {
+      "id": "test-92",
+      "name": "NIPT (Non-Invasive Prenatal Testing)",
+      "category": "Genetic & Molecular",
+      "categoryGroup": "genetic-molecular",
+      "sampleType": "Blood",
+      "fastingRequired": false,
+      "reportTimeHours": 168,
+      "price": 2150,
+      "originalPrice": 1350,
+      "discount": "20% OFF",
+      "reportTime": "168 Hours",
+      "description": "Diagnostic test for NIPT (Non-Invasive Prenatal Testing)."
+    },
+    {
+      "id": "test-93",
+      "name": "BRCA Gene Testing",
+      "category": "Genetic & Molecular",
+      "categoryGroup": "genetic-molecular",
+      "sampleType": "Blood",
+      "fastingRequired": false,
+      "reportTimeHours": 336,
+      "price": 2200,
+      "originalPrice": 1400,
+      "discount": "20% OFF",
+      "reportTime": "336 Hours",
+      "description": "Diagnostic test for BRCA Gene Testing."
+    },
+    {
+      "id": "test-94",
+      "name": "HLA Typing",
+      "category": "Genetic & Molecular",
+      "categoryGroup": "genetic-molecular",
+      "sampleType": "Blood",
+      "fastingRequired": false,
+      "reportTimeHours": 168,
+      "price": 2250,
+      "originalPrice": 1450,
+      "discount": "20% OFF",
+      "reportTime": "168 Hours",
+      "description": "Diagnostic test for HLA Typing."
+    },
+    {
+      "id": "test-95",
+      "name": "Tissue Biopsy",
+      "category": "Histopathology / Biopsy",
+      "categoryGroup": "histopathology-biopsy",
+      "sampleType": "Tissue",
+      "fastingRequired": false,
+      "reportTimeHours": 168,
+      "price": 2300,
+      "originalPrice": 1500,
+      "discount": "20% OFF",
+      "reportTime": "168 Hours",
+      "description": "Diagnostic test for Tissue Biopsy."
+    },
+    {
+      "id": "test-96",
+      "name": "FNAC (Fine Needle Aspiration Cytology)",
+      "category": "Histopathology / Biopsy",
+      "categoryGroup": "histopathology-biopsy",
+      "sampleType": "Tissue",
+      "fastingRequired": false,
+      "reportTimeHours": 72,
+      "price": 2350,
+      "originalPrice": 1550,
+      "discount": "20% OFF",
+      "reportTime": "72 Hours",
+      "description": "Diagnostic test for FNAC (Fine Needle Aspiration Cytology)."
+    },
+    {
+      "id": "test-97",
+      "name": "Pap Smear",
+      "category": "Histopathology / Biopsy",
+      "categoryGroup": "histopathology-biopsy",
+      "sampleType": "Cervical Sample",
+      "fastingRequired": false,
+      "reportTimeHours": 72,
+      "price": 2400,
+      "originalPrice": 1600,
+      "discount": "20% OFF",
+      "reportTime": "72 Hours",
+      "description": "Diagnostic test for Pap Smear."
+    },
+    {
+      "id": "test-98",
+      "name": "Bone Marrow Biopsy",
+      "category": "Histopathology / Biopsy",
+      "categoryGroup": "histopathology-biopsy",
+      "sampleType": "Tissue",
+      "fastingRequired": false,
+      "reportTimeHours": 168,
+      "price": 2450,
+      "originalPrice": 1650,
+      "discount": "20% OFF",
+      "reportTime": "168 Hours",
+      "description": "Diagnostic test for Bone Marrow Biopsy."
+    },
+    {
+      "id": "test-99",
+      "name": "Frozen Section Biopsy",
+      "category": "Histopathology / Biopsy",
+      "categoryGroup": "histopathology-biopsy",
+      "sampleType": "Tissue",
+      "fastingRequired": false,
+      "reportTimeHours": 1,
+      "price": 2500,
+      "originalPrice": 1700,
+      "discount": "20% OFF",
+      "reportTime": "1 Hours",
+      "description": "Diagnostic test for Frozen Section Biopsy."
+    },
+    {
+      "id": "test-100",
+      "name": "Immunohistochemistry (IHC)",
+      "category": "Histopathology / Biopsy",
+      "categoryGroup": "histopathology-biopsy",
+      "sampleType": "Tissue",
+      "fastingRequired": false,
+      "reportTimeHours": 168,
+      "price": 2550,
+      "originalPrice": 1750,
+      "discount": "20% OFF",
+      "reportTime": "168 Hours",
+      "description": "Diagnostic test for Immunohistochemistry (IHC)."
+    },
+    {
+      "id": "test-101",
+      "name": "PET Scan",
+      "category": "Nuclear Medicine",
+      "categoryGroup": "nuclear-medicine",
+      "sampleType": "N/A",
+      "fastingRequired": true,
+      "reportTimeHours": 24,
+      "price": 2600,
+      "originalPrice": 1800,
+      "discount": "20% OFF",
+      "reportTime": "24 Hours",
+      "description": "Diagnostic test for PET Scan."
+    },
+    {
+      "id": "test-102",
+      "name": "PET-CT Scan",
+      "category": "Nuclear Medicine",
+      "categoryGroup": "nuclear-medicine",
+      "sampleType": "N/A",
+      "fastingRequired": true,
+      "reportTimeHours": 24,
+      "price": 2650,
+      "originalPrice": 1850,
+      "discount": "20% OFF",
+      "reportTime": "24 Hours",
+      "description": "Diagnostic test for PET-CT Scan."
+    },
+    {
+      "id": "test-103",
+      "name": "Bone Scan",
+      "category": "Nuclear Medicine",
+      "categoryGroup": "nuclear-medicine",
+      "sampleType": "N/A",
+      "fastingRequired": false,
+      "reportTimeHours": 6,
+      "price": 2700,
+      "originalPrice": 1900,
+      "discount": "20% OFF",
+      "reportTime": "6 Hours",
+      "description": "Diagnostic test for Bone Scan."
+    },
+    {
+      "id": "test-104",
+      "name": "Thyroid Scan",
+      "category": "Nuclear Medicine",
+      "categoryGroup": "nuclear-medicine",
+      "sampleType": "N/A",
+      "fastingRequired": false,
+      "reportTimeHours": 6,
+      "price": 2750,
+      "originalPrice": 1950,
+      "discount": "20% OFF",
+      "reportTime": "6 Hours",
+      "description": "Diagnostic test for Thyroid Scan."
+    },
+    {
+      "id": "test-105",
+      "name": "Renal Scan (DTPA/DMSA)",
+      "category": "Nuclear Medicine",
+      "categoryGroup": "nuclear-medicine",
+      "sampleType": "N/A",
+      "fastingRequired": false,
+      "reportTimeHours": 6,
+      "price": 2800,
+      "originalPrice": 2000,
+      "discount": "20% OFF",
+      "reportTime": "6 Hours",
+      "description": "Diagnostic test for Renal Scan (DTPA/DMSA)."
+    },
+    {
+      "id": "test-106",
+      "name": "Cardiac Perfusion Scan (MPI)",
+      "category": "Nuclear Medicine",
+      "categoryGroup": "nuclear-medicine",
+      "sampleType": "N/A",
+      "fastingRequired": true,
+      "reportTimeHours": 24,
+      "price": 2850,
+      "originalPrice": 2050,
+      "discount": "20% OFF",
+      "reportTime": "24 Hours",
+      "description": "Diagnostic test for Cardiac Perfusion Scan (MPI)."
+    },
+    {
+      "id": "test-107",
+      "name": "Lung Ventilation-Perfusion Scan (V/Q Scan)",
+      "category": "Nuclear Medicine",
+      "categoryGroup": "nuclear-medicine",
+      "sampleType": "N/A",
+      "fastingRequired": false,
+      "reportTimeHours": 6,
+      "price": 2900,
+      "originalPrice": 2100,
+      "discount": "20% OFF",
+      "reportTime": "6 Hours",
+      "description": "Diagnostic test for Lung Ventilation-Perfusion Scan (V/Q Scan)."
+    }
+  ],
+  "DIAGNOSTIC_CENTER_CATEGORIES": [
+    {
+      "id": "all",
+      "name": "All Center Categories",
+      "icon": "Building2",
+      "parent": null
+    },
+    {
+      "id": "by-specialization",
+      "name": "By Specialization",
+      "icon": "Building2",
+      "parent": null
+    },
+    {
+      "id": "multi-specialty-general-diagnostic-center",
+      "name": "Multi-Specialty / General Diagnostic Center",
+      "icon": "FlaskConical",
+      "parent": "by-specialization"
+    },
+    {
+      "id": "pathology-lab",
+      "name": "Pathology & Lab",
+      "icon": "FlaskConical",
+      "parent": "by-specialization"
+    },
+    {
+      "id": "imaging-radiology-ct-mri-",
+      "name": "Imaging (Radiology/CT/MRI)",
+      "icon": "FlaskConical",
+      "parent": "by-specialization"
+    },
+    {
+      "id": "cardiac-diagnostics",
+      "name": "Cardiac Diagnostics",
+      "icon": "FlaskConical",
+      "parent": "by-specialization"
+    },
+    {
+      "id": "neuro-diagnostics",
+      "name": "Neuro Diagnostics",
+      "icon": "FlaskConical",
+      "parent": "by-specialization"
+    },
+    {
+      "id": "genetic-molecular",
+      "name": "Genetic & Molecular",
+      "icon": "FlaskConical",
+      "parent": "by-specialization"
+    },
+    {
+      "id": "by-ownership-type",
+      "name": "By Ownership & Type",
+      "icon": "Building2",
+      "parent": null
+    },
+    {
+      "id": "government-diagnostic-center",
+      "name": "Government Diagnostic Center",
+      "icon": "FlaskConical",
+      "parent": "by-ownership-type"
+    },
+    {
+      "id": "private-independent-",
+      "name": "Private (Independent)",
+      "icon": "FlaskConical",
+      "parent": "by-ownership-type"
+    },
+    {
+      "id": "corporate-chain-multi-branch-",
+      "name": "Corporate Chain (Multi-branch)",
+      "icon": "FlaskConical",
+      "parent": "by-ownership-type"
+    },
+    {
+      "id": "hospital-affiliated-lab",
+      "name": "Hospital-Affiliated Lab",
+      "icon": "FlaskConical",
+      "parent": "by-ownership-type"
+    }
+  ],
+  "TEST_CATEGORIES": [
+    {
+      "id": "all",
+      "name": "All Test Categories",
+      "icon": "FlaskConical",
+      "description": "All Diagnostic Tests & Profiles",
+      "count": 107
+    },
+    {
+      "id": "hematology",
+      "name": "Hematology",
+      "icon": "FlaskConical",
+      "description": "Hematology",
+      "parent": null,
+      "count": 6
+    },
+    {
+      "id": "biochemistry",
+      "name": "Biochemistry",
+      "icon": "FlaskConical",
+      "description": "Biochemistry",
+      "parent": null,
+      "count": 12
+    },
+    {
+      "id": "serology",
+      "name": "Serology",
+      "icon": "FlaskConical",
+      "description": "Serology",
+      "parent": null,
+      "count": 9
+    },
+    {
+      "id": "microbiology",
+      "name": "Microbiology",
+      "icon": "FlaskConical",
+      "description": "Microbiology",
+      "parent": null,
+      "count": 6
+    },
+    {
+      "id": "x-ray",
+      "name": "X-ray",
+      "icon": "FlaskConical",
+      "description": "X-ray",
+      "parent": null,
+      "count": 5
+    },
+    {
+      "id": "ultrasound-usg",
+      "name": "Ultrasound/USG",
+      "icon": "FlaskConical",
+      "description": "Ultrasound/USG",
+      "parent": null,
+      "count": 7
+    },
+    {
+      "id": "ct-scan",
+      "name": "CT Scan",
+      "icon": "FlaskConical",
+      "description": "CT Scan",
+      "parent": null,
+      "count": 6
+    },
+    {
+      "id": "mri",
+      "name": "MRI",
+      "icon": "FlaskConical",
+      "description": "MRI",
+      "parent": null,
+      "count": 6
+    },
+    {
+      "id": "mammography",
+      "name": "Mammography",
+      "icon": "FlaskConical",
+      "description": "Mammography",
+      "parent": null,
+      "count": 3
+    },
+    {
+      "id": "cardiac-tests",
+      "name": "Cardiac Tests",
+      "icon": "FlaskConical",
+      "description": "Cardiac Tests",
+      "parent": null,
+      "count": 9
+    },
+    {
+      "id": "neuro-tests",
+      "name": "Neuro Tests",
+      "icon": "FlaskConical",
+      "description": "Neuro Tests",
+      "parent": null,
+      "count": 7
+    },
+    {
+      "id": "endoscopy-colonoscopy",
+      "name": "Endoscopy/Colonoscopy",
+      "icon": "FlaskConical",
+      "description": "Endoscopy/Colonoscopy",
+      "parent": null,
+      "count": 7
+    },
+    {
+      "id": "pulmonary-function-test-pft-",
+      "name": "Pulmonary Function Test (PFT)",
+      "icon": "FlaskConical",
+      "description": "Pulmonary Function Test (PFT)",
+      "parent": null,
+      "count": 5
+    },
+    {
+      "id": "genetic-molecular",
+      "name": "Genetic & Molecular",
+      "icon": "FlaskConical",
+      "description": "Genetic & Molecular",
+      "parent": null,
+      "count": 6
+    },
+    {
+      "id": "histopathology-biopsy",
+      "name": "Histopathology / Biopsy",
+      "icon": "FlaskConical",
+      "description": "Histopathology / Biopsy",
+      "parent": null,
+      "count": 6
+    },
+    {
+      "id": "nuclear-medicine",
+      "name": "Nuclear Medicine",
+      "icon": "FlaskConical",
+      "description": "Nuclear Medicine",
+      "parent": null,
+      "count": 7
+    }
+  ],
+  "PATHOLOGY_CATEGORIES": [
+    {
+      "id": "all",
+      "name": "All Test Categories",
+      "icon": "FlaskConical",
+      "description": "All Diagnostic Tests & Profiles",
+      "count": 107
+    },
+    {
+      "id": "hematology",
+      "name": "Hematology",
+      "icon": "FlaskConical",
+      "description": "Hematology",
+      "parent": null,
+      "count": 6
+    },
+    {
+      "id": "biochemistry",
+      "name": "Biochemistry",
+      "icon": "FlaskConical",
+      "description": "Biochemistry",
+      "parent": null,
+      "count": 12
+    },
+    {
+      "id": "serology",
+      "name": "Serology",
+      "icon": "FlaskConical",
+      "description": "Serology",
+      "parent": null,
+      "count": 9
+    },
+    {
+      "id": "microbiology",
+      "name": "Microbiology",
+      "icon": "FlaskConical",
+      "description": "Microbiology",
+      "parent": null,
+      "count": 6
+    },
+    {
+      "id": "x-ray",
+      "name": "X-ray",
+      "icon": "FlaskConical",
+      "description": "X-ray",
+      "parent": null,
+      "count": 5
+    },
+    {
+      "id": "ultrasound-usg",
+      "name": "Ultrasound/USG",
+      "icon": "FlaskConical",
+      "description": "Ultrasound/USG",
+      "parent": null,
+      "count": 7
+    },
+    {
+      "id": "ct-scan",
+      "name": "CT Scan",
+      "icon": "FlaskConical",
+      "description": "CT Scan",
+      "parent": null,
+      "count": 6
+    },
+    {
+      "id": "mri",
+      "name": "MRI",
+      "icon": "FlaskConical",
+      "description": "MRI",
+      "parent": null,
+      "count": 6
+    },
+    {
+      "id": "mammography",
+      "name": "Mammography",
+      "icon": "FlaskConical",
+      "description": "Mammography",
+      "parent": null,
+      "count": 3
+    },
+    {
+      "id": "cardiac-tests",
+      "name": "Cardiac Tests",
+      "icon": "FlaskConical",
+      "description": "Cardiac Tests",
+      "parent": null,
+      "count": 9
+    },
+    {
+      "id": "neuro-tests",
+      "name": "Neuro Tests",
+      "icon": "FlaskConical",
+      "description": "Neuro Tests",
+      "parent": null,
+      "count": 7
+    },
+    {
+      "id": "endoscopy-colonoscopy",
+      "name": "Endoscopy/Colonoscopy",
+      "icon": "FlaskConical",
+      "description": "Endoscopy/Colonoscopy",
+      "parent": null,
+      "count": 7
+    },
+    {
+      "id": "pulmonary-function-test-pft-",
+      "name": "Pulmonary Function Test (PFT)",
+      "icon": "FlaskConical",
+      "description": "Pulmonary Function Test (PFT)",
+      "parent": null,
+      "count": 5
+    },
+    {
+      "id": "genetic-molecular",
+      "name": "Genetic & Molecular",
+      "icon": "FlaskConical",
+      "description": "Genetic & Molecular",
+      "parent": null,
+      "count": 6
+    },
+    {
+      "id": "histopathology-biopsy",
+      "name": "Histopathology / Biopsy",
+      "icon": "FlaskConical",
+      "description": "Histopathology / Biopsy",
+      "parent": null,
+      "count": 6
+    },
+    {
+      "id": "nuclear-medicine",
+      "name": "Nuclear Medicine",
+      "icon": "FlaskConical",
+      "description": "Nuclear Medicine",
+      "parent": null,
+      "count": 7
+    }
+  ],
+  "HOSPITALS": [
+    {
+      "id": "square-hospital-dhaka",
+      "name": "Square Hospital Ltd.",
+      "branch": "Panthapath, Dhaka",
+      "tagline": "Premier Tertiary Care Hospital & Critical Emergency Center",
+      "type": "Hospital",
+      "badge": "Verified Hospital",
+      "rating": 4.9,
+      "reviewsCount": 380,
+      "is_verified": true,
+      "city": "Dhaka",
+      "district": "Dhaka",
+      "location": "Panthapath, West Dhanmondi",
+      "address": "18/F, Bir Uttam Qazi Nuruzzaman Sarak, West Panthapath, Dhaka 1205",
+      "openTiming": "24/7 Emergency & Pharmacy Service",
+      "image": "https://images.unsplash.com/photo-1519494026892-80bbd2d6fd0d?auto=format&fit=crop&w=800&q=80",
+      "categories": [
+        {
+          "id": "multispecialty",
+          "name": "Multi-Specialty"
+        },
+        {
+          "id": "cardiac",
+          "name": "Cardiac Hospitals"
+        }
+      ],
+      "doctors": [
+        {
+          "id": "d1",
+          "name": "Prof. Dr. Shamsul Alam",
+          "specialty": "Cardiology",
+          "experience": "22+ Years Exp",
+          "qualification": "MBBS, FCPS (Cardiology), MD",
+          "fee": 1500,
+          "visitDays": "Sat, Mon, Wed",
+          "visitTime": "05:00 PM - 09:00 PM"
+        },
+        {
+          "id": "d2",
+          "name": "Dr. Farhana Ahmed",
+          "specialty": "Gynecology & Obstetrics",
+          "experience": "15+ Years Exp",
+          "qualification": "MBBS, MS (Obs & Gynae)",
+          "fee": 1200,
+          "visitDays": "Everyday (Except Fri)",
+          "visitTime": "04:00 PM - 08:00 PM"
+        }
+      ],
+      "services": [
+        "24/7 Trauma & Emergency ICU",
+        "Comprehensive Cardiac Surgery",
+        "Advanced Radiology & CT 128 Slice",
+        "Modern Outpatient Doctor Clinics"
+      ]
+    },
+    {
+      "id": "evercare-hospital-dhaka",
+      "name": "Evercare Hospital Dhaka",
+      "branch": "Bashundhara R/A",
+      "tagline": "JCI Accredited Multi-Specialty Tertiary Hospital",
+      "type": "Hospital",
+      "badge": "Verified Hospital",
+      "rating": 4.8,
+      "reviewsCount": 420,
+      "is_verified": true,
+      "city": "Dhaka",
+      "district": "Dhaka",
+      "location": "Bashundhara Residential Area",
+      "address": "Plot 81, Block E, Bashundhara R/A, Dhaka 1229",
+      "openTiming": "24/7 Emergency Service",
+      "image": "https://images.unsplash.com/photo-1586773860418-d37222d8fce3?auto=format&fit=crop&w=800&q=80",
+      "categories": [
+        {
+          "id": "multispecialty",
+          "name": "Multi-Specialty"
+        },
+        {
+          "id": "cancer",
+          "name": "Cancer Institutes"
+        }
+      ],
+      "doctors": [
+        {
+          "id": "d3",
+          "name": "Dr. Tanvir Rahman",
+          "specialty": "Neurology",
+          "experience": "18+ Years Exp",
+          "qualification": "MBBS, MD (Neurology)",
+          "fee": 1800,
+          "visitDays": "Sat, Tue, Thu",
+          "visitTime": "06:00 PM - 09:30 PM"
+        }
+      ],
+      "services": [
+        "JCI Quality Patient Care",
+        "Bone Marrow Transplant Unit",
+        "Neuro-Interventional Surgery",
+        "Emergency Air Ambulance Service"
+      ]
+    },
+    {
+      "id": "labaid-specialized-hospital",
+      "name": "Labaid Specialized Hospital",
+      "branch": "Dhanmondi, Dhaka",
+      "tagline": "Center of Excellence for Cardiac & Gastro Care",
+      "type": "Hospital",
+      "badge": "Super Hospital",
+      "services": [
+        {
+          "id": "hs-1",
+          "name": "24/7 ICU & In-patient",
+          "icon": "Activity",
+          "description": "Round the clock intensive care and bed admission"
+        },
+        {
+          "id": "hs-2",
+          "name": "Specialist Doctor Consultation",
+          "icon": "Stethoscope",
+          "description": "Out-patient specialist doctor visit chambers"
+        },
+        {
+          "id": "hs-3",
+          "name": "Surgery & OT Suite",
+          "icon": "ShieldCheck",
+          "description": "Modern operation theater and laparoscopic surgery"
+        }
+      ],
+      "is_verified": true
+    },
+    {
+      "id": "nhf",
+      "name": "National Heart Foundation",
+      "branch": "Mirpur Branch",
+      "description": "Premier specialized cardiac and cardiovascular hospital institute in Bangladesh.",
+      "city": "Dhaka",
+      "district": "Dhaka",
+      "location": "Mirpur-2, Dhaka",
+      "logo": "https://images.unsplash.com/photo-1519494026892-80bbd2d6fd0d?auto=format&fit=crop&w=600&q=80",
+      "image": "https://images.unsplash.com/photo-1519494026892-80bbd2d6fd0d?auto=format&fit=crop&w=600&q=80",
+      "rating": 4.95,
+      "reviews_count": 520,
+      "open_timing": "24/7 Emergency & Doctor Services",
+      "services": [
+        {
+          "id": "hs-4",
+          "name": "24/7 Emergency & Ambulance",
+          "icon": "Clock",
+          "description": "Emergency triage and rapid ambulance response"
+        },
+        {
+          "id": "hs-2",
+          "name": "Specialist Doctor Consultation",
+          "icon": "Stethoscope",
+          "description": "Out-patient specialist doctor visit chambers"
+        }
+      ],
+      "is_verified": true
+    }
+  ],
+  "DIAGNOSTIC_CENTERS": [
+    {
+      "id": "popular-panthapath",
+      "name": "Popular Diagnostic Centre",
+      "branch": "Panthapath Branch",
+      "address": "House 16, Road 2, Dhanmondi / Panthapath, Dhaka",
+      "district": "Dhaka",
+      "division": "Dhaka",
+      "city": "Dhaka",
+      "location": "House 16, Road 2, Dhanmondi / Panthapath, Dhaka",
+      "phone": "+880 9613-787801",
+      "rating": 4.85,
+      "reviews_count": 410,
+      "open_timing": "07:00 AM - 11:00 PM",
+      "tagline": "Nationwide Leading Diagnostic & Imaging Hub",
+      "badge": "Verified Partner",
+      "image": "https://images.unsplash.com/photo-1586773860418-d37222d8fce3?auto=format&fit=crop&w=600&q=80",
+      "services": [
+        {
+          "id": "ds-3",
+          "name": "Automated Blood & Serology Lab",
+          "icon": "FlaskConical",
+          "description": "Fully automated clinical pathology and biochemistry"
+        },
+        {
+          "id": "ds-4",
+          "name": "128-Slice CT Scan",
+          "icon": "FileText",
+          "description": "High-speed computed tomography body scan"
+        },
+        {
+          "id": "ds-5",
+          "name": "High-Speed MRI Scan",
+          "icon": "Brain",
+          "description": "3.0 Tesla neuro and musculoskeletal MRI"
+        },
+        {
+          "id": "ds-6",
+          "name": "Home Sample Collection",
+          "icon": "Droplet",
+          "description": "Doorstep blood sample collection by certified phlebotomists"
+        }
+      ],
+      "is_verified": true,
+      "categories": [
+        {
+          "id": "multi-specialty-general-diagnostic-center",
+          "name": "Multi-Specialty / General Diagnostic Center"
+        },
+        {
+          "id": "pathology-lab",
+          "name": "Diagnostic & Lab"
+        },
+        {
+          "id": "corporate-chain-multi-branch-",
+          "name": "Corporate Chain (Multi-branch)"
+        }
+      ]
+    },
+    {
+      "id": "ibn-sina-mirpur",
+      "name": "Ibn Sina Diagnostic Center",
+      "branch": "Mirpur Branch",
+      "address": "Plot 11, Avenue 1, Block A, Mirpur 10, Dhaka",
+      "district": "Dhaka",
+      "division": "Dhaka",
+      "city": "Dhaka",
+      "location": "Plot 11, Avenue 1, Block A, Mirpur 10, Dhaka",
+      "phone": "+880 9610-010616",
+      "rating": 4.8,
+      "reviews_count": 180,
+      "open_timing": "08:00 AM - 10:00 PM",
+      "tagline": "Top Diagnostic Center in Mirpur",
+      "badge": "Verified Partner",
+      "image": "https://images.unsplash.com/photo-1538108149393-fbbd81895907?auto=format&fit=crop&w=600&q=80",
+      "services": [
+        {
+          "id": "ds-1",
+          "name": "4D Ultrasonography & Color Doppler",
+          "icon": "Activity",
+          "description": "High resolution fetal & abdominal sonography"
+        },
+        {
+          "id": "ds-2",
+          "name": "Digital X-Ray & Imaging",
+          "icon": "FileText",
+          "description": "Low radiation digital radiography"
+        },
+        {
+          "id": "ds-3",
+          "name": "Automated Blood & Serology Lab",
+          "icon": "FlaskConical",
+          "description": "Fully automated clinical pathology and biochemistry"
+        },
+        {
+          "id": "ds-6",
+          "name": "Home Sample Collection",
+          "icon": "Droplet",
+          "description": "Doorstep blood sample collection by certified phlebotomists"
+        }
+      ],
+      "is_verified": true,
+      "categories": [
+        {
+          "id": "pathology-lab",
+          "name": "Diagnostic & Lab"
+        },
+        {
+          "id": "corporate-chain-multi-branch-",
+          "name": "Corporate Chain (Multi-branch)"
+        }
+      ]
+    },
+    {
+      "id": "chevron-chittagong",
+      "name": "Chevron Healthcare",
+      "branch": "Panchlaish Branch",
+      "address": "12/12 O.R. Nizam Road, Panchlaish, Chittagong",
+      "district": "Chittagong",
+      "division": "Chittagong",
+      "city": "Chittagong",
+      "location": "12/12 O.R. Nizam Road, Panchlaish, Chittagong",
+      "phone": "+880 31-652533",
+      "rating": 4.9,
+      "reviews_count": 260,
+      "open_timing": "24/7 Doctor & Diagnostic Service",
+      "tagline": "Chittagong's Most Trusted Diagnostic Center",
+      "badge": "Top Rated",
+      "image": "https://images.unsplash.com/photo-1629909613654-28e377c37b09?auto=format&fit=crop&w=600&q=80",
+      "services": [
+        {
+          "id": "ds-2",
+          "name": "Digital X-Ray & Imaging",
+          "icon": "FileText",
+          "description": "Low radiation digital radiography"
+        },
+        {
+          "id": "ds-3",
+          "name": "Automated Blood & Serology Lab",
+          "icon": "FlaskConical",
+          "description": "Fully automated clinical pathology and biochemistry"
+        },
+        {
+          "id": "ds-6",
+          "name": "Home Sample Collection",
+          "icon": "Droplet",
+          "description": "Doorstep blood sample collection by certified phlebotomists"
+        }
+      ],
+      "is_verified": true,
+      "categories": [
+        {
+          "id": "imaging-radiology-ct-mri-",
+          "name": "Imaging (Radiology/CT/MRI)"
+        },
+        {
+          "id": "private-independent-",
+          "name": "Private (Independent)"
+        }
+      ]
+    },
+    {
+      "id": "labaid-rajshahi",
+      "name": "Labaid Diagnostics",
+      "branch": "Laxmipur Branch",
+      "address": "Laxmipur, Rajshahi",
+      "district": "Rajshahi",
+      "division": "Rajshahi",
+      "city": "Rajshahi",
+      "location": "Laxmipur, Rajshahi",
+      "phone": "+880 721-772211",
+      "rating": 4.85,
+      "reviews_count": 190,
+      "open_timing": "08:00 AM - 09:30 PM",
+      "tagline": "Super Specialist Diagnostic & Clinical Lab",
+      "badge": "Super Partner",
+      "image": "https://images.unsplash.com/photo-1538108149393-fbbd8category1895907?auto=format&fit=crop&w=600&q=80",
+      "services": [
+        {
+          "id": "ds-1",
+          "name": "4D Ultrasonography & Color Doppler",
+          "icon": "Activity",
+          "description": "High resolution fetal & abdominal sonography"
+        },
+        {
+          "id": "ds-3",
+          "name": "Automated Blood & Serology Lab",
+          "icon": "FlaskConical",
+          "description": "Fully automated clinical pathology and biochemistry"
+        }
+      ],
+      "is_verified": true,
+      "categories": [
+        {
+          "id": "cardiac-diagnostics",
+          "name": "Cardiac Diagnostics"
+        },
+        {
+          "id": "corporate-chain-multi-branch-",
+          "name": "Corporate Chain (Multi-branch)"
+        }
+      ]
+    },
+    {
+      "id": "nins-agargaon",
+      "name": "National Institute of Neurosciences Lab",
+      "branch": "Agargaon Branch",
+      "address": "Sher-e-Bangla Nagar, Agargaon, Dhaka",
+      "district": "Dhaka",
+      "division": "Dhaka",
+      "city": "Dhaka",
+      "location": "Agargaon, Dhaka",
+      "phone": "+880 2-9137300",
+      "rating": 4.75,
+      "reviews_count": 310,
+      "open_timing": "24/7 Government Emergency & Diagnostic",
+      "tagline": "National Specialized Government Neuro Diagnostics Center",
+      "badge": "Govt Institute",
+      "image": "https://images.unsplash.com/photo-1586773860418-d37222d8fce3?auto=format&fit=crop&w=600&q=80",
+      "services": [
+        {
+          "id": "ds-2",
+          "name": "Digital X-Ray & Imaging",
+          "icon": "FileText",
+          "description": "Low radiation digital radiography"
+        },
+        {
+          "id": "ds-4",
+          "name": "128-Slice CT Scan",
+          "icon": "FileText",
+          "description": "High-speed computed tomography body scan"
+        },
+        {
+          "id": "ds-5",
+          "name": "High-Speed MRI Scan",
+          "icon": "Brain",
+          "description": "3.0 Tesla neuro and musculoskeletal MRI"
+        }
+      ],
+      "is_verified": true,
+      "categories": [
+        {
+          "id": "neuro-diagnostics",
+          "name": "Neuro Diagnostics"
+        },
+        {
+          "id": "government-diagnostic-center",
+          "name": "Government Diagnostic Center"
+        }
+      ]
+    },
+    {
+      "id": "icddrb-mohakhali",
+      "name": "icddr,b Diagnostic Center",
+      "branch": "Mohakhali Branch",
+      "address": "68 Shaheed Tajuddin Ahmed Sarani, Mohakhali, Dhaka",
+      "district": "Dhaka",
+      "division": "Dhaka",
+      "city": "Dhaka",
+      "location": "Mohakhali, Dhaka",
+      "phone": "+880 2-9840521",
+      "rating": 4.95,
+      "reviews_count": 640,
+      "open_timing": "07:30 AM - 08:30 PM",
+      "tagline": "World-Class International Research & Molecular Lab",
+      "badge": "Top Research Lab",
+      "image": "https://images.unsplash.com/photo-1579684385127-1ef15d508118?auto=format&fit=crop&w=600&q=80",
+      "services": [
+        {
+          "id": "ds-3",
+          "name": "Automated Blood & Serology Lab",
+          "icon": "FlaskConical",
+          "description": "Fully automated clinical pathology and biochemistry"
+        },
+        {
+          "id": "ds-6",
+          "name": "Home Sample Collection",
+          "icon": "Droplet",
+          "description": "Doorstep blood sample collection by certified phlebotomists"
+        }
+      ],
+      "is_verified": true,
+      "categories": [
+        {
+          "id": "genetic-molecular-testing",
+          "name": "Genetic & Molecular"
+        },
+        {
+          "id": "pathology-lab",
+          "name": "Diagnostic & Lab"
+        },
+        {
+          "id": "private-independent-",
+          "name": "Private"
+        }
+      ]
+    },
+    {
+      "id": "evercare-bashundhara",
+      "name": "Evercare Diagnostic Wing",
+      "branch": "Bashundhara Branch",
+      "address": "Plot 81, Block E, Bashundhara R/A, Dhaka",
+      "district": "Dhaka",
+      "division": "Dhaka",
+      "city": "Dhaka",
+      "location": "Bashundhara R/A, Dhaka",
+      "phone": "+880 9666-710678",
+      "rating": 4.9,
+      "reviews_count": 420,
+      "open_timing": "24/7 Diagnostic & Hospital Lab",
+      "tagline": "JCI Accredited Hospital-Affiliated Diagnostic Wing",
+      "badge": "JCI Accredited",
+      "image": "https://images.unsplash.com/photo-1519494026892-80bbd2d6fd0d?auto=format&fit=crop&w=600&q=80",
+      "services": [
+        {
+          "id": "ds-3",
+          "name": "Automated Blood & Serology Lab",
+          "icon": "FlaskConical",
+          "description": "Fully automated clinical pathology and biochemistry"
+        },
+        {
+          "id": "ds-4",
+          "name": "128-Slice CT Scan",
+          "icon": "FileText",
+          "description": "High-speed computed tomography body scan"
+        },
+        {
+          "id": "ds-5",
+          "name": "High-Speed MRI Scan",
+          "icon": "Brain",
+          "description": "3.0 Tesla neuro and musculoskeletal MRI"
+        },
+        {
+          "id": "ds-6",
+          "name": "Home Sample Collection",
+          "icon": "Droplet",
+          "description": "Doorstep blood sample collection by certified phlebotomists"
+        }
+      ],
+      "is_verified": true,
+      "categories": [
+        {
+          "id": "hospital-affiliated-lab",
+          "name": "Hospital-Affiliated Lab"
+        },
+        {
+          "id": "imaging-radiology-ct-mri-",
+          "name": "Imaging (Radiology/CT/MRI)"
+        },
+        {
+          "id": "multi-specialty-general-diagnostic-center",
+          "name": "Multi-Specialty / General Diagnostic Center"
+        }
+      ]
+    }
+  ],
+  "DOCTORS": [],
+  "DOCTOR_CHAMBERS": [
+    {
+      "id": "popular-panthapath",
+      "name": "Popular Diagnostic Centre",
+      "branch": "Panthapath Branch",
+      "address": "House 16, Road 2, Dhanmondi / Panthapath, Dhaka",
+      "district": "Dhaka",
+      "division": "Dhaka",
+      "city": "Dhaka",
+      "location": "House 16, Road 2, Dhanmondi / Panthapath, Dhaka",
+      "phone": "+880 9613-787801",
+      "rating": 4.85,
+      "reviews_count": 410,
+      "open_timing": "07:00 AM - 11:00 PM",
+      "tagline": "Nationwide Leading Diagnostic & Imaging Hub",
+      "badge": "Verified Partner",
+      "image": "https://images.unsplash.com/photo-1586773860418-d37222d8fce3?auto=format&fit=crop&w=600&q=80",
+      "services": [
+        {
+          "id": "ds-3",
+          "name": "Automated Blood & Serology Lab",
+          "icon": "FlaskConical",
+          "description": "Fully automated clinical pathology and biochemistry"
+        },
+        {
+          "id": "ds-4",
+          "name": "128-Slice CT Scan",
+          "icon": "FileText",
+          "description": "High-speed computed tomography body scan"
+        },
+        {
+          "id": "ds-5",
+          "name": "High-Speed MRI Scan",
+          "icon": "Brain",
+          "description": "3.0 Tesla neuro and musculoskeletal MRI"
+        },
+        {
+          "id": "ds-6",
+          "name": "Home Sample Collection",
+          "icon": "Droplet",
+          "description": "Doorstep blood sample collection by certified phlebotomists"
+        }
+      ],
+      "is_verified": true,
+      "categories": [
+        {
+          "id": "multi-specialty-general-diagnostic-center",
+          "name": "Multi-Specialty / General Diagnostic Center"
+        },
+        {
+          "id": "pathology-lab",
+          "name": "Diagnostic & Lab"
+        },
+        {
+          "id": "corporate-chain-multi-branch-",
+          "name": "Corporate Chain (Multi-branch)"
+        }
+      ]
+    },
+    {
+      "id": "ibn-sina-mirpur",
+      "name": "Ibn Sina Diagnostic Center",
+      "branch": "Mirpur Branch",
+      "address": "Plot 11, Avenue 1, Block A, Mirpur 10, Dhaka",
+      "district": "Dhaka",
+      "division": "Dhaka",
+      "city": "Dhaka",
+      "location": "Plot 11, Avenue 1, Block A, Mirpur 10, Dhaka",
+      "phone": "+880 9610-010616",
+      "rating": 4.8,
+      "reviews_count": 180,
+      "open_timing": "08:00 AM - 10:00 PM",
+      "tagline": "Top Diagnostic Center in Mirpur",
+      "badge": "Verified Partner",
+      "image": "https://images.unsplash.com/photo-1538108149393-fbbd81895907?auto=format&fit=crop&w=600&q=80",
+      "services": [
+        {
+          "id": "ds-1",
+          "name": "4D Ultrasonography & Color Doppler",
+          "icon": "Activity",
+          "description": "High resolution fetal & abdominal sonography"
+        },
+        {
+          "id": "ds-2",
+          "name": "Digital X-Ray & Imaging",
+          "icon": "FileText",
+          "description": "Low radiation digital radiography"
+        },
+        {
+          "id": "ds-3",
+          "name": "Automated Blood & Serology Lab",
+          "icon": "FlaskConical",
+          "description": "Fully automated clinical pathology and biochemistry"
+        },
+        {
+          "id": "ds-6",
+          "name": "Home Sample Collection",
+          "icon": "Droplet",
+          "description": "Doorstep blood sample collection by certified phlebotomists"
+        }
+      ],
+      "is_verified": true,
+      "categories": [
+        {
+          "id": "pathology-lab",
+          "name": "Diagnostic & Lab"
+        },
+        {
+          "id": "corporate-chain-multi-branch-",
+          "name": "Corporate Chain (Multi-branch)"
+        }
+      ]
+    },
+    {
+      "id": "chevron-chittagong",
+      "name": "Chevron Healthcare",
+      "branch": "Panchlaish Branch",
+      "address": "12/12 O.R. Nizam Road, Panchlaish, Chittagong",
+      "district": "Chittagong",
+      "division": "Chittagong",
+      "city": "Chittagong",
+      "location": "12/12 O.R. Nizam Road, Panchlaish, Chittagong",
+      "phone": "+880 31-652533",
+      "rating": 4.9,
+      "reviews_count": 260,
+      "open_timing": "24/7 Doctor & Diagnostic Service",
+      "tagline": "Chittagong's Most Trusted Diagnostic Center",
+      "badge": "Top Rated",
+      "image": "https://images.unsplash.com/photo-1629909613654-28e377c37b09?auto=format&fit=crop&w=600&q=80",
+      "services": [
+        {
+          "id": "ds-2",
+          "name": "Digital X-Ray & Imaging",
+          "icon": "FileText",
+          "description": "Low radiation digital radiography"
+        },
+        {
+          "id": "ds-3",
+          "name": "Automated Blood & Serology Lab",
+          "icon": "FlaskConical",
+          "description": "Fully automated clinical pathology and biochemistry"
+        },
+        {
+          "id": "ds-6",
+          "name": "Home Sample Collection",
+          "icon": "Droplet",
+          "description": "Doorstep blood sample collection by certified phlebotomists"
+        }
+      ],
+      "is_verified": true,
+      "categories": [
+        {
+          "id": "imaging-radiology-ct-mri-",
+          "name": "Imaging (Radiology/CT/MRI)"
+        },
+        {
+          "id": "private-independent-",
+          "name": "Private (Independent)"
+        }
+      ]
+    },
+    {
+      "id": "labaid-rajshahi",
+      "name": "Labaid Diagnostics",
+      "branch": "Laxmipur Branch",
+      "address": "Laxmipur, Rajshahi",
+      "district": "Rajshahi",
+      "division": "Rajshahi",
+      "city": "Rajshahi",
+      "location": "Laxmipur, Rajshahi",
+      "phone": "+880 721-772211",
+      "rating": 4.85,
+      "reviews_count": 190,
+      "open_timing": "08:00 AM - 09:30 PM",
+      "tagline": "Super Specialist Diagnostic & Clinical Lab",
+      "badge": "Super Partner",
+      "image": "https://images.unsplash.com/photo-1538108149393-fbbd8category1895907?auto=format&fit=crop&w=600&q=80",
+      "services": [
+        {
+          "id": "ds-1",
+          "name": "4D Ultrasonography & Color Doppler",
+          "icon": "Activity",
+          "description": "High resolution fetal & abdominal sonography"
+        },
+        {
+          "id": "ds-3",
+          "name": "Automated Blood & Serology Lab",
+          "icon": "FlaskConical",
+          "description": "Fully automated clinical pathology and biochemistry"
+        }
+      ],
+      "is_verified": true,
+      "categories": [
+        {
+          "id": "cardiac-diagnostics",
+          "name": "Cardiac Diagnostics"
+        },
+        {
+          "id": "corporate-chain-multi-branch-",
+          "name": "Corporate Chain (Multi-branch)"
+        }
+      ]
+    },
+    {
+      "id": "nins-agargaon",
+      "name": "National Institute of Neurosciences Lab",
+      "branch": "Agargaon Branch",
+      "address": "Sher-e-Bangla Nagar, Agargaon, Dhaka",
+      "district": "Dhaka",
+      "division": "Dhaka",
+      "city": "Dhaka",
+      "location": "Agargaon, Dhaka",
+      "phone": "+880 2-9137300",
+      "rating": 4.75,
+      "reviews_count": 310,
+      "open_timing": "24/7 Government Emergency & Diagnostic",
+      "tagline": "National Specialized Government Neuro Diagnostics Center",
+      "badge": "Govt Institute",
+      "image": "https://images.unsplash.com/photo-1586773860418-d37222d8fce3?auto=format&fit=crop&w=600&q=80",
+      "services": [
+        {
+          "id": "ds-2",
+          "name": "Digital X-Ray & Imaging",
+          "icon": "FileText",
+          "description": "Low radiation digital radiography"
+        },
+        {
+          "id": "ds-4",
+          "name": "128-Slice CT Scan",
+          "icon": "FileText",
+          "description": "High-speed computed tomography body scan"
+        },
+        {
+          "id": "ds-5",
+          "name": "High-Speed MRI Scan",
+          "icon": "Brain",
+          "description": "3.0 Tesla neuro and musculoskeletal MRI"
+        }
+      ],
+      "is_verified": true,
+      "categories": [
+        {
+          "id": "neuro-diagnostics",
+          "name": "Neuro Diagnostics"
+        },
+        {
+          "id": "government-diagnostic-center",
+          "name": "Government Diagnostic Center"
+        }
+      ]
+    },
+    {
+      "id": "icddrb-mohakhali",
+      "name": "icddr,b Diagnostic Center",
+      "branch": "Mohakhali Branch",
+      "address": "68 Shaheed Tajuddin Ahmed Sarani, Mohakhali, Dhaka",
+      "district": "Dhaka",
+      "division": "Dhaka",
+      "city": "Dhaka",
+      "location": "Mohakhali, Dhaka",
+      "phone": "+880 2-9840521",
+      "rating": 4.95,
+      "reviews_count": 640,
+      "open_timing": "07:30 AM - 08:30 PM",
+      "tagline": "World-Class International Research & Molecular Lab",
+      "badge": "Top Research Lab",
+      "image": "https://images.unsplash.com/photo-1579684385127-1ef15d508118?auto=format&fit=crop&w=600&q=80",
+      "services": [
+        {
+          "id": "ds-3",
+          "name": "Automated Blood & Serology Lab",
+          "icon": "FlaskConical",
+          "description": "Fully automated clinical pathology and biochemistry"
+        },
+        {
+          "id": "ds-6",
+          "name": "Home Sample Collection",
+          "icon": "Droplet",
+          "description": "Doorstep blood sample collection by certified phlebotomists"
+        }
+      ],
+      "is_verified": true,
+      "categories": [
+        {
+          "id": "genetic-molecular-testing",
+          "name": "Genetic & Molecular"
+        },
+        {
+          "id": "pathology-lab",
+          "name": "Diagnostic & Lab"
+        },
+        {
+          "id": "private-independent-",
+          "name": "Private"
+        }
+      ]
+    },
+    {
+      "id": "evercare-bashundhara",
+      "name": "Evercare Diagnostic Wing",
+      "branch": "Bashundhara Branch",
+      "address": "Plot 81, Block E, Bashundhara R/A, Dhaka",
+      "district": "Dhaka",
+      "division": "Dhaka",
+      "city": "Dhaka",
+      "location": "Bashundhara R/A, Dhaka",
+      "phone": "+880 9666-710678",
+      "rating": 4.9,
+      "reviews_count": 420,
+      "open_timing": "24/7 Diagnostic & Hospital Lab",
+      "tagline": "JCI Accredited Hospital-Affiliated Diagnostic Wing",
+      "badge": "JCI Accredited",
+      "image": "https://images.unsplash.com/photo-1519494026892-80bbd2d6fd0d?auto=format&fit=crop&w=600&q=80",
+      "services": [
+        {
+          "id": "ds-3",
+          "name": "Automated Blood & Serology Lab",
+          "icon": "FlaskConical",
+          "description": "Fully automated clinical pathology and biochemistry"
+        },
+        {
+          "id": "ds-4",
+          "name": "128-Slice CT Scan",
+          "icon": "FileText",
+          "description": "High-speed computed tomography body scan"
+        },
+        {
+          "id": "ds-5",
+          "name": "High-Speed MRI Scan",
+          "icon": "Brain",
+          "description": "3.0 Tesla neuro and musculoskeletal MRI"
+        },
+        {
+          "id": "ds-6",
+          "name": "Home Sample Collection",
+          "icon": "Droplet",
+          "description": "Doorstep blood sample collection by certified phlebotomists"
+        }
+      ],
+      "is_verified": true,
+      "categories": [
+        {
+          "id": "hospital-affiliated-lab",
+          "name": "Hospital-Affiliated Lab"
+        },
+        {
+          "id": "imaging-radiology-ct-mri-",
+          "name": "Imaging (Radiology/CT/MRI)"
+        },
+        {
+          "id": "multi-specialty-general-diagnostic-center",
+          "name": "Multi-Specialty / General Diagnostic Center"
+        }
+      ]
+    }
+  ],
+  "BRANCH_TESTS": [
+    {
+      "id": 1,
+      "center_id": "popular-panthapath",
+      "center_name": "Popular Diagnostic Centre - Panthapath",
+      "test_id": "test-1",
+      "test_details": {
+        "id": "test-1",
+        "name": "Complete Blood Count (CBC)",
+        "category": "Hematology",
+        "categoryGroup": "hematology",
+        "sampleType": "Blood",
+        "fastingRequired": false,
+        "reportTimeHours": 6,
+        "price": 600,
+        "originalPrice": 800,
+        "discount": "20% OFF",
+        "reportTime": "6 Hours",
+        "description": "Diagnostic test for Complete Blood Count (CBC)."
+      },
+      "price": 500,
+      "original_price": 650,
+      "discount": "23% OFF",
+      "report_time": "6 Hours",
+      "home_sample_collection": true
+    },
+    {
+      "id": 2,
+      "center_id": "popular-panthapath",
+      "center_name": "Popular Diagnostic Centre - Panthapath",
+      "test_id": "test-3",
+      "test_details": {
+        "id": "test-3",
+        "name": "Blood Grouping & Rh Factor",
+        "category": "Hematology",
+        "categoryGroup": "hematology",
+        "sampleType": "Blood",
+        "fastingRequired": false,
+        "reportTimeHours": 4,
+        "price": 700,
+        "originalPrice": 900,
+        "discount": "20% OFF",
+        "reportTime": "4 Hours",
+        "description": "Diagnostic test for Blood Grouping & Rh Factor."
+      },
+      "price": 250,
+      "original_price": 300,
+      "discount": "17% OFF",
+      "report_time": "4 Hours",
+      "home_sample_collection": true
+    },
+    {
+      "id": 3,
+      "center_id": "popular-panthapath",
+      "center_name": "Popular Diagnostic Centre - Panthapath",
+      "test_id": "test-31",
+      "test_details": {
+        "id": "test-31",
+        "name": "Stool Routine & Culture",
+        "category": "Microbiology",
+        "categoryGroup": "microbiology",
+        "sampleType": "Stool",
+        "fastingRequired": false,
+        "reportTimeHours": 48,
+        "price": 2100,
+        "originalPrice": 2300,
+        "discount": "20% OFF",
+        "reportTime": "48 Hours",
+        "description": "Diagnostic test for Stool Routine & Culture."
+      },
+      "price": 4800,
+      "original_price": 6200,
+      "discount": "22% OFF",
+      "report_time": "4 Hours",
+      "home_sample_collection": false
+    },
+    {
+      "id": 4,
+      "center_id": "ibn-sina-mirpur",
+      "center_name": "Ibn Sina Diagnostic Center - Mirpur",
+      "test_id": "test-1",
+      "test_details": {
+        "id": "test-1",
+        "name": "Complete Blood Count (CBC)",
+        "category": "Hematology",
+        "categoryGroup": "hematology",
+        "sampleType": "Blood",
+        "fastingRequired": false,
+        "reportTimeHours": 6,
+        "price": 600,
+        "originalPrice": 800,
+        "discount": "20% OFF",
+        "reportTime": "6 Hours",
+        "description": "Diagnostic test for Complete Blood Count (CBC)."
+      },
+      "price": 400,
+      "original_price": 550,
+      "discount": "27% OFF",
+      "report_time": "4 Hours",
+      "home_sample_collection": true
+    },
+    {
+      "id": 5,
+      "center_id": "ibn-sina-mirpur",
+      "center_name": "Ibn Sina Diagnostic Center - Mirpur",
+      "test_id": "test-5",
+      "test_details": {
+        "id": "test-5",
+        "name": "Peripheral Blood Smear",
+        "category": "Hematology",
+        "categoryGroup": "hematology",
+        "sampleType": "Blood",
+        "fastingRequired": false,
+        "reportTimeHours": 24,
+        "price": 800,
+        "originalPrice": 1000,
+        "discount": "20% OFF",
+        "reportTime": "24 Hours",
+        "description": "Diagnostic test for Peripheral Blood Smear."
+      },
+      "price": 1500,
+      "original_price": 2000,
+      "discount": "25% OFF",
+      "report_time": "2 Hours",
+      "home_sample_collection": false
+    },
+    {
+      "id": 6,
+      "center_id": "chevron-chittagong",
+      "center_name": "Chevron Healthcare - Chittagong",
+      "test_id": "test-35",
+      "test_details": {
+        "id": "test-35",
+        "name": "Bone/Skeletal X-ray",
+        "category": "X-ray",
+        "categoryGroup": "x-ray",
+        "sampleType": "N/A",
+        "fastingRequired": false,
+        "reportTimeHours": 2,
+        "price": 2300,
+        "originalPrice": 2500,
+        "discount": "20% OFF",
+        "reportTime": "2 Hours",
+        "description": "Diagnostic test for Bone/Skeletal X-ray."
+      },
+      "price": 6500,
+      "original_price": 8500,
+      "discount": "24% OFF",
+      "report_time": "6 Hours",
+      "home_sample_collection": false
+    },
+    {
+      "id": 7,
+      "center_id": "chevron-chittagong",
+      "center_name": "Chevron Healthcare - Chittagong",
+      "test_id": "test-30",
+      "test_details": {
+        "id": "test-30",
+        "name": "Sputum Culture",
+        "category": "Microbiology",
+        "categoryGroup": "microbiology",
+        "sampleType": "Sputum",
+        "fastingRequired": false,
+        "reportTimeHours": 72,
+        "price": 2050,
+        "originalPrice": 2250,
+        "discount": "20% OFF",
+        "reportTime": "72 Hours",
+        "description": "Diagnostic test for Sputum Culture."
+      },
+      "price": 4500,
+      "original_price": 6000,
+      "discount": "25% OFF",
+      "report_time": "4 Hours",
+      "home_sample_collection": false
+    },
+    {
+      "id": 8,
+      "center_id": "labaid-rajshahi",
+      "center_name": "Labaid Diagnostics - Rajshahi",
+      "test_id": "test-40",
+      "test_details": {
+        "id": "test-40",
+        "name": "Pelvic USG",
+        "category": "Ultrasound/USG",
+        "categoryGroup": "ultrasound-usg",
+        "sampleType": "N/A",
+        "fastingRequired": true,
+        "reportTimeHours": 2,
+        "price": 2550,
+        "originalPrice": 2750,
+        "discount": "20% OFF",
+        "reportTime": "2 Hours",
+        "description": "Diagnostic test for Pelvic USG."
+      },
+      "price": 2200,
+      "original_price": 2800,
+      "discount": "21% OFF",
+      "report_time": "2 Hours",
+      "home_sample_collection": false
+    },
+    {
+      "id": 9,
+      "center_id": "labaid-rajshahi",
+      "center_name": "Labaid Diagnostics - Rajshahi",
+      "test_id": "test-42",
+      "test_details": {
+        "id": "test-42",
+        "name": "Thyroid USG",
+        "category": "Ultrasound/USG",
+        "categoryGroup": "ultrasound-usg",
+        "sampleType": "N/A",
+        "fastingRequired": false,
+        "reportTimeHours": 2,
+        "price": 2650,
+        "originalPrice": 2850,
+        "discount": "20% OFF",
+        "reportTime": "2 Hours",
+        "description": "Diagnostic test for Thyroid USG."
+      },
+      "price": 2500,
+      "original_price": 3200,
+      "discount": "22% OFF",
+      "report_time": "2 Hours",
+      "home_sample_collection": false
+    },
+    {
+      "id": 10,
+      "center_id": "nins-agargaon",
+      "center_name": "National Institute of Neurosciences Lab",
+      "test_id": "test-50",
+      "test_details": {
+        "id": "test-50",
+        "name": "CT Spine",
+        "category": "CT Scan",
+        "categoryGroup": "ct-scan",
+        "sampleType": "N/A",
+        "fastingRequired": false,
+        "reportTimeHours": 4,
+        "price": 3050,
+        "originalPrice": 3250,
+        "discount": "20% OFF",
+        "reportTime": "4 Hours",
+        "description": "Diagnostic test for CT Spine."
+      },
+      "price": 1200,
+      "original_price": 1600,
+      "discount": "25% OFF",
+      "report_time": "4 Hours",
+      "home_sample_collection": false
+    },
+    {
+      "id": 11,
+      "center_id": "nins-agargaon",
+      "center_name": "National Institute of Neurosciences Lab",
+      "test_id": "test-51",
+      "test_details": {
+        "id": "test-51",
+        "name": "HRCT (High-Resolution CT)",
+        "category": "CT Scan",
+        "categoryGroup": "ct-scan",
+        "sampleType": "N/A",
+        "fastingRequired": false,
+        "reportTimeHours": 4,
+        "price": 3100,
+        "originalPrice": 3300,
+        "discount": "20% OFF",
+        "reportTime": "4 Hours",
+        "description": "Diagnostic test for HRCT (High-Resolution CT)."
+      },
+      "price": 2500,
+      "original_price": 3200,
+      "discount": "22% OFF",
+      "report_time": "4 Hours",
+      "home_sample_collection": false
+    },
+    {
+      "id": 12,
+      "center_id": "icddrb-mohakhali",
+      "center_name": "icddr,b Diagnostic Center",
+      "test_id": "test-60",
+      "test_details": {
+        "id": "test-60",
+        "name": "Digital Breast Tomosynthesis",
+        "category": "Mammography",
+        "categoryGroup": "mammography",
+        "sampleType": "N/A",
+        "fastingRequired": false,
+        "reportTimeHours": 4,
+        "price": 550,
+        "originalPrice": 3750,
+        "discount": "20% OFF",
+        "reportTime": "4 Hours",
+        "description": "Diagnostic test for Digital Breast Tomosynthesis."
+      },
+      "price": 3200,
+      "original_price": 4000,
+      "discount": "20% OFF",
+      "report_time": "24 Hours",
+      "home_sample_collection": true
+    },
+    {
+      "id": 13,
+      "center_id": "icddrb-mohakhali",
+      "center_name": "icddr,b Diagnostic Center",
+      "test_id": "test-61",
+      "test_details": {
+        "id": "test-61",
+        "name": "ECG (Resting)",
+        "category": "Cardiac Tests",
+        "categoryGroup": "cardiac-tests",
+        "sampleType": "N/A",
+        "fastingRequired": false,
+        "reportTimeHours": 1,
+        "price": 600,
+        "originalPrice": 3800,
+        "discount": "20% OFF",
+        "reportTime": "1 Hours",
+        "description": "Diagnostic test for ECG (Resting)."
+      },
+      "price": 8500,
+      "original_price": 10500,
+      "discount": "19% OFF",
+      "report_time": "168 Hours",
+      "home_sample_collection": true
+    },
+    {
+      "id": 14,
+      "center_id": "evercare-bashundhara",
+      "center_name": "Evercare Diagnostic Wing",
+      "test_id": "test-35",
+      "test_details": {
+        "id": "test-35",
+        "name": "Bone/Skeletal X-ray",
+        "category": "X-ray",
+        "categoryGroup": "x-ray",
+        "sampleType": "N/A",
+        "fastingRequired": false,
+        "reportTimeHours": 2,
+        "price": 2300,
+        "originalPrice": 2500,
+        "discount": "20% OFF",
+        "reportTime": "2 Hours",
+        "description": "Diagnostic test for Bone/Skeletal X-ray."
+      },
+      "price": 7500,
+      "original_price": 9500,
+      "discount": "21% OFF",
+      "report_time": "6 Hours",
+      "home_sample_collection": false
+    },
+    {
+      "id": 15,
+      "center_id": "evercare-bashundhara",
+      "center_name": "Evercare Diagnostic Wing",
+      "test_id": "test-1",
+      "test_details": {
+        "id": "test-1",
+        "name": "Complete Blood Count (CBC)",
+        "category": "Hematology",
+        "categoryGroup": "hematology",
+        "sampleType": "Blood",
+        "fastingRequired": false,
+        "reportTimeHours": 6,
+        "price": 600,
+        "originalPrice": 800,
+        "discount": "20% OFF",
+        "reportTime": "6 Hours",
+        "description": "Diagnostic test for Complete Blood Count (CBC)."
+      },
+      "price": 600,
+      "original_price": 750,
+      "discount": "20% OFF",
+      "report_time": "4 Hours",
+      "home_sample_collection": true
+    }
+  ]
+}
