@@ -21,7 +21,14 @@ class DoctorBookingSerializer(serializers.ModelSerializer):
 
     def validate(self, attrs):
         instance = DoctorBooking(**attrs)
-        instance.clean()
+        try:
+            instance.clean()
+        except Exception as e:
+            if hasattr(e, 'message_dict'):
+                raise serializers.ValidationError(e.message_dict)
+            elif hasattr(e, 'messages'):
+                raise serializers.ValidationError(e.messages)
+            raise e
         return attrs
 
 class LabBookingSerializer(serializers.ModelSerializer):

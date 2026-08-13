@@ -8,8 +8,6 @@ class DoctorSpecialtySerializer(serializers.ModelSerializer):
         model = DoctorSpecialty
         fields = ('id', 'name', 'slug', 'icon', 'description')
 
-SpecialtySerializer = DoctorSpecialtySerializer
-
 class AffiliationScheduleSerializer(serializers.ModelSerializer):
     id = serializers.UUIDField(required=False)
 
@@ -52,4 +50,4 @@ class DoctorSerializer(serializers.ModelSerializer):
 
     class Meta:
         model = Doctor
-        fields = ('id', 'name', 'specialties', 'specialty_ids', 'qualification', 'experience', 'affiliations')
+        fields = ('id', 'name', 'slug', 'specialties', 'specialty_ids', 'qualification', 'experience', 'affiliations')

@@ -41,6 +41,3 @@ class FacilityTestSerializer(serializers.ModelSerializer):
             'discounted_price', 'original_price', 'discount', 'report_time', 'is_available',
             'home_sample_collection', 'updated_at', 'facility_name'
         )
-
-BranchTestSerializer = FacilityTestSerializer
-DiagnosticCenterTestSerializer = FacilityTestSerializer

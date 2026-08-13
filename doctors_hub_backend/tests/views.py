@@ -1,3 +1,4 @@
+import django_filters
 from rest_framework import viewsets
 from .models import TestCategory, Test, FacilityTest
 from .serializers import TestCategorySerializer, TestSerializer, FacilityTestSerializer
@@ -17,7 +18,5 @@ class FacilityTestViewSet(viewsets.ModelViewSet):
     queryset = FacilityTest.objects.all()
     serializer_class = FacilityTestSerializer
     permission_classes = (IsAdminUserOrReadOnly,)
-
-DiagnosticCenterTestViewSet = FacilityTestViewSet
-BranchTestViewSet = FacilityTestViewSet
-PathologyTestViewSet = TestViewSet
+    filter_backends = [django_filters.rest_framework.DjangoFilterBackend]
+    filterset_fields = ['location', 'test']

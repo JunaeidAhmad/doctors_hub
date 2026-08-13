@@ -39,6 +39,10 @@ class DoctorBooking(BaseBooking):
         if self.date and self.slot and getattr(self, 'affiliation', None):
             validate_slot_against_schedule(self.affiliation, self.date, self.slot)
 
+    def save(self, *args, **kwargs):
+        self.full_clean()
+        super().save(*args, **kwargs)
+
 class LabBooking(BaseBooking):
     facility_test = models.ForeignKey(FacilityTest, on_delete=models.CASCADE, related_name="bookings")
     pickup_date = models.DateField()

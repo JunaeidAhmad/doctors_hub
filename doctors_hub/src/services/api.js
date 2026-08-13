@@ -424,7 +424,7 @@ export const api = {
   // Diagnostic Centers
   async getDiagnosticCenters({ location = '', district = '', area = '', category = '', spec = '', owner = '', testcat = '', search = '', page = 1, page_size = 10 } = {}) {
     const url = new URL(`${BASE_URL}/diagnostic-centers/`);
-    if (location && location !== 'All Bangladesh') url.searchParams.append('location', location);
+    if (location && location !== 'All Bangladesh') url.searchParams.append('district', location);
     if (district) url.searchParams.append('district', district);
     if (area && area !== 'All Areas') url.searchParams.append('area', area);
     if (category) url.searchParams.append('category', category);
@@ -474,25 +474,30 @@ export const api = {
     return handleResponse(res);
   },
 
-  // Diagnostic Center Tests (prices per center)
+  // Facility Tests (prices per location)
   async getDiagnosticCenterTests({ center = '', hospital = '', test = '', branch = '' } = {}) {
-    const url = new URL(`${BASE_URL}/diagnostic-center-tests/`);
-    if (center || branch) url.searchParams.append('center', center || branch);
-    if (hospital) url.searchParams.append('hospital', hospital);
+    const url = new URL(`${BASE_URL}/facility-tests/`);
+    const locationId = center || branch || hospital;
+    if (locationId) url.searchParams.append('location', locationId);
     if (test) url.searchParams.append('test', test);
     const res = await fetchWithTimeout(url, { headers: getHeaders() });
     return flattenFacility(await handleResponse(res));
   },
   async createDiagnosticCenterTest(data) {
-    const res = await fetchWithTimeout(`${BASE_URL}/diagnostic-center-tests/`, {
+    // Map frontend fields to backend serializer fields
+    const payload = { ...data };
+    payload.location_id = data.center || data.hospital || data.branch || data.location_id;
+    payload.test_id = data.test || data.test_id;
+    
+    const res = await fetchWithTimeout(`${BASE_URL}/facility-tests/`, {
       method: 'POST',
       headers: getHeaders(),
-      body: JSON.stringify(data),
+      body: JSON.stringify(payload),
     });
     return handleResponse(res);
   },
   async deleteDiagnosticCenterTest(id) {
-    const res = await fetchWithTimeout(`${BASE_URL}/diagnostic-center-tests/${id}/`, {
+    const res = await fetchWithTimeout(`${BASE_URL}/facility-tests/${id}/`, {
       method: 'DELETE',
       headers: getHeaders(),
     });
@@ -572,7 +577,7 @@ export const api = {
   // Hospitals
   async getHospitals({ location = '', area = '', category = '', search = '', page = 1, page_size = 10 } = {}) {
     const url = new URL(`${BASE_URL}/hospitals/`);
-    if (location && location !== 'All Bangladesh') url.searchParams.append('location', location);
+    if (location && location !== 'All Bangladesh') url.searchParams.append('district', location);
     if (area && area !== 'All Areas') url.searchParams.append('area', area);
     if (category) url.searchParams.append('category', category);
     if (search) url.searchParams.append('search', search);
@@ -646,7 +651,7 @@ export const api = {
   async getDoctors({ specialty = '', location = '', area = '', search = '', consultation_type = '', hospital = '', diagnostic_center = '', fee_max = '', day = '', page = 1, page_size = 10 } = {}) {
     const url = new URL(`${BASE_URL}/doctors/`);
     if (specialty) url.searchParams.append('specialty', specialty);
-    if (location && location !== 'All Bangladesh') url.searchParams.append('location', location);
+    if (location && location !== 'All Bangladesh') url.searchParams.append('district', location);
     if (area && area !== 'All Areas') url.searchParams.append('area', area);
     if (search) url.searchParams.append('search', search);
     if (consultation_type) url.searchParams.append('consultation_type', consultation_type);

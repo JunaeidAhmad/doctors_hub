@@ -16,9 +16,6 @@ class HospitalCategorySerializer(serializers.ModelSerializer):
         fields = ('id', 'name', 'slug', 'icon', 'description', 'count')
 
 
-HospitalSpecialtySerializer = HospitalCategorySerializer
-
-
 class HospitalServiceSerializer(serializers.ModelSerializer):
     class Meta:
         model = HospitalService
@@ -67,13 +64,31 @@ class HospitalSerializer(serializers.ModelSerializer):
     service_ids = serializers.PrimaryKeyRelatedField(
         queryset=HospitalService.objects.all(), many=True, write_only=True, source='services', required=False
     )
+    test_category_ids = serializers.ListField(
+        child=serializers.UUIDField(), write_only=True, required=False
+    )
 
     class Meta:
         model = Hospital
         fields = (
             'location_details', 'location_id', 'categories', 'category_ids',
-            'services', 'service_ids', 'has_diagnostic_center'
+            'services', 'service_ids', 'has_diagnostic_center', 'test_category_ids'
         )
+
+    def update(self, instance, validated_data):
+        test_cat_ids = validated_data.pop('test_category_ids', None)
+        instance = super().update(instance, validated_data)
+        
+        if test_cat_ids:
+            from tests.models import Test, FacilityTest
+            tests = Test.objects.filter(category_id__in=test_cat_ids)
+            for test in tests:
+                FacilityTest.objects.get_or_create(
+                    location=instance.location,
+                    test=test,
+                    defaults={'price': 500.00, 'is_available': True}
+                )
+        return instance
 
 
 class DiagnosticCenterSerializer(serializers.ModelSerializer):
@@ -89,13 +104,31 @@ class DiagnosticCenterSerializer(serializers.ModelSerializer):
     service_ids = serializers.PrimaryKeyRelatedField(
         queryset=DiagnosticService.objects.all(), many=True, write_only=True, source='services', required=False
     )
+    test_category_ids = serializers.ListField(
+        child=serializers.UUIDField(), write_only=True, required=False
+    )
 
     class Meta:
         model = DiagnosticCenter
         fields = (
             'location_details', 'location_id', 'categories', 'category_ids',
-            'services', 'service_ids'
+            'services', 'service_ids', 'test_category_ids'
         )
+
+    def update(self, instance, validated_data):
+        test_cat_ids = validated_data.pop('test_category_ids', None)
+        instance = super().update(instance, validated_data)
+        
+        if test_cat_ids:
+            from tests.models import Test, FacilityTest
+            tests = Test.objects.filter(category_id__in=test_cat_ids)
+            for test in tests:
+                FacilityTest.objects.get_or_create(
+                    location=instance.location,
+                    test=test,
+                    defaults={'price': 500.00, 'is_available': True}
+                )
+        return instance
 
 
 class ChamberSerializer(serializers.ModelSerializer):
@@ -107,5 +140,3 @@ class ChamberSerializer(serializers.ModelSerializer):
     class Meta:
         model = Chamber
         fields = ('location_details', 'location_id', 'doctor', 'assistant_phone')
-
-BranchSerializer = DiagnosticCenterSerializer
