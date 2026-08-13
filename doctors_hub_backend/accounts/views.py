@@ -1,11 +1,14 @@
 from rest_framework import generics, permissions, status
 from rest_framework.response import Response
 from rest_framework.views import APIView
+from rest_framework.throttling import ScopedRateThrottle
 from rest_framework_simplejwt.tokens import RefreshToken
 from .models import User
 from .serializers import UserSerializer, UserProfileSerializer, RegisterSerializer, LoginSerializer
 
 class RegisterAPIView(generics.CreateAPIView):
+    throttle_classes = [ScopedRateThrottle]
+    throttle_scope = "register"
     queryset = User.objects.all()
     serializer_class = RegisterSerializer
     permission_classes = (permissions.AllowAny,)
@@ -23,6 +26,8 @@ class RegisterAPIView(generics.CreateAPIView):
 
 
 class LoginAPIView(APIView):
+    throttle_classes = [ScopedRateThrottle]
+    throttle_scope = "login"
     permission_classes = (permissions.AllowAny,)
 
     def post(self, request, *args, **kwargs):

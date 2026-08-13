@@ -3,6 +3,7 @@ from django.db import models
 from accounts.models import User
 from doctors.models import DoctorAffiliation
 from tests.models import FacilityTest
+from services.scheduling import validate_slot_against_schedule
 
 class BaseBooking(models.Model):
     class Status(models.TextChoices):
@@ -32,6 +33,11 @@ class DoctorBooking(BaseBooking):
         constraints = [
             models.UniqueConstraint(fields=["affiliation", "date", "slot"], name="unique_doctor_slot"),
         ]
+
+    def clean(self):
+        super().clean()
+        if self.date and self.slot and getattr(self, 'affiliation', None):
+            validate_slot_against_schedule(self.affiliation, self.date, self.slot)
 
 class LabBooking(BaseBooking):
     facility_test = models.ForeignKey(FacilityTest, on_delete=models.CASCADE, related_name="bookings")

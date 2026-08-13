@@ -19,6 +19,11 @@ class DoctorBookingSerializer(serializers.ModelSerializer):
         )
         read_only_fields = ('user', 'created_at', 'updated_at')
 
+    def validate(self, attrs):
+        instance = DoctorBooking(**attrs)
+        instance.clean()
+        return attrs
+
 class LabBookingSerializer(serializers.ModelSerializer):
     test_name = serializers.CharField(source='facility_test.test.name', read_only=True, default='')
     center_name = serializers.CharField(source='facility_test.location.name', read_only=True, default='')

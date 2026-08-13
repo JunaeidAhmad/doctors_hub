@@ -18,9 +18,15 @@ class DoctorSpecialty(models.Model):
 class Doctor(models.Model):
     id = models.UUIDField(primary_key=True, default=uuid.uuid4, editable=False)
     name = models.CharField(max_length=200)
+    slug = models.SlugField(max_length=250, unique=True, blank=True)
     specialties = models.ManyToManyField(DoctorSpecialty, related_name='doctors')
     qualification = models.TextField()
     experience = models.CharField(max_length=50)
+
+    def save(self, *args, **kwargs):
+        if not self.slug:
+            self.slug = slugify(self.name)
+        super().save(*args, **kwargs)
 
 class DoctorAffiliation(models.Model):
     CONSULTATION_TYPES = [
@@ -35,8 +41,17 @@ class DoctorAffiliation(models.Model):
     fee = models.DecimalField(max_digits=8, decimal_places=2)
 
 class AffiliationSchedule(models.Model):
+    DAY_CHOICES = [
+        ('Monday', 'Monday'),
+        ('Tuesday', 'Tuesday'),
+        ('Wednesday', 'Wednesday'),
+        ('Thursday', 'Thursday'),
+        ('Friday', 'Friday'),
+        ('Saturday', 'Saturday'),
+        ('Sunday', 'Sunday'),
+    ]
     id = models.UUIDField(primary_key=True, default=uuid.uuid4, editable=False)
     affiliation = models.ForeignKey(DoctorAffiliation, on_delete=models.CASCADE, related_name='schedules')
-    day_of_week = models.CharField(max_length=20)
+    day_of_week = models.CharField(max_length=20, choices=DAY_CHOICES)
     start_time = models.TimeField()
     end_time = models.TimeField()

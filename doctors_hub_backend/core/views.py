@@ -35,21 +35,7 @@ class AdminInitAPIView(APIView):
     permission_classes = (permissions.AllowAny,)
 
     def get(self, request, *args, **kwargs):
-        hospitals = HospitalSerializer(Hospital.objects.prefetch_related(
-            'categories', 'services', 'location'
-        ).all().distinct(), many=True, context={'request': request}).data
-
-        diagnostic_centers = DiagnosticCenterSerializer(DiagnosticCenter.objects.prefetch_related(
-            'categories', 'categories__parent', 'services', 'location'
-        ).all().distinct(), many=True, context={'request': request}).data
-
-        doctors = DoctorSerializer(Doctor.objects.prefetch_related(
-            'specialties', 'affiliations__schedules', 'affiliations__location'
-        ).all().distinct(), many=True, context={'request': request}).data
-
-        tests = TestSerializer(Test.objects.select_related('category').all(), many=True, context={'request': request}).data
-        branch_tests = FacilityTestSerializer(FacilityTest.objects.select_related('location', 'test', 'test__category').all(), many=True, context={'request': request}).data
-        
+        doctor_specialties = DoctorSpecialtySerializer(DoctorSpecialty.objects.all(), many=True, context={'request': request}).data
         doctor_specialties = DoctorSpecialtySerializer(DoctorSpecialty.objects.all(), many=True, context={'request': request}).data
         hospital_categories = HospitalCategorySerializer(HospitalCategory.objects.all(), many=True, context={'request': request}).data
         diagnostic_categories = DiagnosticCenterCategorySerializer(DiagnosticCenterCategory.objects.select_related('parent').all(), many=True, context={'request': request}).data
@@ -74,11 +60,6 @@ class AdminInitAPIView(APIView):
             lab_bookings = []
 
         return Response({
-            "hospitals": hospitals,
-            "diagnostic_centers": diagnostic_centers,
-            "doctors": doctors,
-            "tests": tests,
-            "branch_tests": branch_tests,
             "doctor_specialties": doctor_specialties,
             "hospital_categories": hospital_categories,
             "diagnostic_categories": diagnostic_categories,

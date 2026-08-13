@@ -1,4 +1,6 @@
-from rest_framework import viewsets
+from rest_framework import viewsets, filters
+from django_filters.rest_framework import DjangoFilterBackend
+from core.mixins import SlugOrPkLookupMixin
 from .models import (
     Address, PracticeLocation, HospitalCategory, HospitalService, Hospital,
     DiagnosticCenterCategory, DiagnosticService, DiagnosticCenter, Chamber
@@ -32,10 +34,18 @@ class HospitalServiceViewSet(viewsets.ModelViewSet):
     serializer_class = HospitalServiceSerializer
     permission_classes = (IsAdminUserOrReadOnly,)
 
-class HospitalViewSet(viewsets.ModelViewSet):
+class HospitalViewSet(SlugOrPkLookupMixin, viewsets.ModelViewSet):
     queryset = Hospital.objects.all()
     serializer_class = HospitalSerializer
     permission_classes = (IsAdminUserOrReadOnly,)
+    slug_field = 'location__slug'
+    filter_backends = [DjangoFilterBackend, filters.SearchFilter]
+    filterset_fields = {
+        'location__city': ['exact'],
+        'location__area': ['exact'],
+        'categories': ['exact'],
+    }
+    search_fields = ['location__name', 'location__branch']
 
 class DiagnosticCenterCategoryViewSet(viewsets.ModelViewSet):
     queryset = DiagnosticCenterCategory.objects.select_related('parent').all()
@@ -47,10 +57,18 @@ class DiagnosticServiceViewSet(viewsets.ModelViewSet):
     serializer_class = DiagnosticServiceSerializer
     permission_classes = (IsAdminUserOrReadOnly,)
 
-class DiagnosticCenterViewSet(viewsets.ModelViewSet):
+class DiagnosticCenterViewSet(SlugOrPkLookupMixin, viewsets.ModelViewSet):
     queryset = DiagnosticCenter.objects.all()
     serializer_class = DiagnosticCenterSerializer
     permission_classes = (IsAdminUserOrReadOnly,)
+    slug_field = 'location__slug'
+    filter_backends = [DjangoFilterBackend, filters.SearchFilter]
+    filterset_fields = {
+        'location__city': ['exact'],
+        'location__area': ['exact'],
+        'categories': ['exact'],
+    }
+    search_fields = ['location__name', 'location__branch']
 
 class ChamberViewSet(viewsets.ModelViewSet):
     queryset = Chamber.objects.all()

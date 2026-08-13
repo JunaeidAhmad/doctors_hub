@@ -26,24 +26,36 @@ def attach_tests_to_location(
     if not tests_to_attach:
         return
 
-    objs_to_create = []
+    existing = {
+        ft.test_id: ft
+        for ft in FacilityTest.objects.filter(location=location, test__in=tests_to_attach)
+    }
+    to_create, to_update = [], []
 
-    # 3. Create the links, enforcing strict pricing (No fake prices)
+    # 3. Create or update the links, enforcing strict pricing (No fake prices)
     for test in tests_to_attach:
         price_data = test_prices.get(str(test.id))
         
         if not price_data or 'price' not in price_data:
             raise ValidationError(f"Missing required price for test: {test.name} (ID: {test.id})")
             
-        objs_to_create.append(
-            FacilityTest(
-                location=location,
-                test=test,
-                price=price_data['price'],
-                original_price=price_data.get('original_price')
+        if test.id in existing:
+            ft = existing[test.id]
+            ft.price = price_data['price']
+            ft.original_price = price_data.get('original_price')
+            to_update.append(ft)
+        else:
+            to_create.append(
+                FacilityTest(
+                    location=location,
+                    test=test,
+                    price=price_data['price'],
+                    original_price=price_data.get('original_price')
+                )
             )
-        )
 
-    # 4. Bulk insert for high performance
-    if objs_to_create:
-        FacilityTest.objects.bulk_create(objs_to_create)
+    # 4. Bulk insert/update for high performance
+    if to_create:
+        FacilityTest.objects.bulk_create(to_create)
+    if to_update:
+        FacilityTest.objects.bulk_update(to_update, ['price', 'original_price'])
