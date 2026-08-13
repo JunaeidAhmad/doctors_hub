@@ -132,6 +132,34 @@ async function handleResponse(response) {
 }
 
 /**
+ * Helper to flatten location_details into the main object for frontend compatibility
+ */
+function flattenFacility(data) {
+  if (Array.isArray(data)) {
+    return data.map(flattenFacility);
+  }
+  if (data && Array.isArray(data.results)) {
+    return { ...data, results: data.results.map(flattenFacility) };
+  }
+  if (data && data.facility_name) {
+    data.center_name = data.facility_name;
+    data.hospital_name = data.facility_name;
+  }
+  if (data && data.location_details) {
+    const loc = data.location_details;
+    const addr = loc.address_details || {};
+    return {
+      ...data,
+      ...loc,
+      ...addr,
+      address: addr.address_line || loc.address || '',
+      id: data.location_id || loc.id || data.id,
+    };
+  }
+  return data;
+}
+
+/**
  * Get headers, including optional Authorization token
  */
 function getHeaders(token = null) {
@@ -407,11 +435,11 @@ export const api = {
     if (page) url.searchParams.append('page', page);
     if (page_size) url.searchParams.append('page_size', page_size);
     const res = await fetchWithTimeout(url, { headers: getHeaders() });
-    return handleResponse(res);
+    return flattenFacility(await handleResponse(res));
   },
   async getDiagnosticCenterById(id) {
     const res = await fetchWithTimeout(`${BASE_URL}/diagnostic-centers/${id}/`, { headers: getHeaders() });
-    return handleResponse(res);
+    return flattenFacility(await handleResponse(res));
   },
   async createDiagnosticCenter(data) {
     const res = await fetchWithTimeout(`${BASE_URL}/diagnostic-centers/`, {
@@ -453,7 +481,7 @@ export const api = {
     if (hospital) url.searchParams.append('hospital', hospital);
     if (test) url.searchParams.append('test', test);
     const res = await fetchWithTimeout(url, { headers: getHeaders() });
-    return handleResponse(res);
+    return flattenFacility(await handleResponse(res));
   },
   async createDiagnosticCenterTest(data) {
     const res = await fetchWithTimeout(`${BASE_URL}/diagnostic-center-tests/`, {
@@ -551,11 +579,11 @@ export const api = {
     if (page) url.searchParams.append('page', page);
     if (page_size) url.searchParams.append('page_size', page_size);
     const res = await fetchWithTimeout(url, { headers: getHeaders() });
-    return handleResponse(res);
+    return flattenFacility(await handleResponse(res));
   },
   async getHospitalById(id) {
     const res = await fetchWithTimeout(`${BASE_URL}/hospitals/${id}/`, { headers: getHeaders() });
-    return handleResponse(res);
+    return flattenFacility(await handleResponse(res));
   },
   async createHospital(data) {
     const res = await fetchWithTimeout(`${BASE_URL}/hospitals/`, {
@@ -681,7 +709,7 @@ export const api = {
     const res = await fetchWithTimeout(`${BASE_URL}/bookings/doctor/`, {
       headers: getHeaders(),
     });
-    return handleResponse(res);
+    return flattenFacility(await handleResponse(res));
   },
 
   async updateDoctorBookingStatus(id, status) {
@@ -697,7 +725,7 @@ export const api = {
     const res = await fetchWithTimeout(`${BASE_URL}/bookings/lab/`, {
       headers: getHeaders(),
     });
-    return handleResponse(res);
+    return flattenFacility(await handleResponse(res));
   },
 
   async updateLabBookingStatus(id, status) {

@@ -143,7 +143,7 @@ export default function DoctorSearchPage({
     if (doctors.length > 0) {
       const map = {};
       doctors.forEach((doc) => {
-        const affiliations = (doc.affiliations || []).filter(a => !a.consultation_type || a.consultation_type === 'Doctor' || a.consultation_type === 'OPD');
+        const affiliations = (doc.affiliations || []).filter(a => !a.consultation_type || a.consultation_type === 'Doctor' || a.consultation_type === 'Chamber');
         affiliations.forEach((aff) => {
           const facilityId = aff.hospital || aff.diagnostic_center || 'general-branch';
           const facilityName = aff.facility_name || 'Medical Center Chamber';

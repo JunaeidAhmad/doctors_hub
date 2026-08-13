@@ -106,14 +106,14 @@ export default function HospitalDetailPage({ hospitalId, onBookDoctorSlot, onBoo
   // Filter doctors based on consultation_type
   const doctorsList = allDoctors.filter(doc => {
     if (doc.affiliations && doc.affiliations.length > 0) {
-      return doc.affiliations.some(a => !a.consultation_type || a.consultation_type === doctorConsultationFilter || (doctorConsultationFilter === 'Doctor' && a.consultation_type === 'OPD'));
+      return doc.affiliations.some(a => !a.consultation_type || a.consultation_type === doctorConsultationFilter || (doctorConsultationFilter === 'Doctor' && a.consultation_type === 'Chamber'));
     }
     return true;
   });
 
   const facilityBadges = hospital.facility_types && hospital.facility_types.length > 0
     ? hospital.facility_types
-    : [hospital.type || "Hospital", hospital.has_diagnostic_center !== false ? "Diagnostic Center Available" : "OPD Chambers"];
+    : [hospital.type || "Hospital", hospital.has_diagnostic_center !== false ? "Diagnostic Center Available" : "Doctor Chambers"];
 
   const specialties = ['All', ...new Set(doctorsList.map(d => {
     if (Array.isArray(d.specialties)) return d.specialties.map(s => s.name || s).join(', ');
@@ -343,7 +343,7 @@ export default function HospitalDetailPage({ hospitalId, onBookDoctorSlot, onBoo
                   
                   const affiliation = (doc.affiliations || []).find(a => 
                     a.consultation_type === doctorConsultationFilter || 
-                    (doctorConsultationFilter === 'Doctor' && (a.consultation_type === 'OPD' || !a.consultation_type))
+                    (doctorConsultationFilter === 'Doctor' && (a.consultation_type === 'Chamber' || !a.consultation_type))
                   ) || doc.affiliations?.[0] || {};
                   const fee = affiliation.fee || doc.fee || 1200;
                   const schedules = affiliation.schedules || [];
