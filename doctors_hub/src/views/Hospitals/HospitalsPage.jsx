@@ -124,6 +124,24 @@ export default function HospitalsPage({ initialCategory = '', initialKeyword = '
 
   const [totalHospitalPages, setTotalHospitalPages] = useState(1);
 
+  // Sync initialCategory prop if passed or updated from parent
+  useEffect(() => {
+    if (initialCategory !== undefined && initialCategory !== null && initialCategory !== '') {
+      setSelectedCategory(initialCategory);
+    }
+  }, [initialCategory]);
+
+  // Resolve category ID/slug/name to match dropdown options
+  const activeCategoryValue = useMemo(() => {
+    if (!selectedCategory || selectedCategory === 'all' || selectedCategory === 'All Categories') return 'all';
+    const found = hospitalCategories.find(c => 
+      String(c.id) === String(selectedCategory) ||
+      (c.slug && c.slug.toLowerCase() === String(selectedCategory).toLowerCase()) ||
+      (c.name && c.name.toLowerCase() === String(selectedCategory).toLowerCase())
+    );
+    return found ? String(found.id) : selectedCategory;
+  }, [selectedCategory, hospitalCategories]);
+
   // Fetch hospital categories metadata
   useEffect(() => {
     let isMounted = true;
@@ -346,7 +364,7 @@ export default function HospitalsPage({ initialCategory = '', initialKeyword = '
               <div>
                 <label className="block text-[11px] font-bold text-slate-400 mb-1">Hospital Category</label>
                 <select
-                  value={selectedCategory}
+                  value={activeCategoryValue}
                   onChange={(e) => {
                     setSelectedCategory(e.target.value);
                     setSearchKeyword('');

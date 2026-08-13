@@ -252,10 +252,10 @@ export default function ThreeWayEngine({
           </div>
 
           {/* COMPONENT 3: SEARCH HOSPITAL */}
-          <div className="bg-gradient-to-br from-slate-50 to-blue-50/40 p-5 rounded-xl border border-slate-200/90 hover:border-blue-300 transition-all shadow-xs flex flex-col justify-between space-y-4">
+          <div className="bg-gradient-to-br from-slate-50 to-cyan-50/40 p-5 rounded-xl border border-slate-200/90 hover:border-cyan-300 transition-all shadow-xs flex flex-col justify-between space-y-4">
             <div>
               <div className="flex items-center gap-2 mb-3">
-                <div className="w-8 h-8 rounded-lg bg-blue-600 text-white flex items-center justify-center font-bold text-sm shadow-sm">
+                <div className="w-8 h-8 rounded-lg bg-cyan-600 text-white flex items-center justify-center font-bold text-sm shadow-sm">
                   <Building2 className="w-4 h-4" />
                 </div>
                 <div>
@@ -277,7 +277,7 @@ export default function ThreeWayEngine({
                   <select
                     value={selectedHospitalCategory}
                     onChange={(e) => setSelectedHospitalCategory(e.target.value)}
-                    className="w-full bg-white text-slate-800 font-medium text-xs border border-slate-300 rounded-xl px-3 py-2.5 focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-blue-500 transition-all appearance-none cursor-pointer shadow-xs"
+                    className="w-full bg-white text-slate-800 font-medium text-xs border border-slate-300 rounded-xl px-3 py-2.5 focus:outline-none focus:ring-2 focus:ring-cyan-500 focus:border-cyan-500 transition-all appearance-none cursor-pointer shadow-xs"
                   >
                     <option value="">All Hospital Categories</option>
                     {hospitalCategories.filter((cat) => cat && cat.id !== 'all').map((cat) => (
@@ -295,14 +295,14 @@ export default function ThreeWayEngine({
               {/* Location Filter Dropdown */}
               <div>
                 <label className="block text-xs font-semibold text-slate-600 mb-1 flex items-center gap-1">
-                  <MapPin className="w-3.5 h-3.5 text-blue-600" />
+                  <MapPin className="w-3.5 h-3.5 text-cyan-600" />
                   <span>Location:</span>
                 </label>
                 <div className="relative">
                   <select
                     value={hospitalLoc}
                     onChange={(e) => setHospitalLoc(e.target.value)}
-                    className="w-full bg-white text-slate-800 font-medium text-xs border border-slate-300 rounded-xl px-3 py-2.5 focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-blue-500 transition-all appearance-none cursor-pointer shadow-xs"
+                    className="w-full bg-white text-slate-800 font-medium text-xs border border-slate-300 rounded-xl px-3 py-2.5 focus:outline-none focus:ring-2 focus:ring-cyan-500 focus:border-cyan-500 transition-all appearance-none cursor-pointer shadow-xs"
                   >
                     {LOCATIONS.map((loc) => (
                       <option key={loc} value={loc}>
@@ -324,7 +324,7 @@ export default function ThreeWayEngine({
                   setActiveEngineTab('hospital');
                   onSearchExecute('hospital', selectedHospitalCategory, hospitalLoc);
                 }}
-                className="w-full py-2.5 rounded-lg bg-blue-600 hover:bg-blue-700 text-white font-bold text-xs uppercase tracking-wider transition-all flex items-center justify-center gap-2 shadow-sm active:scale-95"
+                className="w-full py-2.5 rounded-lg bg-cyan-600 hover:bg-cyan-700 text-white font-bold text-xs uppercase tracking-wider transition-all flex items-center justify-center gap-2 shadow-sm active:scale-95"
               >
                 <Search className="w-3.5 h-3.5" />
                 <span>Search</span>

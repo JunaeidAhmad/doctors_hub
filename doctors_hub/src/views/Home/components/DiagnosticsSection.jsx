@@ -53,10 +53,10 @@ export default function DiagnosticsSection({ onSelectCategory }) {
             Diagnostics Categories
           </span>
           <h2 className="text-2xl sm:text-3xl font-black text-slate-900 mt-2 tracking-tight">
-            Diagnostics Centers & Labs
+            Diagnostics Centers
           </h2>
           <p className="mt-1 text-sm text-slate-600">
-            Explore verified diagnostic labs by specialization, ownership type, and available testing services.
+            Explore verified diagnostic Centers by specialization, ownership type, and available testing services.
           </p>
         </div>
 

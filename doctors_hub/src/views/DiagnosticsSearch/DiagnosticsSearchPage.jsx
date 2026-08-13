@@ -158,12 +158,26 @@ export default function DiagnosticsSearchPage({
     const owner = [];
     
     safeCats.forEach(c => {
-      if (!c || c.id === 'all' || c.id === 'by-specialization' || c.id === 'by-ownership-type' || c.id === 'by-ownership-and-type') {
+      const cId = (c?.id || '').toString().toLowerCase();
+      const cSlug = (c?.slug || '').toString().toLowerCase();
+      const nameStr = (c?.name || '').toString().toLowerCase();
+      
+      if (
+        !c || 
+        cId === 'all' || 
+        cId === 'by-specialization' || 
+        cId === 'by-ownership-type' || 
+        cId === 'by-ownership-and-type' ||
+        cSlug === 'by-specialization' ||
+        cSlug === 'by-ownership-type' ||
+        cSlug === 'by-ownership-and-type' ||
+        nameStr.includes('by specialization') ||
+        nameStr.includes('by ownership')
+      ) {
         return;
       }
       
       const parentStr = (c.parent || c.parent_name || '').toString().toLowerCase();
-      const nameStr = (c.name || '').toLowerCase();
       
       if (
         parentStr.includes('specialization') || 
@@ -553,9 +567,22 @@ export default function DiagnosticsSearchPage({
             </div>
           ) : (
             filteredDiagnosticCenters.map((center) => {
-              const offered = center.offered_tests && center.offered_tests.length > 0 
+              let offered = center.offered_tests && center.offered_tests.length > 0 
                 ? center.offered_tests 
                 : centerTests.filter(ct => ct && (ct.center_id === center.id || ct.center === center.id));
+
+              // NEW: Frontend fallback filtering to ensure matching tests are always visible
+              if (searchKeyword.trim()) {
+                const q = searchKeyword.trim().toLowerCase();
+                const matchedTests = offered.filter(offering => {
+                  const testName = (offering.test_details?.name || offering.test_name || offering.name || "").toLowerCase();
+                  const catName = (offering.test_details?.category_name || offering.category_name || "").toLowerCase();
+                  return testName.includes(q) || catName.includes(q);
+                });
+                if (matchedTests.length > 0) {
+                  offered = matchedTests;
+                }
+              }
 
               return (
                 <div key={center.id} className="bg-white rounded-2xl border border-slate-200/90 p-6 shadow-md hover:shadow-lg transition-all space-y-5">

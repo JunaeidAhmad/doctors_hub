@@ -403,6 +403,8 @@ class DiagnosticCenterSerializer(serializers.ModelSerializer):
         request = self.context.get('request')
         if request:
             testcat = request.query_params.get('testcat', None)
+            search = request.query_params.get('search', None)
+            
             if testcat and testcat != 'all':
                 from django.db.models import Q
                 from .views import is_valid_uuid
@@ -410,6 +412,16 @@ class DiagnosticCenterSerializer(serializers.ModelSerializer):
                 if is_valid_uuid(testcat):
                     q |= Q(test__category_id=testcat)
                 tests = tests.filter(q)
+                
+            if search:
+                from django.db.models import Q
+                filtered_tests = tests.filter(
+                    Q(test__name__icontains=search) | 
+                    Q(test__category__name__icontains=search)
+                )
+                if filtered_tests.exists():
+                    tests = filtered_tests
+                    
         return DiagnosticCenterTestSerializer(tests, many=True, context=self.context).data
 
     def _attach_tests(self, center, test_category_ids=None, test_ids=None, test_prices=None):

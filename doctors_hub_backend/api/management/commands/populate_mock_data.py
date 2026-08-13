@@ -176,7 +176,7 @@ CENTER_CATEGORY_TREE = {
     "By Specialization": {
         "children": {
             "Multi-Specialty": [],
-            "Pathology & Lab": [],
+            "Pathology": [],
             "Imaging (Radiology/CT/MRI)": [],
             "Cardiac Diagnostics": [],
             "Neuro Diagnostics": [],
@@ -492,7 +492,7 @@ class Command(BaseCommand):
                 "logo": "https://images.unsplash.com/photo-1586773860418-d37222d8fce3?auto=format&fit=crop&w=600&q=80",
                 "image": "https://images.unsplash.com/photo-1586773860418-d37222d8fce3?auto=format&fit=crop&w=600&q=80",
                 "description": "Popular Medical Center providing state-of-the-art diagnostic imaging and visiting doctor chambers.",
-                "categories": [dcc_objs["Multi-Specialty / General Diagnostic Center"], dcc_objs["Pathology & Lab"], dcc_objs["Corporate Chain (Multi-branch)"]],
+                "categories": [dcc_objs["Multi-Specialty / General Diagnostic Center"], dcc_objs["Pathology"], dcc_objs["Corporate Chain (Multi-branch)"]],
                 "services": [dservice_objs["Automated Blood & Serology Lab"], dservice_objs["128-Slice CT Scan"], dservice_objs["High-Speed MRI Scan"], dservice_objs["Home Sample Collection"]],
                 "is_verified": True
             },
@@ -512,7 +512,7 @@ class Command(BaseCommand):
                 "logo": "https://images.unsplash.com/photo-1538108149393-fbbd81895907?auto=format&fit=crop&w=600&q=80",
                 "image": "https://images.unsplash.com/photo-1538108149393-fbbd81895907?auto=format&fit=crop&w=600&q=80",
                 "description": "Specialized diagnostic testing and visiting doctor OPD sessions in Mirpur.",
-                "categories": [dcc_objs["Pathology & Lab"], dcc_objs["Corporate Chain (Multi-branch)"]],
+                "categories": [dcc_objs["Pathology"], dcc_objs["Corporate Chain (Multi-branch)"]],
                 "services": [dservice_objs["4D Ultrasonography & Color Doppler"], dservice_objs["Digital X-Ray & Imaging"], dservice_objs["Automated Blood & Serology Lab"], dservice_objs["Home Sample Collection"]],
                 "is_verified": True
             },
@@ -592,7 +592,7 @@ class Command(BaseCommand):
                 "logo": "https://images.unsplash.com/photo-1579684385127-1ef15d508118?auto=format&fit=crop&w=600&q=80",
                 "image": "https://images.unsplash.com/photo-1579684385127-1ef15d508118?auto=format&fit=crop&w=600&q=80",
                 "description": "Internationally accredited reference diagnostic lab providing genetic, molecular, and advanced pathology tests.",
-                "categories": [dcc_objs["Genetic & Molecular"], dcc_objs["Pathology & Lab"], dcc_objs["Private (Independent)"]],
+                "categories": [dcc_objs["Genetic & Molecular"], dcc_objs["Pathology"], dcc_objs["Private (Independent)"]],
                 "services": [dservice_objs["Automated Blood & Serology Lab"], dservice_objs["Home Sample Collection"]],
                 "is_verified": True
             },
