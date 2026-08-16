@@ -1,20 +1,15 @@
 from django.contrib import admin
 from .models import (
-    Address, Location, HospitalCategory, HospitalService, Hospital,
+    Location, HospitalCategory, HospitalService, Hospital,
     DiagnosticCenterCategory, DiagnosticService, DiagnosticCenter, Chamber
 )
 
-@admin.register(Address)
-class AddressAdmin(admin.ModelAdmin):
-    list_display = ('id', 'address_line', 'city', 'district', 'division')
-    search_fields = ('address_line', 'city', 'district', 'division')
-    list_filter = ('district', 'division')
-
 @admin.register(Location)
 class LocationAdmin(admin.ModelAdmin):
-    list_display = ('id', 'name', 'location_type', 'branch', 'is_verified', 'is_active')
-    list_filter = ('location_type', 'is_verified', 'is_active')
-    search_fields = ('name', 'branch')
+    list_display = ('id', 'name', 'location_type', 'branch', 'city', 'district', 'division', 'is_verified', 'is_active')
+    list_filter = ('location_type', 'district', 'division', 'is_verified', 'is_active')
+    search_fields = ('name', 'branch', 'address_line', 'city', 'district')
+
 
 
 @admin.register(HospitalCategory)

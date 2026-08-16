@@ -12,23 +12,24 @@ class DoctorSpecialtyViewSet(viewsets.ModelViewSet):
     permission_classes = (IsAdminUserOrReadOnly,)
 
 class DoctorFilter(django_filters.FilterSet):
-    city = django_filters.CharFilter(field_name='affiliations__location__address__city', lookup_expr='exact')
-    area = django_filters.CharFilter(field_name='affiliations__location__address__area', lookup_expr='exact')
-    district = django_filters.CharFilter(field_name='affiliations__location__address__district', lookup_expr='exact')
-    division = django_filters.CharFilter(field_name='affiliations__location__address__division', lookup_expr='exact')
+    city = django_filters.CharFilter(field_name='affiliations__location__city', lookup_expr='exact')
+    area = django_filters.CharFilter(field_name='affiliations__location__area', lookup_expr='exact')
+    district = django_filters.CharFilter(field_name='affiliations__location__district', lookup_expr='exact')
+    division = django_filters.CharFilter(field_name='affiliations__location__division', lookup_expr='exact')
 
     class Meta:
         model = Doctor
         fields = {
             'specialties': ['exact'],
             'affiliations__location': ['exact'],
-            'affiliations__location__address__city': ['exact'],
-            'affiliations__location__address__area': ['exact'],
-            'affiliations__location__address__district': ['exact'],
-            'affiliations__location__address__division': ['exact'],
+            'affiliations__location__city': ['exact'],
+            'affiliations__location__area': ['exact'],
+            'affiliations__location__district': ['exact'],
+            'affiliations__location__division': ['exact'],
             'affiliations__schedules__day_of_week': ['exact'],
             'affiliations__fee': ['lte'],
         }
+
 
 
 class DoctorViewSet(SlugOrPkLookupMixin, viewsets.ModelViewSet):

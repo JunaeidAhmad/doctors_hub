@@ -3,24 +3,6 @@ from django.db import models
 from django.utils.text import slugify
 
 
-class Address(models.Model):
-    id = models.UUIDField(primary_key=True, default=uuid.uuid4, editable=False)
-    address_line = models.CharField(max_length=300)
-    area = models.CharField(max_length=100, blank=True)
-    city = models.CharField(max_length=100, blank=True)
-    district = models.CharField(max_length=100)
-    division = models.CharField(max_length=100)
-    postal_code = models.CharField(max_length=20, blank=True)
-    latitude = models.DecimalField(max_digits=9, decimal_places=6, null=True, blank=True)
-    longitude = models.DecimalField(max_digits=9, decimal_places=6, null=True, blank=True)
-
-    class Meta:
-        indexes = [models.Index(fields=["district"]), models.Index(fields=["division"])]
-
-    def __str__(self):
-        return f"{self.address_line}, {self.district}"
-
-
 class Location(models.Model):
     class LocationType(models.TextChoices):
         HOSPITAL = "hospital", "Hospital"
@@ -32,7 +14,14 @@ class Location(models.Model):
     name = models.CharField(max_length=250)
     branch = models.CharField(max_length=200, blank=True)
     slug = models.SlugField(max_length=280, unique=True, blank=True)
-    address = models.ForeignKey(Address, on_delete=models.PROTECT, related_name="locations")
+    address_line = models.CharField(max_length=300, default="")
+    area = models.CharField(max_length=100, blank=True, default="")
+    city = models.CharField(max_length=100, blank=True, default="")
+    district = models.CharField(max_length=100, default="Dhaka")
+    division = models.CharField(max_length=100, default="Dhaka")
+    postal_code = models.CharField(max_length=20, blank=True, default="")
+    latitude = models.DecimalField(max_digits=9, decimal_places=6, null=True, blank=True)
+    longitude = models.DecimalField(max_digits=9, decimal_places=6, null=True, blank=True)
     phone = models.CharField(max_length=50, blank=True)
     email = models.EmailField(blank=True)
     logo = models.ImageField(upload_to="facilities/logos/", blank=True, null=True)
@@ -48,7 +37,11 @@ class Location(models.Model):
     created_at = models.DateTimeField(auto_now_add=True)
 
     class Meta:
-        indexes = [models.Index(fields=["location_type"])]
+        indexes = [
+            models.Index(fields=["location_type"]),
+            models.Index(fields=["district"]),
+            models.Index(fields=["division"]),
+        ]
         ordering = ["-created_at"]
 
     def save(self, *args, **kwargs):
@@ -60,6 +53,7 @@ class Location(models.Model):
     @property
     def detail(self):
         return getattr(self, f"{self.location_type}_detail", None)
+
 
 class HospitalCategory(models.Model):
     id = models.UUIDField(primary_key=True, default=uuid.uuid4, editable=False)

@@ -32,19 +32,19 @@ class HospitalServiceViewSet(viewsets.ModelViewSet):
     permission_classes = (IsAdminUserOrReadOnly,)
 
 class HospitalFilter(django_filters.FilterSet):
-    city = django_filters.CharFilter(field_name='location__address__city', lookup_expr='exact')
-    area = django_filters.CharFilter(field_name='location__address__area', lookup_expr='exact')
-    district = django_filters.CharFilter(field_name='location__address__district', lookup_expr='exact')
-    division = django_filters.CharFilter(field_name='location__address__division', lookup_expr='exact')
+    city = django_filters.CharFilter(field_name='location__city', lookup_expr='exact')
+    area = django_filters.CharFilter(field_name='location__area', lookup_expr='exact')
+    district = django_filters.CharFilter(field_name='location__district', lookup_expr='exact')
+    division = django_filters.CharFilter(field_name='location__division', lookup_expr='exact')
     categories = django_filters.ModelChoiceFilter(field_name='category', queryset=HospitalCategory.objects.all())
 
     class Meta:
         model = Hospital
         fields = {
-            'location__address__city': ['exact'],
-            'location__address__area': ['exact'],
-            'location__address__district': ['exact'],
-            'location__address__division': ['exact'],
+            'location__city': ['exact'],
+            'location__area': ['exact'],
+            'location__district': ['exact'],
+            'location__division': ['exact'],
             'category': ['exact'],
         }
 
@@ -68,21 +68,22 @@ class DiagnosticServiceViewSet(viewsets.ModelViewSet):
     permission_classes = (IsAdminUserOrReadOnly,)
 
 class DiagnosticCenterFilter(django_filters.FilterSet):
-    city = django_filters.CharFilter(field_name='location__address__city', lookup_expr='exact')
-    area = django_filters.CharFilter(field_name='location__address__area', lookup_expr='exact')
-    district = django_filters.CharFilter(field_name='location__address__district', lookup_expr='exact')
-    division = django_filters.CharFilter(field_name='location__address__division', lookup_expr='exact')
+    city = django_filters.CharFilter(field_name='location__city', lookup_expr='exact')
+    area = django_filters.CharFilter(field_name='location__area', lookup_expr='exact')
+    district = django_filters.CharFilter(field_name='location__district', lookup_expr='exact')
+    division = django_filters.CharFilter(field_name='location__division', lookup_expr='exact')
     categories = django_filters.ModelChoiceFilter(field_name='category', queryset=DiagnosticCenterCategory.objects.all())
 
     class Meta:
         model = DiagnosticCenter
         fields = {
-            'location__address__city': ['exact'],
-            'location__address__area': ['exact'],
-            'location__address__district': ['exact'],
-            'location__address__division': ['exact'],
+            'location__city': ['exact'],
+            'location__area': ['exact'],
+            'location__district': ['exact'],
+            'location__division': ['exact'],
             'category': ['exact'],
         }
+
 
 class DiagnosticCenterViewSet(SlugOrPkLookupMixin, viewsets.ModelViewSet):
     queryset = DiagnosticCenter.objects.all()

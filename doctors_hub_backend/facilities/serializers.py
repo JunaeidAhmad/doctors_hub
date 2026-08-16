@@ -1,14 +1,8 @@
 from rest_framework import serializers
 from .models import (
-    Address, Location, HospitalCategory, HospitalService, Hospital,
+    Location, HospitalCategory, HospitalService, Hospital,
     DiagnosticCenterCategory, DiagnosticService, DiagnosticCenter, Chamber
 )
-
-class AddressSerializer(serializers.ModelSerializer):
-    class Meta:
-        model = Address
-        fields = ('id', 'address_line', 'area', 'city', 'district', 'division', 'postal_code', 'latitude', 'longitude')
-
 
 class HospitalCategorySerializer(serializers.ModelSerializer):
     class Meta:
@@ -37,40 +31,33 @@ class DiagnosticCenterCategorySerializer(serializers.ModelSerializer):
 
 
 class LocationSerializer(serializers.ModelSerializer):
-    address = AddressSerializer(read_only=True)
-    address_id = serializers.PrimaryKeyRelatedField(
-        queryset=Address.objects.all(), write_only=True, source='address', required=False
-    )
-    address_line = serializers.CharField(source='address.address_line', read_only=True, default='')
-    area = serializers.CharField(source='address.area', read_only=True, default='')
-    city = serializers.CharField(source='address.city', read_only=True, default='')
-    district = serializers.CharField(source='address.district', read_only=True, default='')
-    division = serializers.CharField(source='address.division', read_only=True, default='')
     address_details = serializers.SerializerMethodField()
 
     class Meta:
         model = Location
         fields = (
-            'id', 'location_type', 'name', 'branch', 'slug', 'address', 'address_id',
+            'id', 'location_type', 'name', 'branch', 'slug',
             'address_line', 'area', 'city', 'district', 'division',
-            'address_details',
+            'postal_code', 'latitude', 'longitude', 'address_details',
             'phone', 'email', 'logo', 'image', 'description', 'tagline', 'badge',
             'rating', 'reviews_count', 'open_timing', 'is_verified', 'is_active', 'created_at'
         )
 
     def get_address_details(self, obj):
-        if not getattr(obj, 'address', None):
-            return {}
         return {
-            'address_line': obj.address.address_line,
-            'area': obj.address.area,
-            'city': obj.address.city,
-            'district': obj.address.district,
-            'division': obj.address.division,
+            'address_line': obj.address_line,
+            'area': obj.area,
+            'city': obj.city,
+            'district': obj.district,
+            'division': obj.division,
+            'postal_code': obj.postal_code,
+            'latitude': str(obj.latitude) if obj.latitude is not None else None,
+            'longitude': str(obj.longitude) if obj.longitude is not None else None,
         }
 
 # Backward-compatibility alias
 PracticeLocationSerializer = LocationSerializer
+
 
 
 

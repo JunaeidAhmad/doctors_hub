@@ -13,7 +13,7 @@ import facilities.serializers as facility_serializers
 import tests.views as test_views
 import tests.serializers as test_serializers
 
-from facilities.models import Address, Location, Hospital, DiagnosticCenter
+from facilities.models import Location, Hospital, DiagnosticCenter
 from bookings.models import DoctorBooking
 from bookings.serializers import DoctorBookingSerializer
 
@@ -61,9 +61,9 @@ def test_doctor_slug_and_lookup_mixin():
 @pytest.mark.django_db
 def test_validate_slot_against_schedule_called_on_save_and_serializer():
     user = User.objects.create_user(phone_number="01700000000", password="password")
-    addr = Address.objects.create(address_line="123 St", district="Dhaka", division="Dhaka", postal_code="1200")
     loc = Location.objects.create(
-        name="Health Care Center", location_type="hospital", address=addr
+        name="Health Care Center", location_type="hospital",
+        address_line="123 St", district="Dhaka", division="Dhaka", postal_code="1200"
     )
     doc = Doctor.objects.create(name="Dr. Bob", qualification="MBBS", experience="5 yrs")
     aff = DoctorAffiliation.objects.create(doctor=doc, location=loc, fee=500)
@@ -106,19 +106,15 @@ def test_validate_slot_against_schedule_called_on_save_and_serializer():
 
 @pytest.mark.django_db
 def test_filterset_fields_covers_district_and_division():
-    addr_dhaka = Address.objects.create(
-        address_line="Line 1", city="Dhaka", area="Dhanmondi", district="Dhaka", division="Dhaka", postal_code="1205"
-    )
     loc_dhaka = Location.objects.create(
-        name="Dhaka Hospital", location_type="hospital", address=addr_dhaka
+        name="Dhaka Hospital", location_type="hospital",
+        address_line="Line 1", city="Dhaka", area="Dhanmondi", district="Dhaka", division="Dhaka", postal_code="1205"
     )
     hosp_dhaka = Hospital.objects.create(location=loc_dhaka)
 
-    addr_ctg = Address.objects.create(
-        address_line="Line 2", city="Chittagong", area="Agrabad", district="Chittagong", division="Chittagong", postal_code="4000"
-    )
     loc_ctg = Location.objects.create(
-        name="Chittagong Hospital", location_type="hospital", address=addr_ctg
+        name="Chittagong Hospital", location_type="hospital",
+        address_line="Line 2", city="Chittagong", area="Agrabad", district="Chittagong", division="Chittagong", postal_code="4000"
     )
     hosp_ctg = Hospital.objects.create(location=loc_ctg)
 
@@ -137,6 +133,7 @@ def test_filterset_fields_covers_district_and_division():
     results = res.data.get("results", res.data)
     assert len(results) == 1
     assert results[0]["location_details"]["name"] == "Chittagong Hospital"
+
 
 
 

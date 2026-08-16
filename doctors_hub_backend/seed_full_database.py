@@ -13,7 +13,7 @@ from django.utils.text import slugify
 from django.utils import timezone
 from accounts.models import User
 from facilities.models import (
-    Address, Location, HospitalCategory, HospitalService, Hospital,
+    Location, HospitalCategory, HospitalService, Hospital,
     DiagnosticCenterCategory, DiagnosticService, DiagnosticCenter, Chamber
 )
 from doctors.models import (
@@ -31,7 +31,7 @@ SEED_NAMESPACE = uuid.UUID("6f6a9b2e-6f2b-4b7a-9b1e-6a1f7c2d9e10")
 def seed_uuid(key: str) -> uuid.UUID:
     return uuid.uuid5(SEED_NAMESPACE, key)
 
-def get_or_create_location(name, branch, loc_type, addr_obj, phone="", email="", tagline="", badge="", rating=4.8, reviews=100, open_timing="24/7 Open"):
+def get_or_create_location(name, branch, loc_type, addr_info, phone="", email="", tagline="", badge="", rating=4.8, reviews=100, open_timing="24/7 Open"):
     b = f"-{branch}" if branch else ""
     slug = slugify(f"{name}{b}")
     loc = Location.objects.filter(slug=slug).first()
@@ -42,7 +42,14 @@ def get_or_create_location(name, branch, loc_type, addr_obj, phone="", email="",
             name=name,
             branch=branch,
             slug=slug,
-            address=addr_obj,
+            address_line=addr_info.get("line", ""),
+            area=addr_info.get("area", ""),
+            city=addr_info.get("city", ""),
+            district=addr_info.get("district", "Dhaka"),
+            division=addr_info.get("division", "Dhaka"),
+            postal_code=addr_info.get("post", ""),
+            latitude=Decimal(str(addr_info["lat"])) if "lat" in addr_info else None,
+            longitude=Decimal(str(addr_info["lng"])) if "lng" in addr_info else None,
             phone=phone,
             email=email,
             tagline=tagline,
@@ -57,7 +64,16 @@ def get_or_create_location(name, branch, loc_type, addr_obj, phone="", email="",
         loc.location_type = loc_type
         loc.name = name
         loc.branch = branch
-        loc.address = addr_obj
+        loc.address_line = addr_info.get("line", "")
+        loc.area = addr_info.get("area", "")
+        loc.city = addr_info.get("city", "")
+        loc.district = addr_info.get("district", "Dhaka")
+        loc.division = addr_info.get("division", "Dhaka")
+        loc.postal_code = addr_info.get("post", "")
+        if "lat" in addr_info:
+            loc.latitude = Decimal(str(addr_info["lat"]))
+        if "lng" in addr_info:
+            loc.longitude = Decimal(str(addr_info["lng"]))
         loc.phone = phone
         loc.email = email
         loc.tagline = tagline
@@ -69,6 +85,7 @@ def get_or_create_location(name, branch, loc_type, addr_obj, phone="", email="",
         loc.is_active = True
         loc.save()
     return loc
+
 
 def inject_data():
     print("==================================================")
