@@ -20,7 +20,7 @@ export default function LandingHubPortal() {
             Book Doctors & Diagnostic Tests Across <span className="text-transparent bg-clip-text bg-gradient-to-r from-emerald-400 to-teal-300">Bangladesh</span>
           </h1>
           <p className="mt-3 text-slate-300 text-sm sm:text-base font-normal">
-            Search doctor schedules, secure instant serial tickets, and request home sample collection from top diagnostic labs nationwide.
+            Search doctor schedules, secure instant Doctor Appointments, and request home sample collection from top diagnostic labs nationwide.
           </p>
         </div>
 
@@ -32,13 +32,13 @@ export default function LandingHubPortal() {
             <div className="p-3.5 rounded-xl bg-emerald-500/20 text-emerald-400 w-fit mb-4">
               <Stethoscope className="w-6 h-6" />
             </div>
-            <h3 className="text-lg font-bold text-white mb-2">Instant Doctor Serials</h3>
+            <h3 className="text-lg font-bold text-white mb-2">Instant Doctor Appointments</h3>
             <p className="text-slate-300 text-xs sm:text-sm leading-relaxed">
               Find specialist professors, check live chamber visit timings, and book guaranteed serial slots online without waiting in long queues.
             </p>
             <div className="mt-4 pt-4 border-t border-slate-700/60 flex items-center gap-2 text-xs text-emerald-400 font-semibold">
               <Clock className="w-4 h-4" />
-              <span>Real-time Ticket Generation</span>
+              <span>Real-time Doctor Appointments</span>
             </div>
           </div>
 

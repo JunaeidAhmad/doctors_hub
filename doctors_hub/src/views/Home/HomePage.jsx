@@ -78,8 +78,18 @@ export default function HomePage({
 
       {/* 6. LAB TEST GRID (DIAGNOSTICS SECTION) */}
       <DiagnosticsSection
-        onSelectCategory={(catId) => {
+        onSelectTestCategory={(catId) => {
+          onExecuteSearch('diagnostics', catId);
+        }}
+        onSelectCenterCategory={(catId) => {
           onExecuteSearch('diagnostics_center', catId);
+        }}
+        onSelectCategory={(catId, type) => {
+          if (type === 'center') {
+            onExecuteSearch('diagnostics_center', catId);
+          } else {
+            onExecuteSearch('diagnostics', catId);
+          }
         }}
       />
 

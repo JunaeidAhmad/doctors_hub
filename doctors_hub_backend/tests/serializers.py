@@ -9,11 +9,12 @@ class TestCategorySerializer(serializers.ModelSerializer):
         fields = ('id', 'name', 'slug', 'icon', 'description', 'is_active', 'order')
 
 class TestSerializer(serializers.ModelSerializer):
+    category_id = serializers.PrimaryKeyRelatedField(
+        queryset=TestCategory.objects.all(), source='category', required=False, allow_null=True
+    )
     category_name = serializers.CharField(source='category.name', read_only=True)
     category_slug = serializers.CharField(source='category.slug', read_only=True)
-    category_id = serializers.PrimaryKeyRelatedField(
-        queryset=TestCategory.objects.all(), write_only=True, source='category'
-    )
+
 
     class Meta:
         model = Test

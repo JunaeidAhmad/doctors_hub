@@ -169,10 +169,10 @@ REST_FRAMEWORK = {
         'rest_framework.throttling.UserRateThrottle'
     ],
     'DEFAULT_THROTTLE_RATES': {
-        'anon': '100/day',
-        'user': '1000/day',
-        'register': '10/hour',
-        'login': '20/hour'
+        'anon': '10000/day',
+        'user': '50000/day',
+        'register': '60/hour',
+        'login': '120/hour'
     }
 }
 

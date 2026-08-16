@@ -88,7 +88,6 @@ export default function DoctorSearchPage({
     const delay = keyword.trim() ? 350 : 0;
     const timer = setTimeout(() => {
       api.getDoctors({
-        consultation_type: 'Doctor',
         specialty: specialty || undefined,
         location,
         area: area !== 'All Areas' ? area : undefined,
@@ -143,14 +142,58 @@ export default function DoctorSearchPage({
     if (doctors.length > 0) {
       const map = {};
       doctors.forEach((doc) => {
-        const affiliations = (doc.affiliations || []).filter(a => !a.consultation_type || a.consultation_type === 'Doctor' || a.consultation_type === 'Chamber');
-        affiliations.forEach((aff) => {
-          const facilityId = aff.hospital || aff.diagnostic_center || 'general-branch';
-          const facilityName = aff.facility_name || 'Medical Center Chamber';
+        const affiliations = Array.isArray(doc.affiliations) && doc.affiliations.length > 0
+          ? doc.affiliations
+          : [{
+              id: `virtual-${doc.id}`,
+              facility_name: doc.hospital_name || doc.chamber_name || 'Specialist Doctor Chamber',
+              city: doc.city || 'Dhaka',
+              fee: doc.fee || 1000,
+              schedules: []
+            }];
+
+        affiliations.forEach((aff, affIdx) => {
+          const facilityId = aff.location_id || aff.hospital || aff.diagnostic_center || (aff.location_details && aff.location_details.id) || `fac-${aff.id || affIdx}`;
+          const facilityName = aff.facility_name || (aff.location_details && aff.location_details.name) || 'Medical Center Chamber';
           const nameParts = String(facilityName).split(' - ');
           const baseName = nameParts[0] || 'Medical Center Chamber';
-          const branchName = nameParts.slice(1).join(' - ') || aff.hospital_branch || aff.diagnostic_center_branch || '';
-          const city = aff.city || 'Dhaka';
+          const branchName = nameParts.slice(1).join(' - ') || aff.hospital_branch || aff.diagnostic_center_branch || (aff.location_details && aff.location_details.branch) || '';
+          const city = aff.city || (aff.location_details && aff.location_details.city) || (aff.location_details && aff.location_details.district) || 'Dhaka';
+          const affArea = (aff.location_details && aff.location_details.area) || '';
+          const affDistrict = (aff.location_details && aff.location_details.district) || '';
+          const affDivision = (aff.location_details && aff.location_details.division) || '';
+
+          // Filter affiliation by Location
+          if (location && location !== 'All Bangladesh') {
+            const locLow = location.toLowerCase();
+            const matchesLoc = city.toLowerCase().includes(locLow) ||
+              affDistrict.toLowerCase().includes(locLow) ||
+              affDivision.toLowerCase().includes(locLow) ||
+              affArea.toLowerCase().includes(locLow);
+            if (!matchesLoc) return;
+          }
+
+          // Filter affiliation by Area
+          if (area && area !== 'All Areas') {
+            if (!affArea.toLowerCase().includes(area.toLowerCase())) return;
+          }
+
+          // Filter affiliation by Fee
+          const affFee = Number(aff.fee) || doc.fee || 1000;
+          if (maxFee && maxFee < 5000 && affFee > maxFee) {
+            return;
+          }
+
+          // Filter affiliation by Day
+          let filteredSchedules = aff.schedules || [];
+          if (selectedDay && selectedDay !== 'All') {
+            filteredSchedules = (aff.schedules || []).filter(s => 
+              String(s.day_of_week).toLowerCase().includes(selectedDay.toLowerCase())
+            );
+            if (filteredSchedules.length === 0 && (aff.schedules || []).length > 0) {
+              return;
+            }
+          }
 
           if (!map[facilityId]) {
             map[facilityId] = {
@@ -166,18 +209,19 @@ export default function DoctorSearchPage({
           }
           map[facilityId].doctors.push({
             ...doc,
-            affiliationId: aff.id,
+            uniqueKey: `${facilityId}-${doc.id}-${aff.id || affIdx}`,
+            affiliationId: aff.id || `aff-${affIdx}`,
             facilityId,
             facilityName,
             branchName,
             city,
-            fee: Number(aff.fee) || doc.fee || 1000,
-            schedules: aff.schedules || [],
-            visitDays: aff.schedules && aff.schedules.length > 0 
-              ? aff.schedules.map(s => s.day_of_week).join(', ') 
-              : 'Sat, Mon, Wed',
-            visitTime: aff.schedules && aff.schedules.length > 0 
-              ? `${formatTime(aff.schedules[0].start_time)} - ${formatTime(aff.schedules[0].end_time)}` 
+            fee: affFee,
+            schedules: filteredSchedules,
+            visitDays: filteredSchedules && filteredSchedules.length > 0 
+              ? filteredSchedules.map(s => s.day_of_week).join(', ') 
+              : (aff.schedules && aff.schedules.length > 0 ? aff.schedules.map(s => s.day_of_week).join(', ') : 'Sat, Mon, Wed'),
+            visitTime: filteredSchedules && filteredSchedules.length > 0 
+              ? `${formatTime(filteredSchedules[0].start_time)} - ${formatTime(filteredSchedules[0].end_time)}` 
               : '05:00 PM - 09:00 PM',
             slots: ['05:00 PM', '05:30 PM', '06:00 PM', '06:30 PM', '07:00 PM']
           });
@@ -186,7 +230,8 @@ export default function DoctorSearchPage({
       return Object.values(map);
     }
     return [];
-  }, [doctors]);
+  }, [doctors, location, area, maxFee, selectedDay]);
+
 
   // Use already-filtered chambers from backend
   const filteredChambers = doctorChambersList;
@@ -460,7 +505,7 @@ export default function DoctorSearchPage({
 
                   {/* Doctor List under Chamber */}
                   <div className="divide-y divide-slate-100">
-                    {chamber.doctors.map((doc) => {
+                    {chamber.doctors.map((doc, docIdx) => {
                       const docSpecs = Array.isArray(doc.specialties) 
                         ? doc.specialties.map(s => s.name || s).join(', ')
                         : (doc.specialty || doc.specialty_details?.name || 'Specialist Doctor');
@@ -468,10 +513,10 @@ export default function DoctorSearchPage({
                       const slotsList = Array.isArray(doc.slots) && doc.slots.length > 0 
                         ? doc.slots 
                         : ['05:00 PM', '05:30 PM', '06:00 PM', '06:30 PM', '07:00 PM'];
-                      const selectedSlot = selectedSlots[doc.id] || slotsList[0];
+                      const selectedSlot = selectedSlots[doc.uniqueKey || doc.id] || slotsList[0];
 
                       return (
-                        <div key={doc.id} className="p-6 flex flex-col md:flex-row md:items-center justify-between gap-6 hover:bg-slate-50/60 transition-colors">
+                        <div key={doc.uniqueKey || `${chamber.id}-${doc.id}-${docIdx}`} className="p-6 flex flex-col md:flex-row md:items-center justify-between gap-6 hover:bg-slate-50/60 transition-colors">
                           
                           {/* Doctor Profile Info */}
                           <div className="space-y-2 flex-1">
@@ -512,8 +557,8 @@ export default function DoctorSearchPage({
                               <div className="flex flex-wrap gap-1.5">
                                 {slotsList.map((slotTime) => (
                                   <button
-                                    key={slotTime}
-                                    onClick={() => handleSelectSlot(doc.id, slotTime)}
+                                    key={`${doc.uniqueKey || doc.id}-${slotTime}`}
+                                    onClick={() => handleSelectSlot(doc.uniqueKey || doc.id, slotTime)}
                                     className={`px-2.5 py-1 rounded-md text-xs font-semibold border transition-all ${
                                       selectedSlot === slotTime
                                         ? 'bg-emerald-600 text-white border-emerald-600 shadow-xs scale-105'

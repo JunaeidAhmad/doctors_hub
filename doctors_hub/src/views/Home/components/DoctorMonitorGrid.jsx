@@ -50,7 +50,7 @@ export default function DoctorMonitorGrid({ onSelectCategory }) {
             Hospitals
           </h2>
           <p className="mt-1 text-sm text-slate-600">
-            Verified hospital networks & specialized institutes across Bangladesh.
+            Verified hospital networks & specialized hospitals across Bangladesh.
           </p>
         </div>
 

@@ -78,11 +78,17 @@ export function AdminProvider({ children, currentUser }) {
   const [branchTestBranchFilter, setBranchTestBranchFilter] = useState('');
   const [branchTestTestFilter, setBranchTestTestFilter] = useState('');
 
-  const isStaff = currentUser?.is_staff || currentUser?.is_superuser || currentUser?.phone === '01700000000' || false;
+  const storedUser = currentUser || api.getCurrentUser();
+  const isStaff = Boolean(
+    storedUser?.is_staff || 
+    storedUser?.is_superuser || 
+    storedUser?.phone_number === '01700000000' || 
+    storedUser?.phone === '01700000000'
+  );
 
   useEffect(() => {
     loadInitialData();
-  }, []);
+  }, [currentUser]);
 
   const loadInitialData = async () => {
     if (isFetchingRef.current) return;

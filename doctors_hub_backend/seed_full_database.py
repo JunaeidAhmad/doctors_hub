@@ -2,6 +2,7 @@ import os
 import sys
 import uuid
 import random
+import json
 from datetime import date, time, timedelta, datetime
 from decimal import Decimal
 
@@ -89,11 +90,13 @@ def get_or_create_location(name, branch, loc_type, addr_info, phone="", email=""
 
 def inject_data():
     print("==================================================")
-    print("Starting Comprehensive Database Injection (5+ rows/table)")
+    print("Starting Comprehensive Database Seeding (5+ rows/table)")
     print("==================================================")
 
-    # 1. Users (at least 8 users)
-    print("\n[1/19] Injecting Users...")
+    # ----------------------------------------------------
+    # 1. USERS (10+ rows)
+    # ----------------------------------------------------
+    print("\n[1/18] Seeding Users...")
     sample_users = [
         {"phone": "01711000001", "first_name": "Rafiqul", "last_name": "Islam", "is_staff": False, "is_super": False},
         {"phone": "01812000002", "first_name": "Nusrat", "last_name": "Jahan", "is_staff": False, "is_super": False},
@@ -102,6 +105,8 @@ def inject_data():
         {"phone": "01715000005", "first_name": "Kamrul", "last_name": "Hasan", "is_staff": True, "is_super": False},
         {"phone": "01816000006", "first_name": "Farzana", "last_name": "Akter", "is_staff": False, "is_super": False},
         {"phone": "01917000007", "first_name": "Mahmudul", "last_name": "Karim", "is_staff": False, "is_super": False},
+        {"phone": "01718000008", "first_name": "Ayesha", "last_name": "Siddiqua", "is_staff": False, "is_super": False},
+        {"phone": "01819000009", "first_name": "Zubair", "last_name": "Hossain", "is_staff": False, "is_super": False},
         {"phone": "01700000000", "first_name": "Admin", "last_name": "User", "is_staff": True, "is_super": True},
     ]
 
@@ -121,44 +126,36 @@ def inject_data():
         created_users.append(user)
     print(f"✓ Users ready: {User.objects.count()} total.")
 
-    # 2. Addresses (ensure 7+ addresses)
-    print("\n[2/19] Injecting Addresses...")
-    addresses_data = [
-        {"slug": "addr-dhanmondi-1", "line": "House 16, Road 2, Dhanmondi", "area": "Dhanmondi", "city": "Dhaka", "district": "Dhaka", "division": "Dhaka", "post": "1205", "lat": 23.7465, "lng": 90.3760},
-        {"slug": "addr-panthapath-1", "line": "18/F, Bir Uttam Qazi Nuruzzaman Sarak, Panthapath", "area": "Panthapath", "city": "Dhaka", "district": "Dhaka", "division": "Dhaka", "post": "1205", "lat": 23.7516, "lng": 90.3872},
-        {"slug": "addr-dhanmondi-2", "line": "House 48, Road 9/A, Satmasjid Road", "area": "Dhanmondi", "city": "Dhaka", "district": "Dhaka", "division": "Dhaka", "post": "1209", "lat": 23.7480, "lng": 90.3720},
-        {"slug": "addr-bashundhara-1", "line": "Plot 81, Block E, Bashundhara R/A", "area": "Bashundhara", "city": "Dhaka", "district": "Dhaka", "division": "Dhaka", "post": "1229", "lat": 23.8103, "lng": 90.4312},
-        {"slug": "addr-gulshan-1", "line": "Plot 15, Road 71, Gulshan-2", "area": "Gulshan", "city": "Dhaka", "district": "Dhaka", "division": "Dhaka", "post": "1212", "lat": 23.7925, "lng": 90.4167},
-        {"slug": "addr-mirpur-1", "line": "Plot 4, Section 2, Mirpur", "area": "Mirpur", "city": "Dhaka", "district": "Dhaka", "division": "Dhaka", "post": "1216", "lat": 23.8067, "lng": 90.3644},
-        {"slug": "addr-chittagong-1", "line": "122, K.B. Fazlul Kader Road, Panchlaish", "area": "Panchlaish", "city": "Chittagong", "district": "Chittagong", "division": "Chittagong", "post": "4203", "lat": 22.3569, "lng": 91.8340},
-    ]
-    addr_map = {}
-    for a in addresses_data:
-        obj = Address.objects.filter(address_line=a["line"]).first()
-        if not obj:
-            obj = Address.objects.create(
-                id=seed_uuid(f"Address:{a['slug']}"),
-                address_line=a["line"],
-                area=a["area"],
-                city=a["city"],
-                district=a["district"],
-                division=a["division"],
-                postal_code=a["post"],
-                latitude=Decimal(str(a["lat"])),
-                longitude=Decimal(str(a["lng"]))
-            )
-        addr_map[a["slug"]] = obj
-    print(f"✓ Addresses ready: {Address.objects.count()} total.")
+    # ----------------------------------------------------
+    # 2. ADDRESS DEFINITIONS FOR LOCATIONS
+    # ----------------------------------------------------
+    addresses = {
+        "panthapath-1": {"line": "18/F, Bir Uttam Qazi Nuruzzaman Sarak, Panthapath", "area": "Panthapath", "city": "Dhaka", "district": "Dhaka", "division": "Dhaka", "post": "1205", "lat": 23.7516, "lng": 90.3872},
+        "dhanmondi-1": {"line": "House 16, Road 2, Dhanmondi", "area": "Dhanmondi", "city": "Dhaka", "district": "Dhaka", "division": "Dhaka", "post": "1205", "lat": 23.7465, "lng": 90.3760},
+        "dhanmondi-2": {"line": "House 48, Road 9/A, Satmasjid Road", "area": "Dhanmondi", "city": "Dhaka", "district": "Dhaka", "division": "Dhaka", "post": "1209", "lat": 23.7480, "lng": 90.3720},
+        "bashundhara-1": {"line": "Plot 81, Block E, Bashundhara R/A", "area": "Bashundhara", "city": "Dhaka", "district": "Dhaka", "division": "Dhaka", "post": "1229", "lat": 23.8103, "lng": 90.4312},
+        "gulshan-1": {"line": "Plot 15, Road 71, Gulshan-2", "area": "Gulshan", "city": "Dhaka", "district": "Dhaka", "division": "Dhaka", "post": "1212", "lat": 23.7925, "lng": 90.4167},
+        "mirpur-1": {"line": "Plot 4, Section 2, Mirpur", "area": "Mirpur", "city": "Dhaka", "district": "Dhaka", "division": "Dhaka", "post": "1216", "lat": 23.8067, "lng": 90.3644},
+        "shyamoli-1": {"line": "Mirpur Road, Shyamoli", "area": "Shyamoli", "city": "Dhaka", "district": "Dhaka", "division": "Dhaka", "post": "1207", "lat": 23.7712, "lng": 90.3630},
+        "chittagong-1": {"line": "122, K.B. Fazlul Kader Road, Panchlaish", "area": "Panchlaish", "city": "Chittagong", "district": "Chittagong", "division": "Chittagong", "post": "4203", "lat": 22.3569, "lng": 91.8340},
+        "chittagong-2": {"line": "Agrabad Commercial Area", "area": "Agrabad", "city": "Chittagong", "district": "Chittagong", "division": "Chittagong", "post": "4100", "lat": 22.3275, "lng": 91.8123},
+        "sylhet-1": {"line": "Nayasarak Road, Sylhet Sadar", "area": "Nayasarak", "city": "Sylhet", "district": "Sylhet", "division": "Sylhet", "post": "3100", "lat": 24.8949, "lng": 91.8687},
+        "shahbagh-1": {"line": "Shahbagh Intersection, Ramna", "area": "Shahbagh", "city": "Dhaka", "district": "Dhaka", "division": "Dhaka", "post": "1000", "lat": 23.7380, "lng": 90.3950},
+        "moakhali-1": {"line": "TB Gate Road, Mohakhali", "area": "Mohakhali", "city": "Dhaka", "district": "Dhaka", "division": "Dhaka", "post": "1212", "lat": 23.7776, "lng": 90.4054},
+    }
 
-    # 3. Hospital Categories (ensure 6+ categories)
-    print("\n[3/19] Injecting Hospital Categories...")
+    # ----------------------------------------------------
+    # 3. HOSPITAL CATEGORIES (6+ rows)
+    # ----------------------------------------------------
+    print("\n[2/18] Seeding Hospital Categories...")
     hcat_data = [
-        {"name": "General Hospital", "icon": "Building2", "desc": "Multi-specialty general healthcare facilities", "count": 15},
-        {"name": "Specialized Cardiac Hospital", "icon": "HeartPulse", "desc": "Dedicated cardiology and cardiovascular care", "count": 8},
-        {"name": "Mother & Child Care", "icon": "Baby", "desc": "Specialized maternal, neonatal, and pediatric care", "count": 12},
-        {"name": "Eye & Vision Hospital", "icon": "Eye", "desc": "Ophthalmology and surgical eye care centers", "count": 6},
-        {"name": "Cancer & Oncology Hospital", "icon": "Ribbon", "desc": "Comprehensive oncology, chemotherapy, and radiation facilities", "count": 4},
-        {"name": "Orthopedic & Trauma Hospital", "icon": "Bone", "desc": "Bone, joint, spine, and trauma care facilities", "count": 7},
+        {"name": "General Hospital", "icon": "Building2", "desc": "Multi-specialty comprehensive healthcare facilities", "count": 18},
+        {"name": "Specialized Cardiac Hospital", "icon": "HeartPulse", "desc": "Dedicated cardiology and cardiovascular surgery care", "count": 10},
+        {"name": "Mother & Child Care", "icon": "Baby", "desc": "Specialized maternal, neonatal, and pediatric care", "count": 14},
+        {"name": "Eye & Vision Hospital", "icon": "Eye", "desc": "Ophthalmology and advanced surgical eye care", "count": 7},
+        {"name": "Cancer & Oncology Hospital", "icon": "Ribbon", "desc": "Comprehensive oncology, chemotherapy, and radiation facilities", "count": 6},
+        {"name": "Orthopedic & Trauma Hospital", "icon": "Bone", "desc": "Bone, joint, spine, and trauma care facilities", "count": 9},
+        {"name": "Kidney & Urology Hospital", "icon": "Activity", "desc": "Renal transplant, dialysis, and urology center", "count": 5},
     ]
     hcat_map = {}
     for hc in hcat_data:
@@ -176,15 +173,18 @@ def inject_data():
         hcat_map[hc["name"]] = obj
     print(f"✓ Hospital Categories ready: {HospitalCategory.objects.count()} total.")
 
-    # 4. Hospital Services (ensure 6+ services)
-    print("\n[4/19] Injecting Hospital Services...")
+    # ----------------------------------------------------
+    # 4. HOSPITAL SERVICES (6+ rows)
+    # ----------------------------------------------------
+    print("\n[3/18] Seeding Hospital Services...")
     hsrv_data = [
-        {"name": "24/7 Emergency & Trauma", "icon": "Siren", "desc": "Round-the-clock emergency medical response"},
-        {"name": "ICU & CCU Facilities", "icon": "Activity", "desc": "Intensive care and cardiac care units"},
-        {"name": "In-house 24/7 Pharmacy", "icon": "Pill", "desc": "24-hour dispensing pharmacy"},
-        {"name": "Cardiac Ambulance Service", "icon": "Truck", "desc": "Equipped cardiac and standard ambulance transport"},
-        {"name": "Modular Operation Theaters", "icon": "Scissors", "desc": "Modern sterile surgical suites"},
-        {"name": "24/7 Blood Bank & Transfusion", "icon": "Droplet", "desc": "Screened safe blood storage and donor registry"},
+        {"name": "24/7 Emergency & Trauma", "icon": "Siren", "desc": "Round-the-clock emergency medical response and triage"},
+        {"name": "ICU & CCU Facilities", "icon": "Activity", "desc": "Intensive care and cardiac care units with life support"},
+        {"name": "In-house 24/7 Pharmacy", "icon": "Pill", "desc": "24-hour certified medicine dispensing pharmacy"},
+        {"name": "Cardiac Ambulance Service", "icon": "Truck", "desc": "Equipped cardiac and standard ICU ambulance transport"},
+        {"name": "Modular Operation Theaters", "icon": "Scissors", "desc": "Modern sterile surgical suites with laminar airflow"},
+        {"name": "24/7 Blood Bank & Transfusion", "icon": "Droplet", "desc": "Screened safe blood storage and voluntary donor registry"},
+        {"name": "Neonatal ICU (NICU)", "icon": "Baby", "desc": "Advanced incubator care for premature and critical newborns"},
     ]
     hsrv_map = {}
     for hs in hsrv_data:
@@ -200,33 +200,35 @@ def inject_data():
         hsrv_map[hs["name"]] = obj
     print(f"✓ Hospital Services ready: {HospitalService.objects.count()} total.")
 
-    # 5. Diagnostic Center Categories (ensure 6+ categories)
-    print("\n[5/19] Injecting Diagnostic Center Categories...")
+    # ----------------------------------------------------
+    # 5. DIAGNOSTIC CENTER CATEGORIES (Private, Government)
+    # ----------------------------------------------------
+    print("\n[4/18] Seeding Diagnostic Center Categories...")
     dcat_data = [
-        {"name": "Clinical Pathology", "icon": "FlaskConical", "desc": "Blood, urine, stool, and bodily fluid analysis"},
-        {"name": "Radiology & Imaging", "icon": "Scan", "desc": "Digital X-Ray, CT Scan, MRI, Ultrasound, Mammography"},
-        {"name": "Cardiology Diagnostics", "icon": "Heart", "desc": "ECG, Echocardiography, ETT, and Holter monitoring"},
-        {"name": "Microbiology & Serology", "icon": "Microscope", "desc": "Bacterial culture, viral titers, immunology"},
-        {"name": "Molecular Diagnostics", "icon": "Dna", "desc": "PCR testing, genetic markers, DNA sequencing"},
-        {"name": "Endoscopy & Colonoscopy", "icon": "Eye", "desc": "Diagnostic gastroenterology endoscopy procedures"},
+        {"name": "Private", "icon": "Building2", "desc": "Privately operated diagnostic centers and healthcare pathology laboratories"},
+        {"name": "Government", "icon": "ShieldCheck", "desc": "Government hospital-affiliated and public diagnostic facilities"},
     ]
+    # Remove older obsolete categories
+    DiagnosticCenterCategory.objects.exclude(name__in=["Private", "Government"]).delete()
+
     dcat_map = {}
     for dc in dcat_data:
         slug = slugify(dc["name"])
-        obj = DiagnosticCenterCategory.objects.filter(slug=slug).first()
-        if not obj:
-            obj = DiagnosticCenterCategory.objects.create(
-                id=seed_uuid(f"DiagnosticCenterCategory:{slug}"),
-                name=dc["name"],
-                slug=slug,
-                icon=dc["icon"],
-                description=dc["desc"]
-            )
+        obj, _ = DiagnosticCenterCategory.objects.update_or_create(
+            slug=slug,
+            defaults={
+                "name": dc["name"],
+                "icon": dc["icon"],
+                "description": dc["desc"]
+            }
+        )
         dcat_map[dc["name"]] = obj
-    print(f"✓ Diagnostic Categories ready: {DiagnosticCenterCategory.objects.count()} total.")
+    print(f"✓ Diagnostic Center Categories ready: {DiagnosticCenterCategory.objects.count()} total ({', '.join(dcat_map.keys())}).")
 
-    # 6. Diagnostic Services (ensure 6+ services)
-    print("\n[6/19] Injecting Diagnostic Services...")
+    # ----------------------------------------------------
+    # 6. DIAGNOSTIC SERVICES (6+ rows)
+    # ----------------------------------------------------
+    print("\n[5/18] Seeding Diagnostic Services...")
     dsrv_data = [
         {"name": "Home Sample Collection", "icon": "Home", "desc": "Trained phlebotomist visit for at-home specimen collection"},
         {"name": "Digital Online Reports", "icon": "FileText", "desc": "Instant SMS download link and secure portal"},
@@ -234,6 +236,7 @@ def inject_data():
         {"name": "Health Checkup Packages", "icon": "ShieldCheck", "desc": "Comprehensive wellness and executive checkups"},
         {"name": "Automated Biochemistry Lab", "icon": "Cpu", "desc": "Automated analyzers with zero contamination"},
         {"name": "Online Appointment Booking", "icon": "Calendar", "desc": "Pre-booking for tests and investigations"},
+        {"name": "Molecular PCR Testing", "icon": "Dna", "desc": "High precision real-time PCR diagnostics"},
     ]
     dsrv_map = {}
     for ds in dsrv_data:
@@ -249,23 +252,27 @@ def inject_data():
         dsrv_map[ds["name"]] = obj
     print(f"✓ Diagnostic Services ready: {DiagnosticService.objects.count()} total.")
 
-    # 7. PracticeLocations & Hospitals (ensure 6+ hospitals)
-    print("\n[7/19] Injecting Hospitals & Locations...")
+    # ----------------------------------------------------
+    # 7. HOSPITALS (6+ rows)
+    # ----------------------------------------------------
+    print("\n[6/18] Seeding Hospitals & Locations...")
     hospitals_info = [
-        {"name": "Square Hospital", "branch": "Panthapath Main", "addr": "addr-panthapath-1", "phone": "+8801713377775", "email": "info@squarehospital.com", "tagline": "Care at its Best", "badge": "Top Rated", "rating": 4.8, "reviews": 320, "timing": "24/7 Open", "cats": ["General Hospital", "Specialized Cardiac Hospital"], "srvs": ["24/7 Emergency & Trauma", "ICU & CCU Facilities", "In-house 24/7 Pharmacy", "Cardiac Ambulance Service", "Modular Operation Theaters"]},
-        {"name": "Evercare Hospital", "branch": "Dhaka Branch", "addr": "addr-bashundhara-1", "phone": "+88028431661", "email": "info@evercarebd.com", "tagline": "Transforming Healthcare", "badge": "Accredited", "rating": 4.7, "reviews": 290, "timing": "24/7 Open", "cats": ["General Hospital", "Cancer & Oncology Hospital"], "srvs": ["24/7 Emergency & Trauma", "ICU & CCU Facilities", "In-house 24/7 Pharmacy", "Cardiac Ambulance Service", "Modular Operation Theaters"]},
-        {"name": "United Hospital", "branch": "Gulshan Branch", "addr": "addr-gulshan-1", "phone": "+88028836000", "email": "info@uhlbd.com", "tagline": "Touching Lives with Care", "badge": "Premium Care", "rating": 4.7, "reviews": 210, "timing": "24/7 Open", "cats": ["General Hospital", "Specialized Cardiac Hospital"], "srvs": ["24/7 Emergency & Trauma", "ICU & CCU Facilities", "Cardiac Ambulance Service"]},
-        {"name": "Labaid Specialized Hospital", "branch": "Dhanmondi Branch", "addr": "addr-dhanmondi-1", "phone": "+8801713333337", "email": "info@labaidgroup.com", "tagline": "Committed to Health", "badge": "Cardiac Center", "rating": 4.6, "reviews": 185, "timing": "24/7 Open", "cats": ["Specialized Cardiac Hospital"], "srvs": ["24/7 Emergency & Trauma", "ICU & CCU Facilities", "In-house 24/7 Pharmacy"]},
-        {"name": "National Heart Foundation Hospital", "branch": "Mirpur Branch", "addr": "addr-mirpur-1", "phone": "+88029033442", "email": "info@nhf.org.bd", "tagline": "Dedicated Heart Care", "badge": "Non-profit", "rating": 4.6, "reviews": 140, "timing": "24/7 Open", "cats": ["Specialized Cardiac Hospital"], "srvs": ["24/7 Emergency & Trauma", "ICU & CCU Facilities", "Cardiac Ambulance Service"]},
-        {"name": "Bangladesh Specialized Hospital", "branch": "Shyamoli Branch", "addr": "addr-panthapath-1", "phone": "+8809666700100", "email": "info@bsh.com.bd", "tagline": "Excellence in Healthcare", "badge": "Verified", "rating": 4.7, "reviews": 160, "timing": "24/7 Open", "cats": ["General Hospital", "Orthopedic & Trauma Hospital"], "srvs": ["24/7 Emergency & Trauma", "ICU & CCU Facilities", "Modular Operation Theaters"]},
+        {"name": "Square Hospital", "branch": "Panthapath Main", "addr_key": "panthapath-1", "phone": "+8801713377775", "email": "info@squarehospital.com", "tagline": "Care at its Best", "badge": "Top Rated", "rating": 4.85, "reviews": 340, "timing": "24/7 Open", "cat": "General Hospital", "srvs": ["24/7 Emergency & Trauma", "ICU & CCU Facilities", "In-house 24/7 Pharmacy", "Cardiac Ambulance Service", "Modular Operation Theaters", "24/7 Blood Bank & Transfusion"]},
+        {"name": "Evercare Hospital", "branch": "Dhaka Branch", "addr_key": "bashundhara-1", "phone": "+88028431661", "email": "info@evercarebd.com", "tagline": "Transforming Healthcare", "badge": "Accredited", "rating": 4.80, "reviews": 290, "timing": "24/7 Open", "cat": "Cancer & Oncology Hospital", "srvs": ["24/7 Emergency & Trauma", "ICU & CCU Facilities", "In-house 24/7 Pharmacy", "Cardiac Ambulance Service", "Modular Operation Theaters", "Neonatal ICU (NICU)"]},
+        {"name": "United Hospital", "branch": "Gulshan Branch", "addr_key": "gulshan-1", "phone": "+88028836000", "email": "info@uhlbd.com", "tagline": "Touching Lives with Care", "badge": "Premium Care", "rating": 4.75, "reviews": 220, "timing": "24/7 Open", "cat": "General Hospital", "srvs": ["24/7 Emergency & Trauma", "ICU & CCU Facilities", "Cardiac Ambulance Service", "In-house 24/7 Pharmacy"]},
+        {"name": "Labaid Specialized Hospital", "branch": "Dhanmondi Branch", "addr_key": "dhanmondi-1", "phone": "+8801713333337", "email": "info@labaidgroup.com", "tagline": "Committed to Health", "badge": "Cardiac Center", "rating": 4.70, "reviews": 195, "timing": "24/7 Open", "cat": "Specialized Cardiac Hospital", "srvs": ["24/7 Emergency & Trauma", "ICU & CCU Facilities", "In-house 24/7 Pharmacy", "Cardiac Ambulance Service"]},
+        {"name": "National Heart Foundation Hospital", "branch": "Mirpur Branch", "addr_key": "mirpur-1", "phone": "+88029033442", "email": "info@nhf.org.bd", "tagline": "Dedicated Heart Care", "badge": "Non-profit", "rating": 4.65, "reviews": 150, "timing": "24/7 Open", "cat": "Specialized Cardiac Hospital", "srvs": ["24/7 Emergency & Trauma", "ICU & CCU Facilities", "Cardiac Ambulance Service"]},
+        {"name": "Bangladesh Specialized Hospital", "branch": "Shyamoli Branch", "addr_key": "shyamoli-1", "phone": "+8809666700100", "email": "info@bsh.com.bd", "tagline": "Excellence in Healthcare", "badge": "Verified", "rating": 4.75, "reviews": 170, "timing": "24/7 Open", "cat": "Orthopedic & Trauma Hospital", "srvs": ["24/7 Emergency & Trauma", "ICU & CCU Facilities", "Modular Operation Theaters", "In-house 24/7 Pharmacy"]},
+        {"name": "Chevron Hospital", "branch": "Panchlaish Branch", "addr_key": "chittagong-1", "phone": "+88031652860", "email": "info@chevronctg.com", "tagline": "Pioneering Patient Care in Chattogram", "badge": "Regional Leader", "rating": 4.70, "reviews": 180, "timing": "24/7 Open", "cat": "General Hospital", "srvs": ["24/7 Emergency & Trauma", "ICU & CCU Facilities", "Modular Operation Theaters"]},
     ]
 
+    hosp_map = {}
     for h in hospitals_info:
         loc = get_or_create_location(
             name=h["name"],
             branch=h["branch"],
             loc_type=Location.LocationType.HOSPITAL,
-            addr_obj=addr_map[h["addr"]],
+            addr_info=addresses[h["addr_key"]],
             phone=h["phone"],
             email=h["email"],
             tagline=h["tagline"],
@@ -278,34 +285,38 @@ def inject_data():
             location=loc,
             defaults={"has_diagnostic_center": True}
         )
-        for cat_name in h["cats"]:
-            if cat_name in hcat_map:
-                hosp.category = hcat_map[cat_name]
-                hosp.save()
-                break
+        if h["cat"] in hcat_map:
+            hosp.category = hcat_map[h["cat"]]
+            hosp.save()
         for srv_name in h["srvs"]:
             if srv_name in hsrv_map:
                 hosp.services.add(hsrv_map[srv_name])
+        hosp_map[h["name"]] = hosp
 
     print(f"✓ Hospitals ready: {Hospital.objects.count()} total.")
 
-    # 8. Diagnostic Centers (ensure 6+ diagnostic centers)
-    print("\n[8/19] Injecting Diagnostic Centers...")
+    # ----------------------------------------------------
+    # 8. DIAGNOSTIC CENTERS (6+ rows)
+    # ----------------------------------------------------
+    print("\n[7/18] Seeding Diagnostic Centers...")
     diag_centers_info = [
-        {"name": "Popular Diagnostic Centre", "branch": "Dhanmondi Branch", "addr": "addr-dhanmondi-1", "phone": "+8809613787801", "email": "dhanmondi@populardiagnostic.com", "tagline": "Accurate & Reliable Diagnostics", "badge": "Popular Choice", "rating": 4.6, "reviews": 540, "timing": "07:00 AM - 11:00 PM", "cats": ["Clinical Pathology", "Radiology & Imaging", "Cardiology Diagnostics", "Microbiology & Serology"], "srvs": ["Home Sample Collection", "Digital Online Reports", "Express / Stat Testing", "Health Checkup Packages", "Automated Biochemistry Lab"]},
-        {"name": "Ibn Sina Diagnostic Center", "branch": "Dhanmondi Branch", "addr": "addr-dhanmondi-2", "phone": "+88029126625", "email": "dhanmondi@ibnsinatrust.com", "tagline": "Serving Humanity with Integrity", "badge": "Trusted", "rating": 4.5, "reviews": 410, "timing": "07:00 AM - 11:00 PM", "cats": ["Clinical Pathology", "Radiology & Imaging", "Cardiology Diagnostics"], "srvs": ["Home Sample Collection", "Digital Online Reports", "Health Checkup Packages"]},
-        {"name": "Medinova Medical Services", "branch": "Dhanmondi Main", "addr": "addr-dhanmondi-1", "phone": "+880258610385", "email": "info@medinova.com.bd", "tagline": "Quality Healthcare You Can Trust", "badge": "Established", "rating": 4.4, "reviews": 230, "timing": "07:30 AM - 10:30 PM", "cats": ["Clinical Pathology", "Radiology & Imaging"], "srvs": ["Digital Online Reports", "Health Checkup Packages"]},
-        {"name": "Lab One Diagnostic", "branch": "Uttara Branch", "addr": "addr-bashundhara-1", "phone": "+8801711002233", "email": "uttara@labone.com.bd", "tagline": "Precision & Accuracy", "badge": "ISO Certified", "rating": 4.5, "reviews": 115, "timing": "08:00 AM - 10:00 PM", "cats": ["Clinical Pathology", "Microbiology & Serology"], "srvs": ["Home Sample Collection", "Digital Online Reports"]},
-        {"name": "Thyrocare Bangladesh", "branch": "Banani Central Lab", "addr": "addr-gulshan-1", "phone": "+8809666737373", "email": "info@thyrocare.com.bd", "tagline": "World Class Automated Pathology", "badge": "Fully Automated", "rating": 4.7, "reviews": 310, "timing": "07:00 AM - 09:00 PM", "cats": ["Clinical Pathology", "Molecular Diagnostics"], "srvs": ["Home Sample Collection", "Digital Online Reports", "Automated Biochemistry Lab"]},
-        {"name": "Praava Health", "branch": "Banani Branch", "addr": "addr-gulshan-1", "phone": "+8801847277777", "email": "care@praavahealth.com", "tagline": "Your Trusted Family Health Partner", "badge": "Modern", "rating": 4.8, "reviews": 245, "timing": "07:30 AM - 10:00 PM", "cats": ["Clinical Pathology", "Radiology & Imaging", "Molecular Diagnostics"], "srvs": ["Home Sample Collection", "Digital Online Reports", "Express / Stat Testing"]},
+        {"name": "Popular Diagnostic Centre", "branch": "Dhanmondi Branch", "addr_key": "dhanmondi-1", "phone": "+8809613787801", "email": "dhanmondi@populardiagnostic.com", "tagline": "Accurate & Reliable Diagnostics", "badge": "Popular Choice", "rating": 4.65, "reviews": 560, "timing": "07:00 AM - 11:00 PM", "cat": "Private", "srvs": ["Home Sample Collection", "Digital Online Reports", "Express / Stat Testing", "Health Checkup Packages", "Automated Biochemistry Lab"], "test_cats": ["Biochemistry & Routine Blood", "Thyroid & Hormonal Panel", "Radiology & Medical Imaging", "Cardiovascular Investigations", "Urine & Renal Profile", "Microbiology, Culture & Serology", "Molecular & Specialized Diagnostics"]},
+        {"name": "Ibn Sina Diagnostic Center", "branch": "Dhanmondi Branch", "addr_key": "dhanmondi-2", "phone": "+88029126625", "email": "dhanmondi@ibnsinatrust.com", "tagline": "Serving Humanity with Integrity", "badge": "Trusted", "rating": 4.55, "reviews": 420, "timing": "07:00 AM - 11:00 PM", "cat": "Private", "srvs": ["Home Sample Collection", "Digital Online Reports", "Health Checkup Packages", "Automated Biochemistry Lab"], "test_cats": ["Biochemistry & Routine Blood", "Thyroid & Hormonal Panel", "Radiology & Medical Imaging", "Cardiovascular Investigations", "Urine & Renal Profile", "Microbiology, Culture & Serology"]},
+        {"name": "Medinova Medical Services", "branch": "Dhanmondi Main", "addr_key": "dhanmondi-1", "phone": "+880258610385", "email": "info@medinova.com.bd", "tagline": "Quality Healthcare You Can Trust", "badge": "Established", "rating": 4.45, "reviews": 240, "timing": "07:30 AM - 10:30 PM", "cat": "Private", "srvs": ["Digital Online Reports", "Health Checkup Packages", "Express / Stat Testing"], "test_cats": ["Biochemistry & Routine Blood", "Radiology & Medical Imaging", "Cardiovascular Investigations", "Urine & Renal Profile"]},
+        {"name": "Praava Health", "branch": "Banani Branch", "addr_key": "gulshan-1", "phone": "+8801847277777", "email": "care@praavahealth.com", "tagline": "Your Trusted Family Health Partner", "badge": "Modern", "rating": 4.80, "reviews": 260, "timing": "07:30 AM - 10:00 PM", "cat": "Private", "srvs": ["Home Sample Collection", "Digital Online Reports", "Express / Stat Testing", "Molecular PCR Testing"], "test_cats": ["Biochemistry & Routine Blood", "Thyroid & Hormonal Panel", "Radiology & Medical Imaging", "Molecular & Specialized Diagnostics"]},
+        {"name": "Thyrocare Bangladesh", "branch": "Banani Central Lab", "addr_key": "gulshan-1", "phone": "+8809666737373", "email": "info@thyrocare.com.bd", "tagline": "World Class Automated Pathology", "badge": "Fully Automated", "rating": 4.75, "reviews": 320, "timing": "07:00 AM - 09:00 PM", "cat": "Private", "srvs": ["Home Sample Collection", "Digital Online Reports", "Automated Biochemistry Lab", "Health Checkup Packages"], "test_cats": ["Biochemistry & Routine Blood", "Thyroid & Hormonal Panel", "Molecular & Specialized Diagnostics", "Urine & Renal Profile"]},
+        {"name": "BSMMU Diagnostic Laboratory", "branch": "Shahbagh Central", "addr_key": "shahbagh-1", "phone": "+88029661051", "email": "info@bsmmu.edu.bd", "tagline": "Premier Public Medical Research & Diagnostics", "badge": "Government / University", "rating": 4.60, "reviews": 480, "timing": "08:00 AM - 08:00 PM", "cat": "Government", "srvs": ["Digital Online Reports", "Automated Biochemistry Lab", "Molecular PCR Testing"], "test_cats": ["Biochemistry & Routine Blood", "Thyroid & Hormonal Panel", "Radiology & Medical Imaging", "Cardiovascular Investigations", "Microbiology, Culture & Serology", "Urine & Renal Profile", "Molecular & Specialized Diagnostics"]},
+        {"name": "Dhaka Medical College Diagnostic Lab", "branch": "Bakshibazar Main", "addr_key": "shahbagh-1", "phone": "+880255165088", "email": "info@dmch.gov.bd", "tagline": "National Public Tertiary Diagnostic Center", "badge": "Government", "rating": 4.50, "reviews": 390, "timing": "24/7 Open", "cat": "Government", "srvs": ["Digital Online Reports", "Express / Stat Testing", "Automated Biochemistry Lab"], "test_cats": ["Biochemistry & Routine Blood", "Radiology & Medical Imaging", "Cardiovascular Investigations", "Microbiology, Culture & Serology", "Urine & Renal Profile"]},
+        {"name": "Chevron Clinical Laboratory", "branch": "Chittagong Central", "addr_key": "chittagong-1", "phone": "+88031652533", "email": "lab@chevronctg.com", "tagline": "Comprehensive Diagnostic Precision", "badge": "ISO 15189", "rating": 4.70, "reviews": 210, "timing": "07:00 AM - 11:00 PM", "cat": "Private", "srvs": ["Home Sample Collection", "Digital Online Reports", "Automated Biochemistry Lab"], "test_cats": ["Biochemistry & Routine Blood", "Radiology & Medical Imaging", "Cardiovascular Investigations", "Microbiology, Culture & Serology", "Urine & Renal Profile"]},
     ]
 
+    diag_map = {}
     for d in diag_centers_info:
         loc = get_or_create_location(
             name=d["name"],
             branch=d["branch"],
             loc_type=Location.LocationType.DIAGNOSTIC_CENTER,
-            addr_obj=addr_map[d["addr"]],
+            addr_info=addresses[d["addr_key"]],
             phone=d["phone"],
             email=d["email"],
             tagline=d["tagline"],
@@ -318,28 +329,30 @@ def inject_data():
             location=loc,
             defaults={}
         )
-        for cat_name in d["cats"]:
-            if cat_name in dcat_map:
-                diag.category = dcat_map[cat_name]
-                diag.save()
-                break
+        if d["cat"] in dcat_map:
+            diag.category = dcat_map[d["cat"]]
+            diag.save()
         for srv_name in d["srvs"]:
             if srv_name in dsrv_map:
                 diag.services.add(dsrv_map[srv_name])
+        diag_map[d["name"]] = diag
 
     print(f"✓ Diagnostic Centers ready: {DiagnosticCenter.objects.count()} total.")
 
-    # 9. Doctor Specialties (ensure 6+ specialties)
-    print("\n[9/19] Injecting Doctor Specialties...")
+    # ----------------------------------------------------
+    # 9. DOCTOR SPECIALTIES (6+ rows)
+    # ----------------------------------------------------
+    print("\n[8/18] Seeding Doctor Specialties...")
     spec_data = [
-        {"name": "Internal Medicine", "icon": "Stethoscope", "desc": "Diagnosis and management of adult diseases"},
-        {"name": "Cardiology", "icon": "Heart", "desc": "Cardiovascular disorders and hypertension"},
-        {"name": "Gynecology & Obstetrics", "icon": "UserCheck", "desc": "Women's reproductive health, pregnancy, delivery"},
-        {"name": "Neurology", "icon": "Brain", "desc": "Disorders of the nervous system and brain"},
-        {"name": "Orthopedic Surgery", "icon": "Bone", "desc": "Musculoskeletal system, joints, and spine care"},
-        {"name": "Pediatrics & Child Care", "icon": "Baby", "desc": "Infant, child, and adolescent healthcare"},
-        {"name": "Dermatology & Skin Care", "icon": "Sparkles", "desc": "Skin, hair, nails, and aesthetic care"},
-        {"name": "Gastroenterology & Liver", "icon": "Activity", "desc": "Digestive tract and liver disorders"},
+        {"name": "Internal Medicine", "icon": "Stethoscope", "desc": "Comprehensive diagnosis and management of adult diseases"},
+        {"name": "Cardiology", "icon": "Heart", "desc": "Heart diseases, hypertension, and cardiovascular care"},
+        {"name": "Gynecology & Obstetrics", "icon": "UserCheck", "desc": "Women's health, maternity care, and fertility treatment"},
+        {"name": "Neurology & Brain", "icon": "Brain", "desc": "Disorders of the central & peripheral nervous system"},
+        {"name": "Orthopedic Surgery", "icon": "Bone", "desc": "Bone fractures, joints, spine, and arthritis care"},
+        {"name": "Pediatrics & Child Care", "icon": "Baby", "desc": "Infant, child, and adolescent specialized healthcare"},
+        {"name": "Dermatology & Skin Care", "icon": "Sparkles", "desc": "Skin, hair, nails, and cosmetic dermatology"},
+        {"name": "Gastroenterology & Liver", "icon": "Activity", "desc": "Digestive tract, stomach, liver, and pancreas care"},
+        {"name": "Nephrology & Kidney", "icon": "Droplet", "desc": "Kidney disease management and dialysis care"},
     ]
     spec_map = {}
     for sp in spec_data:
@@ -356,16 +369,19 @@ def inject_data():
         spec_map[sp["name"]] = obj
     print(f"✓ Doctor Specialties ready: {DoctorSpecialty.objects.count()} total.")
 
-    # 10. Doctors (ensure 6+ doctors)
-    print("\n[10/19] Injecting Doctors...")
+    # ----------------------------------------------------
+    # 10. DOCTORS (6+ rows)
+    # ----------------------------------------------------
+    print("\n[9/18] Seeding Doctors...")
     doctors_info = [
-        {"name": "Prof. Dr. A. B. M. Abdullah", "qual": "MBBS, FCPS (Medicine), FRCP (Edin)", "exp": "35 Years", "specs": ["Internal Medicine"]},
-        {"name": "Prof. Dr. M. G. Azam", "qual": "MBBS, MD (Cardiology), FACC (USA)", "exp": "25 Years", "specs": ["Cardiology"]},
-        {"name": "Prof. Dr. Laila Arjumand Banu", "qual": "MBBS, FCPS (Obs & Gynae), FICS", "exp": "28 Years", "specs": ["Gynecology & Obstetrics"]},
-        {"name": "Dr. Kazi Naushad-Un-Nabi", "qual": "MBBS, FCPS (Pediatrics), MD (Neurology)", "exp": "20 Years", "specs": ["Neurology", "Pediatrics & Child Care"]},
-        {"name": "Prof. Dr. Pranab Kumar Karmaker", "qual": "MBBS, MS (Orthopedics)", "exp": "30 Years", "specs": ["Orthopedic Surgery"]},
-        {"name": "Dr. Farhana Akter", "qual": "MBBS, DDV (Dermatology)", "exp": "12 Years", "specs": ["Dermatology & Skin Care"]},
-        {"name": "Dr. Salma Begum", "qual": "MBBS, FCPS (Gastroenterology)", "exp": "19 Years", "specs": ["Gastroenterology & Liver"]},
+        {"name": "Prof. Dr. A. B. M. Abdullah", "qual": "MBBS, FCPS (Medicine), FRCP (Edin)", "exp": "35 Years Exp.", "specs": ["Internal Medicine"]},
+        {"name": "Prof. Dr. M. G. Azam", "qual": "MBBS, MD (Cardiology), FACC (USA)", "exp": "25 Years Exp.", "specs": ["Cardiology"]},
+        {"name": "Prof. Dr. Laila Arjumand Banu", "qual": "MBBS, FCPS (Obs & Gynae), FICS", "exp": "28 Years Exp.", "specs": ["Gynecology & Obstetrics"]},
+        {"name": "Dr. Kazi Naushad-Un-Nabi", "qual": "MBBS, FCPS (Pediatrics), MD (Neurology)", "exp": "20 Years Exp.", "specs": ["Neurology & Brain", "Pediatrics & Child Care"]},
+        {"name": "Prof. Dr. Pranab Kumar Karmaker", "qual": "MBBS, MS (Orthopedics)", "exp": "30 Years Exp.", "specs": ["Orthopedic Surgery"]},
+        {"name": "Dr. Farhana Akter", "qual": "MBBS, DDV (Dermatology)", "exp": "12 Years Exp.", "specs": ["Dermatology & Skin Care"]},
+        {"name": "Dr. Salma Begum", "qual": "MBBS, FCPS (Gastroenterology)", "exp": "19 Years Exp.", "specs": ["Gastroenterology & Liver"]},
+        {"name": "Prof. Dr. Harun-Or-Rashid", "qual": "MBBS, FCPS (Nephrology), PhD", "exp": "32 Years Exp.", "specs": ["Nephrology & Kidney", "Internal Medicine"]},
     ]
     doc_map = {}
     for d in doctors_info:
@@ -385,26 +401,29 @@ def inject_data():
         doc_map[d["name"]] = doc
     print(f"✓ Doctors ready: {Doctor.objects.count()} total.")
 
-    # 11. Chambers (ensure 5+ chambers)
-    print("\n[11/19] Injecting Chambers...")
+    # ----------------------------------------------------
+    # 11. CHAMBERS (6+ rows)
+    # ----------------------------------------------------
+    print("\n[10/18] Seeding Chambers...")
     chambers_info = [
-        {"name": "Prof. Abdullah Consultation Chamber", "branch": "Green Road", "addr": "addr-panthapath-1", "doc": "Prof. Dr. A. B. M. Abdullah", "asst_phone": "+8801711223344", "timing": "05:00 PM - 09:00 PM"},
-        {"name": "Prof. Azam Cardiac Chamber", "branch": "Dhanmondi", "addr": "addr-dhanmondi-1", "doc": "Prof. Dr. M. G. Azam", "asst_phone": "+8801819556677", "timing": "06:00 PM - 09:30 PM"},
-        {"name": "Dr. Laila Women Care Chamber", "branch": "Dhanmondi", "addr": "addr-dhanmondi-2", "doc": "Prof. Dr. Laila Arjumand Banu", "asst_phone": "+8801912334455", "timing": "04:30 PM - 08:30 PM"},
-        {"name": "Dr. Naushad Child Neurology Chamber", "branch": "Gulshan", "addr": "addr-gulshan-1", "doc": "Dr. Kazi Naushad-Un-Nabi", "asst_phone": "+8801611778899", "timing": "05:00 PM - 08:00 PM"},
-        {"name": "Prof. Karmaker Ortho Spine Chamber", "branch": "Panthapath", "addr": "addr-panthapath-1", "doc": "Prof. Dr. Pranab Kumar Karmaker", "asst_phone": "+8801722889900", "timing": "05:30 PM - 09:00 PM"},
-        {"name": "Dr. Farhana Skin & Laser Chamber", "branch": "Uttara", "addr": "addr-bashundhara-1", "doc": "Dr. Farhana Akter", "asst_phone": "+8801733445566", "timing": "04:00 PM - 08:00 PM"},
+        {"name": "Prof. Abdullah Consultation Chamber", "branch": "Green Road", "addr_key": "panthapath-1", "doc": "Prof. Dr. A. B. M. Abdullah", "asst_phone": "+8801711223344", "timing": "05:00 PM - 09:00 PM"},
+        {"name": "Prof. Azam Cardiac Chamber", "branch": "Dhanmondi", "addr_key": "dhanmondi-1", "doc": "Prof. Dr. M. G. Azam", "asst_phone": "+8801819556677", "timing": "06:00 PM - 09:30 PM"},
+        {"name": "Dr. Laila Women Care Chamber", "branch": "Dhanmondi", "addr_key": "dhanmondi-2", "doc": "Prof. Dr. Laila Arjumand Banu", "asst_phone": "+8801912334455", "timing": "04:30 PM - 08:30 PM"},
+        {"name": "Dr. Naushad Child Care Chamber", "branch": "Gulshan", "addr_key": "gulshan-1", "doc": "Dr. Kazi Naushad-Un-Nabi", "asst_phone": "+8801611778899", "timing": "05:00 PM - 08:00 PM"},
+        {"name": "Prof. Karmaker Ortho Spine Chamber", "branch": "Panthapath", "addr_key": "panthapath-1", "doc": "Prof. Dr. Pranab Kumar Karmaker", "asst_phone": "+8801722889900", "timing": "05:30 PM - 09:00 PM"},
+        {"name": "Dr. Farhana Skin & Laser Chamber", "branch": "Uttara", "addr_key": "bashundhara-1", "doc": "Dr. Farhana Akter", "asst_phone": "+8801733445566", "timing": "04:00 PM - 08:00 PM"},
+        {"name": "Prof. Harun Kidney Care Chamber", "branch": "Shyamoli", "addr_key": "shyamoli-1", "doc": "Prof. Dr. Harun-Or-Rashid", "asst_phone": "+8801755667788", "timing": "05:00 PM - 09:00 PM"},
     ]
     for ch in chambers_info:
         loc = get_or_create_location(
             name=ch["name"],
             branch=ch["branch"],
             loc_type=Location.LocationType.CHAMBER,
-            addr_obj=addr_map[ch["addr"]],
+            addr_info=addresses[ch["addr_key"]],
             phone=ch["asst_phone"],
             tagline="Private Specialist Consultation",
-            badge="Verified",
-            rating=4.9,
+            badge="Verified Chamber",
+            rating=4.90,
             reviews=95,
             open_timing=ch["timing"]
         )
@@ -417,16 +436,23 @@ def inject_data():
         )
     print(f"✓ Chambers ready: {Chamber.objects.count()} total.")
 
-    # 12. Doctor Affiliations & Schedules (ensure 6+ affiliations & schedules)
-    print("\n[12/19] Injecting Doctor Affiliations & Schedules...")
+    # ----------------------------------------------------
+    # 12. DOCTOR AFFILIATIONS & SCHEDULES (12+ affs, 20+ schedules)
+    # ----------------------------------------------------
+    print("\n[11/18] Seeding Doctor Affiliations & Schedules...")
     affiliations_data = [
         {"doc": "Prof. Dr. A. B. M. Abdullah", "loc_name": "Square Hospital", "type": "OPD", "fee": Decimal("2000.00"), "days": [("Saturday", time(17, 0), time(20, 0)), ("Monday", time(17, 0), time(20, 0)), ("Wednesday", time(17, 0), time(20, 0))]},
         {"doc": "Prof. Dr. A. B. M. Abdullah", "loc_name": "Prof. Abdullah Consultation Chamber", "type": "Chamber", "fee": Decimal("1500.00"), "days": [("Sunday", time(18, 0), time(21, 0)), ("Tuesday", time(18, 0), time(21, 0)), ("Thursday", time(18, 0), time(21, 0))]},
         {"doc": "Prof. Dr. M. G. Azam", "loc_name": "Square Hospital", "type": "In-patient", "fee": Decimal("2500.00"), "days": [("Sunday", time(10, 0), time(14, 0)), ("Tuesday", time(10, 0), time(14, 0))]},
         {"doc": "Prof. Dr. M. G. Azam", "loc_name": "Prof. Azam Cardiac Chamber", "type": "Chamber", "fee": Decimal("1800.00"), "days": [("Saturday", time(18, 0), time(21, 30)), ("Monday", time(18, 0), time(21, 30))]},
         {"doc": "Prof. Dr. Laila Arjumand Banu", "loc_name": "Popular Diagnostic Centre", "type": "Chamber", "fee": Decimal("1200.00"), "days": [("Saturday", time(16, 0), time(19, 0)), ("Wednesday", time(16, 0), time(19, 0)), ("Thursday", time(16, 0), time(19, 0))]},
+        {"doc": "Prof. Dr. Laila Arjumand Banu", "loc_name": "Dr. Laila Women Care Chamber", "type": "Chamber", "fee": Decimal("1200.00"), "days": [("Sunday", time(16, 30), time(20, 30)), ("Tuesday", time(16, 30), time(20, 30))]},
         {"doc": "Prof. Dr. Pranab Kumar Karmaker", "loc_name": "Evercare Hospital", "type": "OPD", "fee": Decimal("1800.00"), "days": [("Sunday", time(10, 0), time(13, 0)), ("Thursday", time(10, 0), time(13, 0))]},
         {"doc": "Dr. Kazi Naushad-Un-Nabi", "loc_name": "United Hospital", "type": "OPD", "fee": Decimal("1500.00"), "days": [("Monday", time(16, 0), time(19, 0)), ("Wednesday", time(16, 0), time(19, 0))]},
+        {"doc": "Dr. Farhana Akter", "loc_name": "Dr. Farhana Skin & Laser Chamber", "type": "Chamber", "fee": Decimal("1000.00"), "days": [("Saturday", time(16, 0), time(20, 0)), ("Monday", time(16, 0), time(20, 0)), ("Wednesday", time(16, 0), time(20, 0))]},
+        {"doc": "Dr. Salma Begum", "loc_name": "Labaid Specialized Hospital", "type": "OPD", "fee": Decimal("1400.00"), "days": [("Saturday", time(17, 0), time(20, 0)), ("Tuesday", time(17, 0), time(20, 0))]},
+        {"doc": "Prof. Dr. Harun-Or-Rashid", "loc_name": "Bangladesh Specialized Hospital", "type": "OPD", "fee": Decimal("2000.00"), "days": [("Sunday", time(17, 0), time(21, 0)), ("Wednesday", time(17, 0), time(21, 0))]},
+        {"doc": "Prof. Dr. Harun-Or-Rashid", "loc_name": "Prof. Harun Kidney Care Chamber", "type": "Chamber", "fee": Decimal("1600.00"), "days": [("Monday", time(17, 30), time(21, 0)), ("Thursday", time(17, 30), time(21, 0))]},
     ]
 
     for aff_info in affiliations_data:
@@ -466,86 +492,127 @@ def inject_data():
     print(f"✓ Doctor Affiliations: {DoctorAffiliation.objects.count()} total.")
     print(f"✓ Affiliation Schedules: {AffiliationSchedule.objects.count()} total.")
 
-    # 13. Test Categories & Tests (ensure 6+ categories & tests)
-    print("\n[13/19] Checking Test Categories & Tests...")
-    test_cats = [
-        {"name": "Biochemistry & Routine Blood", "icon": "Droplet", "desc": "Blood chemistries and routine panels", "order": 1},
-        {"name": "Radiology & Imaging", "icon": "Radio", "desc": "X-Ray, Ultrasound, CT, MRI", "order": 2},
-        {"name": "Cardiovascular Investigations", "icon": "HeartPulse", "desc": "ECG, Echo, Troponin, Lipid", "order": 3},
-        {"name": "Thyroid & Hormonal Panel", "icon": "Activity", "desc": "TSH, FT4, HbA1c, Hormone assays", "order": 4},
-        {"name": "Urine & Renal Profile", "icon": "TestTube", "desc": "Urinalysis, Creatinine, Electrolytes", "order": 5},
-        {"name": "Microbiology & Culture", "icon": "Microscope", "desc": "Urine/Blood culture and sensitivity", "order": 6},
-    ]
-    tcat_map = {}
-    for tc in test_cats:
-        slug = slugify(tc["name"])
-        tcat = TestCategory.objects.filter(slug=slug).first()
-        if not tcat:
-            tcat = TestCategory.objects.create(
-                id=seed_uuid(f"TestCategory:{slug}"),
-                name=tc["name"],
-                slug=slug,
-                icon=tc["icon"],
-                description=tc["desc"],
-                is_active=True,
-                order=tc["order"]
-            )
-        tcat_map[tc["name"]] = tcat
+    # ----------------------------------------------------
+    # 13. TEST CATEGORIES & TESTS (Labaid Department Tests)
+    # ----------------------------------------------------
+    print("\n[12/18] Seeding Labaid Department-Wise Test Categories & Tests...")
+    catalog_file = os.path.join(os.path.dirname(os.path.abspath(__file__)), 'labaid_catalog.json')
+    if os.path.exists(catalog_file):
+        with open(catalog_file, 'r') as f:
+            labaid_catalog = json.load(f)
+    else:
+        # Fallback inline or scraper
+        from ingest_labaid_tests import fetch_labaid_catalog
+        labaid_catalog = fetch_labaid_catalog()
 
-    tests_data = [
-        {"name": "Complete Blood Count (CBC) with ESR", "cat": "Biochemistry & Routine Blood", "code": "CBC-01", "sample": "Whole Blood (EDTA)", "fasting": False, "hours": 12, "prep": "No special preparation required"},
-        {"name": "Fasting Blood Sugar (FBS)", "cat": "Biochemistry & Routine Blood", "code": "GLU-01", "sample": "Fluoride Plasma", "fasting": True, "hours": 6, "prep": "Strictly 8-10 hours overnight fasting required"},
-        {"name": "Lipid Profile (Full Panel)", "cat": "Biochemistry & Routine Blood", "code": "LIP-01", "sample": "Serum", "fasting": True, "hours": 24, "prep": "12 hours overnight fasting required"},
-        {"name": "Chest X-Ray P/A View (Digital)", "cat": "Radiology & Imaging", "code": "RAD-X01", "sample": "Imaging", "fasting": False, "hours": 4, "prep": "Remove metallic objects from chest area"},
-        {"name": "Serum Creatinine with eGFR", "cat": "Urine & Renal Profile", "code": "RFT-01", "sample": "Serum", "fasting": False, "hours": 8, "prep": "Avoid heavy protein diet 12 hours prior"},
-        {"name": "Thyroid Stimulating Hormone (TSH)", "cat": "Thyroid & Hormonal Panel", "code": "THY-01", "sample": "Serum", "fasting": False, "hours": 12, "prep": "Morning sample preferred"},
-        {"name": "HbA1c (Glycated Hemoglobin)", "cat": "Biochemistry & Routine Blood", "code": "HBA-01", "sample": "Whole Blood (EDTA)", "fasting": False, "hours": 8, "prep": "No fasting required"},
-    ]
+    tcat_map = {}
     test_map = {}
-    for t in tests_data:
-        t_obj, _ = Test.objects.get_or_create(
-            name=t["name"],
-            category=tcat_map[t["cat"]],
-            defaults={
-                "code": t["code"],
-                "report_time_hours": t["time"],
-                "preparation_instructions": t["prep"],
-                "is_active": True
-            }
-        )
-        test_map[t["name"]] = t_obj
+    for idx, item in enumerate(labaid_catalog, 1):
+        slug = item["slug"]
+        cat_obj = TestCategory.objects.filter(slug=slug).first()
+        if not cat_obj:
+            cat_obj = TestCategory.objects.create(
+                id=seed_uuid(f"TestCategory:{slug}"),
+                name=item["name"],
+                slug=slug,
+                icon=item.get("icon", "FlaskConical"),
+                description=item.get("description", f"Diagnostic tests performed under {item['name']}."),
+                is_active=True,
+                order=idx
+            )
+        else:
+            cat_obj.name = item["name"]
+            cat_obj.icon = item.get("icon", "FlaskConical")
+            cat_obj.description = item.get("description", f"Diagnostic tests performed under {item['name']}.")
+            cat_obj.save()
+        tcat_map[item["name"]] = cat_obj
+        tcat_map[slug] = cat_obj
+
+        for t in item.get("tests", []):
+            t_slug = f"{slugify(t['name'])}-{slug}"
+            t_obj = Test.objects.filter(category=cat_obj, name=t["name"]).first()
+            sample = t.get("sample", "Blood (Serum)")
+            fasting = t.get("fasting", False)
+            hours = t.get("hours", 12)
+            prep = t.get("prep", "No special preparation needed.")
+            desc = t.get("desc", f"Standard laboratory investigation for {t['name']} under {cat_obj.name}.")
+
+            if not t_obj:
+                t_obj = Test.objects.create(
+                    id=seed_uuid(f"Test:{t_slug}"),
+                    category=cat_obj,
+                    name=t["name"],
+                    slug=slugify(t["name"]),
+                    code=t.get("code", f"REF-{idx:02d}"),
+                    sample_type=sample,
+                    fasting_required=fasting,
+                    report_time_hours=hours,
+                    preparation_instructions=prep,
+                    description=desc,
+                    is_active=True
+                )
+            else:
+                t_obj.code = t.get("code", f"REF-{idx:02d}")
+                t_obj.sample_type = sample
+                t_obj.fasting_required = fasting
+                t_obj.report_time_hours = hours
+                t_obj.preparation_instructions = prep
+                t_obj.description = desc
+                t_obj.save()
+            test_map[t["name"]] = t_obj
 
     print(f"✓ Test Categories: {TestCategory.objects.count()} total.")
-    print(f"✓ Tests: {Test.objects.count()} total.")
+    print(f"✓ Medical Tests ready: {Test.objects.count()} total.")
 
-    # 14. Facility Tests (ensure 6+ facility tests)
-    print("\n[14/19] Injecting Facility Tests...")
-    diag_locations = Location.objects.filter(location_type__in=[Location.LocationType.HOSPITAL, Location.LocationType.DIAGNOSTIC_CENTER])
+    # ----------------------------------------------------
+    # 14. FACILITY TESTS (Auto-associate tests to facilities)
+    # ----------------------------------------------------
+    print("\n[14/18] Auto-Associating Tests & Categories to Diagnostic Centers and Hospitals...")
     
-    for loc in diag_locations[:4]:
-        for t_name, test_obj in test_map.items():
-            base_p = Decimal(random.choice([300, 450, 600, 800, 1200, 1500]))
-            disc_p = base_p * Decimal("0.9") if random.random() < 0.5 else None
-            discount_text = "10% OFF" if disc_p else ""
+    diag_centers = list(DiagnosticCenter.objects.select_related('location').all())
+    hospitals = list(Hospital.objects.select_related('location').all())
+    facilities = [dc.location for dc in diag_centers] + [h.location for h in hospitals if h.has_diagnostic_center]
+    all_tests = list(Test.objects.select_related('category').all())
+
+    for idx, loc in enumerate(facilities):
+        assigned_tests = all_tests if idx % 2 == 0 else all_tests[:len(all_tests)//2]
+        
+        for t_obj in assigned_tests:
+            base_p = Decimal(str(300 + (abs(hash(t_obj.name)) % 35) * 50))
+            if base_p < 200:
+                base_p = Decimal("250.00")
             
+            disc_p = None
+            badge = ""
+            orig_p = None
+            if abs(hash(t_obj.name + str(loc.id))) % 3 == 0:
+                orig_p = base_p
+                disc_p = (base_p * Decimal("0.85")).quantize(Decimal("1.00"))
+                price_val = disc_p
+                badge = "15% OFF"
+            else:
+                price_val = base_p
+
             FacilityTest.objects.update_or_create(
                 location=loc,
-                test=test_obj,
+                test=t_obj,
                 defaults={
-                    "price": base_p,
+                    "price": price_val,
                     "discounted_price": disc_p,
-                    "original_price": base_p if disc_p else None,
-                    "discount": discount_text,
-                    "report_time": "Same Day (6 Hours)",
+                    "original_price": orig_p,
+                    "discount": badge,
+                    "report_time": "Same Day (6-8 Hours)" if (t_obj.report_time_hours or 12) <= 12 else "Next Day (24 Hours)",
                     "is_available": True,
-                    "home_sample_collection": True
+                    "home_sample_collection": (t_obj.sample_type or '').startswith("Blood") or (t_obj.sample_type or '').startswith("Urine")
                 }
             )
 
-    print(f"✓ Facility Tests ready: {FacilityTest.objects.count()} total.")
+    print(f"✓ Facility Tests created: {FacilityTest.objects.count()} total across diagnostic centers and hospital labs.")
 
-    # 15. Doctor Bookings (ensure 6+ doctor bookings with validated slots)
-    print("\n[15/19] Injecting Doctor Bookings...")
+    # ----------------------------------------------------
+    # 15. DOCTOR BOOKINGS (8+ rows with valid slots matching schedules)
+    # ----------------------------------------------------
+    print("\n[15/18] Seeding Doctor Bookings...")
     active_affs = list(DoctorAffiliation.objects.filter(schedules__isnull=False).distinct())
     users = list(User.objects.filter(is_superuser=False))
 
@@ -557,6 +624,7 @@ def inject_data():
         {"patient": "Kamrul Hasan", "notes": "Chest discomfort review", "status": BaseBooking.Status.CONFIRMED},
         {"patient": "Tanvir Ahmed", "notes": "Follow-up blood test review", "status": BaseBooking.Status.CONFIRMED},
         {"patient": "Tahmid Rahman", "notes": "Pediatric consultation for child", "status": BaseBooking.Status.PENDING},
+        {"patient": "Ayesha Siddiqua", "notes": "Skin allergy follow-up review", "status": BaseBooking.Status.CONFIRMED},
     ]
 
     day_map = {
@@ -565,7 +633,6 @@ def inject_data():
     }
 
     today = date.today()
-    created_db_count = 0
 
     for idx, b_info in enumerate(target_bookings):
         aff = active_affs[idx % len(active_affs)]
@@ -597,23 +664,26 @@ def inject_data():
                     status=b_info["status"],
                     notes=b_info["notes"]
                 )
-                created_db_count += 1
             except Exception as e:
                 print(f"  Note on doctor booking: {e}")
 
     print(f"✓ Doctor Bookings ready: {DoctorBooking.objects.count()} total.")
 
-    # 16. Lab Bookings (ensure 6+ lab bookings)
-    print("\n[16/19] Injecting Lab Bookings...")
-    sample_fts = list(FacilityTest.objects.all()[:10])
+    # ----------------------------------------------------
+    # 16. LAB BOOKINGS (8+ rows)
+    # ----------------------------------------------------
+    print("\n[16/18] Seeding Lab Bookings...")
+    sample_fts = list(FacilityTest.objects.all()[:15])
     
     lab_bookings_data = [
-        {"patient": "Rafiqul Islam", "phone": "01711000001", "addr": "House 14, Road 4, Dhanmondi, Dhaka", "notes": "Please bring EDTA blood collection tubes", "status": BaseBooking.Status.CONFIRMED, "days_offset": 2},
-        {"patient": "Nusrat Jahan", "phone": "01812000002", "addr": "Flat 4B, Green Road, Dhaka", "notes": "Morning fasting sample collection at home", "status": BaseBooking.Status.PENDING, "days_offset": 3},
-        {"patient": "Tanvir Ahmed", "phone": "01913000003", "addr": "House 88, Road 11, Banani, Dhaka", "notes": "Fasting lipid profile strictly maintained", "status": BaseBooking.Status.CONFIRMED, "days_offset": 4},
-        {"patient": "Sadia Sultana", "phone": "01614000004", "addr": "Plot 12, Block D, Mirpur-1, Dhaka", "notes": "Walk-in routine checkup visit", "status": BaseBooking.Status.COMPLETED, "days_offset": -5},
-        {"patient": "Kamrul Hasan", "phone": "01715000005", "addr": "House 25, Sector 7, Uttara, Dhaka", "notes": "Doctor prescription attached with booking", "status": BaseBooking.Status.CONFIRMED, "days_offset": 5},
-        {"patient": "Tahmid Rahman", "phone": "01711000001", "addr": "House 14, Road 4, Dhanmondi, Dhaka", "notes": "Child blood test home collection", "status": BaseBooking.Status.PENDING, "days_offset": 6},
+        {"patient": "Rafiqul Islam", "phone": "01711000001", "addr_line": "House 14, Road 4", "area": "Dhanmondi", "city": "Dhaka", "district": "Dhaka", "notes": "Please bring EDTA blood collection tubes", "status": BaseBooking.Status.CONFIRMED, "days_offset": 2},
+        {"patient": "Nusrat Jahan", "phone": "01812000002", "addr_line": "Flat 4B, Green Road", "area": "Panthapath", "city": "Dhaka", "district": "Dhaka", "notes": "Morning fasting sample collection at home", "status": BaseBooking.Status.PENDING, "days_offset": 3},
+        {"patient": "Tanvir Ahmed", "phone": "01913000003", "addr_line": "House 88, Road 11", "area": "Banani", "city": "Dhaka", "district": "Dhaka", "notes": "Fasting lipid profile strictly maintained", "status": BaseBooking.Status.CONFIRMED, "days_offset": 4},
+        {"patient": "Sadia Sultana", "phone": "01614000004", "addr_line": "Plot 12, Block D", "area": "Mirpur-1", "city": "Dhaka", "district": "Dhaka", "notes": "Walk-in routine checkup visit", "status": BaseBooking.Status.COMPLETED, "days_offset": -5},
+        {"patient": "Kamrul Hasan", "phone": "01715000005", "addr_line": "House 25, Sector 7", "area": "Uttara", "city": "Dhaka", "district": "Dhaka", "notes": "Doctor prescription attached with booking", "status": BaseBooking.Status.CONFIRMED, "days_offset": 5},
+        {"patient": "Farzana Akter", "phone": "01816000006", "addr_line": "Flat 6C, Agrabad C/A", "area": "Agrabad", "city": "Chittagong", "district": "Chittagong", "notes": "Thyroid profile blood collection", "status": BaseBooking.Status.PENDING, "days_offset": 4},
+        {"patient": "Mahmudul Karim", "phone": "01917000007", "addr_line": "House 42, Nayasarak", "area": "Nayasarak", "city": "Sylhet", "district": "Sylhet", "notes": "Kidney function test at home", "status": BaseBooking.Status.CONFIRMED, "days_offset": 3},
+        {"patient": "Ayesha Siddiqua", "phone": "01718000008", "addr_line": "House 10, Road 3, Dhanmondi", "area": "Dhanmondi", "city": "Dhaka", "district": "Dhaka", "notes": "Allergy IgE test panel collection", "status": BaseBooking.Status.PENDING, "days_offset": 6},
     ]
 
     for idx, lb in enumerate(lab_bookings_data):
@@ -630,7 +700,10 @@ def inject_data():
                 "pickup_date": pickup_d,
                 "patient_name": lb["patient"],
                 "patient_phone": lb["phone"],
-                "address": lb["addr"],
+                "pickup_address_line": lb["addr_line"],
+                "pickup_area": lb["area"],
+                "pickup_city": lb["city"],
+                "pickup_district": lb["district"],
                 "status": lb["status"],
                 "notes": lb["notes"]
             }
@@ -638,11 +711,14 @@ def inject_data():
 
     print(f"✓ Lab Bookings ready: {LabBooking.objects.count()} total.")
 
+    # ----------------------------------------------------
+    # 17. SUMMARY VERIFICATION
+    # ----------------------------------------------------
     print("\n==================================================")
-    print("FINAL DATABASE TABLE ROW COUNTS:")
+    print("FINAL DATABASE TABLE ROW COUNTS VERIFICATION:")
     print("==================================================")
     all_models = [
-        User, Address, Location, HospitalCategory, HospitalService, Hospital,
+        User, Location, HospitalCategory, HospitalService, Hospital,
         DiagnosticCenterCategory, DiagnosticService, DiagnosticCenter, Chamber,
         DoctorSpecialty, Doctor, DoctorAffiliation, AffiliationSchedule,
         TestCategory, Test, FacilityTest, DoctorBooking, LabBooking
@@ -650,13 +726,14 @@ def inject_data():
     all_passed = True
     for m in all_models:
         cnt = m.objects.count()
-        status = "PASSED (>=5)" if cnt >= 5 else "FAILED (<5)"
-        if cnt < 5:
+        req_min = 2 if m == DiagnosticCenterCategory else 5
+        status = f"PASSED (>={req_min})" if cnt >= req_min else f"FAILED (<{req_min})"
+        if cnt < req_min:
             all_passed = False
         print(f"  {m.__name__:<26} : {cnt:>4} rows  [{status}]")
     print("==================================================")
     if all_passed:
-        print("🎉 SUCCESS: Every single table now has AT LEAST 5 rows!")
+        print("🎉 SUCCESS: All database tables are properly seeded!")
     print("==================================================")
 
 if __name__ == '__main__':

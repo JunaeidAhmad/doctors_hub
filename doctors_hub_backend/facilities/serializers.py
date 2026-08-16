@@ -167,6 +167,7 @@ class DiagnosticCenterSerializer(serializers.ModelSerializer):
     service_ids = serializers.PrimaryKeyRelatedField(
         queryset=DiagnosticService.objects.all(), many=True, write_only=True, source='services', required=False
     )
+    offered_tests = serializers.SerializerMethodField()
     test_category_ids = serializers.ListField(
         child=serializers.UUIDField(), write_only=True, required=False
     )
@@ -175,8 +176,15 @@ class DiagnosticCenterSerializer(serializers.ModelSerializer):
         model = DiagnosticCenter
         fields = (
             'location_details', 'location_id', 'category', 'category_id',
-            'services', 'service_ids', 'test_category_ids'
+            'services', 'service_ids', 'offered_tests', 'test_category_ids'
         )
+
+    def get_offered_tests(self, obj):
+        if not obj.location:
+            return []
+        from tests.serializers import FacilityTestSerializer
+        fts = obj.location.offered_tests.all()
+        return FacilityTestSerializer(fts, many=True).data
 
     def create(self, validated_data):
         test_cat_ids = validated_data.pop('test_category_ids', None)

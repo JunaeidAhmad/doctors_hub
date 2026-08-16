@@ -122,14 +122,14 @@ export default function BookingModal({ chamber, doctor, onClose, onConfirmBookin
           </div>
         </div>
 
-        {/* Mock Demo Banner */}
+        {/* Mock Demo Banner 
         <div className="bg-emerald-50 px-4 py-2 border-b border-emerald-100 flex items-center justify-between text-[11px] font-semibold text-emerald-800">
           <span className="flex items-center gap-1">
             <ShieldCheck className="w-3.5 h-3.5 text-emerald-600" />
             <span>Mock Credentials:</span>
           </span>
           <span>Phone: <strong>01787878787</strong> | OTP: <strong>123</strong></span>
-        </div>
+        </div> */}
 
         {step === 'details' ? (
           /* STEP 1: Details & Serial Date */

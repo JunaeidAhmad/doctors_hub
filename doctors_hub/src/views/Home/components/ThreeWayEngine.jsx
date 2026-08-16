@@ -3,6 +3,21 @@ import { Stethoscope, FlaskConical, Search, Filter, Sparkles, MapPin, ChevronRig
 import { LOCATIONS } from '../../../data/constants';
 import { api, ensureArray } from '../../../services/api';
 
+const FALLBACK_TEST_CATS = [
+  { id: 'cardiac-tests', name: 'Cardiac Tests' },
+  { id: 'hematology', name: 'Hematology & Blood' },
+  { id: 'biochemistry', name: 'Biochemistry & LFT/KFT' },
+  { id: 'radiology-imaging', name: 'Radiology & X-Ray' },
+  { id: 'ultrasound-usg', name: 'Ultrasound / USG' },
+  { id: 'ct-scan', name: 'CT Scan Body Imaging' },
+  { id: 'mri', name: 'MRI Diagnostics' },
+  { id: 'neuro-tests', name: 'Neuro Diagnostics' },
+  { id: 'genetic-molecular', name: 'Genetic & Molecular' },
+  { id: 'endoscopy-colonoscopy', name: 'Endoscopy & Colonoscopy' },
+  { id: 'serology', name: 'Serology & Immunity' },
+  { id: 'microbiology', name: 'Microbiology & Culture' },
+];
+
 export default function ThreeWayEngine({
   selectedSpecialty,
   setSelectedSpecialty,
@@ -199,7 +214,7 @@ export default function ThreeWayEngine({
                   >
                     <option value="">All Test Categories</option>
 
-                    {testCategories.filter((cat) => cat && cat.id !== 'all').map((cat) => (
+                    {(testCategories.length > 0 ? testCategories : FALLBACK_TEST_CATS).filter((cat) => cat && cat.id !== 'all').map((cat) => (
                       <option key={cat.id} value={cat.id}>
                         {cat.name}
                       </option>
