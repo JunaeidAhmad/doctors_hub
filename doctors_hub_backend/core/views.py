@@ -21,7 +21,7 @@ class SearchMetadataAPIView(APIView):
         specialties = DoctorSpecialtySerializer(DoctorSpecialty.objects.all(), many=True, context={'request': request}).data
         test_categories = TestCategorySerializer(TestCategory.objects.all(), many=True, context={'request': request}).data
         hospital_categories = HospitalCategorySerializer(HospitalCategory.objects.all(), many=True, context={'request': request}).data
-        diagnostic_center_categories = DiagnosticCenterCategorySerializer(DiagnosticCenterCategory.objects.select_related('parent').all(), many=True, context={'request': request}).data
+        diagnostic_center_categories = DiagnosticCenterCategorySerializer(DiagnosticCenterCategory.objects.all(), many=True, context={'request': request}).data
 
         return Response({
             'specialties': specialties,
@@ -37,9 +37,10 @@ class AdminInitAPIView(APIView):
     def get(self, request, *args, **kwargs):
         doctor_specialties = DoctorSpecialtySerializer(DoctorSpecialty.objects.all(), many=True, context={'request': request}).data
         hospital_categories = HospitalCategorySerializer(HospitalCategory.objects.all(), many=True, context={'request': request}).data
-        diagnostic_categories = DiagnosticCenterCategorySerializer(DiagnosticCenterCategory.objects.select_related('parent').all(), many=True, context={'request': request}).data
+        diagnostic_categories = DiagnosticCenterCategorySerializer(DiagnosticCenterCategory.objects.all(), many=True, context={'request': request}).data
         hospital_services = HospitalServiceSerializer(HospitalService.objects.all(), many=True, context={'request': request}).data
         diagnostic_services = DiagnosticServiceSerializer(DiagnosticService.objects.all(), many=True, context={'request': request}).data
+
         
         # In old code: TestCategory.objects.select_related('parent').prefetch_related('children').annotate(children_count=Count('children')).all()
         # New model doesn't have parent/children.

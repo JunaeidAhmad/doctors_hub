@@ -78,8 +78,10 @@ export default function DoctorModal() {
         experience: doctorForm.experience,
         specialty_ids: doctorForm.selectedSpecialties,
         affiliations: (doctorForm.affiliations || []).map(a => ({
-          ...a,
-          fee: parseFloat(a.fee) || 1000
+          location_id: a.location_id || a.hospital || a.diagnostic_center || a.location || (typeof a.hospital === 'object' ? a.hospital.id : null) || (typeof a.diagnostic_center === 'object' ? a.diagnostic_center.id : null),
+          consultation_type: a.consultation_type || 'Doctor',
+          fee: parseFloat(a.fee) || 1000,
+          schedules: Array.isArray(a.schedules) ? a.schedules : []
         }))
       };
 

@@ -54,6 +54,11 @@ export default function DiagnosticsTab() {
                     <td className="py-4 px-4 font-bold text-white">
                       <div className="text-sm text-cyan-400">{dc.name}</div>
                       <div className="text-slate-400 text-[11px] font-normal">{dc.tagline}</div>
+                      {dc.category && (
+                        <span className="inline-block mt-1 px-2 py-0.5 bg-cyan-500/10 text-cyan-400 border border-cyan-500/20 rounded text-[10px] font-bold">
+                          {typeof dc.category === 'object' ? dc.category.name : dc.category}
+                        </span>
+                      )}
                     </td>
                     <td className="py-4 px-4 font-bold text-teal-300">
                       {dc.branch || 'Main Branch'}

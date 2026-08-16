@@ -84,14 +84,14 @@ class DiagnosticCenterCategory(models.Model):
     id = models.UUIDField(primary_key=True, default=uuid.uuid4, editable=False)
     name = models.CharField(max_length=150)
     slug = models.SlugField(max_length=170, unique=True, blank=True)
-    parent = models.ForeignKey('self', null=True, blank=True, related_name='children', on_delete=models.CASCADE)
-    icon = models.CharField(max_length=100, blank=True)
+    icon = models.CharField(max_length=100, blank=True, default='Building2')
     description = models.TextField(blank=True)
 
     def save(self, *args, **kwargs):
         if not self.slug:
             self.slug = slugify(self.name)
         super().save(*args, **kwargs)
+
 
 class DiagnosticService(models.Model):
     id = models.UUIDField(primary_key=True, default=uuid.uuid4, editable=False)

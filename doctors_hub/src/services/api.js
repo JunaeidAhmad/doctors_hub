@@ -148,11 +148,32 @@ function flattenFacility(data) {
   if (data && data.location_details) {
     const loc = data.location_details;
     const addr = loc.address_details || {};
+    const addressLine = loc.address_line || addr.address_line || (typeof loc.address === 'string' ? loc.address : '') || '';
+    const city = loc.city || addr.city || '';
+    const district = loc.district || addr.district || '';
+    const division = loc.division || addr.division || '';
+    const area = loc.area || addr.area || '';
+
+    let catList = [];
+    if (Array.isArray(data.categories)) {
+      catList = data.categories;
+    } else if (data.category) {
+      catList = [data.category];
+    }
+
     return {
       ...data,
       ...loc,
       ...addr,
-      address: addr.address_line || loc.address || '',
+      address_line: addressLine,
+      address: addressLine,
+      city,
+      district,
+      division,
+      area,
+      category: data.category || catList[0] || null,
+      categories: catList,
+      category_name: data.category?.name || catList[0]?.name || data.category_name || '',
       id: data.location_id || loc.id || data.id,
     };
   }
@@ -691,23 +712,46 @@ export const api = {
 
   // Doctor Booking
   async createDoctorBooking(bookingData) {
+    const payload = { ...bookingData };
+    if (bookingData.affiliation && !bookingData.affiliation_id) {
+      payload.affiliation_id = bookingData.affiliation;
+    }
     const res = await fetchWithTimeout(`${BASE_URL}/bookings/doctor/`, {
       method: 'POST',
       headers: getHeaders(),
-      body: JSON.stringify(bookingData),
+      body: JSON.stringify(payload),
     });
     return handleResponse(res);
   },
 
   // Lab Booking
   async createLabBooking(labData) {
+    const payload = { ...labData };
+    if (labData.test && !labData.facility_test_id) {
+      payload.facility_test_id = labData.test;
+    }
+    if (labData.address && !labData.pickup_address_line) {
+      payload.pickup_address_line = labData.address;
+    }
+    if (!payload.pickup_district) {
+      payload.pickup_district = labData.city || labData.district || 'Dhaka';
+    }
     const res = await fetchWithTimeout(`${BASE_URL}/bookings/lab/`, {
       method: 'POST',
       headers: getHeaders(),
-      body: JSON.stringify(labData),
+      body: JSON.stringify(payload),
     });
     return handleResponse(res);
   },
+
+  // Locations
+  async getLocations() {
+    const res = await fetchWithTimeout(`${BASE_URL}/locations/`, {
+      headers: getHeaders(),
+    });
+    return handleResponse(res);
+  },
+  async getPracticeLocations() { return this.getLocations(); },
 
   // Bookings Admin Management
   async getDoctorBookings() {

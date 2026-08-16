@@ -204,12 +204,12 @@ export function AdminProvider({ children, currentUser }) {
     setShowHospitalCatModal(true);
   };
 
-  const handleOpenDiagCatModal = (dc = null, defaultParent = 'by-specialization') => {
+  const handleOpenDiagCatModal = (dc = null) => {
     setActiveTab('diag-cats');
     setEditingDiagCat(dc);
-    setDiagCatDefaultParent(defaultParent);
     setShowDiagCatModal(true);
   };
+
 
   const handleOpenHospServiceModal = (hs = null) => {
     setActiveTab('hosp-services');

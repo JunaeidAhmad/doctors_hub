@@ -30,9 +30,9 @@ class HospitalAdmin(admin.ModelAdmin):
 
 @admin.register(DiagnosticCenterCategory)
 class DiagnosticCenterCategoryAdmin(admin.ModelAdmin):
-    list_display = ('id', 'name', 'parent', 'slug')
-    list_filter = ('parent',)
+    list_display = ('id', 'name', 'slug', 'icon')
     search_fields = ('name', 'slug')
+
 
 @admin.register(DiagnosticService)
 class DiagnosticServiceAdmin(admin.ModelAdmin):

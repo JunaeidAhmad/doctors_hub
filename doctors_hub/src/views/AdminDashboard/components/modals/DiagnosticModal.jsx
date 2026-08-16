@@ -25,8 +25,7 @@ export default function DiagnosticModal() {
     branch: 'Panthapath',
     isCustomBranch: false,
     customBranch: '',
-    specialization_category_id: '',
-    ownership_category_id: '',
+    category_id: '',
     test_category_ids: [],
     service_ids: [],
     address: 'House 16, Road 2, Dhanmondi / Panthapath',
@@ -45,8 +44,7 @@ export default function DiagnosticModal() {
 
   useEffect(() => {
     if (editingDiagnostic) {
-      const specCatId = editingDiagnostic.specialization_category?.id || editingDiagnostic.specialization_category || '';
-      const ownCatId = editingDiagnostic.ownership_category?.id || editingDiagnostic.ownership_category || '';
+      const catId = editingDiagnostic.category?.id || editingDiagnostic.category_id || editingDiagnostic.category || editingDiagnostic.specialization_category?.id || '';
       const srvIds = Array.isArray(editingDiagnostic.services) 
         ? editingDiagnostic.services.map(s => typeof s === 'object' ? s.id : s) 
         : [];
@@ -69,8 +67,7 @@ export default function DiagnosticModal() {
         branch: editingDiagnostic.branch || 'Main',
         isCustomBranch: false,
         customBranch: '',
-        specialization_category_id: specCatId,
-        ownership_category_id: ownCatId,
+        category_id: catId,
         test_category_ids: existingTestCatIds,
         service_ids: srvIds,
         address: editingDiagnostic.address || '',
@@ -95,8 +92,7 @@ export default function DiagnosticModal() {
         branch: 'Panthapath',
         isCustomBranch: false,
         customBranch: '',
-        specialization_category_id: '',
-        ownership_category_id: '',
+        category_id: '',
         test_category_ids: [],
         service_ids: (diagnosticServices || []).slice(0, 3).map(s => s.id),
         address: '',
@@ -126,8 +122,7 @@ export default function DiagnosticModal() {
         city: diagnosticForm.city,
         district: diagnosticForm.city,
         branch: finalBranch,
-        specialization_category_id: diagnosticForm.specialization_category_id || null,
-        ownership_category_id: diagnosticForm.ownership_category_id || null,
+        category_id: diagnosticForm.category_id || null,
         test_category_ids: diagnosticForm.test_category_ids || [],
         service_ids: diagnosticForm.service_ids,
         address: diagnosticForm.address,
@@ -143,6 +138,7 @@ export default function DiagnosticModal() {
         description: diagnosticForm.description,
         is_verified: diagnosticForm.is_verified
       };
+
 
       let savedCenter;
       if (editingDiagnostic) {
@@ -196,58 +192,21 @@ export default function DiagnosticModal() {
           {/* SCROLLABLE BODY CONTENT */}
           <div className="flex-1 overflow-y-auto pr-1.5 space-y-3.5 text-xs">
             
-            {/* TWO SEPARATE CATEGORY OPTIONS (SPECIALIZATION & OWNERSHIP) */}
-            <div className="grid grid-cols-1 md:grid-cols-2 gap-3">
-              <div>
-                <label className="block text-slate-300 font-semibold mb-1">Category 1: Specialization (Optional)</label>
-                <select
-                  value={diagnosticForm.specialization_category_id}
-                  onChange={e => setDiagnosticForm({ ...diagnosticForm, specialization_category_id: e.target.value })}
-                  className="w-full bg-slate-950 border border-slate-800 rounded-xl px-3 py-2 text-white font-bold"
-                >
-                  <option value="">-- None / Unspecified --</option>
-                  {diagnosticCategories
-                    .filter(c => {
-                      const pId = typeof c.parent === 'object' && c.parent ? c.parent.id : c.parent;
-                      const pName = (typeof c.parent === 'object' && c.parent ? c.parent.name : c.parent_name) || '';
-                      return (
-                        pId === 'by-specialization' ||
-                        c.parent === 'by-specialization' ||
-                        String(pName).toLowerCase().includes('specialization')
-                      );
-                    })
-                    .map(cat => (
-                      <option key={cat.id} value={cat.id}>{cat.name}</option>
-                    ))
-                  }
-                </select>
-              </div>
-
-              <div>
-                <label className="block text-slate-300 font-semibold mb-1">Category 2: Ownership & Type (Optional)</label>
-                <select
-                  value={diagnosticForm.ownership_category_id}
-                  onChange={e => setDiagnosticForm({ ...diagnosticForm, ownership_category_id: e.target.value })}
-                  className="w-full bg-slate-950 border border-slate-800 rounded-xl px-3 py-2 text-white font-bold"
-                >
-                  <option value="">-- None / Unspecified --</option>
-                  {(diagnosticCategories || [])
-                    .filter(c => {
-                      const pId = typeof c.parent === 'object' && c.parent ? c.parent.id : c.parent;
-                      const pName = (typeof c.parent === 'object' && c.parent ? c.parent.name : c.parent_name) || '';
-                      return (
-                        pId === 'by-ownership-type' ||
-                        c.parent === 'by-ownership-type' ||
-                        String(pName).toLowerCase().includes('ownership')
-                      );
-                    })
-                    .map(cat => (
-                      <option key={cat.id} value={cat.id}>{cat.name}</option>
-                    ))
-                  }
-                </select>
-              </div>
+            {/* DIAGNOSTIC CENTER CATEGORY */}
+            <div>
+              <label className="block text-slate-300 font-semibold mb-1">Diagnostic Center Category *</label>
+              <select
+                value={diagnosticForm.category_id}
+                onChange={e => setDiagnosticForm({ ...diagnosticForm, category_id: e.target.value })}
+                className="w-full bg-slate-950 border border-slate-800 rounded-xl px-3 py-2 text-white font-bold"
+              >
+                <option value="">-- None / Select Category --</option>
+                {(diagnosticCategories || []).map(cat => (
+                  <option key={cat.id} value={cat.id}>{cat.name}</option>
+                ))}
+              </select>
             </div>
+
 
             <div>
               <label className="block text-slate-300 font-semibold mb-1">Diagnostic Center Name *</label>

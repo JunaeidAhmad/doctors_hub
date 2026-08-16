@@ -15,7 +15,7 @@ export default function CategoryModals() {
 
   const [doctorSpecForm, setDoctorSpecForm] = useState({ id: '', name: '', icon: 'Stethoscope', description: '' });
   const [hospitalCatForm, setHospitalCatForm] = useState({ id: '', name: '', icon: 'Building2', description: '', count: 0 });
-  const [diagCatForm, setDiagCatForm] = useState({ id: '', name: '', icon: 'Building2', description: '', parent: 'by-specialization' });
+  const [diagCatForm, setDiagCatForm] = useState({ id: '', name: '', icon: 'Building2', description: '' });
   const [hospServiceForm, setHospServiceForm] = useState({ id: '', name: '', icon: 'Activity', description: '' });
   const [diagServiceForm, setDiagServiceForm] = useState({ id: '', name: '', icon: 'FlaskConical', description: '' });
   const [testCatForm, setTestCatForm] = useState({ id: '', name: '', icon: 'FlaskConical', description: '', count: 0 });
@@ -38,14 +38,12 @@ export default function CategoryModals() {
 
   useEffect(() => {
     if (editingDiagCat && editingDiagCat.name) {
-      const parentVal = typeof editingDiagCat.parent === 'object' 
-        ? (editingDiagCat.parent?.id || editingDiagCat.parent?.name) 
-        : (editingDiagCat.parent || editingDiagCat.parent_name || diagCatDefaultParent);
-      setDiagCatForm({ id: editingDiagCat.id, name: editingDiagCat.name, icon: editingDiagCat.icon || 'Building2', description: editingDiagCat.description || '', parent: parentVal });
+      setDiagCatForm({ id: editingDiagCat.id, name: editingDiagCat.name, icon: editingDiagCat.icon || 'Building2', description: editingDiagCat.description || '' });
     } else {
-      setDiagCatForm({ id: '', name: '', icon: 'Building2', description: '', parent: diagCatDefaultParent });
+      setDiagCatForm({ id: '', name: '', icon: 'Building2', description: '' });
     }
-  }, [editingDiagCat, showDiagCatModal, diagCatDefaultParent]);
+  }, [editingDiagCat, showDiagCatModal]);
+
 
   useEffect(() => {
     if (editingHospService) {
@@ -154,8 +152,7 @@ export default function CategoryModals() {
         id: resData?.id || diagCatForm.id || `diag-cat-${Date.now()}`,
         name: diagCatForm.name,
         icon: diagCatForm.icon || 'Building2',
-        description: diagCatForm.description || '',
-        parent: diagCatForm.parent || 'by-specialization'
+        description: diagCatForm.description || ''
       };
 
       setDiagnosticCategories(prev => {
@@ -164,6 +161,7 @@ export default function CategoryModals() {
         }
         return [...prev, newCat];
       });
+
 
       showNotification(`Diagnostic Category "${diagCatForm.name}" ${editingDiagCat ? 'updated' : 'created'}.`);
       setShowDiagCatModal(false);
@@ -318,17 +316,6 @@ export default function CategoryModals() {
             </h3>
             <form onSubmit={handleSaveDiagCat} className="space-y-3 text-xs">
               <div>
-                <label className="block text-slate-300 mb-1 font-semibold">Category Type / Group *</label>
-                <select
-                  value={diagCatForm.parent || 'by-specialization'}
-                  onChange={e => setDiagCatForm({ ...diagCatForm, parent: e.target.value })}
-                  className="w-full bg-slate-950 border border-slate-800 rounded-xl px-3 py-2 text-white font-bold"
-                >
-                  <option value="by-specialization">By Specialization</option>
-                  <option value="by-ownership-type">By Ownership & Type</option>
-                </select>
-              </div>
-              <div>
                 <label className="block text-slate-300 mb-1 font-semibold">Category Name *</label>
                 <input
                   type="text"
@@ -336,7 +323,7 @@ export default function CategoryModals() {
                   value={diagCatForm.name}
                   onChange={e => setDiagCatForm({ ...diagCatForm, name: e.target.value })}
                   className="w-full bg-slate-950 border border-slate-800 rounded-xl px-3 py-2 text-white"
-                  placeholder="e.g. Molecular Diagnostics or Corporate Chain"
+                  placeholder="e.g. Clinical Pathology or Radiology & Imaging"
                 />
               </div>
               <div>
@@ -349,6 +336,7 @@ export default function CategoryModals() {
                   placeholder="Brief description..."
                 />
               </div>
+
               <div className="flex justify-end gap-2 pt-2">
                 <button type="button" onClick={() => setShowDiagCatModal(false)} className="px-3 py-1.5 bg-slate-800 text-slate-300 font-bold rounded-xl">
                   Cancel

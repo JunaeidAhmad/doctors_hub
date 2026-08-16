@@ -23,11 +23,10 @@ class DiagnosticServiceSerializer(serializers.ModelSerializer):
 
 
 class DiagnosticCenterCategorySerializer(serializers.ModelSerializer):
-    parent_name = serializers.CharField(source='parent.name', read_only=True, default='')
-
     class Meta:
         model = DiagnosticCenterCategory
-        fields = ('id', 'name', 'slug', 'parent', 'parent_name', 'icon', 'description')
+        fields = ('id', 'name', 'slug', 'icon', 'description')
+
 
 
 class LocationSerializer(serializers.ModelSerializer):
@@ -85,8 +84,62 @@ class HospitalSerializer(serializers.ModelSerializer):
             'services', 'service_ids', 'has_diagnostic_center', 'test_category_ids'
         )
 
+    def create(self, validated_data):
+        test_cat_ids = validated_data.pop('test_category_ids', None)
+        services = validated_data.pop('services', [])
+        if 'location' not in validated_data and hasattr(self, 'initial_data'):
+            loc_data = {
+                'name': self.initial_data.get('name', 'Hospital'),
+                'branch': self.initial_data.get('branch', ''),
+                'location_type': Location.LocationType.HOSPITAL,
+                'address_line': self.initial_data.get('address_line', self.initial_data.get('address', '')),
+                'area': self.initial_data.get('area', ''),
+                'city': self.initial_data.get('city', ''),
+                'district': self.initial_data.get('district', self.initial_data.get('city', 'Dhaka')),
+                'division': self.initial_data.get('division', self.initial_data.get('city', 'Dhaka')),
+                'phone': self.initial_data.get('phone', ''),
+                'email': self.initial_data.get('email', ''),
+                'description': self.initial_data.get('description', ''),
+                'tagline': self.initial_data.get('tagline', ''),
+                'badge': self.initial_data.get('badge', ''),
+                'rating': float(self.initial_data.get('rating', 0.0)) if self.initial_data.get('rating') else 0.0,
+                'reviews_count': int(self.initial_data.get('reviews_count', 0)) if self.initial_data.get('reviews_count') else 0,
+                'open_timing': self.initial_data.get('open_timing', ''),
+                'is_verified': bool(self.initial_data.get('is_verified', False)),
+            }
+            validated_data['location'] = Location.objects.create(**loc_data)
+
+        hospital = super().create(validated_data)
+        if services:
+            hospital.services.set(services)
+        if test_cat_ids:
+            from tests.models import Test, FacilityTest
+            tests = Test.objects.filter(category_id__in=test_cat_ids)
+            for test in tests:
+                FacilityTest.objects.get_or_create(
+                    location=hospital.location,
+                    test=test,
+                    defaults={'price': 500.00, 'is_available': True}
+                )
+        return hospital
+
     def update(self, instance, validated_data):
         test_cat_ids = validated_data.pop('test_category_ids', None)
+        if hasattr(self, 'initial_data') and instance.location:
+            loc = instance.location
+            for field in ['name', 'branch', 'address_line', 'area', 'city', 'district', 'division', 'phone', 'email', 'description', 'tagline', 'badge', 'open_timing']:
+                if field in self.initial_data:
+                    setattr(loc, field, self.initial_data[field])
+            if 'address' in self.initial_data and 'address_line' not in self.initial_data:
+                loc.address_line = self.initial_data['address']
+            if 'rating' in self.initial_data:
+                loc.rating = float(self.initial_data['rating'])
+            if 'reviews_count' in self.initial_data:
+                loc.reviews_count = int(self.initial_data['reviews_count'])
+            if 'is_verified' in self.initial_data:
+                loc.is_verified = bool(self.initial_data['is_verified'])
+            loc.save()
+
         instance = super().update(instance, validated_data)
         
         if test_cat_ids:
@@ -104,7 +157,7 @@ class HospitalSerializer(serializers.ModelSerializer):
 class DiagnosticCenterSerializer(serializers.ModelSerializer):
     location_details = LocationSerializer(source='location', read_only=True)
     location_id = serializers.PrimaryKeyRelatedField(
-        queryset=Location.objects.all(), write_only=True, source='location'
+        queryset=Location.objects.all(), write_only=True, source='location', required=False
     )
     category = DiagnosticCenterCategorySerializer(read_only=True)
     category_id = serializers.PrimaryKeyRelatedField(
@@ -125,8 +178,62 @@ class DiagnosticCenterSerializer(serializers.ModelSerializer):
             'services', 'service_ids', 'test_category_ids'
         )
 
+    def create(self, validated_data):
+        test_cat_ids = validated_data.pop('test_category_ids', None)
+        services = validated_data.pop('services', [])
+        if 'location' not in validated_data and hasattr(self, 'initial_data'):
+            loc_data = {
+                'name': self.initial_data.get('name', 'Diagnostic Center'),
+                'branch': self.initial_data.get('branch', ''),
+                'location_type': Location.LocationType.DIAGNOSTIC_CENTER,
+                'address_line': self.initial_data.get('address_line', self.initial_data.get('address', '')),
+                'area': self.initial_data.get('area', ''),
+                'city': self.initial_data.get('city', ''),
+                'district': self.initial_data.get('district', self.initial_data.get('city', 'Dhaka')),
+                'division': self.initial_data.get('division', self.initial_data.get('city', 'Dhaka')),
+                'phone': self.initial_data.get('phone', ''),
+                'email': self.initial_data.get('email', ''),
+                'description': self.initial_data.get('description', ''),
+                'tagline': self.initial_data.get('tagline', ''),
+                'badge': self.initial_data.get('badge', ''),
+                'rating': float(self.initial_data.get('rating', 0.0)) if self.initial_data.get('rating') else 0.0,
+                'reviews_count': int(self.initial_data.get('reviews_count', 0)) if self.initial_data.get('reviews_count') else 0,
+                'open_timing': self.initial_data.get('open_timing', ''),
+                'is_verified': bool(self.initial_data.get('is_verified', False)),
+            }
+            validated_data['location'] = Location.objects.create(**loc_data)
+
+        diagnostic = super().create(validated_data)
+        if services:
+            diagnostic.services.set(services)
+        if test_cat_ids:
+            from tests.models import Test, FacilityTest
+            tests = Test.objects.filter(category_id__in=test_cat_ids)
+            for test in tests:
+                FacilityTest.objects.get_or_create(
+                    location=diagnostic.location,
+                    test=test,
+                    defaults={'price': 500.00, 'is_available': True}
+                )
+        return diagnostic
+
     def update(self, instance, validated_data):
         test_cat_ids = validated_data.pop('test_category_ids', None)
+        if hasattr(self, 'initial_data') and instance.location:
+            loc = instance.location
+            for field in ['name', 'branch', 'address_line', 'area', 'city', 'district', 'division', 'phone', 'email', 'description', 'tagline', 'badge', 'open_timing']:
+                if field in self.initial_data:
+                    setattr(loc, field, self.initial_data[field])
+            if 'address' in self.initial_data and 'address_line' not in self.initial_data:
+                loc.address_line = self.initial_data['address']
+            if 'rating' in self.initial_data:
+                loc.rating = float(self.initial_data['rating'])
+            if 'reviews_count' in self.initial_data:
+                loc.reviews_count = int(self.initial_data['reviews_count'])
+            if 'is_verified' in self.initial_data:
+                loc.is_verified = bool(self.initial_data['is_verified'])
+            loc.save()
+
         instance = super().update(instance, validated_data)
         
         if test_cat_ids:

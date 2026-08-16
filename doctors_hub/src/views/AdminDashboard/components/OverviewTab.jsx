@@ -193,105 +193,33 @@ export default function OverviewTab() {
 
           {/* 3. Diagnostics Categories Card */}
           <div className="bg-slate-900 border border-slate-800 rounded-2xl p-5 space-y-3 shadow-lg">
-            {(() => {
-              const isSpecializationDiagCat = (c) => {
-                if (!c || c.id === 'all' || c.id === 'by-specialization' || c.id === 'by-ownership-type') return false;
-                const pId = typeof c.parent === 'object' && c.parent ? c.parent.id : c.parent;
-                const pName = (typeof c.parent === 'object' && c.parent ? c.parent.name : c.parent_name) || '';
-                if (pId === 'by-specialization' || String(pName).toLowerCase().includes('specialization')) return true;
-                const name = String(c.name || '').toLowerCase();
-                const isOwnershipName = name.includes('government') || name.includes('private') || name.includes('corporate') || name.includes('hospital-affiliated') || name.includes('ownership');
-                return !isOwnershipName;
-              };
-
-              const isOwnershipDiagCat = (c) => {
-                if (!c || c.id === 'all' || c.id === 'by-specialization' || c.id === 'by-ownership-type') return false;
-                const pId = typeof c.parent === 'object' && c.parent ? c.parent.id : c.parent;
-                const pName = (typeof c.parent === 'object' && c.parent ? c.parent.name : c.parent_name) || '';
-                if (pId === 'by-ownership-type' || String(pName).toLowerCase().includes('ownership')) return true;
-                const name = String(c.name || '').toLowerCase();
-                return name.includes('government') || name.includes('private') || name.includes('corporate') || name.includes('hospital-affiliated') || name.includes('ownership');
-              };
-
-              const specCats = diagnosticCategories.filter(isSpecializationDiagCat);
-              const ownCats = diagnosticCategories.filter(isOwnershipDiagCat);
-              const totalValidCount = specCats.length + ownCats.length;
-
-              return (
-                <>
-                  <div className="flex items-center justify-between border-b border-slate-800 pb-3">
-                    <div className="flex items-center gap-2 font-bold text-white text-sm">
-                      <FlaskConical className="w-4 h-4 text-cyan-400" />
-                      <span>Diagnostics Categories ({totalValidCount})</span>
-                    </div>
-                    <div className="flex items-center gap-1.5">
-                      <button
-                        onClick={() => handleOpenDiagCatModal && handleOpenDiagCatModal(null, 'by-specialization')}
-                        className="text-[10px] font-bold text-teal-300 hover:underline flex items-center gap-0.5 bg-teal-500/10 px-2 py-1 rounded-lg border border-teal-500/20"
-                        title="Add Specialization Category"
-                      >
-                        <Plus className="w-3 h-3" /> Specialization
-                      </button>
-                      <button
-                        onClick={() => handleOpenDiagCatModal && handleOpenDiagCatModal(null, 'by-ownership-type')}
-                        className="text-[10px] font-bold text-cyan-300 hover:underline flex items-center gap-0.5 bg-cyan-500/10 px-2 py-1 rounded-lg border border-cyan-500/20"
-                        title="Add Ownership Category"
-                      >
-                        <Plus className="w-3 h-3" /> Ownership
-                      </button>
-                    </div>
-                  </div>
-
-                  <div className="max-h-56 overflow-y-auto pr-1 space-y-3">
-                    {/* SECTION 1: BY SPECIALIZATION */}
-                    <div>
-                      <div className="text-[10px] font-bold text-teal-400 uppercase tracking-wider mb-1.5 flex items-center justify-between">
-                        <span>By Specialization ({specCats.length})</span>
-                      </div>
-                      <div className="flex flex-wrap gap-1.5">
-                        {specCats.map(dc => (
-                          <span key={dc.id} className="text-[11px] bg-slate-800/80 text-slate-300 px-2.5 py-1 rounded-lg border border-slate-700/80 font-medium flex items-center gap-1">
-                            <span>{dc.name}</span>
-                            <button onClick={() => handleOpenDiagCatModal && handleOpenDiagCatModal(dc, 'by-specialization')} className="text-slate-400 hover:text-cyan-400 ml-1" title="Edit Category">
-                              <Edit className="w-3 h-3" />
-                            </button>
-                            <button onClick={() => handleDeleteDiagCat && handleDeleteDiagCat(dc.id, dc.name)} className="text-slate-400 hover:text-rose-400 ml-0.5" title="Delete Category">
-                              <Trash2 className="w-3 h-3" />
-                            </button>
-                          </span>
-                        ))}
-                      </div>
-                    </div>
-
-                    {/* CLEAR DIVIDER LINE BETWEEN THE TWO CATEGORY TYPES */}
-                    <div className="pt-1 pb-1">
-                      <div className="border-t-2 border-slate-700/80 w-full" />
-                    </div>
-
-                    {/* SECTION 2: BY OWNERSHIP & TYPE */}
-                    <div>
-                      <div className="text-[10px] font-bold text-cyan-400 uppercase tracking-wider mb-1.5 flex items-center justify-between">
-                        <span>By Ownership & Type ({ownCats.length})</span>
-                      </div>
-                      <div className="flex flex-wrap gap-1.5">
-                        {ownCats.map(dc => (
-                          <span key={dc.id} className="text-[11px] bg-slate-800/80 text-slate-300 px-2.5 py-1 rounded-lg border border-slate-700/80 font-medium flex items-center gap-1">
-                            <span>{dc.name}</span>
-                            <button onClick={() => handleOpenDiagCatModal && handleOpenDiagCatModal(dc, 'by-ownership-type')} className="text-slate-400 hover:text-cyan-400 ml-1" title="Edit Category">
-                              <Edit className="w-3 h-3" />
-                            </button>
-                            <button onClick={() => handleDeleteDiagCat && handleDeleteDiagCat(dc.id, dc.name)} className="text-slate-400 hover:text-rose-400 ml-0.5" title="Delete Category">
-                              <Trash2 className="w-3 h-3" />
-                            </button>
-                          </span>
-                        ))}
-                      </div>
-                    </div>
-                  </div>
-                </>
-              );
-            })()}
+            <div className="flex items-center justify-between border-b border-slate-800 pb-3">
+              <div className="flex items-center gap-2 font-bold text-white text-sm">
+                <FlaskConical className="w-4 h-4 text-cyan-400" />
+                <span>Diagnostics Categories ({diagnosticCategories.length})</span>
+              </div>
+              <button
+                onClick={() => handleOpenDiagCatModal && handleOpenDiagCatModal()}
+                className="text-[11px] font-bold text-cyan-400 hover:underline flex items-center gap-1 bg-cyan-500/10 px-2.5 py-1 rounded-lg border border-cyan-500/20"
+              >
+                <Plus className="w-3 h-3" /> Add
+              </button>
+            </div>
+            <div className="flex flex-wrap gap-1.5 max-h-48 overflow-y-auto pr-1">
+              {diagnosticCategories.map(dc => (
+                <span key={dc.id} className="text-[11px] bg-slate-800/80 text-slate-300 px-2.5 py-1 rounded-lg border border-slate-700/80 font-medium flex items-center gap-1">
+                  <span>{dc.name}</span>
+                  <button onClick={() => handleOpenDiagCatModal && handleOpenDiagCatModal(dc)} className="text-slate-400 hover:text-cyan-400 ml-1" title="Edit Category">
+                    <Edit className="w-3 h-3" />
+                  </button>
+                  <button onClick={() => handleDeleteDiagCat && handleDeleteDiagCat(dc.id, dc.name)} className="text-slate-400 hover:text-rose-400 ml-0.5" title="Delete Category">
+                    <Trash2 className="w-3 h-3" />
+                  </button>
+                </span>
+              ))}
+            </div>
           </div>
+
 
         </div>
 

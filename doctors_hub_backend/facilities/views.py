@@ -58,9 +58,10 @@ class HospitalViewSet(SlugOrPkLookupMixin, viewsets.ModelViewSet):
     search_fields = ['location__name', 'location__branch']
 
 class DiagnosticCenterCategoryViewSet(viewsets.ModelViewSet):
-    queryset = DiagnosticCenterCategory.objects.select_related('parent').all()
+    queryset = DiagnosticCenterCategory.objects.all()
     serializer_class = DiagnosticCenterCategorySerializer
     permission_classes = (IsAdminUserOrReadOnly,)
+
 
 class DiagnosticServiceViewSet(viewsets.ModelViewSet):
     queryset = DiagnosticService.objects.all()

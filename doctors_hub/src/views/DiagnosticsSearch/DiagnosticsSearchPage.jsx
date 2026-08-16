@@ -151,70 +151,17 @@ export default function DiagnosticsSearchPage({
     return () => { isMounted = false; };
   }, []);
 
-  // Group fetched categories into Specialization and Ownership types for the unified filter
-  const { specializationCategories, ownershipCategories } = useMemo(() => {
-    const safeCats = ensureArray(centerCategories, []);
-    const spec = [];
-    const owner = [];
-    
-    safeCats.forEach(c => {
-      const cId = (c?.id || '').toString().toLowerCase();
-      const cSlug = (c?.slug || '').toString().toLowerCase();
-      const nameStr = (c?.name || '').toString().toLowerCase();
-      
-      if (
-        !c || 
-        cId === 'all' || 
-        cId === 'by-specialization' || 
-        cId === 'by-ownership-type' || 
-        cId === 'by-ownership-and-type' ||
-        cSlug === 'by-specialization' ||
-        cSlug === 'by-ownership-type' ||
-        cSlug === 'by-ownership-and-type' ||
-        nameStr.includes('by specialization') ||
-        nameStr.includes('by ownership')
-      ) {
-        return;
-      }
-      
-      const parentStr = (c.parent || c.parent_name || '').toString().toLowerCase();
-      
-      if (
-        parentStr.includes('specialization') || 
-        nameStr.includes('pathology') || 
-        nameStr.includes('imaging') || 
-        nameStr.includes('radiology') || 
-        nameStr.includes('cardiac') || 
-        nameStr.includes('neuro') || 
-        nameStr.includes('genetic') ||
-        nameStr.includes('molecular') ||
-        nameStr.includes('general diagnostic') ||
-        nameStr.includes('multi-specialty')
-      ) {
-        spec.push(c);
-      } else if (
-        parentStr.includes('ownership') || 
-        nameStr.includes('government') || 
-        nameStr.includes('private') || 
-        nameStr.includes('corporate') || 
-        nameStr.includes('chain') || 
-        nameStr.includes('hospital-affiliated')
-      ) {
-        owner.push(c);
-      } else {
-        spec.push(c);
-      }
-    });
-    
-    return { specializationCategories: spec, ownershipCategories: owner };
+  const validCenterCategories = useMemo(() => {
+    return ensureArray(centerCategories, []).filter(c => 
+      c && c.id !== 'all' && c.name && !c.name.toLowerCase().includes('by specialization') && !c.name.toLowerCase().includes('by ownership')
+    );
   }, [centerCategories]);
 
   // Fetch filtered Diagnostic Centers from backend
   useEffect(() => {
     let isMounted = true;
 
-    const specIds = selectedCenterCategories.filter(id => specializationCategories.some(sc => (sc.id || sc.slug || '').toString() === id.toString()));
-    const ownerIds = selectedCenterCategories.filter(id => ownershipCategories.some(oc => (oc.id || oc.slug || '').toString() === id.toString()));
+    const catIds = selectedCenterCategories.filter(id => id && id !== 'all');
 
     const delay = searchKeyword.trim() ? 350 : 0;
     const timer = setTimeout(() => {
@@ -222,8 +169,7 @@ export default function DiagnosticsSearchPage({
         location: selectedLocation,
         area: selectedArea !== 'All Areas' ? selectedArea : undefined,
         testcat: selectedTestCategory !== 'all' ? selectedTestCategory : undefined,
-        spec: specIds.length > 0 ? specIds.join(',') : undefined,
-        owner: ownerIds.length > 0 ? ownerIds.join(',') : undefined,
+        category: catIds.length > 0 ? catIds.join(',') : undefined,
         search: searchKeyword.trim() || undefined,
         page: currentPage,
         page_size: pageSize
@@ -242,7 +188,8 @@ export default function DiagnosticsSearchPage({
     }, delay);
 
     return () => { isMounted = false; clearTimeout(timer); };
-  }, [selectedLocation, selectedArea, selectedTestCategory, selectedCenterCategories, searchKeyword, currentPage, specializationCategories, ownershipCategories]);
+  }, [selectedLocation, selectedArea, selectedTestCategory, selectedCenterCategories, searchKeyword, currentPage]);
+
 
   // Handle location change
   const handleLocationChange = (loc) => {
@@ -385,87 +332,13 @@ export default function DiagnosticsSearchPage({
                 </div>
               )}
 
-             {/* 4. Specialization Filter (Multi-Select) */}
-             {/* 
-              <div className="relative" ref={specDropdownRef}>
-                <label className="block text-[11px] font-bold text-emerald-400 mb-1 flex items-center justify-between">
-                  <span>Specialization</span>
-                  {selectedCenterCategories.filter(id => specializationCategories.some(sc => (sc.id || sc.slug || '').toString() === id.toString())).length > 0 && (
-                    <span className="text-[10px] text-emerald-300 font-extrabold bg-emerald-950 px-1.5 py-0.5 rounded border border-emerald-700/60">
-                      {selectedCenterCategories.filter(id => specializationCategories.some(sc => (sc.id || sc.slug || '').toString() === id.toString())).length} selected
-                    </span>
-                  )}
-                </label>
-                <button
-                  type="button"
-                  onClick={() => setSpecDropdownOpen(!specDropdownOpen)}
-                  className="w-full bg-slate-900 border border-emerald-500/80 rounded-xl px-3 py-2.5 text-xs text-left text-white focus:outline-none focus:border-emerald-400 font-bold flex items-center justify-between cursor-pointer shadow-xs"
-                >
-                  <span className="truncate">
-                    {selectedCenterCategories.filter(id => specializationCategories.some(sc => (sc.id || sc.slug || '').toString() === id.toString())).length === 0
-                      ? "All Specializations"
-                      : selectedCenterCategories.filter(id => specializationCategories.some(sc => (sc.id || sc.slug || '').toString() === id.toString())).length === 1
-                      ? (
-                          specializationCategories.find(c => (c.id || c.slug).toString() === selectedCenterCategories.find(id => specializationCategories.some(sc => (sc.id || sc.slug || '').toString() === id.toString()))?.toString())?.name || "1 Selected"
-                        )
-                      : `${selectedCenterCategories.filter(id => specializationCategories.some(sc => (sc.id || sc.slug || '').toString() === id.toString())).length} Selected`}
-                  </span>
-                  <ChevronDown className={`w-4 h-4 text-emerald-400 shrink-0 transition-transform ${specDropdownOpen ? 'rotate-180' : ''}`} />
-                </button>
-
-                {/* Specialization Interactive Popover 
-                {specDropdownOpen && (
-                  <div className="absolute left-0 right-0 mt-1 bg-slate-900 border border-slate-700 rounded-2xl shadow-2xl p-3 z-50 max-h-80 overflow-y-auto space-y-3 font-sans">
-                    <div className="flex items-center justify-between border-b border-slate-800 pb-2">
-                      <button
-                        type="button"
-                        onClick={() => {
-                          const specIds = new Set(specializationCategories.map(sc => (sc.id || sc.slug || '').toString()));
-                          setSelectedCenterCategories(selectedCenterCategories.filter(id => !specIds.has(id.toString())));
-                        }}
-                        className={`text-xs font-bold px-2 py-1 rounded transition ${selectedCenterCategories.filter(id => specializationCategories.some(sc => (sc.id || sc.slug || '').toString() === id.toString())).length === 0 ? 'bg-emerald-500/20 text-emerald-300' : 'text-slate-400 hover:text-white'}`}
-                      >
-                        Clear All
-                      </button>
-                      <span className="text-[10px] text-slate-500 font-semibold">Select Specializations</span>
-                    </div>
-                    <div className="grid grid-cols-1 gap-1">
-                      {specializationCategories.map(cat => {
-                        const catId = cat.id || cat.slug;
-                        const isChecked = selectedCenterCategories.includes(catId);
-                        return (
-                          <label
-                            key={catId}
-                            className={`flex items-center gap-2 px-2.5 py-1.5 rounded-lg text-xs cursor-pointer transition ${isChecked ? 'bg-emerald-950/80 text-emerald-200 font-bold border border-emerald-600/50' : 'text-slate-300 hover:bg-slate-800 font-medium'}`}
-                          >
-                            <input
-                              type="checkbox"
-                              checked={isChecked}
-                              onChange={() => {
-                                if (isChecked) {
-                                  setSelectedCenterCategories(selectedCenterCategories.filter(id => id !== catId));
-                                } else {
-                                  setSelectedCenterCategories([...selectedCenterCategories, catId]);
-                                }
-                              }}
-                              className="w-3.5 h-3.5 rounded accent-emerald-500 cursor-pointer"
-                            />
-                            <span className="truncate">{cat.name}</span>
-                          </label>
-                        );
-                      })}
-                    </div>
-                  </div>
-                )}
-              </div> */}
-
-              {/* 5. Ownership Filter (Multi-Select) */}
+              {/* 4. Diagnostic Center Category Filter */}
               <div className="relative" ref={ownerDropdownRef}>
                 <label className="block text-[11px] font-bold text-teal-400 mb-1 flex items-center justify-between">
-                  <span>Ownership</span>
-                  {selectedCenterCategories.filter(id => ownershipCategories.some(oc => (oc.id || oc.slug || '').toString() === id.toString())).length > 0 && (
+                  <span>Center Category</span>
+                  {selectedCenterCategories.length > 0 && (
                     <span className="text-[10px] text-teal-300 font-extrabold bg-teal-950 px-1.5 py-0.5 rounded border border-teal-700/60">
-                      {selectedCenterCategories.filter(id => ownershipCategories.some(oc => (oc.id || oc.slug || '').toString() === id.toString())).length} selected
+                      {selectedCenterCategories.length} selected
                     </span>
                   )}
                 </label>
@@ -475,35 +348,30 @@ export default function DiagnosticsSearchPage({
                   className="w-full bg-slate-900 border border-teal-500/80 rounded-xl px-3 py-2.5 text-xs text-left text-white focus:outline-none focus:border-teal-400 font-bold flex items-center justify-between cursor-pointer shadow-xs"
                 >
                   <span className="truncate">
-                    {selectedCenterCategories.filter(id => ownershipCategories.some(oc => (oc.id || oc.slug || '').toString() === id.toString())).length === 0
-                      ? "All Ownership Types"
-                      : selectedCenterCategories.filter(id => ownershipCategories.some(oc => (oc.id || oc.slug || '').toString() === id.toString())).length === 1
-                      ? (
-                          ownershipCategories.find(c => (c.id || c.slug).toString() === selectedCenterCategories.find(id => ownershipCategories.some(oc => (oc.id || oc.slug || '').toString() === id.toString()))?.toString())?.name || "1 Selected"
-                        )
-                      : `${selectedCenterCategories.filter(id => ownershipCategories.some(oc => (oc.id || oc.slug || '').toString() === id.toString())).length} Selected`}
+                    {selectedCenterCategories.length === 0
+                      ? "All Categories"
+                      : selectedCenterCategories.length === 1
+                      ? (validCenterCategories.find(c => (c.id || c.slug).toString() === selectedCenterCategories[0]?.toString())?.name || "1 Selected")
+                      : `${selectedCenterCategories.length} Selected`}
                   </span>
                   <ChevronDown className={`w-4 h-4 text-teal-400 shrink-0 transition-transform ${ownerDropdownOpen ? 'rotate-180' : ''}`} />
                 </button>
 
-                {/* Ownership Interactive Popover */}
+                {/* Category Popover */}
                 {ownerDropdownOpen && (
                   <div className="absolute left-0 right-0 mt-1 bg-slate-900 border border-slate-700 rounded-2xl shadow-2xl p-3 z-50 max-h-80 overflow-y-auto space-y-3 font-sans">
                     <div className="flex items-center justify-between border-b border-slate-800 pb-2">
                       <button
                         type="button"
-                        onClick={() => {
-                          const ownerIds = new Set(ownershipCategories.map(oc => (oc.id || oc.slug || '').toString()));
-                          setSelectedCenterCategories(selectedCenterCategories.filter(id => !ownerIds.has(id.toString())));
-                        }}
-                        className={`text-xs font-bold px-2 py-1 rounded transition ${selectedCenterCategories.filter(id => ownershipCategories.some(oc => (oc.id || oc.slug || '').toString() === id.toString())).length === 0 ? 'bg-teal-500/20 text-teal-300' : 'text-slate-400 hover:text-white'}`}
+                        onClick={() => setSelectedCenterCategories([])}
+                        className={`text-xs font-bold px-2 py-1 rounded transition ${selectedCenterCategories.length === 0 ? 'bg-teal-500/20 text-teal-300' : 'text-slate-400 hover:text-white'}`}
                       >
                         Clear All
                       </button>
-                      <span className="text-[10px] text-slate-500 font-semibold">Select Ownership Types</span>
+                      <span className="text-[10px] text-slate-500 font-semibold">Select Categories</span>
                     </div>
                     <div className="grid grid-cols-1 gap-1">
-                      {ownershipCategories.map(cat => {
+                      {validCenterCategories.map(cat => {
                         const catId = cat.id || cat.slug;
                         const isChecked = selectedCenterCategories.includes(catId);
                         return (
@@ -531,6 +399,7 @@ export default function DiagnosticsSearchPage({
                   </div>
                 )}
               </div>
+
 
               {/* 3. Search Keyword Filter */}
               <div className="relative">
@@ -599,7 +468,7 @@ export default function DiagnosticsSearchPage({
                           <span className="text-[10px] font-extrabold text-emerald-800 bg-emerald-100 px-2.5 py-0.5 rounded uppercase tracking-wider">
                             {center.district || "Diagnostic Center"}
                           </span>
-                          {(center.categories || []).map(cat => {
+                          {(center.categories || (center.category ? [center.category] : [])).map(cat => {
                             const catName = typeof cat === 'string' ? cat : (cat?.name || cat?.id || '');
                             if (!catName) return null;
                             return (

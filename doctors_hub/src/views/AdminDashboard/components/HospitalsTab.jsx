@@ -54,6 +54,11 @@ export default function HospitalsTab() {
                     <td className="py-4 px-4 font-bold text-white">
                       <div className="text-sm text-emerald-400">{h.name}</div>
                       <div className="text-slate-400 text-[11px] font-normal">{h.tagline}</div>
+                      {h.category && (
+                        <span className="inline-block mt-1 px-2 py-0.5 bg-emerald-500/10 text-emerald-400 border border-emerald-500/20 rounded text-[10px] font-bold">
+                          {typeof h.category === 'object' ? h.category.name : h.category}
+                        </span>
+                      )}
                     </td>
                     <td className="py-4 px-4 font-bold text-teal-300">
                       {h.branch || 'Main Branch'}
