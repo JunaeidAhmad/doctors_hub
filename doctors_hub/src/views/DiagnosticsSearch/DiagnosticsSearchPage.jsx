@@ -385,7 +385,8 @@ export default function DiagnosticsSearchPage({
                 </div>
               )}
 
-              {/* 4. Specialization Filter (Multi-Select) */}
+             {/* 4. Specialization Filter (Multi-Select) */}
+             {/* 
               <div className="relative" ref={specDropdownRef}>
                 <label className="block text-[11px] font-bold text-emerald-400 mb-1 flex items-center justify-between">
                   <span>Specialization</span>
@@ -412,7 +413,7 @@ export default function DiagnosticsSearchPage({
                   <ChevronDown className={`w-4 h-4 text-emerald-400 shrink-0 transition-transform ${specDropdownOpen ? 'rotate-180' : ''}`} />
                 </button>
 
-                {/* Specialization Interactive Popover */}
+                {/* Specialization Interactive Popover 
                 {specDropdownOpen && (
                   <div className="absolute left-0 right-0 mt-1 bg-slate-900 border border-slate-700 rounded-2xl shadow-2xl p-3 z-50 max-h-80 overflow-y-auto space-y-3 font-sans">
                     <div className="flex items-center justify-between border-b border-slate-800 pb-2">
@@ -456,7 +457,7 @@ export default function DiagnosticsSearchPage({
                     </div>
                   </div>
                 )}
-              </div>
+              </div> */}
 
               {/* 5. Ownership Filter (Multi-Select) */}
               <div className="relative" ref={ownerDropdownRef}>

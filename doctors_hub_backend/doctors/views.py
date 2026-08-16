@@ -30,6 +30,7 @@ class DoctorFilter(django_filters.FilterSet):
             'affiliations__fee': ['lte'],
         }
 
+
 class DoctorViewSet(SlugOrPkLookupMixin, viewsets.ModelViewSet):
     queryset = Doctor.objects.all()
     serializer_class = DoctorSerializer

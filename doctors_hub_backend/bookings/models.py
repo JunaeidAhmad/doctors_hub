@@ -47,5 +47,18 @@ class LabBooking(BaseBooking):
     facility_test = models.ForeignKey(FacilityTest, on_delete=models.CASCADE, related_name="bookings")
     pickup_date = models.DateField()
     patient_name = models.CharField(max_length=100)
-    patient_phone = models.CharField(max_length=20)
-    address = models.TextField()
+    patient_phone = models.CharField(max_length=20, default="")
+    pickup_address_line = models.CharField(max_length=300, default="")
+    pickup_area = models.CharField(max_length=100, blank=True, default="")
+    pickup_city = models.CharField(max_length=100, blank=True, default="")
+    pickup_district = models.CharField(max_length=100, default="Dhaka")
+
+    @property
+    def full_pickup_address(self):
+        parts = [self.pickup_address_line, self.pickup_area, self.pickup_city, self.pickup_district]
+        return ", ".join([p for p in parts if p])
+
+    @property
+    def address(self):
+        return self.full_pickup_address
+

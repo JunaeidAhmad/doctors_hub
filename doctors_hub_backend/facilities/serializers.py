@@ -1,6 +1,6 @@
 from rest_framework import serializers
 from .models import (
-    Address, PracticeLocation, HospitalCategory, HospitalService, Hospital,
+    Address, Location, HospitalCategory, HospitalService, Hospital,
     DiagnosticCenterCategory, DiagnosticService, DiagnosticCenter, Chamber
 )
 
@@ -36,29 +36,52 @@ class DiagnosticCenterCategorySerializer(serializers.ModelSerializer):
         fields = ('id', 'name', 'slug', 'parent', 'parent_name', 'icon', 'description')
 
 
-class PracticeLocationSerializer(serializers.ModelSerializer):
-    address_details = AddressSerializer(source='address', read_only=True)
+class LocationSerializer(serializers.ModelSerializer):
+    address = AddressSerializer(read_only=True)
     address_id = serializers.PrimaryKeyRelatedField(
-        queryset=Address.objects.all(), write_only=True, source='address'
+        queryset=Address.objects.all(), write_only=True, source='address', required=False
     )
+    address_line = serializers.CharField(source='address.address_line', read_only=True, default='')
+    area = serializers.CharField(source='address.area', read_only=True, default='')
+    city = serializers.CharField(source='address.city', read_only=True, default='')
+    district = serializers.CharField(source='address.district', read_only=True, default='')
+    division = serializers.CharField(source='address.division', read_only=True, default='')
+    address_details = serializers.SerializerMethodField()
 
     class Meta:
-        model = PracticeLocation
+        model = Location
         fields = (
-            'id', 'location_type', 'name', 'branch', 'slug', 'address_details', 'address_id',
+            'id', 'location_type', 'name', 'branch', 'slug', 'address', 'address_id',
+            'address_line', 'area', 'city', 'district', 'division',
+            'address_details',
             'phone', 'email', 'logo', 'image', 'description', 'tagline', 'badge',
             'rating', 'reviews_count', 'open_timing', 'is_verified', 'is_active', 'created_at'
         )
 
+    def get_address_details(self, obj):
+        if not getattr(obj, 'address', None):
+            return {}
+        return {
+            'address_line': obj.address.address_line,
+            'area': obj.address.area,
+            'city': obj.address.city,
+            'district': obj.address.district,
+            'division': obj.address.division,
+        }
+
+# Backward-compatibility alias
+PracticeLocationSerializer = LocationSerializer
+
+
 
 class HospitalSerializer(serializers.ModelSerializer):
-    location_details = PracticeLocationSerializer(source='location', read_only=True)
+    location_details = LocationSerializer(source='location', read_only=True)
     location_id = serializers.PrimaryKeyRelatedField(
-        queryset=PracticeLocation.objects.all(), write_only=True, source='location'
+        queryset=Location.objects.all(), write_only=True, source='location'
     )
-    categories = HospitalCategorySerializer(many=True, read_only=True)
-    category_ids = serializers.PrimaryKeyRelatedField(
-        queryset=HospitalCategory.objects.all(), many=True, write_only=True, source='categories', required=False
+    category = HospitalCategorySerializer(read_only=True)
+    category_id = serializers.PrimaryKeyRelatedField(
+        queryset=HospitalCategory.objects.all(), write_only=True, source='category', required=False, allow_null=True
     )
     services = HospitalServiceSerializer(many=True, read_only=True)
     service_ids = serializers.PrimaryKeyRelatedField(
@@ -71,7 +94,7 @@ class HospitalSerializer(serializers.ModelSerializer):
     class Meta:
         model = Hospital
         fields = (
-            'location_details', 'location_id', 'categories', 'category_ids',
+            'location_details', 'location_id', 'category', 'category_id',
             'services', 'service_ids', 'has_diagnostic_center', 'test_category_ids'
         )
 
@@ -92,13 +115,13 @@ class HospitalSerializer(serializers.ModelSerializer):
 
 
 class DiagnosticCenterSerializer(serializers.ModelSerializer):
-    location_details = PracticeLocationSerializer(source='location', read_only=True)
+    location_details = LocationSerializer(source='location', read_only=True)
     location_id = serializers.PrimaryKeyRelatedField(
-        queryset=PracticeLocation.objects.all(), write_only=True, source='location'
+        queryset=Location.objects.all(), write_only=True, source='location'
     )
-    categories = DiagnosticCenterCategorySerializer(many=True, read_only=True)
-    category_ids = serializers.PrimaryKeyRelatedField(
-        queryset=DiagnosticCenterCategory.objects.all(), many=True, write_only=True, source='categories', required=False
+    category = DiagnosticCenterCategorySerializer(read_only=True)
+    category_id = serializers.PrimaryKeyRelatedField(
+        queryset=DiagnosticCenterCategory.objects.all(), write_only=True, source='category', required=False, allow_null=True
     )
     services = DiagnosticServiceSerializer(many=True, read_only=True)
     service_ids = serializers.PrimaryKeyRelatedField(
@@ -111,7 +134,7 @@ class DiagnosticCenterSerializer(serializers.ModelSerializer):
     class Meta:
         model = DiagnosticCenter
         fields = (
-            'location_details', 'location_id', 'categories', 'category_ids',
+            'location_details', 'location_id', 'category', 'category_id',
             'services', 'service_ids', 'test_category_ids'
         )
 
@@ -132,9 +155,9 @@ class DiagnosticCenterSerializer(serializers.ModelSerializer):
 
 
 class ChamberSerializer(serializers.ModelSerializer):
-    location_details = PracticeLocationSerializer(source='location', read_only=True)
+    location_details = LocationSerializer(source='location', read_only=True)
     location_id = serializers.PrimaryKeyRelatedField(
-        queryset=PracticeLocation.objects.all(), write_only=True, source='location'
+        queryset=Location.objects.all(), write_only=True, source='location'
     )
     
     class Meta:

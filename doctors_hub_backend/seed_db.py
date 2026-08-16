@@ -10,7 +10,7 @@ from django.utils.text import slugify
 from doctors.models import DoctorSpecialty, Doctor
 from tests.models import TestCategory, Test, FacilityTest
 from facilities.models import (
-    Address, PracticeLocation, HospitalCategory, HospitalService, 
+    Address, Location, HospitalCategory, HospitalService, 
     DiagnosticCenterCategory, DiagnosticService, Hospital, DiagnosticCenter
 )
 
@@ -94,7 +94,7 @@ def seed_db():
     for h in data.get('HOSPITALS', []):
         try:
             # Check if exists
-            if PracticeLocation.objects.filter(name=h['name'], branch=h.get('branch', '')).exists():
+            if Location.objects.filter(name=h['name'], branch=h.get('branch', '')).exists():
                 continue
             
             slug = slugify(f"{h['name']} {h.get('branch', '')}")
@@ -109,10 +109,10 @@ def seed_db():
                 }
             )
             
-            location, _ = PracticeLocation.objects.update_or_create(
-                id=seed_uuid(f"PracticeLocation:{slug}"),
+            location, _ = Location.objects.update_or_create(
+                id=seed_uuid(f"Location:{slug}"),
                 defaults={
-                    'location_type': PracticeLocation.LocationType.HOSPITAL,
+                    'location_type': Location.LocationType.HOSPITAL,
                     'name': h['name'],
                     'branch': h.get('branch', '')[:200],
                     'address': address,
@@ -127,11 +127,13 @@ def seed_db():
             
             hospital, _ = Hospital.objects.update_or_create(id=seed_uuid(f"Hospital:{slug}"), defaults={'location': location})
             
-            # Categories
+            # Category (Many-to-One)
             for cat_data in h.get('categories', []):
                 cat = HospitalCategory.objects.filter(name=cat_data.get('name')).first()
                 if cat:
-                    hospital.categories.add(cat)
+                    hospital.category = cat
+                    hospital.save()
+                    break
                     
         except Exception as e:
             print(f"Error seeding hospital {h.get('name')}: {e}")
@@ -139,7 +141,7 @@ def seed_db():
     print("Seeding Diagnostic Centers...")
     for d in data.get('DIAGNOSTIC_CENTERS', []):
         try:
-            if PracticeLocation.objects.filter(name=d['name'], branch=d.get('branch', '')).exists():
+            if Location.objects.filter(name=d['name'], branch=d.get('branch', '')).exists():
                 continue
             
             slug = slugify(f"{d['name']} {d.get('branch', '')}")
@@ -154,10 +156,10 @@ def seed_db():
                 }
             )
             
-            location, _ = PracticeLocation.objects.update_or_create(
-                id=seed_uuid(f"PracticeLocation:{slug}"),
+            location, _ = Location.objects.update_or_create(
+                id=seed_uuid(f"Location:{slug}"),
                 defaults={
-                    'location_type': PracticeLocation.LocationType.DIAGNOSTIC_CENTER,
+                    'location_type': Location.LocationType.DIAGNOSTIC_CENTER,
                     'name': d['name'],
                     'branch': d.get('branch', '')[:200],
                     'address': address,
@@ -172,11 +174,13 @@ def seed_db():
             
             diag, _ = DiagnosticCenter.objects.update_or_create(id=seed_uuid(f"DiagnosticCenter:{slug}"), defaults={'location': location})
             
-            # Categories
+            # Category (Many-to-One)
             for cat_data in d.get('categories', []):
                 cat = DiagnosticCenterCategory.objects.filter(name=cat_data.get('name')).first()
                 if cat:
-                    diag.categories.add(cat)
+                    diag.category = cat
+                    diag.save()
+                    break
                     
         except Exception as e:
             print(f"Error seeding diagnostic center {d.get('name')}: {e}")

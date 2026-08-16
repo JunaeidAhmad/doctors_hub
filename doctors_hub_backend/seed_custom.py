@@ -8,13 +8,13 @@ os.environ.setdefault('DJANGO_SETTINGS_MODULE', 'core.settings')
 django.setup()
 
 from doctors.models import Doctor, DoctorSpecialty, DoctorAffiliation, AffiliationSchedule
-from facilities.models import PracticeLocation
+from facilities.models import Location
 from tests.models import Test, FacilityTest
 
 def seed_custom():
     print("Seeding Doctors...")
     specialties = list(DoctorSpecialty.objects.all())
-    locations = list(PracticeLocation.objects.all())
+    locations = list(Location.objects.all())
     tests = list(Test.objects.all())
 
     bd_doctors = [

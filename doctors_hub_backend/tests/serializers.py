@@ -1,7 +1,7 @@
 from rest_framework import serializers
 from .models import TestCategory, Test, FacilityTest
-from facilities.models import PracticeLocation
-from facilities.serializers import PracticeLocationSerializer
+from facilities.models import Location
+from facilities.serializers import LocationSerializer
 
 class TestCategorySerializer(serializers.ModelSerializer):
     class Meta:
@@ -28,9 +28,9 @@ class FacilityTestSerializer(serializers.ModelSerializer):
     test_id = serializers.PrimaryKeyRelatedField(
         queryset=Test.objects.all(), write_only=True, source='test'
     )
-    location_details = PracticeLocationSerializer(source='location', read_only=True)
+    location_details = LocationSerializer(source='location', read_only=True)
     location_id = serializers.PrimaryKeyRelatedField(
-        queryset=PracticeLocation.objects.all(), write_only=True, source='location'
+        queryset=Location.objects.all(), write_only=True, source='location'
     )
     facility_name = serializers.CharField(source='location.name', read_only=True, default='')
 

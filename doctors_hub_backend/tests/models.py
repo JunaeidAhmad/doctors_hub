@@ -1,7 +1,7 @@
 import uuid
 from django.db import models
 from django.core.exceptions import ValidationError
-from facilities.models import PracticeLocation
+from facilities.models import Location
 from django.utils.text import slugify
 
 class TestCategory(models.Model):
@@ -41,7 +41,7 @@ class Test(models.Model):
 
 class FacilityTest(models.Model):
     id = models.UUIDField(primary_key=True, default=uuid.uuid4, editable=False)
-    location = models.ForeignKey(PracticeLocation, on_delete=models.CASCADE, related_name="offered_tests")
+    location = models.ForeignKey(Location, on_delete=models.CASCADE, related_name="offered_tests")
     test = models.ForeignKey(Test, on_delete=models.CASCADE, related_name="offered_at")
     price = models.DecimalField(max_digits=10, decimal_places=2)
     discounted_price = models.DecimalField(max_digits=10, decimal_places=2, null=True, blank=True)
@@ -58,5 +58,5 @@ class FacilityTest(models.Model):
         ]
 
     def clean(self):
-        if self.location.location_type == PracticeLocation.LocationType.CHAMBER:
+        if self.location.location_type == Location.LocationType.CHAMBER:
             raise ValidationError("Chambers cannot offer lab tests.")

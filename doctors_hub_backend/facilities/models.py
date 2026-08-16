@@ -2,6 +2,7 @@ import uuid
 from django.db import models
 from django.utils.text import slugify
 
+
 class Address(models.Model):
     id = models.UUIDField(primary_key=True, default=uuid.uuid4, editable=False)
     address_line = models.CharField(max_length=300)
@@ -16,7 +17,11 @@ class Address(models.Model):
     class Meta:
         indexes = [models.Index(fields=["district"]), models.Index(fields=["division"])]
 
-class PracticeLocation(models.Model):
+    def __str__(self):
+        return f"{self.address_line}, {self.district}"
+
+
+class Location(models.Model):
     class LocationType(models.TextChoices):
         HOSPITAL = "hospital", "Hospital"
         DIAGNOSTIC_CENTER = "diagnostic_center", "Diagnostic Center"
@@ -76,8 +81,8 @@ class HospitalService(models.Model):
     description = models.TextField(blank=True)
 
 class Hospital(models.Model):
-    location = models.OneToOneField(PracticeLocation, primary_key=True, on_delete=models.CASCADE, related_name="hospital_detail")
-    categories = models.ManyToManyField(HospitalCategory, related_name="hospitals", blank=True)
+    location = models.OneToOneField(Location, primary_key=True, on_delete=models.CASCADE, related_name="hospital_detail")
+    category = models.ForeignKey(HospitalCategory, on_delete=models.SET_NULL, null=True, blank=True, related_name="hospitals")
     services = models.ManyToManyField(HospitalService, related_name="hospitals", blank=True)
     has_diagnostic_center = models.BooleanField(default=True)
 
@@ -101,11 +106,11 @@ class DiagnosticService(models.Model):
     description = models.TextField(blank=True)
 
 class DiagnosticCenter(models.Model):
-    location = models.OneToOneField(PracticeLocation, primary_key=True, on_delete=models.CASCADE, related_name="diagnostic_center_detail")
-    categories = models.ManyToManyField(DiagnosticCenterCategory, related_name="centers", blank=True)
+    location = models.OneToOneField(Location, primary_key=True, on_delete=models.CASCADE, related_name="diagnostic_center_detail")
+    category = models.ForeignKey(DiagnosticCenterCategory, on_delete=models.SET_NULL, null=True, blank=True, related_name="centers")
     services = models.ManyToManyField(DiagnosticService, related_name="centers", blank=True)
 
 class Chamber(models.Model):
-    location = models.OneToOneField(PracticeLocation, primary_key=True, on_delete=models.CASCADE, related_name="chamber_detail")
+    location = models.OneToOneField(Location, primary_key=True, on_delete=models.CASCADE, related_name="chamber_detail")
     doctor = models.ForeignKey("doctors.Doctor", on_delete=models.CASCADE, related_name="chambers")
     assistant_phone = models.CharField(max_length=50, blank=True)

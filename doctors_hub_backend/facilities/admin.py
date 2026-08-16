@@ -1,18 +1,21 @@
 from django.contrib import admin
 from .models import (
-    Address, PracticeLocation, HospitalCategory, HospitalService, Hospital,
+    Address, Location, HospitalCategory, HospitalService, Hospital,
     DiagnosticCenterCategory, DiagnosticService, DiagnosticCenter, Chamber
 )
 
 @admin.register(Address)
 class AddressAdmin(admin.ModelAdmin):
     list_display = ('id', 'address_line', 'city', 'district', 'division')
+    search_fields = ('address_line', 'city', 'district', 'division')
+    list_filter = ('district', 'division')
 
-@admin.register(PracticeLocation)
-class PracticeLocationAdmin(admin.ModelAdmin):
+@admin.register(Location)
+class LocationAdmin(admin.ModelAdmin):
     list_display = ('id', 'name', 'location_type', 'branch', 'is_verified', 'is_active')
     list_filter = ('location_type', 'is_verified', 'is_active')
     search_fields = ('name', 'branch')
+
 
 @admin.register(HospitalCategory)
 class HospitalCategoryAdmin(admin.ModelAdmin):
@@ -26,8 +29,9 @@ class HospitalServiceAdmin(admin.ModelAdmin):
 
 @admin.register(Hospital)
 class HospitalAdmin(admin.ModelAdmin):
-    list_display = ('location',)
-    filter_horizontal = ('categories', 'services')
+    list_display = ('location', 'category')
+    list_filter = ('category',)
+    filter_horizontal = ('services',)
 
 @admin.register(DiagnosticCenterCategory)
 class DiagnosticCenterCategoryAdmin(admin.ModelAdmin):
@@ -42,8 +46,9 @@ class DiagnosticServiceAdmin(admin.ModelAdmin):
 
 @admin.register(DiagnosticCenter)
 class DiagnosticCenterAdmin(admin.ModelAdmin):
-    list_display = ('location',)
-    filter_horizontal = ('categories', 'services')
+    list_display = ('location', 'category')
+    list_filter = ('category',)
+    filter_horizontal = ('services',)
 
 @admin.register(Chamber)
 class ChamberAdmin(admin.ModelAdmin):

@@ -8,5 +8,6 @@ class DoctorBookingAdmin(admin.ModelAdmin):
 
 @admin.register(LabBooking)
 class LabBookingAdmin(admin.ModelAdmin):
-    list_display = ('id', 'user', 'facility_test', 'pickup_date', 'patient_name', 'status')
-    list_filter = ('status', 'pickup_date')
+    list_display = ('id', 'user', 'facility_test', 'pickup_date', 'patient_name', 'pickup_district', 'status')
+    list_filter = ('status', 'pickup_date', 'pickup_district')
+

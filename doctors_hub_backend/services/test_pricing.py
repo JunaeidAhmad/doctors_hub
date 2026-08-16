@@ -1,16 +1,17 @@
 from django.core.exceptions import ValidationError
 from tests.models import FacilityTest, Test
-from facilities.models import PracticeLocation
+from facilities.models import Location
 
 def attach_tests_to_location(
     *,
-    location: PracticeLocation,
+    location: Location,
     test_category_ids: list[str] = None,
     test_ids: list[str] = None,
     test_prices: dict # Expected format: {"test_uuid": {"price": 500, "original_price": 600}}
 ):
-    if location.location_type == PracticeLocation.LocationType.CHAMBER:
+    if location.location_type == Location.LocationType.CHAMBER:
         raise ValidationError("Chambers cannot offer lab tests.")
+
 
     tests_to_attach = set()
 

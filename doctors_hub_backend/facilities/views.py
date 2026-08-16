@@ -3,25 +3,23 @@ from django_filters.rest_framework import DjangoFilterBackend
 import django_filters
 from core.mixins import SlugOrPkLookupMixin
 from .models import (
-    Address, PracticeLocation, HospitalCategory, HospitalService, Hospital,
+    Location, HospitalCategory, HospitalService, Hospital,
     DiagnosticCenterCategory, DiagnosticService, DiagnosticCenter, Chamber
 )
 from .serializers import (
-    AddressSerializer, PracticeLocationSerializer, HospitalCategorySerializer, HospitalServiceSerializer,
+    LocationSerializer, HospitalCategorySerializer, HospitalServiceSerializer,
     HospitalSerializer, DiagnosticCenterCategorySerializer, DiagnosticServiceSerializer,
     DiagnosticCenterSerializer, ChamberSerializer
 )
 from core.permissions import IsAdminUserOrReadOnly
 
-class AddressViewSet(viewsets.ModelViewSet):
-    queryset = Address.objects.all()
-    serializer_class = AddressSerializer
+class LocationViewSet(viewsets.ModelViewSet):
+    queryset = Location.objects.all()
+    serializer_class = LocationSerializer
     permission_classes = (IsAdminUserOrReadOnly,)
 
-class PracticeLocationViewSet(viewsets.ModelViewSet):
-    queryset = PracticeLocation.objects.all()
-    serializer_class = PracticeLocationSerializer
-    permission_classes = (IsAdminUserOrReadOnly,)
+# Backward compatibility
+PracticeLocationViewSet = LocationViewSet
 
 class HospitalCategoryViewSet(viewsets.ModelViewSet):
     queryset = HospitalCategory.objects.all()
@@ -38,6 +36,7 @@ class HospitalFilter(django_filters.FilterSet):
     area = django_filters.CharFilter(field_name='location__address__area', lookup_expr='exact')
     district = django_filters.CharFilter(field_name='location__address__district', lookup_expr='exact')
     division = django_filters.CharFilter(field_name='location__address__division', lookup_expr='exact')
+    categories = django_filters.ModelChoiceFilter(field_name='category', queryset=HospitalCategory.objects.all())
 
     class Meta:
         model = Hospital
@@ -46,7 +45,7 @@ class HospitalFilter(django_filters.FilterSet):
             'location__address__area': ['exact'],
             'location__address__district': ['exact'],
             'location__address__division': ['exact'],
-            'categories': ['exact'],
+            'category': ['exact'],
         }
 
 class HospitalViewSet(SlugOrPkLookupMixin, viewsets.ModelViewSet):
@@ -73,6 +72,7 @@ class DiagnosticCenterFilter(django_filters.FilterSet):
     area = django_filters.CharFilter(field_name='location__address__area', lookup_expr='exact')
     district = django_filters.CharFilter(field_name='location__address__district', lookup_expr='exact')
     division = django_filters.CharFilter(field_name='location__address__division', lookup_expr='exact')
+    categories = django_filters.ModelChoiceFilter(field_name='category', queryset=DiagnosticCenterCategory.objects.all())
 
     class Meta:
         model = DiagnosticCenter
@@ -81,7 +81,7 @@ class DiagnosticCenterFilter(django_filters.FilterSet):
             'location__address__area': ['exact'],
             'location__address__district': ['exact'],
             'location__address__division': ['exact'],
-            'categories': ['exact'],
+            'category': ['exact'],
         }
 
 class DiagnosticCenterViewSet(SlugOrPkLookupMixin, viewsets.ModelViewSet):
@@ -97,3 +97,4 @@ class ChamberViewSet(viewsets.ModelViewSet):
     queryset = Chamber.objects.all()
     serializer_class = ChamberSerializer
     permission_classes = (IsAdminUserOrReadOnly,)
+

@@ -1,7 +1,7 @@
 from rest_framework import serializers
 from .models import DoctorSpecialty, Doctor, DoctorAffiliation, AffiliationSchedule
-from facilities.models import PracticeLocation
-from facilities.serializers import PracticeLocationSerializer
+from facilities.models import Location
+from facilities.serializers import LocationSerializer
 
 class DoctorSpecialtySerializer(serializers.ModelSerializer):
     class Meta:
@@ -20,15 +20,16 @@ class AffiliationScheduleSerializer(serializers.ModelSerializer):
 
 class DoctorAffiliationSerializer(serializers.ModelSerializer):
     facility_name = serializers.CharField(source='location.name', read_only=True, default='')
-    city = serializers.CharField(source='location.address.city', read_only=True, default='')
+    city = serializers.CharField(source='location.city', read_only=True, default='')
     schedules = AffiliationScheduleSerializer(many=True, required=False)
+
     doctor_name = serializers.CharField(source='doctor.name', read_only=True, default='')
     qualification = serializers.CharField(source='doctor.qualification', read_only=True, default='')
     experience = serializers.CharField(source='doctor.experience', read_only=True, default='')
     specialties = DoctorSpecialtySerializer(source='doctor.specialties', many=True, read_only=True)
-    location_details = PracticeLocationSerializer(source='location', read_only=True)
+    location_details = LocationSerializer(source='location', read_only=True)
     location_id = serializers.PrimaryKeyRelatedField(
-        queryset=PracticeLocation.objects.all(), write_only=True, source='location'
+        queryset=Location.objects.all(), write_only=True, source='location'
     )
 
     class Meta:

@@ -36,7 +36,6 @@ class AdminInitAPIView(APIView):
 
     def get(self, request, *args, **kwargs):
         doctor_specialties = DoctorSpecialtySerializer(DoctorSpecialty.objects.all(), many=True, context={'request': request}).data
-        doctor_specialties = DoctorSpecialtySerializer(DoctorSpecialty.objects.all(), many=True, context={'request': request}).data
         hospital_categories = HospitalCategorySerializer(HospitalCategory.objects.all(), many=True, context={'request': request}).data
         diagnostic_categories = DiagnosticCenterCategorySerializer(DiagnosticCenterCategory.objects.select_related('parent').all(), many=True, context={'request': request}).data
         hospital_services = HospitalServiceSerializer(HospitalService.objects.all(), many=True, context={'request': request}).data

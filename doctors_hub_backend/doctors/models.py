@@ -1,6 +1,6 @@
 import uuid
 from django.db import models
-from facilities.models import PracticeLocation
+from facilities.models import Location
 from django.utils.text import slugify
 
 class DoctorSpecialty(models.Model):
@@ -36,7 +36,7 @@ class DoctorAffiliation(models.Model):
     ]
     id = models.UUIDField(primary_key=True, default=uuid.uuid4, editable=False)
     doctor = models.ForeignKey(Doctor, on_delete=models.CASCADE, related_name="affiliations")
-    location = models.ForeignKey(PracticeLocation, on_delete=models.CASCADE, related_name="affiliations")
+    location = models.ForeignKey(Location, on_delete=models.CASCADE, related_name="affiliations")
     consultation_type = models.CharField(max_length=50, choices=CONSULTATION_TYPES, default="Chamber")
     fee = models.DecimalField(max_digits=8, decimal_places=2)
 
