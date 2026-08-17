@@ -1,15 +1,24 @@
-from rest_framework import permissions, status
+from rest_framework import permissions, status, exceptions
 from rest_framework.response import Response
 from rest_framework.views import APIView
+from django.db import models
 from django.db.models import Count
 
+from accounts.serializers import UserProfileSerializer
 from doctors.models import DoctorSpecialty, Doctor, DoctorAffiliation
-from facilities.models import HospitalCategory, HospitalService, DiagnosticCenterCategory, DiagnosticService, Hospital, DiagnosticCenter
+from facilities.models import (
+    Location, HospitalCategory, HospitalService, Hospital,
+    DiagnosticCenterCategory, DiagnosticService, DiagnosticCenter, Chamber
+)
 from tests.models import TestCategory, Test, FacilityTest
 from bookings.models import DoctorBooking, LabBooking
 
 from doctors.serializers import DoctorSpecialtySerializer, DoctorSerializer
-from facilities.serializers import HospitalCategorySerializer, DiagnosticCenterCategorySerializer, HospitalServiceSerializer, DiagnosticServiceSerializer, HospitalSerializer, DiagnosticCenterSerializer
+from facilities.serializers import (
+    HospitalCategorySerializer, DiagnosticCenterCategorySerializer,
+    HospitalServiceSerializer, DiagnosticServiceSerializer,
+    HospitalSerializer, DiagnosticCenterSerializer
+)
 from tests.serializers import TestCategorySerializer, TestSerializer, FacilityTestSerializer
 from bookings.serializers import DoctorBookingSerializer, LabBookingSerializer
 
@@ -18,54 +27,197 @@ class SearchMetadataAPIView(APIView):
     permission_classes = (permissions.AllowAny,)
 
     def get(self, request, *args, **kwargs):
-        specialties = DoctorSpecialtySerializer(DoctorSpecialty.objects.all(), many=True, context={'request': request}).data
-        test_categories = TestCategorySerializer(TestCategory.objects.all(), many=True, context={'request': request}).data
-        hospital_categories = HospitalCategorySerializer(HospitalCategory.objects.all(), many=True, context={'request': request}).data
-        diagnostic_center_categories = DiagnosticCenterCategorySerializer(DiagnosticCenterCategory.objects.all(), many=True, context={'request': request}).data
+        specialties = DoctorSpecialty.objects.annotate(doctor_count=Count('doctors', distinct=True)).order_by('name')
+        test_categories = TestCategory.objects.annotate(test_count=Count('tests', distinct=True)).order_by('name')
+        hospital_categories = HospitalCategory.objects.annotate(hospital_count=Count('hospitals', distinct=True)).order_by('name')
+        diagnostic_center_categories = DiagnosticCenterCategory.objects.annotate(center_count=Count('centers', distinct=True)).order_by('name')
 
         return Response({
-            'specialties': specialties,
-            'test_categories': test_categories,
-            'hospital_categories': hospital_categories,
-            'diagnostic_center_categories': diagnostic_center_categories,
+            'specialties': DoctorSpecialtySerializer(specialties, many=True, context={'request': request}).data,
+            'test_categories': TestCategorySerializer(test_categories, many=True, context={'request': request}).data,
+            'hospital_categories': HospitalCategorySerializer(hospital_categories, many=True, context={'request': request}).data,
+            'diagnostic_center_categories': DiagnosticCenterCategorySerializer(diagnostic_center_categories, many=True, context={'request': request}).data,
         })
 
 
-class AdminInitAPIView(APIView):
+class SearchFacetsAPIView(APIView):
+    """
+    Returns real-time aggregated counts for specialties, hospital categories,
+    diagnostic categories, and test categories matching the active search/location filters.
+    """
     permission_classes = (permissions.AllowAny,)
 
     def get(self, request, *args, **kwargs):
-        doctor_specialties = DoctorSpecialtySerializer(DoctorSpecialty.objects.all(), many=True, context={'request': request}).data
-        hospital_categories = HospitalCategorySerializer(HospitalCategory.objects.all(), many=True, context={'request': request}).data
-        diagnostic_categories = DiagnosticCenterCategorySerializer(DiagnosticCenterCategory.objects.all(), many=True, context={'request': request}).data
-        hospital_services = HospitalServiceSerializer(HospitalService.objects.all(), many=True, context={'request': request}).data
-        diagnostic_services = DiagnosticServiceSerializer(DiagnosticService.objects.all(), many=True, context={'request': request}).data
+        loc_filter = request.query_params.get('location') or request.query_params.get('loc')
+        area_filter = request.query_params.get('area')
+        search_query = request.query_params.get('search') or request.query_params.get('q')
 
-        
-        # In old code: TestCategory.objects.select_related('parent').prefetch_related('children').annotate(children_count=Count('children')).all()
-        # New model doesn't have parent/children.
-        test_categories = TestCategorySerializer(TestCategory.objects.all(), many=True, context={'request': request}).data
+        # Filtered base doctor queryset
+        doc_qs = Doctor.objects.all()
+        if loc_filter and loc_filter not in ('All Bangladesh', 'all', ''):
+            doc_qs = doc_qs.filter(
+                models.Q(affiliations__location__district__iexact=loc_filter) |
+                models.Q(affiliations__location__division__iexact=loc_filter) |
+                models.Q(affiliations__location__area__iexact=loc_filter)
+            )
+        if area_filter and area_filter not in ('All Areas', 'all', ''):
+            doc_qs = doc_qs.filter(affiliations__location__area__iexact=area_filter)
+        if search_query:
+            doc_qs = doc_qs.filter(
+                models.Q(name__icontains=search_query) |
+                models.Q(qualification__icontains=search_query) |
+                models.Q(specialties__name__icontains=search_query)
+            )
 
-        if request.user and request.user.is_authenticated:
-            doc_qs = DoctorBooking.objects.select_related('affiliation__doctor', 'affiliation__location')
-            lab_qs = LabBooking.objects.select_related('facility_test__test', 'facility_test__location')
-            if request.user.is_staff:
-                doc_bookings = DoctorBookingSerializer(doc_qs.all().order_by('-created_at'), many=True, context={'request': request}).data
-                lab_bookings = LabBookingSerializer(lab_qs.all().order_by('-created_at'), many=True, context={'request': request}).data
-            else:
-                doc_bookings = DoctorBookingSerializer(doc_qs.filter(user=request.user).order_by('-created_at'), many=True, context={'request': request}).data
-                lab_bookings = LabBookingSerializer(lab_qs.filter(user=request.user).order_by('-created_at'), many=True, context={'request': request}).data
+        # Annotated specialties with count of matching doctors
+        specialties = DoctorSpecialty.objects.annotate(
+            doctor_count=Count('doctors', filter=models.Q(doctors__in=doc_qs), distinct=True)
+        ).order_by('-doctor_count', 'name')
+
+        # Filtered base hospital queryset
+        hosp_qs = Hospital.objects.all()
+        if loc_filter and loc_filter not in ('All Bangladesh', 'all', ''):
+            hosp_qs = hosp_qs.filter(
+                models.Q(location__district__iexact=loc_filter) |
+                models.Q(location__division__iexact=loc_filter) |
+                models.Q(location__area__iexact=loc_filter)
+            )
+        if area_filter and area_filter not in ('All Areas', 'all', ''):
+            hosp_qs = hosp_qs.filter(location__area__iexact=area_filter)
+        if search_query:
+            hosp_qs = hosp_qs.filter(
+                models.Q(location__name__icontains=search_query) |
+                models.Q(location__branch__icontains=search_query)
+            )
+
+        hospital_categories = HospitalCategory.objects.annotate(
+            hospital_count=Count('hospitals', filter=models.Q(hospitals__in=hosp_qs), distinct=True)
+        ).order_by('-hospital_count', 'name')
+
+        # Filtered base diagnostic center queryset
+        diag_qs = DiagnosticCenter.objects.all()
+        if loc_filter and loc_filter not in ('All Bangladesh', 'all', ''):
+            diag_qs = diag_qs.filter(
+                models.Q(location__district__iexact=loc_filter) |
+                models.Q(location__division__iexact=loc_filter) |
+                models.Q(location__area__iexact=loc_filter)
+            )
+        if area_filter and area_filter not in ('All Areas', 'all', ''):
+            diag_qs = diag_qs.filter(location__area__iexact=area_filter)
+        if search_query:
+            diag_qs = diag_qs.filter(
+                models.Q(location__name__icontains=search_query) |
+                models.Q(location__branch__icontains=search_query)
+            )
+
+        diagnostic_center_categories = DiagnosticCenterCategory.objects.annotate(
+            center_count=Count('centers', filter=models.Q(centers__in=diag_qs), distinct=True)
+        ).order_by('-center_count', 'name')
+
+        test_categories = TestCategory.objects.annotate(
+            test_count=Count('tests', distinct=True),
+            center_count=Count('tests__offered_at__location', filter=models.Q(tests__offered_at__location__diagnostic_center_detail__in=diag_qs), distinct=True)
+        ).order_by('-center_count', 'name')
+
+        districts = list(Location.objects.values_list('district', flat=True).distinct().order_by('district'))
+        divisions = list(Location.objects.values_list('division', flat=True).distinct().order_by('division'))
+
+        return Response({
+            'total_doctors': doc_qs.distinct().count(),
+            'total_hospitals': hosp_qs.distinct().count(),
+            'total_diagnostic_centers': diag_qs.distinct().count(),
+            'specialties': DoctorSpecialtySerializer(specialties, many=True, context={'request': request}).data,
+            'hospital_categories': HospitalCategorySerializer(hospital_categories, many=True, context={'request': request}).data,
+            'diagnostic_center_categories': DiagnosticCenterCategorySerializer(diagnostic_center_categories, many=True, context={'request': request}).data,
+            'test_categories': TestCategorySerializer(test_categories, many=True, context={'request': request}).data,
+            'districts': [d for d in districts if d],
+            'divisions': [d for d in divisions if d],
+        }, status=status.HTTP_200_OK)
+
+
+class AdminInitAPIView(APIView):
+    permission_classes = (permissions.IsAuthenticated,)
+
+    def get(self, request, *args, **kwargs):
+        user = request.user
+
+        is_super = getattr(user, "is_super_admin", False)
+        is_fac = getattr(user, "is_facility_admin", False)
+        is_doc = getattr(user, "is_doctor_role", False)
+
+        if not (is_super or is_fac or is_doc):
+            return Response(
+                {"detail": "You do not have administrative access."},
+                status=status.HTTP_403_FORBIDDEN
+            )
+
+        # Reference Taxonomies
+        doctor_specialties = DoctorSpecialtySerializer(DoctorSpecialty.objects.all().order_by('name'), many=True, context={'request': request}).data
+        hospital_categories = HospitalCategorySerializer(HospitalCategory.objects.all().order_by('name'), many=True, context={'request': request}).data
+        diagnostic_categories = DiagnosticCenterCategorySerializer(DiagnosticCenterCategory.objects.all().order_by('name'), many=True, context={'request': request}).data
+        hospital_services = HospitalServiceSerializer(HospitalService.objects.all().order_by('name'), many=True, context={'request': request}).data
+        diagnostic_services = DiagnosticServiceSerializer(DiagnosticService.objects.all().order_by('name'), many=True, context={'request': request}).data
+        test_categories = TestCategorySerializer(TestCategory.objects.all().order_by('name'), many=True, context={'request': request}).data
+
+        # Scoped Domain Data
+        hosp_base = Hospital.objects.select_related('location', 'category').prefetch_related('services')
+        diag_base = DiagnosticCenter.objects.select_related('location', 'category').prefetch_related('services')
+        doc_base = Doctor.objects.prefetch_related('specialties', 'affiliations__location', 'affiliations__schedules')
+        test_base = Test.objects.select_related('category').order_by('name')
+        branch_test_base = FacilityTest.objects.select_related('location', 'test', 'test__category').order_by('test__name')
+        doc_booking_base = DoctorBooking.objects.select_related('affiliation__doctor', 'affiliation__location').order_by('-created_at')
+        lab_booking_base = LabBooking.objects.select_related('facility_test__test', 'facility_test__location').order_by('-created_at')
+
+        if is_super:
+            hospitals_data = HospitalSerializer(hosp_base.all(), many=True, context={'request': request}).data
+            diagnostic_centers_data = DiagnosticCenterSerializer(diag_base.all(), many=True, context={'request': request}).data
+            doctors_data = DoctorSerializer(doc_base.all(), many=True, context={'request': request}).data
+            tests_data = TestSerializer(test_base.all(), many=True, context={'request': request}).data
+            branch_tests_data = FacilityTestSerializer(branch_test_base.all(), many=True, context={'request': request}).data
+            doc_bookings = DoctorBookingSerializer(doc_booking_base.all(), many=True, context={'request': request}).data
+            lab_bookings = LabBookingSerializer(lab_booking_base.all(), many=True, context={'request': request}).data
+
+        elif is_fac:
+            managed_ids = user.managed_location_ids
+            hospitals_data = HospitalSerializer(hosp_base.filter(location__in=managed_ids), many=True, context={'request': request}).data
+            diagnostic_centers_data = DiagnosticCenterSerializer(diag_base.filter(location__in=managed_ids), many=True, context={'request': request}).data
+            doctors_data = DoctorSerializer(doc_base.filter(affiliations__location__in=managed_ids).distinct(), many=True, context={'request': request}).data
+            tests_data = TestSerializer(test_base.all(), many=True, context={'request': request}).data
+            branch_tests_data = FacilityTestSerializer(branch_test_base.filter(location__in=managed_ids), many=True, context={'request': request}).data
+            doc_bookings = DoctorBookingSerializer(doc_booking_base.filter(affiliation__location__in=managed_ids), many=True, context={'request': request}).data
+            lab_bookings = LabBookingSerializer(lab_booking_base.filter(facility_test__location__in=managed_ids), many=True, context={'request': request}).data
+
+        elif is_doc:
+            hospitals_data = []
+            diagnostic_centers_data = []
+            doctors_data = DoctorSerializer(doc_base.filter(user=user), many=True, context={'request': request}).data
+            tests_data = []
+            branch_tests_data = []
+            doc_bookings = DoctorBookingSerializer(doc_booking_base.filter(affiliation__doctor__user=user), many=True, context={'request': request}).data
+            lab_bookings = []
+
         else:
+            hospitals_data = []
+            diagnostic_centers_data = []
+            doctors_data = []
+            tests_data = []
+            branch_tests_data = []
             doc_bookings = []
             lab_bookings = []
 
         return Response({
+            "current_user": UserProfileSerializer(user, context={'request': request}).data,
+            "hospitals": hospitals_data,
+            "diagnostic_centers": diagnostic_centers_data,
+            "doctors": doctors_data,
+            "tests": tests_data,
+            "branch_tests": branch_tests_data,
+            "doctor_bookings": doc_bookings,
+            "lab_bookings": lab_bookings,
             "doctor_specialties": doctor_specialties,
             "hospital_categories": hospital_categories,
             "diagnostic_categories": diagnostic_categories,
             "hospital_services": hospital_services,
             "diagnostic_services": diagnostic_services,
             "test_categories": test_categories,
-            "doctor_bookings": doc_bookings,
-            "lab_bookings": lab_bookings,
         }, status=status.HTTP_200_OK)

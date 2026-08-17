@@ -19,7 +19,7 @@ def test_doctors_list_no_n_plus_one():
     for i in range(5):
         loc = Location.objects.create(
             name=f"Hospital {i}", location_type="hospital",
-            address_line=f"{i} Street", district="Dhaka", division="Dhaka", postal_code="1200"
+            address_line=f"{i} Street", district="Dhaka", division="Dhaka"
         )
         doc = Doctor.objects.create(name=f"Dr. Doctor {i}", qualification="MBBS", experience="5 yrs")
         doc.specialties.add(spec1, spec2)
@@ -45,7 +45,7 @@ def test_doctor_affiliations_list_no_n_plus_one():
     for i in range(5):
         loc = Location.objects.create(
             name=f"Clinic {i}", location_type="chamber",
-            address_line=f"{i} Road", district="Dhaka", division="Dhaka", postal_code="1200"
+            address_line=f"{i} Road", district="Dhaka", division="Dhaka"
         )
         doc = Doctor.objects.create(name=f"Dr. Specialist {i}", qualification="FCPS", experience="10 yrs")
         doc.specialties.add(spec)
@@ -67,7 +67,7 @@ def test_doctor_affiliations_list_no_n_plus_one():
 def test_doctor_bookings_list_no_n_plus_one():
     user = User.objects.create_user(phone_number="01711111111", password="password", is_staff=True)
     spec = DoctorSpecialty.objects.create(name="Dermatology")
-    loc = Location.objects.create(name="Skin Care Hospital", location_type="hospital", address_line="Banani", district="Dhaka", division="Dhaka", postal_code="1213")
+    loc = Location.objects.create(name="Skin Care Hospital", location_type="hospital", address_line="Banani", district="Dhaka", division="Dhaka")
     doc = Doctor.objects.create(name="Dr. Skin", qualification="MD", experience="8 yrs")
     doc.specialties.add(spec)
     aff = DoctorAffiliation.objects.create(doctor=doc, location=loc, fee=700)
@@ -95,7 +95,7 @@ def test_lab_bookings_list_no_n_plus_one():
     user = User.objects.create_user(phone_number="01722222222", password="password", is_staff=True)
     cat = TestCategory.objects.create(name="Biochemistry")
     test_obj = Test.objects.create(name="Lipid Profile", category=cat)
-    loc = Location.objects.create(name="Central Diagnostic", location_type="diagnostic_center", address_line="Dhanmondi", district="Dhaka", division="Dhaka", postal_code="1205")
+    loc = Location.objects.create(name="Central Diagnostic", location_type="diagnostic_center", address_line="Dhanmondi", district="Dhaka", division="Dhaka")
     ft = FacilityTest.objects.create(location=loc, test=test_obj, price=1200)
 
     for i in range(5):
@@ -125,13 +125,14 @@ def test_hospitals_and_diagnostic_centers_no_n_plus_one():
     dserv = DiagnosticService.objects.create(name="MRI")
 
     for i in range(4):
-        hloc = Location.objects.create(name=f"General Hospital {i}", location_type="hospital", address_line="Street", district="Dhaka", division="Dhaka", postal_code="1200")
+        hloc = Location.objects.create(name=f"General Hospital {i}", location_type="hospital", address_line="Street", district="Dhaka", division="Dhaka")
         h = Hospital.objects.create(location=hloc, category=hcat)
         h.services.add(hserv)
 
-        dloc = Location.objects.create(name=f"Imaging Center {i}", location_type="diagnostic_center", address_line="Road", district="Dhaka", division="Dhaka", postal_code="1200")
+        dloc = Location.objects.create(name=f"Imaging Center {i}", location_type="diagnostic_center", address_line="Road", district="Dhaka", division="Dhaka")
         d = DiagnosticCenter.objects.create(location=dloc, category=dcat)
         d.services.add(dserv)
+
 
     client = APIClient()
     with CaptureQueriesContext(connection) as ctx_h:

@@ -21,7 +21,7 @@ export default function DiagnosticsTab() {
             <Search className="w-4 h-4 absolute left-3 top-3 text-slate-400" />
             <input
               type="text"
-              placeholder="Search diagnostic center name or branch..."
+              placeholder="Search diagnostic center name, branch, district or division..."
               value={searchTerm}
               onChange={(e) => setSearchTerm(e.target.value)}
               className="w-full bg-slate-950 border border-slate-800 rounded-xl pl-9 pr-4 py-2 text-xs text-white placeholder-slate-500 focus:outline-none focus:border-cyan-500"
@@ -48,7 +48,7 @@ export default function DiagnosticsTab() {
             </thead>
             <tbody className="divide-y divide-slate-800/60">
               {(diagnosticCenters || [])
-                .filter(dc => `${dc?.name || ''} ${dc?.branch || ''} ${dc?.district || ''}`.toLowerCase().includes((searchTerm || '').toLowerCase()))
+                .filter(dc => `${dc?.name || ''} ${dc?.branch || ''} ${dc?.area || ''} ${dc?.district || dc?.city || ''} ${dc?.division || ''}`.toLowerCase().includes((searchTerm || '').toLowerCase()))
                 .map(dc => (
                   <tr key={dc.id} className="hover:bg-slate-800/40 transition">
                     <td className="py-4 px-4 font-bold text-white">
@@ -73,9 +73,12 @@ export default function DiagnosticsTab() {
                       </div>
                     </td>
                     <td className="py-4 px-4">
-                      <div className="text-slate-200">{dc.address}</div>
-                      <div className="text-slate-400 font-bold">{dc.district}</div>
+                      <div className="text-slate-200">{dc.address || dc.address_line}</div>
+                      <div className="text-slate-400 font-bold">
+                        {dc.area ? `${dc.area}, ` : ''}{dc.district || dc.city || 'Dhaka'}{dc.division ? ` (${dc.division})` : ''}
+                      </div>
                     </td>
+
                     <td className="py-4 px-4 text-right space-x-2 whitespace-nowrap">
                       <button
                         onClick={() => handleOpenBranchTestModal && handleOpenBranchTestModal(null, 'diagnostic', dc.id)}

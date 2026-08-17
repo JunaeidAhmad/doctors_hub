@@ -1,38 +1,66 @@
-from rest_framework import viewsets, filters
+from rest_framework import viewsets, filters, exceptions
 from django_filters.rest_framework import DjangoFilterBackend
 import django_filters
 from core.mixins import SlugOrPkLookupMixin
+from core.permissions import ScopedFacilityOrReadOnly, IsSuperAdminOrReadOnly
+from core.scoping import RoleScopedQuerysetMixin
 from .models import (
     Location, HospitalCategory, HospitalService, Hospital,
-    DiagnosticCenterCategory, DiagnosticService, DiagnosticCenter, Chamber
+    DiagnosticCenterCategory, DiagnosticService, DiagnosticCenter, Chamber,
+    FacilityMembership
 )
 from .serializers import (
     LocationSerializer, HospitalCategorySerializer, HospitalServiceSerializer,
     HospitalSerializer, DiagnosticCenterCategorySerializer, DiagnosticServiceSerializer,
     DiagnosticCenterSerializer, ChamberSerializer
 )
-from core.permissions import IsAdminUserOrReadOnly
 
-class LocationViewSet(viewsets.ModelViewSet):
+
+class LocationViewSet(RoleScopedQuerysetMixin, viewsets.ModelViewSet):
     queryset = Location.objects.all()
     serializer_class = LocationSerializer
-    permission_classes = (IsAdminUserOrReadOnly,)
+    permission_classes = (ScopedFacilityOrReadOnly,)
+    scope_location_field = "pk__in"
+
+    def get_queryset(self):
+        return self.get_scoped_queryset(Location.objects.all())
+
+    def perform_create(self, serializer):
+        user = self.request.user
+        if not user or not user.is_authenticated:
+            raise exceptions.NotAuthenticated()
+
+        if getattr(user, "is_super_admin", False):
+            serializer.save()
+        elif getattr(user, "is_facility_admin", False):
+            location = serializer.save()
+            # Auto-grant facility admin membership to the creator
+            FacilityMembership.objects.get_or_create(
+                user=user,
+                location=location,
+                defaults={"role": FacilityMembership.MemberRole.ADMIN}
+            )
+        else:
+            raise exceptions.PermissionDenied("Only administrators can create new facility locations.")
+
 
 # Backward compatibility
 PracticeLocationViewSet = LocationViewSet
 
+
 class HospitalCategoryViewSet(viewsets.ModelViewSet):
     queryset = HospitalCategory.objects.all().order_by('name')
     serializer_class = HospitalCategorySerializer
-    permission_classes = (IsAdminUserOrReadOnly,)
+    permission_classes = (IsSuperAdminOrReadOnly,)
+
 
 class HospitalServiceViewSet(viewsets.ModelViewSet):
     queryset = HospitalService.objects.all().order_by('name')
     serializer_class = HospitalServiceSerializer
-    permission_classes = (IsAdminUserOrReadOnly,)
+    permission_classes = (IsSuperAdminOrReadOnly,)
+
 
 class HospitalFilter(django_filters.FilterSet):
-    city = django_filters.CharFilter(field_name='location__city', lookup_expr='iexact')
     area = django_filters.CharFilter(field_name='location__area', lookup_expr='iexact')
     district = django_filters.CharFilter(field_name='location__district', lookup_expr='iexact')
     division = django_filters.CharFilter(field_name='location__division', lookup_expr='iexact')
@@ -43,7 +71,7 @@ class HospitalFilter(django_filters.FilterSet):
     class Meta:
         model = Hospital
         fields = [
-            'location', 'city', 'area', 'district', 'division',
+            'location', 'area', 'district', 'division',
             'category', 'categories', 'has_diagnostic_center'
         ]
 
@@ -57,41 +85,58 @@ class HospitalFilter(django_filters.FilterSet):
             models.Q(category__id__iexact=value if len(value) == 36 else '00000000-0000-0000-0000-000000000000')
         ).distinct()
 
-
     def filter_location(self, queryset, name, value):
         if not value or value == 'All Bangladesh':
             return queryset
         from django.db import models
         return queryset.filter(
-            models.Q(location__city__iexact=value) |
             models.Q(location__district__iexact=value) |
             models.Q(location__division__iexact=value) |
             models.Q(location__area__iexact=value)
         ).distinct()
 
 
-class HospitalViewSet(SlugOrPkLookupMixin, viewsets.ModelViewSet):
+class HospitalViewSet(SlugOrPkLookupMixin, RoleScopedQuerysetMixin, viewsets.ModelViewSet):
     queryset = Hospital.objects.all().select_related('location', 'category').prefetch_related('services').order_by('location__name').distinct()
     serializer_class = HospitalSerializer
-    permission_classes = (IsAdminUserOrReadOnly,)
+    permission_classes = (ScopedFacilityOrReadOnly,)
     slug_field = 'location__slug'
     filter_backends = [DjangoFilterBackend, filters.SearchFilter]
     filterset_class = HospitalFilter
-    search_fields = ['location__name', 'location__branch', 'location__address_line', 'location__area', 'location__city']
+    search_fields = ['location__name', 'location__branch', 'location__address_line', 'location__area', 'location__district', 'location__division']
+    scope_location_field = "location_id__in"
+
+    def get_queryset(self):
+        qs = Hospital.objects.all().select_related('location', 'category').prefetch_related('services').order_by('location__name').distinct()
+        return self.get_scoped_queryset(qs)
+
+    def perform_create(self, serializer):
+        user = self.request.user
+        if not user or not user.is_authenticated:
+            raise exceptions.NotAuthenticated()
+
+        if not getattr(user, "is_super_admin", False):
+            loc = serializer.validated_data.get("location")
+            loc_id = loc.id if loc else None
+            if not loc_id or loc_id not in user.managed_location_ids:
+                raise exceptions.PermissionDenied("You do not have permission to create a hospital for this location.")
+
+        serializer.save()
+
 
 class DiagnosticCenterCategoryViewSet(viewsets.ModelViewSet):
     queryset = DiagnosticCenterCategory.objects.all().order_by('name')
     serializer_class = DiagnosticCenterCategorySerializer
-    permission_classes = (IsAdminUserOrReadOnly,)
+    permission_classes = (IsSuperAdminOrReadOnly,)
 
 
 class DiagnosticServiceViewSet(viewsets.ModelViewSet):
     queryset = DiagnosticService.objects.all().order_by('name')
     serializer_class = DiagnosticServiceSerializer
-    permission_classes = (IsAdminUserOrReadOnly,)
+    permission_classes = (IsSuperAdminOrReadOnly,)
+
 
 class DiagnosticCenterFilter(django_filters.FilterSet):
-    city = django_filters.CharFilter(field_name='location__city', lookup_expr='iexact')
     area = django_filters.CharFilter(field_name='location__area', lookup_expr='iexact')
     district = django_filters.CharFilter(field_name='location__district', lookup_expr='iexact')
     division = django_filters.CharFilter(field_name='location__division', lookup_expr='iexact')
@@ -105,7 +150,7 @@ class DiagnosticCenterFilter(django_filters.FilterSet):
     class Meta:
         model = DiagnosticCenter
         fields = [
-            'location', 'city', 'area', 'district', 'division',
+            'location', 'area', 'district', 'division',
             'category', 'categories', 'spec', 'owner', 'testcat'
         ]
 
@@ -161,7 +206,7 @@ class DiagnosticCenterFilter(django_filters.FilterSet):
         ).distinct()
 
 
-class DiagnosticCenterViewSet(SlugOrPkLookupMixin, viewsets.ModelViewSet):
+class DiagnosticCenterViewSet(SlugOrPkLookupMixin, RoleScopedQuerysetMixin, viewsets.ModelViewSet):
     queryset = DiagnosticCenter.objects.all().select_related(
         'location', 'category'
     ).prefetch_related(
@@ -170,14 +215,58 @@ class DiagnosticCenterViewSet(SlugOrPkLookupMixin, viewsets.ModelViewSet):
     ).order_by('location__name').distinct()
 
     serializer_class = DiagnosticCenterSerializer
-    permission_classes = (IsAdminUserOrReadOnly,)
+    permission_classes = (ScopedFacilityOrReadOnly,)
     slug_field = 'location__slug'
     filter_backends = [DjangoFilterBackend, filters.SearchFilter]
-    filterset_class = DiagnosticCenterFilter
-    search_fields = ['location__name', 'location__branch', 'location__address_line', 'location__area', 'location__city']
+    search_fields = ['location__name', 'location__branch', 'location__address_line', 'location__area', 'location__district', 'location__division']
+    scope_location_field = "location_id__in"
 
-class ChamberViewSet(viewsets.ModelViewSet):
+    def get_queryset(self):
+        qs = DiagnosticCenter.objects.all().select_related(
+            'location', 'category'
+        ).prefetch_related(
+            'services',
+            'location__offered_tests__test__category'
+        ).order_by('location__name').distinct()
+        return self.get_scoped_queryset(qs)
+
+    def perform_create(self, serializer):
+        user = self.request.user
+        if not user or not user.is_authenticated:
+            raise exceptions.NotAuthenticated()
+
+        if not getattr(user, "is_super_admin", False):
+            loc = serializer.validated_data.get("location")
+            loc_id = loc.id if loc else None
+            if not loc_id or loc_id not in user.managed_location_ids:
+                raise exceptions.PermissionDenied("You do not have permission to create a diagnostic center for this location.")
+
+        serializer.save()
+
+
+class ChamberViewSet(RoleScopedQuerysetMixin, viewsets.ModelViewSet):
     queryset = Chamber.objects.all().select_related('location', 'doctor').order_by('location__name')
     serializer_class = ChamberSerializer
-    permission_classes = (IsAdminUserOrReadOnly,)
+    permission_classes = (ScopedFacilityOrReadOnly,)
+    scope_location_field = "location_id__in"
+    scope_doctor_field = "doctor__user"
 
+    def get_queryset(self):
+        return self.get_scoped_queryset(Chamber.objects.all().select_related('location', 'doctor').order_by('location__name'))
+
+    def perform_create(self, serializer):
+        user = self.request.user
+        if not user or not user.is_authenticated:
+            raise exceptions.NotAuthenticated()
+
+        if not getattr(user, "is_super_admin", False):
+            loc = serializer.validated_data.get("location")
+            doc = serializer.validated_data.get("doctor")
+            loc_id = loc.id if loc else None
+            is_loc_managed = loc_id and loc_id in user.managed_location_ids
+            is_doc_owned = doc and getattr(user, "doctor_profile", None) and doc.id == user.doctor_profile.id
+
+            if not (is_loc_managed or is_doc_owned):
+                raise exceptions.PermissionDenied("You do not have permission to create a chamber at this location or for this doctor.")
+
+        serializer.save()

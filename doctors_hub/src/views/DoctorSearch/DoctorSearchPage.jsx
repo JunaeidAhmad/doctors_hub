@@ -1,9 +1,10 @@
 import React, { useState, useMemo, useEffect } from 'react';
 import { useSearchParams, useLocation } from 'react-router-dom';
 import { Stethoscope, MapPin, Filter, ArrowLeft, Building2, ShieldCheck, Calendar, Clock, ArrowRight, X, Heart, Award, ArrowDownAZ, ArrowUpAZ } from 'lucide-react';
-import { LOCATIONS, CITY_THANAS } from '../../data/constants';
+import { DIVISIONS, findDivisionForDistrict } from '../../data/constants';
 import { api, ensureArray, isPageReload, getIsInitialLoad } from '../../services/api';
 import Pagination from '../../components/Pagination';
+import CascadingLocationFilter from '../../components/CascadingLocationFilter';
 
 function formatTime(timeStr) {
   if (!timeStr) return '';
@@ -33,12 +34,29 @@ export default function DoctorSearchPage({
   const [specialty, setSpecialty] = useState(() => {
     return getParam('spec', initialSpecialty);
   });
-  const [location, setLocation] = useState(() => {
-    return getParam('loc', initialLocation);
+
+  const [division, setDivision] = useState(() => {
+    const urlDiv = getParam('division', '');
+    if (urlDiv) return urlDiv;
+    const urlLoc = getParam('loc', initialLocation);
+    if (DIVISIONS.includes(urlLoc)) return urlLoc;
+    const found = findDivisionForDistrict(urlLoc);
+    if (found) return found;
+    return 'All Bangladesh';
   });
+
+  const [district, setDistrict] = useState(() => {
+    const urlDist = getParam('district', '');
+    if (urlDist) return urlDist;
+    const urlLoc = getParam('loc', '');
+    if (urlLoc && !DIVISIONS.includes(urlLoc) && urlLoc !== 'All Bangladesh') return urlLoc;
+    return 'All Districts';
+  });
+
   const [area, setArea] = useState(() => {
     return getParam('area', 'All Areas');
   });
+
   const [keyword, setKeyword] = useState(() => {
     return getParam('q', initialKeyword);
   });
@@ -47,20 +65,43 @@ export default function DoctorSearchPage({
 
   useEffect(() => {
     const urlSpec = searchParams.get('spec');
+    const urlDiv = searchParams.get('division');
+    const urlDist = searchParams.get('district');
     const urlLoc = searchParams.get('loc');
     const urlQ = searchParams.get('q');
     const urlArea = searchParams.get('area');
 
     setSpecialty(urlSpec || '');
-    if (urlLoc !== null) setLocation(urlLoc);
-    if (urlQ !== null) setKeyword(urlQ);
+    if (urlDiv) {
+      setDivision(urlDiv);
+    } else if (urlLoc) {
+      if (DIVISIONS.includes(urlLoc)) setDivision(urlLoc);
+      else {
+        const found = findDivisionForDistrict(urlLoc);
+        if (found) setDivision(found);
+        else setDivision('All Bangladesh');
+      }
+    } else {
+      setDivision('All Bangladesh');
+    }
+
+    if (urlDist) {
+      setDistrict(urlDist);
+    } else if (urlLoc && !DIVISIONS.includes(urlLoc) && urlLoc !== 'All Bangladesh') {
+      setDistrict(urlLoc);
+    } else {
+      setDistrict('All Districts');
+    }
+
     if (urlArea !== null) setArea(urlArea);
+    if (urlQ !== null) setKeyword(urlQ);
   }, [searchParams]);
 
   useEffect(() => {
     const params = new URLSearchParams();
     if (specialty) params.set('spec', specialty);
-    if (location && location !== 'All Bangladesh') params.set('loc', location);
+    if (division && division !== 'All Bangladesh') params.set('division', division);
+    if (district && district !== 'All Districts') params.set('district', district);
     if (area && area !== 'All Areas') params.set('area', area);
     if (keyword.trim()) params.set('q', keyword.trim());
 
@@ -68,7 +109,7 @@ export default function DoctorSearchPage({
     if (next !== searchParams.toString()) {
       setSearchParams(params, { replace: true });
     }
-  }, [specialty, location, area, keyword, searchParams, setSearchParams]);
+  }, [specialty, division, district, area, keyword, searchParams, setSearchParams]);
 
   const [chambers, setChambers] = useState([]);
   const [specialties, setSpecialties] = useState([]);
@@ -89,7 +130,8 @@ export default function DoctorSearchPage({
     const timer = setTimeout(() => {
       api.getDoctors({
         specialty: specialty || undefined,
-        location,
+        division: division !== 'All Bangladesh' ? division : undefined,
+        district: district !== 'All Districts' ? district : undefined,
         area: area !== 'All Areas' ? area : undefined,
         search: keyword.trim() || undefined,
         fee_max: maxFee < 5000 ? maxFee : undefined,
@@ -111,7 +153,8 @@ export default function DoctorSearchPage({
     }, delay);
 
     return () => { isMounted = false; clearTimeout(timer); };
-  }, [specialty, location, area, keyword, maxFee, selectedDay, currentPage]);
+  }, [specialty, division, district, area, keyword, maxFee, selectedDay, currentPage]);
+
 
   useEffect(() => {
     let isMounted = true;
@@ -124,18 +167,26 @@ export default function DoctorSearchPage({
       })
       .catch(() => {});
 
-    api.getSearchMetadata()
-      .then((meta) => {
-        if (isMounted && meta && meta.specialties) setSpecialties(ensureArray(meta.specialties));
+    api.getSearchFacets({ location, area })
+      .then((facets) => {
+        if (isMounted && facets && facets.specialties) {
+          setSpecialties(ensureArray(facets.specialties));
+        }
       })
       .catch(() => {
-        api.getSpecialties().then((data) => {
-          if (isMounted && data !== null) setSpecialties(ensureArray(data));
-        });
+        api.getSearchMetadata()
+          .then((meta) => {
+            if (isMounted && meta && meta.specialties) setSpecialties(ensureArray(meta.specialties));
+          })
+          .catch(() => {
+            api.getSpecialties().then((data) => {
+              if (isMounted && data !== null) setSpecialties(ensureArray(data));
+            });
+          });
       });
 
     return () => { isMounted = false; };
-  }, [location]);
+  }, [location, area]);
 
   // Combine doctor affiliations with chambers for display
   const doctorChambersList = useMemo(() => {
@@ -163,19 +214,29 @@ export default function DoctorSearchPage({
           const affDistrict = (aff.location_details && aff.location_details.district) || '';
           const affDivision = (aff.location_details && aff.location_details.division) || '';
 
-          // Filter affiliation by Location
-          if (location && location !== 'All Bangladesh') {
-            const locLow = location.toLowerCase();
-            const matchesLoc = city.toLowerCase().includes(locLow) ||
-              affDistrict.toLowerCase().includes(locLow) ||
-              affDivision.toLowerCase().includes(locLow) ||
-              affArea.toLowerCase().includes(locLow);
-            if (!matchesLoc) return;
+          // Filter affiliation by Division
+          if (division && division !== 'All Bangladesh') {
+            const divLow = division.toLowerCase();
+            const matchesDiv = affDivision.toLowerCase().includes(divLow) ||
+              affDistrict.toLowerCase().includes(divLow) ||
+              city.toLowerCase().includes(divLow);
+            if (!matchesDiv) return;
+          }
+
+          // Filter affiliation by District
+          if (district && district !== 'All Districts') {
+            const distLow = district.toLowerCase();
+            const matchesDist = affDistrict.toLowerCase().includes(distLow) ||
+              city.toLowerCase().includes(distLow);
+            if (!matchesDist) return;
           }
 
           // Filter affiliation by Area
           if (area && area !== 'All Areas') {
-            if (!affArea.toLowerCase().includes(area.toLowerCase())) return;
+            const areaLow = area.toLowerCase();
+            const matchesArea = affArea.toLowerCase().includes(areaLow) ||
+              branchName.toLowerCase().includes(areaLow);
+            if (!matchesArea) return;
           }
 
           // Filter affiliation by Fee
@@ -230,8 +291,7 @@ export default function DoctorSearchPage({
       return Object.values(map);
     }
     return [];
-  }, [doctors, location, area, maxFee, selectedDay]);
-
+  }, [doctors, division, district, area, maxFee, selectedDay]);
 
   // Use already-filtered chambers from backend
   const filteredChambers = doctorChambersList;
@@ -261,7 +321,7 @@ export default function DoctorSearchPage({
 
   useEffect(() => {
     setCurrentPage(1);
-  }, [specialty, location, area, keyword, maxFee, selectedDay]);
+  }, [specialty, division, district, area, keyword, maxFee, selectedDay]);
 
   const handleSelectSlot = (docId, slotTime) => {
     setSelectedSlots(prev => ({
@@ -269,6 +329,10 @@ export default function DoctorSearchPage({
       [docId]: slotTime
     }));
   };
+
+  const displayLocationText = district !== 'All Districts' 
+    ? district 
+    : (division !== 'All Bangladesh' ? `${division} Division` : 'All Bangladesh');
 
   return (
     <div className="bg-slate-50 min-h-screen pb-16">
@@ -279,7 +343,7 @@ export default function DoctorSearchPage({
           
           <button
             onClick={onNavigateHome}
-            className="inline-flex items-center gap-1.5 text-xs font-semibold text-slate-400 hover:text-emerald-400 transition-colors mb-4"
+            className="inline-flex items-center gap-1.5 text-xs font-semibold text-slate-400 hover:text-emerald-400 transition-colors mb-4 cursor-pointer"
           >
             <ArrowLeft className="w-4 h-4" />
             <span>Back to Home</span>
@@ -295,17 +359,17 @@ export default function DoctorSearchPage({
                 {specialty ? `${specialty} ` : 'Specialist Doctors'}
               </h1>
               <p className="text-xs sm:text-sm text-slate-300 mt-1">
-                Showing <strong className="text-emerald-400">{totalMatchingDoctors} doctors</strong> across <strong className="text-emerald-400">{filteredChambers.length} chambers</strong> in {location}.
+                Showing <strong className="text-emerald-400">{totalMatchingDoctors} doctors</strong> across <strong className="text-emerald-400">{filteredChambers.length} chambers</strong> in {displayLocationText}.
               </p>
             </div>
 
             {/* Quick Search Controls Bar */}
-            <div className="bg-slate-800/90 border border-slate-700/80 p-3 rounded-2xl flex flex-wrap sm:flex-nowrap items-center gap-2 max-w-xl w-full">
-              <div className="relative flex-1 min-w-[140px]">
+            <div className="bg-slate-800/90 border border-slate-700/80 p-3 rounded-2xl flex flex-wrap items-center gap-2 max-w-2xl w-full">
+              <div className="relative flex-1 min-w-[130px]">
                 <select
                   value={specialty}
                   onChange={(e) => setSpecialty(e.target.value)}
-                  className="w-full bg-slate-900 text-white text-xs font-semibold border border-slate-700 rounded-xl px-3 py-2.5 focus:outline-none focus:border-emerald-500"
+                  className="w-full bg-slate-900 text-white text-xs font-semibold border border-slate-700 rounded-xl px-3 py-2.5 focus:outline-none focus:border-emerald-500 cursor-pointer"
                 >
                   <option value="">All Specialties</option>
                   {specialties.map((s) => (
@@ -314,44 +378,29 @@ export default function DoctorSearchPage({
                 </select>
               </div>
 
-              <div className="relative flex-1 min-w-[130px]">
-                <select
-                  value={location}
-                  onChange={(e) => {
-                    setLocation(e.target.value);
-                    setArea('All Areas');
-                  }}
-                  className="w-full bg-slate-900 text-white text-xs font-semibold border border-slate-700 rounded-xl px-3 py-2.5 focus:outline-none focus:border-emerald-500"
-                >
-                  {LOCATIONS.map((loc) => (
-                    <option key={loc} value={loc}>{loc}</option>
-                  ))}
-                </select>
-              </div>
+              {/* Cascading Location Filter (Division -> District -> Thana) in Top Bar */}
+              <CascadingLocationFilter
+                division={division}
+                district={district}
+                area={area}
+                onChange={({ division: d, district: dist, area: a }) => {
+                  setDivision(d);
+                  setDistrict(dist);
+                  setArea(a);
+                }}
+                theme="dark"
+                accent="emerald"
+                layout="inline"
+                showLabels={false}
+              />
 
-              {/* Area / Thana Filter (Only visible when city != 'All Bangladesh') */}
-              {location !== 'All Bangladesh' && (
-                <div className="relative flex-1 min-w-[130px]">
-                  <select
-                    value={area}
-                    onChange={(e) => setArea(e.target.value)}
-                    className="w-full bg-slate-900 text-emerald-400 text-xs font-bold border border-emerald-500/80 rounded-xl px-3 py-2.5 focus:outline-none focus:border-emerald-400"
-                  >
-                    <option value="All Areas">All Areas in {location}</option>
-                    {(CITY_THANAS[location] || []).map((th) => (
-                      <option key={th} value={th}>{th}</option>
-                    ))}
-                  </select>
-                </div>
-              )}
-
-              <div className="w-full sm:w-auto">
+              <div className="flex-1 min-w-[130px]">
                 <input
                   type="text"
-                  placeholder="Doctor, specialty, hospital/chamber..."
+                  placeholder="Doctor, keyword..."
                   value={keyword}
                   onChange={(e) => setKeyword(e.target.value)}
-                  className="w-full bg-slate-900 text-white text-xs border border-slate-700 rounded-xl px-3 py-2.5 placeholder-slate-500 focus:outline-none focus:border-emerald-500"
+                  className="w-full bg-slate-900 text-white text-xs border border-slate-700 rounded-xl px-3 py-2.5 placeholder-slate-500 focus:outline-none focus:border-emerald-500 font-medium"
                 />
               </div>
             </div>
@@ -373,41 +422,41 @@ export default function DoctorSearchPage({
                   <Filter className="w-4 h-4 text-emerald-600" />
                   Refine Search
                 </h3>
-                {(specialty || location !== 'All Bangladesh' || area !== 'All Areas' || keyword || selectedDay !== 'All') && (
+                {(specialty || division !== 'All Bangladesh' || district !== 'All Districts' || area !== 'All Areas' || keyword || selectedDay !== 'All') && (
                   <button
                     onClick={() => {
                       setSpecialty('');
-                      setLocation('All Bangladesh');
+                      setDivision('All Bangladesh');
+                      setDistrict('All Districts');
                       setArea('All Areas');
                       setKeyword('');
                       setSelectedDay('All');
                       setMaxFee(2500);
                     }}
-                    className="text-[11px] font-semibold text-rose-500 hover:underline"
+                    className="text-[11px] font-semibold text-rose-500 hover:underline cursor-pointer"
                   >
                     Reset
                   </button>
                 )}
               </div>
 
-              {/* Area filter (Sidebar view) */}
-              {location !== 'All Bangladesh' && (
-                <div>
-                  <label className="block text-xs font-bold text-emerald-700 mb-1">
-                    Area / Thana ({location})
-                  </label>
-                  <select
-                    value={area}
-                    onChange={(e) => setArea(e.target.value)}
-                    className="w-full bg-emerald-50 border border-emerald-300 rounded-xl px-3 py-2 text-xs font-bold text-emerald-900 focus:outline-none focus:border-emerald-500"
-                  >
-                    <option value="All Areas">All Areas in {location}</option>
-                    {(CITY_THANAS[location] || []).map((th) => (
-                      <option key={th} value={th}>{th}</option>
-                    ))}
-                  </select>
-                </div>
-              )}
+              {/* Cascading Location Filter in Sidebar */}
+              <CascadingLocationFilter
+                division={division}
+                district={district}
+                area={area}
+                onChange={({ division: d, district: dist, area: a }) => {
+                  setDivision(d);
+                  setDistrict(dist);
+                  setArea(a);
+                }}
+                theme="light"
+                accent="emerald"
+                layout="stacked"
+                showLabels={true}
+              />
+
+
 
               {/* Day filter */}
               <div>

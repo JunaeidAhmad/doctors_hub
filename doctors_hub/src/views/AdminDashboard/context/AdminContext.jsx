@@ -78,15 +78,34 @@ export function AdminProvider({ children, currentUser }) {
   const [branchTestBranchFilter, setBranchTestBranchFilter] = useState('');
   const [branchTestTestFilter, setBranchTestTestFilter] = useState('');
 
-  const storedUser = currentUser || api.getCurrentUser();
+  const [activeUser, setActiveUser] = useState(currentUser || api.getCurrentUser());
+
+  const storedUser = activeUser || currentUser || api.getCurrentUser();
+  const role = storedUser?.role || (storedUser?.is_superuser ? 'super_admin' : (storedUser?.phone_number === '01700000000' || storedUser?.phone === '01700000000' ? 'super_admin' : ''));
+  const isSuperAdmin = role === 'super_admin' || Boolean(storedUser?.is_superuser);
+  const isFacilityAdmin = role === 'facility_admin';
+  const isDoctor = role === 'doctor';
   const isStaff = Boolean(
-    storedUser?.is_staff || 
-    storedUser?.is_superuser || 
-    storedUser?.phone_number === '01700000000' || 
-    storedUser?.phone === '01700000000'
+    isSuperAdmin || 
+    isFacilityAdmin || 
+    isDoctor || 
+    storedUser?.is_staff
   );
 
+  const handleLogout = () => {
+    api.logout();
+    clearCache();
+    setActiveUser(null);
+    setHospitals([]);
+    setDiagnosticCenters([]);
+    setDoctors([]);
+    setBranchTests([]);
+    setDoctorBookings([]);
+    setLabBookings([]);
+  };
+
   useEffect(() => {
+    setActiveUser(currentUser || api.getCurrentUser());
     loadInitialData();
   }, [currentUser]);
 
@@ -101,6 +120,9 @@ export function AdminProvider({ children, currentUser }) {
       const res = await api.getAdminDashboardInit().catch(() => null);
 
       if (res && typeof res === 'object' && Array.isArray(res.hospitals)) {
+        if (res.current_user) {
+          setActiveUser(res.current_user);
+        }
         setHospitals(ensureArray(res.hospitals, []));
         setDiagnosticCenters(ensureArray(res.diagnostic_centers, []));
         setDoctors(ensureArray(res.doctors, []));
@@ -347,6 +369,10 @@ export function AdminProvider({ children, currentUser }) {
 
   const value = {
     isStaff,
+    role,
+    isSuperAdmin,
+    isFacilityAdmin,
+    isDoctor,
     activeTab, setActiveTab,
     loading, setLoading,
     error, setError,
@@ -399,7 +425,10 @@ export function AdminProvider({ children, currentUser }) {
     handleDeleteDiagService,
 
     counts,
-    loadAllData: loadInitialData
+    loadAllData: loadInitialData,
+    handleLogout,
+    activeUser,
+    storedUser
   };
 
   return <AdminContext.Provider value={value}>{children}</AdminContext.Provider>;

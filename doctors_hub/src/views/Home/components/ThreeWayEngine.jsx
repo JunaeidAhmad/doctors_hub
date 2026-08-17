@@ -1,7 +1,7 @@
 import React, { useState, useEffect } from 'react';
 import { Stethoscope, FlaskConical, Search, Filter, Sparkles, MapPin, ChevronRight, Building2 } from 'lucide-react';
-import { LOCATIONS } from '../../../data/constants';
 import { api, ensureArray } from '../../../services/api';
+import CascadingLocationFilter from '../../../components/CascadingLocationFilter';
 
 const FALLBACK_TEST_CATS = [
   { id: 'cardiac-tests', name: 'Cardiac Tests' },
@@ -26,7 +26,7 @@ export default function ThreeWayEngine({
   selectedHospitalCategory: propHospitalCat,
   setSelectedHospitalCategory: propSetHospitalCat,
   searchKeyword,
-  setSearchKeyword,
+  setDoctorKeyword,
   selectedLocation,
   setSelectedLocation,
   onSearchExecute,
@@ -68,17 +68,24 @@ export default function ThreeWayEngine({
   const selectedHospitalCategory = propHospitalCat !== undefined ? propHospitalCat : internalHospitalCat;
   const setSelectedHospitalCategory = propSetHospitalCat || setInternalHospitalCat;
   
-  const [doctorLoc, setDoctorLoc] = useState(selectedLocation || 'All Bangladesh');
-  const [diagnosticsLoc, setDiagnosticsLoc] = useState(selectedLocation || 'All Bangladesh');
-  const [hospitalLoc, setHospitalLoc] = useState(selectedLocation || 'All Bangladesh');
+  // Location states per search engine
+  const [doctorLocState, setDoctorLocState] = useState({
+    division: typeof selectedLocation === 'string' ? selectedLocation : 'All Bangladesh',
+    district: 'All Districts',
+    area: 'All Areas'
+  });
 
-  useEffect(() => {
-    if (selectedLocation) {
-      setDoctorLoc(selectedLocation);
-      setDiagnosticsLoc(selectedLocation);
-      setHospitalLoc(selectedLocation);
-    }
-  }, [selectedLocation]);
+  const [diagLocState, setDiagLocState] = useState({
+    division: typeof selectedLocation === 'string' ? selectedLocation : 'All Bangladesh',
+    district: 'All Districts',
+    area: 'All Areas'
+  });
+
+  const [hospLocState, setHospLocState] = useState({
+    division: typeof selectedLocation === 'string' ? selectedLocation : 'All Bangladesh',
+    district: 'All Districts',
+    area: 'All Areas'
+  });
 
   return (
     <div className="relative pt-8 mt-2 z-30 max-w-7xl mx-auto px-4 sm:px-8">
@@ -105,8 +112,8 @@ export default function ThreeWayEngine({
           
           {/* COMPONENT 1: SEARCH YOUR DOCTOR */}
           <div className="bg-gradient-to-br from-slate-50 to-emerald-50/40 p-5 rounded-xl border border-slate-200/90 hover:border-emerald-300 transition-all shadow-xs flex flex-col justify-between space-y-4">
-            <div>
-              <div className="flex items-center gap-2 mb-3">
+            <div className="space-y-3">
+              <div className="flex items-center gap-2 mb-1">
                 <div className="w-8 h-8 rounded-lg bg-emerald-600 text-white flex items-center justify-center font-bold text-sm shadow-sm">
                   <Stethoscope className="w-4 h-4" />
                 </div>
@@ -121,7 +128,7 @@ export default function ThreeWayEngine({
               </div>
 
               {/* Specialty Dropdown */}
-              <div className="mb-3">
+              <div>
                 <label className="block text-xs font-semibold text-slate-600 mb-1">
                   Specialization:
                 </label>
@@ -144,29 +151,17 @@ export default function ThreeWayEngine({
                 </div>
               </div>
 
-              {/* Location Filter Dropdown */}
-              <div>
-                <label className="block text-xs font-semibold text-slate-600 mb-1 flex items-center gap-1">
-                  <MapPin className="w-3.5 h-3.5 text-emerald-600" />
-                  <span>Location:</span>
-                </label>
-                <div className="relative">
-                  <select
-                    value={doctorLoc}
-                    onChange={(e) => setDoctorLoc(e.target.value)}
-                    className="w-full bg-white text-slate-800 font-medium text-xs border border-slate-300 rounded-xl px-3 py-2.5 focus:outline-none focus:ring-2 focus:ring-emerald-500 focus:border-emerald-500 transition-all appearance-none cursor-pointer shadow-xs"
-                  >
-                    {LOCATIONS.map((loc) => (
-                      <option key={loc} value={loc}>
-                        {loc}
-                      </option>
-                    ))}
-                  </select>
-                  <div className="pointer-events-none absolute inset-y-0 right-0 flex items-center px-3 text-slate-500">
-                    <ChevronRight className="w-4 h-4 rotate-90" />
-                  </div>
-                </div>
-              </div>
+              {/* Cascading Location Filter (Division -> District -> Thana) */}
+              <CascadingLocationFilter
+                division={doctorLocState.division}
+                district={doctorLocState.district}
+                area={doctorLocState.area}
+                onChange={setDoctorLocState}
+                theme="light"
+                accent="emerald"
+                layout="stacked"
+                showLabels={true}
+              />
             </div>
 
             {/* Search Button */}
@@ -174,20 +169,20 @@ export default function ThreeWayEngine({
               <button
                 onClick={() => {
                   setActiveEngineTab('doctor');
-                  onSearchExecute('doctor', selectedSpecialty, doctorLoc);
+                  onSearchExecute('doctor', selectedSpecialty, doctorLocState);
                 }}
-                className="w-full py-2.5 rounded-lg bg-emerald-600 hover:bg-emerald-700 text-white font-bold text-xs uppercase tracking-wider transition-all flex items-center justify-center gap-2 shadow-sm active:scale-95"
+                className="w-full py-2.5 rounded-lg bg-emerald-600 hover:bg-emerald-700 text-white font-bold text-xs uppercase tracking-wider transition-all flex items-center justify-center gap-2 shadow-sm active:scale-95 cursor-pointer"
               >
                 <Search className="w-3.5 h-3.5" />
-                <span>Search</span>
+                <span>Search Doctors</span>
               </button>
             </div>
           </div>
 
           {/* COMPONENT 2: SEARCH DIAGNOSTICS */}
           <div className="bg-gradient-to-br from-slate-50 to-teal-50/40 p-5 rounded-xl border border-slate-200/90 hover:border-teal-300 transition-all shadow-xs flex flex-col justify-between space-y-4">
-            <div>
-              <div className="flex items-center gap-2 mb-3">
+            <div className="space-y-3">
+              <div className="flex items-center gap-2 mb-1">
                 <div className="w-8 h-8 rounded-lg bg-teal-600 text-white flex items-center justify-center font-bold text-sm shadow-sm">
                   <FlaskConical className="w-4 h-4" />
                 </div>
@@ -202,7 +197,7 @@ export default function ThreeWayEngine({
               </div>
 
               {/* Lab Test Category Dropdown */}
-              <div className="mb-3">
+              <div>
                 <label className="block text-xs font-semibold text-slate-600 mb-1">
                   Types:
                 </label>
@@ -226,29 +221,17 @@ export default function ThreeWayEngine({
                 </div>
               </div>
 
-              {/* Location Filter Dropdown */}
-              <div>
-                <label className="block text-xs font-semibold text-slate-600 mb-1 flex items-center gap-1">
-                  <MapPin className="w-3.5 h-3.5 text-teal-600" />
-                  <span>Location:</span>
-                </label>
-                <div className="relative">
-                  <select
-                    value={diagnosticsLoc}
-                    onChange={(e) => setDiagnosticsLoc(e.target.value)}
-                    className="w-full bg-white text-slate-800 font-medium text-xs border border-slate-300 rounded-xl px-3 py-2.5 focus:outline-none focus:ring-2 focus:ring-teal-500 focus:border-teal-500 transition-all appearance-none cursor-pointer shadow-xs"
-                  >
-                    {LOCATIONS.map((loc) => (
-                      <option key={loc} value={loc}>
-                        {loc}
-                      </option>
-                    ))}
-                  </select>
-                  <div className="pointer-events-none absolute inset-y-0 right-0 flex items-center px-3 text-slate-500">
-                    <ChevronRight className="w-4 h-4 rotate-90" />
-                  </div>
-                </div>
-              </div>
+              {/* Cascading Location Filter (Division -> District -> Thana) */}
+              <CascadingLocationFilter
+                division={diagLocState.division}
+                district={diagLocState.district}
+                area={diagLocState.area}
+                onChange={setDiagLocState}
+                theme="light"
+                accent="teal"
+                layout="stacked"
+                showLabels={true}
+              />
             </div>
 
             {/* Search Button */}
@@ -256,20 +239,20 @@ export default function ThreeWayEngine({
               <button
                 onClick={() => {
                   setActiveEngineTab('diagnostics');
-                  onSearchExecute('diagnostics', selectedTest, diagnosticsLoc);
+                  onSearchExecute('diagnostics', selectedTest, diagLocState);
                 }}
-                className="w-full py-2.5 rounded-lg bg-teal-600 hover:bg-teal-700 text-white font-bold text-xs uppercase tracking-wider transition-all flex items-center justify-center gap-2 shadow-sm active:scale-95"
+                className="w-full py-2.5 rounded-lg bg-teal-600 hover:bg-teal-700 text-white font-bold text-xs uppercase tracking-wider transition-all flex items-center justify-center gap-2 shadow-sm active:scale-95 cursor-pointer"
               >
                 <Search className="w-3.5 h-3.5" />
-                <span>Search</span>
+                <span>Search Diagnostics</span>
               </button>
             </div>
           </div>
 
           {/* COMPONENT 3: SEARCH HOSPITAL */}
           <div className="bg-gradient-to-br from-slate-50 to-cyan-50/40 p-5 rounded-xl border border-slate-200/90 hover:border-cyan-300 transition-all shadow-xs flex flex-col justify-between space-y-4">
-            <div>
-              <div className="flex items-center gap-2 mb-3">
+            <div className="space-y-3">
+              <div className="flex items-center gap-2 mb-1">
                 <div className="w-8 h-8 rounded-lg bg-cyan-600 text-white flex items-center justify-center font-bold text-sm shadow-sm">
                   <Building2 className="w-4 h-4" />
                 </div>
@@ -284,7 +267,7 @@ export default function ThreeWayEngine({
               </div>
 
               {/* Hospital Category Dropdown */}
-              <div className="mb-3">
+              <div>
                 <label className="block text-xs font-semibold text-slate-600 mb-1">
                   Category:
                 </label>
@@ -307,29 +290,17 @@ export default function ThreeWayEngine({
                 </div>
               </div>
 
-              {/* Location Filter Dropdown */}
-              <div>
-                <label className="block text-xs font-semibold text-slate-600 mb-1 flex items-center gap-1">
-                  <MapPin className="w-3.5 h-3.5 text-cyan-600" />
-                  <span>Location:</span>
-                </label>
-                <div className="relative">
-                  <select
-                    value={hospitalLoc}
-                    onChange={(e) => setHospitalLoc(e.target.value)}
-                    className="w-full bg-white text-slate-800 font-medium text-xs border border-slate-300 rounded-xl px-3 py-2.5 focus:outline-none focus:ring-2 focus:ring-cyan-500 focus:border-cyan-500 transition-all appearance-none cursor-pointer shadow-xs"
-                  >
-                    {LOCATIONS.map((loc) => (
-                      <option key={loc} value={loc}>
-                        {loc}
-                      </option>
-                    ))}
-                  </select>
-                  <div className="pointer-events-none absolute inset-y-0 right-0 flex items-center px-3 text-slate-500">
-                    <ChevronRight className="w-4 h-4 rotate-90" />
-                  </div>
-                </div>
-              </div>
+              {/* Cascading Location Filter (Division -> District -> Thana) */}
+              <CascadingLocationFilter
+                division={hospLocState.division}
+                district={hospLocState.district}
+                area={hospLocState.area}
+                onChange={setHospLocState}
+                theme="light"
+                accent="cyan"
+                layout="stacked"
+                showLabels={true}
+              />
             </div>
 
             {/* Search Button */}
@@ -337,12 +308,12 @@ export default function ThreeWayEngine({
               <button
                 onClick={() => {
                   setActiveEngineTab('hospital');
-                  onSearchExecute('hospital', selectedHospitalCategory, hospitalLoc);
+                  onSearchExecute('hospital', selectedHospitalCategory, hospLocState);
                 }}
-                className="w-full py-2.5 rounded-lg bg-cyan-600 hover:bg-cyan-700 text-white font-bold text-xs uppercase tracking-wider transition-all flex items-center justify-center gap-2 shadow-sm active:scale-95"
+                className="w-full py-2.5 rounded-lg bg-cyan-600 hover:bg-cyan-700 text-white font-bold text-xs uppercase tracking-wider transition-all flex items-center justify-center gap-2 shadow-sm active:scale-95 cursor-pointer"
               >
                 <Search className="w-3.5 h-3.5" />
-                <span>Search</span>
+                <span>Search Hospitals</span>
               </button>
             </div>
           </div>
@@ -353,3 +324,4 @@ export default function ThreeWayEngine({
     </div>
   );
 }
+

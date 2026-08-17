@@ -21,7 +21,7 @@ export default function HospitalsTab() {
             <Search className="w-4 h-4 absolute left-3 top-3 text-slate-400" />
             <input
               type="text"
-              placeholder="Search hospital name, branch or city..."
+              placeholder="Search hospital name, branch, district or division..."
               value={searchTerm}
               onChange={(e) => setSearchTerm(e.target.value)}
               className="w-full bg-slate-950 border border-slate-800 rounded-xl pl-9 pr-4 py-2 text-xs text-white placeholder-slate-500 focus:outline-none focus:border-teal-500"
@@ -42,13 +42,13 @@ export default function HospitalsTab() {
                 <th className="py-3.5 px-4">Hospital Name</th>
                 <th className="py-3.5 px-4">Branch</th>
                 <th className="py-3.5 px-4">Services & Facilities</th>
-                <th className="py-3.5 px-4">Location & City</th>
+                <th className="py-3.5 px-4">Location & District</th>
                 <th className="py-3.5 px-4 text-right">Actions</th>
               </tr>
             </thead>
             <tbody className="divide-y divide-slate-800/60">
               {(hospitals || [])
-                .filter(h => `${h?.name || ''} ${h?.branch || ''} ${h?.city || ''}`.toLowerCase().includes((searchTerm || '').toLowerCase()))
+                .filter(h => `${h?.name || ''} ${h?.branch || ''} ${h?.area || ''} ${h?.district || h?.city || ''} ${h?.division || ''}`.toLowerCase().includes((searchTerm || '').toLowerCase()))
                 .map(h => (
                   <tr key={h.id} className="hover:bg-slate-800/40 transition">
                     <td className="py-4 px-4 font-bold text-white">
@@ -73,9 +73,12 @@ export default function HospitalsTab() {
                       </div>
                     </td>
                     <td className="py-4 px-4">
-                      <div className="text-slate-200">{h.address}</div>
-                      <div className="text-slate-400 font-bold">{h.city}</div>
+                      <div className="text-slate-200">{h.address || h.address_line}</div>
+                      <div className="text-slate-400 font-bold">
+                        {h.area ? `${h.area}, ` : ''}{h.district || h.city || 'Dhaka'}{h.division ? ` (${h.division})` : ''}
+                      </div>
                     </td>
+
                     <td className="py-4 px-4 text-right space-x-2 whitespace-nowrap">
                       <button
                         onClick={() => handleOpenBranchTestModal && handleOpenBranchTestModal(null, 'hospital', h.id)}

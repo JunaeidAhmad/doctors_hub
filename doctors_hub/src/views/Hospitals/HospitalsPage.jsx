@@ -3,11 +3,14 @@ import { useSearchParams, useLocation } from 'react-router-dom';
 import { 
   Building2, MapPin, Clock, ShieldCheck, CheckCircle, 
   Star, ArrowRight, Search, UserCheck, ChevronRight, Filter,
-  ArrowDownAZ, ArrowUpAZ
+  ArrowDownAZ, ArrowUpAZ, X
 } from 'lucide-react';
 import { api, ensureArray, isPageReload, getIsInitialLoad } from '../../services/api';
-import { LOCATIONS, CITY_THANAS } from '../../data/constants';
+import { DIVISIONS, findDivisionForDistrict } from '../../data/constants';
 import Pagination from '../../components/Pagination';
+import CascadingLocationFilter from '../../components/CascadingLocationFilter';
+
+
 
 function HospitalCardImage({ hospital }) {
   const [loaded, setLoaded] = useState(false);
@@ -100,12 +103,28 @@ export default function HospitalsPage({ initialCategory = '', initialKeyword = '
   const pageSize = 9;
   
   // Filter states
-  const [selectedLocation, setSelectedLocation] = useState(() => {
-    return getParam('loc', 'All Bangladesh');
+  const [division, setDivision] = useState(() => {
+    const urlDiv = getParam('division', '');
+    if (urlDiv) return urlDiv;
+    const urlLoc = getParam('loc', 'All Bangladesh');
+    if (DIVISIONS.includes(urlLoc)) return urlLoc;
+    const found = findDivisionForDistrict(urlLoc);
+    if (found) return found;
+    return 'All Bangladesh';
   });
-  const [selectedArea, setSelectedArea] = useState(() => {
+
+  const [district, setDistrict] = useState(() => {
+    const urlDist = getParam('district', '');
+    if (urlDist) return urlDist;
+    const urlLoc = getParam('loc', '');
+    if (urlLoc && !DIVISIONS.includes(urlLoc) && urlLoc !== 'All Bangladesh') return urlLoc;
+    return 'All Districts';
+  });
+
+  const [area, setArea] = useState(() => {
     return getParam('area', 'All Areas');
   });
+
   const [selectedCategory, setSelectedCategory] = useState(() => {
     const urlCat = getParam('cat', '');
     if (urlCat) return urlCat;
@@ -142,22 +161,34 @@ export default function HospitalsPage({ initialCategory = '', initialKeyword = '
     return found ? String(found.id) : selectedCategory;
   }, [selectedCategory, hospitalCategories]);
 
-  // Fetch hospital categories metadata
+  // Fetch hospital categories metadata and real-time facets
   useEffect(() => {
     let isMounted = true;
-    api.getSearchMetadata()
-      .then((meta) => {
-        if (isMounted && meta && meta.hospital_categories) {
-          setHospitalCategories(ensureArray(meta.hospital_categories));
+    api.getSearchFacets({ 
+      division: division !== 'All Bangladesh' ? division : undefined, 
+      district: district !== 'All Districts' ? district : undefined, 
+      area: area !== 'All Areas' ? area : undefined 
+    })
+      .then((facets) => {
+        if (isMounted && facets && facets.hospital_categories) {
+          setHospitalCategories(ensureArray(facets.hospital_categories));
         }
       })
       .catch(() => {
-        api.getHospitalCategories().then((data) => {
-          if (isMounted && data) setHospitalCategories(ensureArray(data));
-        });
+        api.getSearchMetadata()
+          .then((meta) => {
+            if (isMounted && meta && meta.hospital_categories) {
+              setHospitalCategories(ensureArray(meta.hospital_categories));
+            }
+          })
+          .catch(() => {
+            api.getHospitalCategories().then((data) => {
+              if (isMounted && data) setHospitalCategories(ensureArray(data));
+            });
+          });
       });
     return () => { isMounted = false; };
-  }, []);
+  }, [division, district, area]);
 
   // Fetch filtered Hospitals from backend
   useEffect(() => {
@@ -166,8 +197,9 @@ export default function HospitalsPage({ initialCategory = '', initialKeyword = '
     const timer = setTimeout(() => {
       setIsSyncing(true);
       const params = {
-        location: selectedLocation,
-        area: selectedArea !== 'All Areas' ? selectedArea : undefined,
+        division: division !== 'All Bangladesh' ? division : undefined,
+        district: district !== 'All Districts' ? district : undefined,
+        area: area !== 'All Areas' ? area : undefined,
         category: selectedCategory !== 'all' && selectedCategory !== 'All Categories' ? selectedCategory : undefined,
         search: searchKeyword.trim() || undefined,
         page: page,
@@ -198,32 +230,49 @@ export default function HospitalsPage({ initialCategory = '', initialKeyword = '
     }, delay);
 
     return () => { isMounted = false; clearTimeout(timer); };
-  }, [selectedLocation, selectedArea, selectedCategory, searchKeyword, page]);
+  }, [division, district, area, selectedCategory, searchKeyword, page]);
 
   // Handle URL deserialization once or when searchParams actually change from outside
   useEffect(() => {
     if (lastParamsRef.current === searchParams.toString()) return;
     
     const urlCat = searchParams.get('cat');
+    const urlDiv = searchParams.get('division');
+    const urlDist = searchParams.get('district');
     const urlLoc = searchParams.get('loc');
     const urlArea = searchParams.get('area');
     const urlQ = searchParams.get('q');
     const urlSort = searchParams.get('sort');
     
     if (urlCat !== null) setSelectedCategory(urlCat || 'all');
-    if (urlLoc !== null) setSelectedLocation(urlLoc || 'All Bangladesh');
-    if (urlArea !== null) setSelectedArea(urlArea || 'All Areas');
+    
+    if (urlDiv) {
+      setDivision(urlDiv);
+    } else if (urlLoc) {
+      if (DIVISIONS.includes(urlLoc)) setDivision(urlLoc);
+      else {
+        const found = findDivisionForDistrict(urlLoc);
+        if (found) setDivision(found);
+        else setDivision('All Bangladesh');
+      }
+    } else {
+      setDivision('All Bangladesh');
+    }
+
+    if (urlDist) {
+      setDistrict(urlDist);
+    } else if (urlLoc && !DIVISIONS.includes(urlLoc) && urlLoc !== 'All Bangladesh') {
+      setDistrict(urlLoc);
+    } else {
+      setDistrict('All Districts');
+    }
+
+    if (urlArea !== null) setArea(urlArea || 'All Areas');
     if (urlQ !== null) setSearchKeyword(urlQ || '');
     if (urlSort !== null) setSortOrder(urlSort || 'asc');
     
     lastParamsRef.current = searchParams.toString();
   }, [searchParams]);
-
-  // Reset area filter when location switches
-  const handleLocationChange = (loc) => {
-    setSelectedLocation(loc);
-    setSelectedArea('All Areas');
-  };
 
   // Combine hospitals list to display
   const allHospitalsList = useMemo(() => {
@@ -266,8 +315,9 @@ export default function HospitalsPage({ initialCategory = '', initialKeyword = '
   useEffect(() => {
     const params = new URLSearchParams();
     if (selectedCategory && selectedCategory !== 'all') params.set('cat', selectedCategory);
-    if (selectedLocation && selectedLocation !== 'All Bangladesh') params.set('loc', selectedLocation);
-    if (selectedArea && selectedArea !== 'All Areas') params.set('area', selectedArea);
+    if (division && division !== 'All Bangladesh') params.set('division', division);
+    if (district && district !== 'All Districts') params.set('district', district);
+    if (area && area !== 'All Areas') params.set('area', area);
     if (searchKeyword.trim()) params.set('q', searchKeyword.trim());
     if (page > 1) params.set('page', String(page));
     if (sortOrder !== 'asc') params.set('sort', sortOrder);
@@ -277,7 +327,7 @@ export default function HospitalsPage({ initialCategory = '', initialKeyword = '
       lastParamsRef.current = next;
       setSearchParams(params, { replace: true });
     }
-  }, [selectedCategory, selectedLocation, selectedArea, searchKeyword, page, sortOrder, setSearchParams]);
+  }, [selectedCategory, division, district, area, searchKeyword, page, sortOrder, setSearchParams]);
 
   // Alphabetical sorting
   const sortedHospitals = useMemo(() => {
@@ -297,7 +347,7 @@ export default function HospitalsPage({ initialCategory = '', initialKeyword = '
       return;
     }
     setPage(1);
-  }, [selectedCategory, selectedLocation, selectedArea, searchKeyword]);
+  }, [selectedCategory, division, district, area, searchKeyword]);
 
   return (
     <div className="min-h-screen bg-slate-50 pb-20">
@@ -306,7 +356,7 @@ export default function HospitalsPage({ initialCategory = '', initialKeyword = '
       <div className="bg-slate-900 text-white py-12 px-4 sm:px-8 border-b border-slate-800">
         <div className="max-w-7xl mx-auto space-y-6">
           <div className="flex items-center gap-2 text-xs text-slate-400">
-            <button onClick={onNavigateHome} className="hover:text-emerald-400 font-semibold transition-colors">
+            <button onClick={onNavigateHome} className="hover:text-emerald-400 font-semibold transition-colors cursor-pointer">
               Home
             </button>
             <ChevronRight className="w-3.5 h-3.5" />
@@ -343,22 +393,23 @@ export default function HospitalsPage({ initialCategory = '', initialKeyword = '
                 <Filter className="w-4 h-4 text-emerald-400" />
                 <span>Hospital Search & Filter</span>
               </div>
-              {(selectedCategory !== 'all' || selectedLocation !== 'All Bangladesh' || selectedArea !== 'All Areas' || searchKeyword) && (
+              {(selectedCategory !== 'all' || division !== 'All Bangladesh' || district !== 'All Districts' || area !== 'All Areas' || searchKeyword) && (
                 <button
                   onClick={() => {
                     setSelectedCategory('all');
-                    setSelectedLocation('All Bangladesh');
-                    setSelectedArea('All Areas');
+                    setDivision('All Bangladesh');
+                    setDistrict('All Districts');
+                    setArea('All Areas');
                     setSearchKeyword('');
                   }}
-                  className="text-emerald-400 hover:underline font-bold"
+                  className="text-emerald-400 hover:underline font-bold cursor-pointer"
                 >
                   Reset All Filters
                 </button>
               )}
             </div>
 
-            <div className={`grid grid-cols-1 sm:grid-cols-2 ${selectedLocation !== 'All Bangladesh' ? 'lg:grid-cols-4' : 'lg:grid-cols-3'} gap-3`}>
+            <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-3">
               
               {/* Category Filter */}
               <div>
@@ -369,7 +420,7 @@ export default function HospitalsPage({ initialCategory = '', initialKeyword = '
                     setSelectedCategory(e.target.value);
                     setSearchKeyword('');
                   }}
-                  className="w-full bg-slate-900 border border-slate-700 rounded-xl px-3 py-2.5 text-xs text-white focus:outline-none focus:border-emerald-500 font-bold"
+                  className="w-full bg-slate-900 border border-slate-700 rounded-xl px-3 py-2.5 text-xs text-white focus:outline-none focus:border-emerald-500 font-bold cursor-pointer"
                 >
                   <option value="all">All Hospital Categories</option>
                   {hospitalCategories.map(cat => (
@@ -378,36 +429,23 @@ export default function HospitalsPage({ initialCategory = '', initialKeyword = '
                 </select>
               </div>
 
-              {/* City / Location */}
-              <div>
-                <label className="block text-[11px] font-bold text-slate-400 mb-1">Location</label>
-                <select
-                  value={selectedLocation}
-                  onChange={(e) => handleLocationChange(e.target.value)}
-                  className="w-full bg-slate-900 border border-slate-700 rounded-xl px-3 py-2.5 text-xs text-white focus:outline-none focus:border-emerald-500 font-bold"
-                >
-                  {LOCATIONS.map(loc => (
-                    <option key={loc} value={loc}>{loc}</option>
-                  ))}
-                </select>
+              {/* Cascading Location Filter (Division -> District -> Thana) */}
+              <div className="sm:col-span-2 lg:col-span-1">
+                <CascadingLocationFilter
+                  division={division}
+                  district={district}
+                  area={area}
+                  onChange={({ division: d, district: dist, area: a }) => {
+                    setDivision(d);
+                    setDistrict(dist);
+                    setArea(a);
+                  }}
+                  theme="dark"
+                  accent="emerald"
+                  layout="inline"
+                  showLabels={true}
+                />
               </div>
-
-              {/* Area / Thana Filter */}
-              {selectedLocation !== 'All Bangladesh' && (
-                <div>
-                  <label className="block text-[11px] font-bold text-emerald-400 mb-1">Area / Thana ({selectedLocation})</label>
-                  <select
-                    value={selectedArea}
-                    onChange={(e) => setSelectedArea(e.target.value)}
-                    className="w-full bg-slate-900 border border-emerald-500/80 rounded-xl px-3 py-2.5 text-xs text-white focus:outline-none focus:border-emerald-400 font-bold"
-                  >
-                    <option value="All Areas">All Areas in {selectedLocation}</option>
-                    {(CITY_THANAS[selectedLocation] || []).map(th => (
-                      <option key={th} value={th}>{th}</option>
-                    ))}
-                  </select>
-                </div>
-              )}
 
               {/* Search Keyword */}
               <div className="relative">
@@ -416,7 +454,7 @@ export default function HospitalsPage({ initialCategory = '', initialKeyword = '
                   <Search className="w-4 h-4 text-slate-400 absolute left-3 top-1/2 -translate-y-1/2" />
                   <input
                     type="text"
-                    placeholder="Search hospital name, location..."
+                    placeholder="Search hospital name..."
                     value={searchKeyword}
                     onChange={(e) => setSearchKeyword(e.target.value)}
                     className="w-full bg-slate-900 border border-slate-700 rounded-xl pl-9 pr-3 py-2.5 text-xs text-white placeholder-slate-400 focus:outline-none focus:border-emerald-500 font-medium"
@@ -425,10 +463,53 @@ export default function HospitalsPage({ initialCategory = '', initialKeyword = '
               </div>
 
             </div>
+
+            {/* ACTIVE FILTER PILLS */}
+            {(selectedCategory !== 'all' || division !== 'All Bangladesh' || district !== 'All Districts' || area !== 'All Areas' || searchKeyword) && (
+              <div className="flex flex-wrap items-center gap-2 pt-2 border-t border-slate-700/60 text-xs">
+                <span className="text-slate-400 font-bold">Active Filters:</span>
+
+                {selectedCategory !== 'all' && (
+                  <span className="inline-flex items-center gap-1.5 px-3 py-1 rounded-full bg-emerald-500/20 text-emerald-300 border border-emerald-500/40 font-bold">
+                    <span>Category: {hospitalCategories.find(c => String(c.id) === String(selectedCategory))?.name || selectedCategory}</span>
+                    <button onClick={() => setSelectedCategory('all')} className="hover:text-white cursor-pointer"><X className="w-3 h-3" /></button>
+                  </span>
+                )}
+
+                {division !== 'All Bangladesh' && (
+                  <span className="inline-flex items-center gap-1.5 px-3 py-1 rounded-full bg-emerald-500/20 text-emerald-300 border border-emerald-500/40 font-bold">
+                    <span>Division: {division}</span>
+                    <button onClick={() => { setDivision('All Bangladesh'); setDistrict('All Districts'); setArea('All Areas'); }} className="hover:text-white cursor-pointer"><X className="w-3 h-3" /></button>
+                  </span>
+                )}
+
+                {district !== 'All Districts' && (
+                  <span className="inline-flex items-center gap-1.5 px-3 py-1 rounded-full bg-emerald-500/20 text-emerald-300 border border-emerald-500/40 font-bold">
+                    <span>District: {district}</span>
+                    <button onClick={() => { setDistrict('All Districts'); setArea('All Areas'); }} className="hover:text-white cursor-pointer"><X className="w-3 h-3" /></button>
+                  </span>
+                )}
+
+                {area !== 'All Areas' && (
+                  <span className="inline-flex items-center gap-1.5 px-3 py-1 rounded-full bg-emerald-500/20 text-emerald-300 border border-emerald-500/40 font-bold">
+                    <span>Area: {area}</span>
+                    <button onClick={() => setArea('All Areas')} className="hover:text-white cursor-pointer"><X className="w-3 h-3" /></button>
+                  </span>
+                )}
+
+                {searchKeyword && (
+                  <span className="inline-flex items-center gap-1.5 px-3 py-1 rounded-full bg-slate-700 text-slate-200 border border-slate-600 font-bold">
+                    <span>Query: "{searchKeyword}"</span>
+                    <button onClick={() => setSearchKeyword('')} className="hover:text-white cursor-pointer"><X className="w-3 h-3" /></button>
+                  </span>
+                )}
+              </div>
+            )}
           </div>
 
         </div>
       </div>
+
 
       {/* [] GRID */}
       <div className="max-w-7xl mx-auto px-4 sm:px-8 py-10">

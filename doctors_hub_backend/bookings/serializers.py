@@ -3,6 +3,7 @@ from .models import DoctorBooking, LabBooking
 from doctors.models import DoctorAffiliation
 from tests.models import FacilityTest
 
+
 class DoctorBookingSerializer(serializers.ModelSerializer):
     doctor_name = serializers.CharField(source='affiliation.doctor.name', read_only=True)
     facility_name = serializers.CharField(source='affiliation.location.name', read_only=True)
@@ -15,12 +16,24 @@ class DoctorBookingSerializer(serializers.ModelSerializer):
         model = DoctorBooking
         fields = (
             'id', 'user', 'status', 'notes', 'created_at', 'updated_at', 'affiliation_id',
-            'date', 'slot', 'patient_name', 'doctor_name', 'facility_name', 'consultation_type'
+            'date', 'slot', 'patient_name', 'patient_phone', 'doctor_name', 'facility_name', 'consultation_type'
         )
         read_only_fields = ('user', 'created_at', 'updated_at')
 
+    def to_internal_value(self, data):
+        mutable_data = data.copy() if hasattr(data, 'copy') else dict(data)
+        if 'appointment_date' in mutable_data and not mutable_data.get('date'):
+            mutable_data['date'] = mutable_data['appointment_date']
+        if 'appointment_time' in mutable_data and not mutable_data.get('slot'):
+            mutable_data['slot'] = mutable_data['appointment_time']
+        if 'affiliation' in mutable_data and not mutable_data.get('affiliation_id'):
+            mutable_data['affiliation_id'] = mutable_data['affiliation']
+        return super().to_internal_value(mutable_data)
+
     def validate(self, attrs):
-        instance = DoctorBooking(**attrs)
+        valid_fields = {'affiliation', 'date', 'slot', 'patient_name', 'patient_phone', 'status', 'notes', 'user'}
+        model_kwargs = {k: v for k, v in attrs.items() if k in valid_fields}
+        instance = DoctorBooking(**model_kwargs)
         try:
             instance.clean()
         except Exception as e:
@@ -30,6 +43,7 @@ class DoctorBookingSerializer(serializers.ModelSerializer):
                 raise serializers.ValidationError(e.messages)
             raise e
         return attrs
+
 
 class LabBookingSerializer(serializers.ModelSerializer):
     test_name = serializers.CharField(source='facility_test.test.name', read_only=True, default='')
@@ -53,10 +67,13 @@ class LabBookingSerializer(serializers.ModelSerializer):
 
     def to_internal_value(self, data):
         mutable_data = data.copy() if hasattr(data, 'copy') else dict(data)
+        if 'booking_date' in mutable_data and not mutable_data.get('pickup_date'):
+            mutable_data['pickup_date'] = mutable_data['booking_date']
+        if 'facility_test' in mutable_data and not mutable_data.get('facility_test_id'):
+            mutable_data['facility_test_id'] = mutable_data['facility_test']
         if 'address' in mutable_data and not mutable_data.get('pickup_address_line'):
             raw_addr = mutable_data.get('address', '')
             mutable_data['pickup_address_line'] = raw_addr
             if not mutable_data.get('pickup_district'):
                 mutable_data['pickup_district'] = 'Dhaka'
         return super().to_internal_value(mutable_data)
-

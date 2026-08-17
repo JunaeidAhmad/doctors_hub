@@ -5,6 +5,7 @@ from doctors.models import DoctorAffiliation
 from tests.models import FacilityTest
 from services.scheduling import validate_slot_against_schedule
 
+
 class BaseBooking(models.Model):
     class Status(models.TextChoices):
         PENDING = "pending", "Pending"
@@ -14,7 +15,7 @@ class BaseBooking(models.Model):
         NO_SHOW = "no_show", "No show"
 
     id = models.UUIDField(primary_key=True, default=uuid.uuid4, editable=False)
-    user = models.ForeignKey(User, on_delete=models.CASCADE, related_name="%(class)ss")
+    user = models.ForeignKey(User, null=True, blank=True, on_delete=models.SET_NULL, related_name="%(class)ss")
     status = models.CharField(max_length=20, choices=Status.choices, default=Status.PENDING)
     notes = models.TextField(blank=True)
     created_at = models.DateTimeField(auto_now_add=True)
@@ -23,11 +24,13 @@ class BaseBooking(models.Model):
     class Meta:
         abstract = True
 
+
 class DoctorBooking(BaseBooking):
     affiliation = models.ForeignKey(DoctorAffiliation, on_delete=models.CASCADE, related_name="bookings")
     date = models.DateField()
     slot = models.CharField(max_length=50)
     patient_name = models.CharField(max_length=100)
+    patient_phone = models.CharField(max_length=20, blank=True, default="")
 
     class Meta:
         constraints = [
@@ -42,6 +45,7 @@ class DoctorBooking(BaseBooking):
     def save(self, *args, **kwargs):
         self.full_clean()
         super().save(*args, **kwargs)
+
 
 class LabBooking(BaseBooking):
     facility_test = models.ForeignKey(FacilityTest, on_delete=models.CASCADE, related_name="bookings")
@@ -61,4 +65,3 @@ class LabBooking(BaseBooking):
     @property
     def address(self):
         return self.full_pickup_address
-

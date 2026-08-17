@@ -63,7 +63,7 @@ def test_validate_slot_against_schedule_called_on_save_and_serializer():
     user = User.objects.create_user(phone_number="01700000000", password="password")
     loc = Location.objects.create(
         name="Health Care Center", location_type="hospital",
-        address_line="123 St", district="Dhaka", division="Dhaka", postal_code="1200"
+        address_line="123 St", district="Dhaka", division="Dhaka"
     )
     doc = Doctor.objects.create(name="Dr. Bob", qualification="MBBS", experience="5 yrs")
     aff = DoctorAffiliation.objects.create(doctor=doc, location=loc, fee=500)
@@ -108,15 +108,16 @@ def test_validate_slot_against_schedule_called_on_save_and_serializer():
 def test_filterset_fields_covers_district_and_division():
     loc_dhaka = Location.objects.create(
         name="Dhaka Hospital", location_type="hospital",
-        address_line="Line 1", city="Dhaka", area="Dhanmondi", district="Dhaka", division="Dhaka", postal_code="1205"
+        address_line="Line 1", area="Dhanmondi", district="Dhaka", division="Dhaka"
     )
     hosp_dhaka = Hospital.objects.create(location=loc_dhaka)
 
     loc_ctg = Location.objects.create(
         name="Chittagong Hospital", location_type="hospital",
-        address_line="Line 2", city="Chittagong", area="Agrabad", district="Chittagong", division="Chittagong", postal_code="4000"
+        address_line="Line 2", area="Agrabad", district="Chittagong", division="Chittagong"
     )
     hosp_ctg = Hospital.objects.create(location=loc_ctg)
+
 
     from facilities.views import HospitalFilter
     filter_district = HospitalFilter({'district': 'Chittagong'}, queryset=Hospital.objects.all())

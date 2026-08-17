@@ -527,13 +527,31 @@ export const api = {
     });
   },
 
+  // Dynamic Search Facets Endpoint
+  async getSearchFacets({ location = '', area = '', search = '' } = {}) {
+    const params = {};
+    if (location && location !== 'All Bangladesh') params.location = location;
+    if (area && area !== 'All Areas') params.area = area;
+    if (search && search.trim()) params.search = search.trim();
+
+    const query = new URLSearchParams(params).toString();
+    const key = `search_facets_${query || 'all'}`;
+
+    return fetchWithDeduplicationAndCache(key, async () => {
+      const url = `${BASE_URL}/search-facets/${query ? `?${query}` : ''}`;
+      const res = await fetchWithTimeout(url, { headers: getHeaders() });
+      return handleResponse(res);
+    });
+  },
+
   // Diagnostic Centers
-  async getDiagnosticCenters({ location = '', district = '', area = '', category = '', spec = '', owner = '', testcat = '', search = '', page = 1, page_size = 10 } = {}) {
-    const key = `dc_${location}_${district}_${area}_${category}_${spec}_${owner}_${testcat}_${search}_${page}_${page_size}`;
+  async getDiagnosticCenters({ location = '', division = '', district = '', area = '', category = '', spec = '', owner = '', testcat = '', search = '', page = 1, page_size = 10 } = {}) {
+    const key = `diag_${location}_${division}_${district}_${area}_${category}_${spec}_${owner}_${testcat}_${search}_${page}_${page_size}`;
     return fetchWithDeduplicationAndCache(key, async () => {
       const url = new URL(`${BASE_URL}/diagnostic-centers/`);
       if (location && location !== 'All Bangladesh') url.searchParams.append('location', location);
-      if (district) url.searchParams.append('district', district);
+      if (division && division !== 'All Bangladesh') url.searchParams.append('division', division);
+      if (district && district !== 'All Districts') url.searchParams.append('district', district);
       if (area && area !== 'All Areas') url.searchParams.append('area', area);
       if (category) url.searchParams.append('category', category);
       if (spec) url.searchParams.append('spec', spec);
@@ -695,11 +713,13 @@ export const api = {
   },
 
   // Hospitals
-  async getHospitals({ location = '', area = '', category = '', search = '', page = 1, page_size = 10 } = {}) {
-    const key = `hosp_${location}_${area}_${category}_${search}_${page}_${page_size}`;
+  async getHospitals({ location = '', division = '', district = '', area = '', category = '', search = '', page = 1, page_size = 10 } = {}) {
+    const key = `hosp_${location}_${division}_${district}_${area}_${category}_${search}_${page}_${page_size}`;
     return fetchWithDeduplicationAndCache(key, async () => {
       const url = new URL(`${BASE_URL}/hospitals/`);
       if (location && location !== 'All Bangladesh') url.searchParams.append('location', location);
+      if (division && division !== 'All Bangladesh') url.searchParams.append('division', division);
+      if (district && district !== 'All Districts') url.searchParams.append('district', district);
       if (area && area !== 'All Areas') url.searchParams.append('area', area);
       if (category) url.searchParams.append('category', category);
       if (search) url.searchParams.append('search', search);
@@ -775,12 +795,14 @@ export const api = {
   async deleteChamber(id) { clearCache(); return this.deleteDiagnosticCenter(id); },
 
   // Doctors
-  async getDoctors({ specialty = '', location = '', area = '', search = '', consultation_type = '', hospital = '', diagnostic_center = '', fee_max = '', day = '', page = 1, page_size = 10 } = {}) {
-    const key = `doc_${specialty}_${location}_${area}_${search}_${consultation_type}_${hospital}_${diagnostic_center}_${fee_max}_${day}_${page}_${page_size}`;
+  async getDoctors({ specialty = '', location = '', division = '', district = '', area = '', search = '', consultation_type = '', hospital = '', diagnostic_center = '', fee_max = '', day = '', page = 1, page_size = 10 } = {}) {
+    const key = `doc_${specialty}_${location}_${division}_${district}_${area}_${search}_${consultation_type}_${hospital}_${diagnostic_center}_${fee_max}_${day}_${page}_${page_size}`;
     return fetchWithDeduplicationAndCache(key, async () => {
       const url = new URL(`${BASE_URL}/doctors/`);
       if (specialty) url.searchParams.append('specialty', specialty);
       if (location && location !== 'All Bangladesh') url.searchParams.append('location', location);
+      if (division && division !== 'All Bangladesh') url.searchParams.append('division', division);
+      if (district && district !== 'All Districts') url.searchParams.append('district', district);
       if (area && area !== 'All Areas') url.searchParams.append('area', area);
       if (search) url.searchParams.append('search', search);
       if (consultation_type) url.searchParams.append('consultation_type', consultation_type);
@@ -794,6 +816,7 @@ export const api = {
       return handleResponse(res);
     }, 60000);
   },
+
   async createDoctor(doctorData) {
     const res = await fetchWithTimeout(`${BASE_URL}/doctors/`, {
       method: 'POST',

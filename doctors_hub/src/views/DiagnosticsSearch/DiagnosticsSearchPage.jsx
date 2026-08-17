@@ -5,9 +5,12 @@ import {
   MapPin, CheckCircle, Home, FileText, ChevronRight, ChevronDown, Tag, Stethoscope,
   Heart, Brain, Dna, Activity, Droplet, Sparkles, X, ChevronUp
 } from 'lucide-react';
-import { LOCATIONS, CITY_THANAS } from '../../data/constants';
+import { DIVISIONS, findDivisionForDistrict } from '../../data/constants';
 import { api, ensureArray, isPageReload, getIsInitialLoad } from '../../services/api';
 import Pagination from '../../components/Pagination';
+import CascadingLocationFilter from '../../components/CascadingLocationFilter';
+
+
 
 // Fallback Test Categories
 const FALLBACK_TEST_CATEGORIES = [
@@ -419,11 +422,27 @@ export default function DiagnosticsSearchPage({
   };
 
   // Filter states
-  const [selectedLocation, setSelectedLocation] = useState(() => {
+  const [division, setDivision] = useState(() => {
     if (isRefresh) return 'All Bangladesh';
-    return getParam('loc', 'All Bangladesh');
+    const urlDiv = getParam('division', '');
+    if (urlDiv) return urlDiv;
+    const urlLoc = getParam('loc', 'All Bangladesh');
+    if (DIVISIONS.includes(urlLoc)) return urlLoc;
+    const found = findDivisionForDistrict(urlLoc);
+    if (found) return found;
+    return 'All Bangladesh';
   });
-  const [selectedArea, setSelectedArea] = useState(() => {
+
+  const [district, setDistrict] = useState(() => {
+    if (isRefresh) return 'All Districts';
+    const urlDist = getParam('district', '');
+    if (urlDist) return urlDist;
+    const urlLoc = getParam('loc', '');
+    if (urlLoc && !DIVISIONS.includes(urlLoc) && urlLoc !== 'All Bangladesh') return urlLoc;
+    return 'All Districts';
+  });
+
+  const [area, setArea] = useState(() => {
     if (isRefresh) return 'All Areas';
     return getParam('area', 'All Areas');
   });
@@ -461,6 +480,8 @@ export default function DiagnosticsSearchPage({
     if (isRefresh) return;
     const urlTestCat = searchParams.get('testcat');
     const urlCat = searchParams.get('cat') || searchParams.get('spec') || searchParams.get('owner');
+    const urlDiv = searchParams.get('division');
+    const urlDist = searchParams.get('district');
     const urlLoc = searchParams.get('loc');
     const urlArea = searchParams.get('area');
     const urlQ = searchParams.get('q');
@@ -474,34 +495,69 @@ export default function DiagnosticsSearchPage({
     if (urlCat !== null) {
       setSelectedCenterCategory(urlCat || 'all');
     }
-    if (urlLoc !== null) setSelectedLocation(urlLoc || 'All Bangladesh');
-    if (urlArea !== null) setSelectedArea(urlArea || 'All Areas');
+
+    if (urlDiv) {
+      setDivision(urlDiv);
+    } else if (urlLoc) {
+      if (DIVISIONS.includes(urlLoc)) setDivision(urlLoc);
+      else {
+        const found = findDivisionForDistrict(urlLoc);
+        if (found) setDivision(found);
+        else setDivision('All Bangladesh');
+      }
+    } else {
+      setDivision('All Bangladesh');
+    }
+
+    if (urlDist) {
+      setDistrict(urlDist);
+    } else if (urlLoc && !DIVISIONS.includes(urlLoc) && urlLoc !== 'All Bangladesh') {
+      setDistrict(urlLoc);
+    } else {
+      setDistrict('All Districts');
+    }
+
+    if (urlArea !== null) setArea(urlArea || 'All Areas');
     if (urlQ !== null) setSearchKeyword(urlQ || '');
   }, [searchParams, initialTest, isRefresh]);
 
-  // Fetch reference metadata (categories, tests) once
+
+  // Fetch reference metadata and real-time facets
   useEffect(() => {
     let isMounted = true;
-    api.getSearchMetadata()
-      .then((meta) => {
-        if (isMounted && meta) {
-          if (meta.diagnostic_center_categories) setCenterCategories(ensureArray(meta.diagnostic_center_categories));
-          if (meta.test_categories) setTestCategories(ensureArray(meta.test_categories));
+    api.getSearchFacets({ 
+      division: division !== 'All Bangladesh' ? division : undefined, 
+      district: district !== 'All Districts' ? district : undefined, 
+      area: area !== 'All Areas' ? area : undefined 
+    })
+      .then((facets) => {
+        if (isMounted && facets) {
+          if (facets.diagnostic_center_categories) setCenterCategories(ensureArray(facets.diagnostic_center_categories));
+          if (facets.test_categories) setTestCategories(ensureArray(facets.test_categories));
         }
       })
       .catch(() => {
-        Promise.all([
-          api.getDiagnosticCenterCategories().catch(() => []),
-          api.getTestCategories().catch(() => []),
-        ]).then(([dccats, tcats]) => {
-          if (isMounted) {
-            setCenterCategories(ensureArray(dccats, []));
-            setTestCategories(ensureArray(tcats, []));
-          }
-        });
+        api.getSearchMetadata()
+          .then((meta) => {
+            if (isMounted && meta) {
+              if (meta.diagnostic_center_categories) setCenterCategories(ensureArray(meta.diagnostic_center_categories));
+              if (meta.test_categories) setTestCategories(ensureArray(meta.test_categories));
+            }
+          })
+          .catch(() => {
+            Promise.all([
+              api.getDiagnosticCenterCategories().catch(() => []),
+              api.getTestCategories().catch(() => []),
+            ]).then(([dccats, tcats]) => {
+              if (isMounted) {
+                setCenterCategories(ensureArray(dccats, []));
+                setTestCategories(ensureArray(tcats, []));
+              }
+            });
+          });
       });
     return () => { isMounted = false; };
-  }, []);
+  }, [division, district, area]);
 
 const isUuid = (val) => typeof val === 'string' && /^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/i.test(val.trim());
 
@@ -613,8 +669,9 @@ const resolveTestCategoryName = (val, testCats = []) => {
     const delay = searchKeyword.trim() ? 350 : 0;
     const timer = setTimeout(() => {
       api.getDiagnosticCenters({
-        location: selectedLocation,
-        area: selectedArea !== 'All Areas' ? selectedArea : undefined,
+        division: division !== 'All Bangladesh' ? division : undefined,
+        district: district !== 'All Districts' ? district : undefined,
+        area: area !== 'All Areas' ? area : undefined,
         testcat: selectedTestCategory !== 'all' ? selectedTestCategory : undefined,
         category: selectedCenterCategory !== 'all' ? selectedCenterCategory : undefined,
         search: searchKeyword.trim() || undefined,
@@ -647,19 +704,23 @@ const resolveTestCategoryName = (val, testCats = []) => {
     }, delay);
 
     return () => { isMounted = false; clearTimeout(timer); };
-  }, [selectedLocation, selectedArea, selectedTestCategory, selectedCenterCategory, searchKeyword, currentPage]);
+  }, [division, district, area, selectedTestCategory, selectedCenterCategory, searchKeyword, currentPage]);
 
-  // Handle location change
-  const handleLocationChange = (loc) => {
-    setSelectedLocation(loc);
-    setSelectedArea('All Areas');
+  const handleResetFilters = () => {
+    setSelectedTestCategory('all');
+    setSelectedCenterCategory('all');
+    setDivision('All Bangladesh');
+    setDistrict('All Districts');
+    setArea('All Areas');
+    setSearchKeyword('');
   };
 
   // Serialize filters to URL query parameters
   useEffect(() => {
     const params = new URLSearchParams();
-    if (selectedLocation && selectedLocation !== 'All Bangladesh') params.set('loc', selectedLocation);
-    if (selectedArea && selectedArea !== 'All Areas') params.set('area', selectedArea);
+    if (division && division !== 'All Bangladesh') params.set('division', division);
+    if (district && district !== 'All Districts') params.set('district', district);
+    if (area && area !== 'All Areas') params.set('area', area);
     if (selectedTestCategory && selectedTestCategory !== 'all') params.set('testcat', selectedTestCategory);
     if (selectedCenterCategory && selectedCenterCategory !== 'all') params.set('cat', selectedCenterCategory);
     if (searchKeyword.trim()) params.set('q', searchKeyword.trim());
@@ -668,13 +729,38 @@ const resolveTestCategoryName = (val, testCats = []) => {
     if (next !== searchParams.toString()) {
       setSearchParams(params, { replace: true });
     }
-  }, [selectedLocation, selectedArea, selectedTestCategory, selectedCenterCategory, searchKeyword, searchParams, setSearchParams]);
+  }, [division, district, area, selectedTestCategory, selectedCenterCategory, searchKeyword, searchParams, setSearchParams]);
 
   // Filter centers and compute matching tests
   const filteredCentersWithTests = useMemo(() => {
     const baseList = diagnosticCenters.length > 0 ? diagnosticCenters : FALLBACK_DIAGNOSTIC_CENTERS;
 
     return baseList.map(center => {
+      // Filter center by Division
+      if (division && division !== 'All Bangladesh') {
+        const divLow = division.toLowerCase();
+        const matchesDiv = String(center.division || '').toLowerCase().includes(divLow) ||
+          String(center.district || '').toLowerCase().includes(divLow) ||
+          String(center.city || '').toLowerCase().includes(divLow);
+        if (!matchesDiv) return null;
+      }
+
+      // Filter center by District
+      if (district && district !== 'All Districts') {
+        const distLow = district.toLowerCase();
+        const matchesDist = String(center.district || '').toLowerCase().includes(distLow) ||
+          String(center.city || '').toLowerCase().includes(distLow);
+        if (!matchesDist) return null;
+      }
+
+      // Filter center by Area
+      if (area && area !== 'All Areas') {
+        const areaLow = area.toLowerCase();
+        const matchesArea = String(center.area || '').toLowerCase().includes(areaLow) ||
+          String(center.branch || '').toLowerCase().includes(areaLow);
+        if (!matchesArea) return null;
+      }
+
       const allOffered = ensureArray(center.offered_tests || center.tests, []);
       
       // Compute matching tests for the active test category
@@ -697,12 +783,22 @@ const resolveTestCategoryName = (val, testCats = []) => {
 
         if (!centerMatches) {
           matchingTests = matchingTests.filter(offering => {
-            const tName = String(offering.test_details?.name || offering.name || offering.test_name || '').toLowerCase();
-            const cName = String(offering.test_details?.category_name || offering.category_name || '').toLowerCase();
-            const tDesc = String(offering.test_details?.description || offering.description || '').toLowerCase();
-            return tName.includes(q) || cName.includes(q) || tDesc.includes(q);
+            const testName = offering.test_details?.name || offering.test?.name || offering.name || '';
+            const testDesc = offering.test_details?.description || offering.test?.description || '';
+            const testCat = offering.test_details?.category_name || offering.test?.category_name || '';
+            return (
+              testName.toLowerCase().includes(q) ||
+              testDesc.toLowerCase().includes(q) ||
+              testCat.toLowerCase().includes(q)
+            );
           });
         }
+      }
+
+      // If user is explicitly filtering by a specific test category or keyword,
+      // and this center offers 0 matching tests, exclude the center entirely!
+      if ((isCategoryFiltered || searchKeyword.trim()) && matchingTests.length === 0) {
+        return null;
       }
 
       // Check center category match
@@ -720,15 +816,18 @@ const resolveTestCategoryName = (val, testCats = []) => {
         centerCategoryMatches = cats.some(c => c.includes(cCat) || cCat.includes(c));
       }
 
+      if (!centerCategoryMatches) return null;
+
       return {
         ...center,
         matchingTests,
         allOffered,
         isCategoryFiltered,
-        isCenterMatch: centerCategoryMatches && (matchingTests.length > 0 || !isCategoryFiltered)
+        isCenterMatch: true
       };
-    }).filter(center => center.isCenterMatch);
-  }, [diagnosticCenters, selectedTestCategory, selectedCenterCategory, searchKeyword, displayTestCategories]);
+    }).filter(Boolean);
+  }, [diagnosticCenters, division, district, area, selectedTestCategory, selectedCenterCategory, searchKeyword, displayTestCategories]);
+
 
   // Toggle expanded other tests for a center
   const toggleExpandCenter = (centerId) => {
@@ -738,14 +837,6 @@ const resolveTestCategoryName = (val, testCats = []) => {
       else next.add(centerId);
       return next;
     });
-  };
-
-  const handleResetFilters = () => {
-    setSelectedCenterCategory('all');
-    setSelectedTestCategory('all');
-    setSelectedLocation('All Bangladesh');
-    setSelectedArea('All Areas');
-    setSearchKeyword('');
   };
 
   return (
@@ -798,7 +889,7 @@ const resolveTestCategoryName = (val, testCats = []) => {
                 <Filter className="w-4 h-4 text-emerald-400" />
                 <span>Diagnostic Center & Test Search Filters</span>
               </div>
-              {(selectedCenterCategory !== 'all' || selectedTestCategory !== 'all' || selectedLocation !== 'All Bangladesh' || selectedArea !== 'All Areas' || searchKeyword) && (
+              {(selectedCenterCategory !== 'all' || selectedTestCategory !== 'all' || division !== 'All Bangladesh' || district !== 'All Districts' || area !== 'All Areas' || searchKeyword) && (
                 <button
                   type="button"
                   onClick={handleResetFilters}
@@ -810,7 +901,7 @@ const resolveTestCategoryName = (val, testCats = []) => {
               )}
             </div>
 
-            <div className={`grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 ${selectedLocation !== 'All Bangladesh' ? 'xl:grid-cols-6' : 'xl:grid-cols-5'} gap-3`}>
+            <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 gap-3">
               
               {/* 1. Test Category Filter */}
               <div>
@@ -830,43 +921,7 @@ const resolveTestCategoryName = (val, testCats = []) => {
                 </select>
               </div>
 
-              {/* 2a. City / Location Filter */}
-              <div>
-                <label className="block text-[11px] font-bold text-slate-400 mb-1 flex items-center gap-1">
-                  <MapPin className="w-3 h-3 text-emerald-400" />
-                  <span>Location</span>
-                </label>
-                <select
-                  value={selectedLocation}
-                  onChange={(e) => handleLocationChange(e.target.value)}
-                  className="w-full bg-slate-900 border border-slate-700 rounded-xl px-3 py-2.5 text-xs text-white focus:outline-none focus:border-emerald-400 font-bold cursor-pointer"
-                >
-                  {LOCATIONS.map(loc => (
-                    <option key={loc} value={loc}>{loc}</option>
-                  ))}
-                </select>
-              </div>
-
-              {/* 2b. Area / Thana Filter */}
-              {selectedLocation !== 'All Bangladesh' && (
-                <div>
-                  <label className="block text-[11px] font-bold text-emerald-400 mb-1">
-                    Area / Thana ({selectedLocation})
-                  </label>
-                  <select
-                    value={selectedArea}
-                    onChange={(e) => setSelectedArea(e.target.value)}
-                    className="w-full bg-slate-900 border border-emerald-500/80 rounded-xl px-3 py-2.5 text-xs text-white focus:outline-none focus:border-emerald-400 font-bold cursor-pointer"
-                  >
-                    <option value="All Areas">All Areas in {selectedLocation}</option>
-                    {(CITY_THANAS[selectedLocation] || []).map(th => (
-                      <option key={th} value={th}>{th}</option>
-                    ))}
-                  </select>
-                </div>
-              )}
-
-              {/* 3. Diagnostic Center Category Filter */}
+              {/* 2. Diagnostic Center Category Filter */}
               <div>
                 <label className="block text-[11px] font-bold text-teal-400 mb-1 flex items-center gap-1">
                   <Building2 className="w-3 h-3 text-teal-400" />
@@ -884,6 +939,24 @@ const resolveTestCategoryName = (val, testCats = []) => {
                     </option>
                   ))}
                 </select>
+              </div>
+
+              {/* 3. Cascading Location Filter (Division -> District -> Thana) */}
+              <div className="sm:col-span-2 lg:col-span-1 xl:col-span-1">
+                <CascadingLocationFilter
+                  division={division}
+                  district={district}
+                  area={area}
+                  onChange={({ division: d, district: dist, area: a }) => {
+                    setDivision(d);
+                    setDistrict(dist);
+                    setArea(a);
+                  }}
+                  theme="dark"
+                  accent="teal"
+                  layout="inline"
+                  showLabels={true}
+                />
               </div>
 
               {/* 4. Search Keyword Filter */}
@@ -904,7 +977,7 @@ const resolveTestCategoryName = (val, testCats = []) => {
             </div>
 
             {/* ACTIVE FILTER PILLS */}
-            {(selectedTestCategory !== 'all' || selectedCenterCategory !== 'all' || selectedLocation !== 'All Bangladesh' || selectedArea !== 'All Areas' || searchKeyword) && (
+            {(selectedTestCategory !== 'all' || selectedCenterCategory !== 'all' || division !== 'All Bangladesh' || district !== 'All Districts' || area !== 'All Areas' || searchKeyword) && (
               <div className="flex flex-wrap items-center gap-2 pt-2 border-t border-slate-700/60 text-xs">
                 <span className="text-slate-400 font-bold">Active Filters:</span>
                 
@@ -922,17 +995,24 @@ const resolveTestCategoryName = (val, testCats = []) => {
                   </span>
                 )}
 
-                {selectedLocation !== 'All Bangladesh' && (
+                {division !== 'All Bangladesh' && (
                   <span className="inline-flex items-center gap-1.5 px-3 py-1 rounded-full bg-emerald-500/20 text-emerald-300 border border-emerald-500/40 font-bold">
-                    <span>City: {selectedLocation}</span>
-                    <button onClick={() => { setSelectedLocation('All Bangladesh'); setSelectedArea('All Areas'); }} className="hover:text-white cursor-pointer"><X className="w-3 h-3" /></button>
+                    <span>Division: {division}</span>
+                    <button onClick={() => { setDivision('All Bangladesh'); setDistrict('All Districts'); setArea('All Areas'); }} className="hover:text-white cursor-pointer"><X className="w-3 h-3" /></button>
                   </span>
                 )}
 
-                {selectedArea !== 'All Areas' && (
+                {district !== 'All Districts' && (
                   <span className="inline-flex items-center gap-1.5 px-3 py-1 rounded-full bg-emerald-500/20 text-emerald-300 border border-emerald-500/40 font-bold">
-                    <span>Area: {selectedArea}</span>
-                    <button onClick={() => setSelectedArea('All Areas')} className="hover:text-white cursor-pointer"><X className="w-3 h-3" /></button>
+                    <span>District: {district}</span>
+                    <button onClick={() => { setDistrict('All Districts'); setArea('All Areas'); }} className="hover:text-white cursor-pointer"><X className="w-3 h-3" /></button>
+                  </span>
+                )}
+
+                {area !== 'All Areas' && (
+                  <span className="inline-flex items-center gap-1.5 px-3 py-1 rounded-full bg-emerald-500/20 text-emerald-300 border border-emerald-500/40 font-bold">
+                    <span>Area: {area}</span>
+                    <button onClick={() => setArea('All Areas')} className="hover:text-white cursor-pointer"><X className="w-3 h-3" /></button>
                   </span>
                 )}
 
@@ -944,6 +1024,7 @@ const resolveTestCategoryName = (val, testCats = []) => {
                 )}
               </div>
             )}
+
 
           </div>
 

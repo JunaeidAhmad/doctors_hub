@@ -2,7 +2,14 @@ import React, { useState, useEffect } from 'react';
 import { XCircle, CheckCircle } from 'lucide-react';
 import { useAdminContext } from '../../context/AdminContext';
 import { api } from '../../../../services/api';
-import { CITY_THANAS, LOCATIONS } from '../../../../data/constants';
+import { 
+  DIVISIONS, 
+  DIVISION_DISTRICTS, 
+  DISTRICT_THANAS, 
+  findDivisionForDistrict, 
+  getDistrictsForDivision, 
+  getThanasForDistrict 
+} from '../../../../data/constants';
 
 export default function DiagnosticModal() {
   const {
@@ -20,8 +27,9 @@ export default function DiagnosticModal() {
   const [diagnosticForm, setDiagnosticForm] = useState({
     id: '',
     name: 'Popular Diagnostic Centre',
-    city: 'Dhaka',
+    division: 'Dhaka',
     district: 'Dhaka',
+    area: 'Panthapath',
     branch: 'Panthapath',
     isCustomBranch: false,
     customBranch: '',
@@ -59,18 +67,23 @@ export default function DiagnosticModal() {
         });
       }
 
+      const initialDistrict = editingDiagnostic.district || editingDiagnostic.city || 'Dhaka';
+      const initialDivision = editingDiagnostic.division || findDivisionForDistrict(initialDistrict) || 'Dhaka';
+      const initialArea = editingDiagnostic.area || editingDiagnostic.branch || 'Panthapath';
+
       setDiagnosticForm({
         id: editingDiagnostic.id,
         name: editingDiagnostic.name,
-        city: editingDiagnostic.district || editingDiagnostic.city || 'Dhaka',
-        district: editingDiagnostic.district || editingDiagnostic.city || 'Dhaka',
-        branch: editingDiagnostic.branch || 'Main',
+        division: initialDivision,
+        district: initialDistrict,
+        area: initialArea,
+        branch: editingDiagnostic.branch || initialArea || 'Main',
         isCustomBranch: false,
         customBranch: '',
         category_id: catId,
         test_category_ids: existingTestCatIds,
         service_ids: srvIds,
-        address: editingDiagnostic.address || '',
+        address: editingDiagnostic.address || editingDiagnostic.address_line || '',
         phone: editingDiagnostic.phone || '',
         email: editingDiagnostic.email || '',
         rating: editingDiagnostic.rating || 4.85,
@@ -87,8 +100,9 @@ export default function DiagnosticModal() {
       setDiagnosticForm({
         id: '',
         name: '',
-        city: 'Dhaka',
+        division: 'Dhaka',
         district: 'Dhaka',
+        area: 'Panthapath',
         branch: 'Panthapath',
         isCustomBranch: false,
         customBranch: '',
@@ -117,15 +131,18 @@ export default function DiagnosticModal() {
     e.preventDefault();
     try {
       const finalBranch = diagnosticForm.isCustomBranch ? diagnosticForm.customBranch : diagnosticForm.branch;
+      const finalArea = diagnosticForm.area || finalBranch;
       const payload = {
         name: diagnosticForm.name,
-        city: diagnosticForm.city,
-        district: diagnosticForm.city,
+        division: diagnosticForm.division,
+        district: diagnosticForm.district,
+        area: finalArea,
         branch: finalBranch,
+        address_line: diagnosticForm.address,
+        address: diagnosticForm.address,
         category_id: diagnosticForm.category_id || null,
         test_category_ids: diagnosticForm.test_category_ids || [],
         service_ids: diagnosticForm.service_ids,
-        address: diagnosticForm.address,
         phone: diagnosticForm.phone,
         email: diagnosticForm.email,
         rating: parseFloat(diagnosticForm.rating) || 4.85,
@@ -139,13 +156,11 @@ export default function DiagnosticModal() {
         is_verified: diagnosticForm.is_verified
       };
 
-
-      let savedCenter;
       if (editingDiagnostic) {
-        savedCenter = await api.updateDiagnosticCenter(editingDiagnostic.id, payload);
+        await api.updateDiagnosticCenter(editingDiagnostic.id, payload);
         showNotification(`Diagnostic Center "${payload.name} (${payload.branch})" updated!`);
       } else {
-        savedCenter = await api.createDiagnosticCenter(payload);
+        await api.createDiagnosticCenter(payload);
         showNotification(`Diagnostic Center "${payload.name} (${payload.branch})" created!`);
       }
 
@@ -164,7 +179,7 @@ export default function DiagnosticModal() {
     setDiagnosticForm({ ...diagnosticForm, service_ids: updated });
   };
 
-  const toggleDiagnosticTestCategorySelection = (catId) => {
+  const toggleTestCategorySelection = (catId) => {
     const current = diagnosticForm.test_category_ids || [];
     const updated = current.includes(catId)
       ? current.filter(id => id !== catId)
@@ -172,28 +187,29 @@ export default function DiagnosticModal() {
     setDiagnosticForm({ ...diagnosticForm, test_category_ids: updated });
   };
 
+  const currentDistricts = getDistrictsForDivision(diagnosticForm.division);
+  const currentThanas = getThanasForDistrict(diagnosticForm.district);
+
   return (
-    <div className="fixed inset-0 z-50 bg-slate-950/80 backdrop-blur-md flex items-center justify-center p-3 sm:p-6 overflow-hidden">
-      <div className="bg-slate-900 border border-slate-800 rounded-3xl p-5 sm:p-6 max-w-2xl w-full max-h-[90vh] flex flex-col shadow-2xl">
+    <div className="fixed inset-0 z-50 bg-slate-950/80 backdrop-blur-md flex items-center justify-center p-4 overflow-y-auto">
+      <div className="bg-slate-900 border border-slate-800 rounded-3xl p-6 max-w-2xl w-full space-y-4 my-8 shadow-2xl">
         
         {/* FIXED HEADER */}
-        <div className="flex items-center justify-between border-b border-slate-800 pb-3 shrink-0">
-          <h3 className="text-base sm:text-lg font-bold text-white">
-            {editingDiagnostic ? 'Edit Diagnostic Center' : 'Add New Diagnostics / Branch'}
+        <div className="flex items-center justify-between border-b border-slate-800 pb-3">
+          <h3 className="text-lg font-bold text-white">
+            {editingDiagnostic ? 'Edit Diagnostic Center' : 'Add New Diagnostic Center'}
           </h3>
-          <button onClick={() => setShowDiagnosticModal(false)} className="text-slate-400 hover:text-white p-1">
-            <XCircle className="w-5 h-5" />
+          <button onClick={() => setShowDiagnosticModal(false)} className="text-slate-400 hover:text-white transition cursor-pointer">
+            <XCircle className="w-6 h-6" />
           </button>
         </div>
 
-        {/* FORM CONTAINING SCROLLABLE BODY & STICKY FOOTER */}
-        <form onSubmit={handleSaveDiagnostic} className="flex-1 flex flex-col overflow-hidden min-h-0 pt-3">
-          
-          {/* SCROLLABLE BODY CONTENT */}
-          <div className="flex-1 overflow-y-auto pr-1.5 space-y-3.5 text-xs">
+        {/* FORM */}
+        <form onSubmit={handleSaveDiagnostic} className="space-y-4 text-xs">
+          <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
             
             {/* DIAGNOSTIC CENTER CATEGORY */}
-            <div>
+            <div className="md:col-span-2">
               <label className="block text-slate-300 font-semibold mb-1">Diagnostic Center Category *</label>
               <select
                 value={diagnosticForm.category_id}
@@ -207,9 +223,8 @@ export default function DiagnosticModal() {
               </select>
             </div>
 
-
-            <div>
-              <label className="block text-slate-300 font-semibold mb-1">Diagnostic Center Name *</label>
+            <div className="md:col-span-2">
+              <label className="block text-slate-300 font-semibold mb-1">Center Name *</label>
               <input
                 type="text"
                 required
@@ -220,63 +235,111 @@ export default function DiagnosticModal() {
               />
             </div>
 
-            <div className="grid grid-cols-1 md:grid-cols-2 gap-3 bg-slate-950/60 p-3 rounded-2xl border border-slate-800/80">
-              <div>
-                <label className="block text-cyan-400 font-bold mb-1">Step 1: Select City *</label>
-                <select
-                  required
-                  value={diagnosticForm.city}
-                  onChange={e => {
-                    const newCity = e.target.value;
-                    const thanas = CITY_THANAS[newCity] || [];
-                    setDiagnosticForm({
-                      ...diagnosticForm,
-                      city: newCity,
-                      district: newCity,
-                      branch: thanas[0] || 'Main',
-                      isCustomBranch: false,
-                      customBranch: ''
-                    });
-                  }}
-                  className="w-full bg-slate-900 border border-cyan-500/50 rounded-xl px-3 py-2 text-white font-bold"
-                >
-                  {LOCATIONS.filter(l => l !== 'All Bangladesh').map(loc => (
-                    <option key={loc} value={loc}>{loc}</option>
-                  ))}
-                </select>
+            {/* 3-LEVEL LOCATION NARROWING: Division -> District -> Area (Thana) */}
+            <div className="md:col-span-2 bg-slate-950/70 p-3.5 rounded-2xl border border-slate-800/80 space-y-3">
+              <div className="text-[11px] font-extrabold uppercase tracking-wider text-cyan-400">
+                Location & Branch Setup (Division &gt; District &gt; Thana)
               </div>
 
-              <div>
-                <label className="block text-cyan-400 font-bold mb-1">Step 2: Select Branch (Thanas in {diagnosticForm.city}) *</label>
-                <select
-                  required
-                  value={diagnosticForm.isCustomBranch ? 'Other' : diagnosticForm.branch}
-                  onChange={e => {
-                    const val = e.target.value;
-                    if (val === 'Other') {
-                      setDiagnosticForm({ ...diagnosticForm, isCustomBranch: true, branch: 'Other' });
-                    } else {
-                      setDiagnosticForm({ ...diagnosticForm, isCustomBranch: false, branch: val, customBranch: '' });
-                    }
-                  }}
-                  className="w-full bg-slate-900 border border-cyan-500/50 rounded-xl px-3 py-2 text-white font-bold"
-                >
-                  {(CITY_THANAS[diagnosticForm.city] || []).map(th => (
-                    <option key={th} value={th}>{th} Branch</option>
-                  ))}
-                  <option value="Other">+ Other (Custom Branch Name)</option>
-                </select>
+              <div className="grid grid-cols-1 sm:grid-cols-3 gap-3">
+                {/* Division */}
+                <div>
+                  <label className="block text-slate-300 font-semibold mb-1">1. Division *</label>
+                  <select
+                    required
+                    value={diagnosticForm.division}
+                    onChange={e => {
+                      const newDiv = e.target.value;
+                      const dists = getDistrictsForDivision(newDiv);
+                      const newDist = dists[0] || 'Dhaka';
+                      const thanas = getThanasForDistrict(newDist);
+                      setDiagnosticForm({
+                        ...diagnosticForm,
+                        division: newDiv,
+                        district: newDist,
+                        area: thanas[0] || '',
+                        branch: thanas[0] || 'Main',
+                        isCustomBranch: false,
+                        customBranch: ''
+                      });
+                    }}
+                    className="w-full bg-slate-900 border border-cyan-500/40 rounded-xl px-2.5 py-2 text-white font-bold"
+                  >
+                    {DIVISIONS.map(div => (
+                      <option key={div} value={div}>{div} Division</option>
+                    ))}
+                  </select>
+                </div>
+
+                {/* District */}
+                <div>
+                  <label className="block text-slate-300 font-semibold mb-1">2. District *</label>
+                  <select
+                    required
+                    value={diagnosticForm.district}
+                    onChange={e => {
+                      const newDist = e.target.value;
+                      const thanas = getThanasForDistrict(newDist);
+                      setDiagnosticForm({
+                        ...diagnosticForm,
+                        district: newDist,
+                        area: thanas[0] || '',
+                        branch: thanas[0] || 'Main',
+                        isCustomBranch: false,
+                        customBranch: ''
+                      });
+                    }}
+                    className="w-full bg-slate-900 border border-cyan-500/40 rounded-xl px-2.5 py-2 text-white font-bold"
+                  >
+                    {currentDistricts.map(dist => (
+                      <option key={dist} value={dist}>{dist}</option>
+                    ))}
+                  </select>
+                </div>
+
+                {/* Area / Thana */}
+                <div>
+                  <label className="block text-slate-300 font-semibold mb-1">3. Thana / Branch *</label>
+                  <select
+                    required
+                    value={diagnosticForm.isCustomBranch ? 'Other' : diagnosticForm.branch}
+                    onChange={e => {
+                      const val = e.target.value;
+                      if (val === 'Other') {
+                        setDiagnosticForm({ ...diagnosticForm, isCustomBranch: true, branch: 'Other' });
+                      } else {
+                        setDiagnosticForm({ 
+                          ...diagnosticForm, 
+                          isCustomBranch: false, 
+                          branch: val, 
+                          area: val,
+                          customBranch: '' 
+                        });
+                      }
+                    }}
+                    className="w-full bg-slate-900 border border-cyan-500/40 rounded-xl px-2.5 py-2 text-white font-bold"
+                  >
+                    {currentThanas.map(th => (
+                      <option key={th} value={th}>{th}</option>
+                    ))}
+                    <option value="Other">+ Custom Branch Name</option>
+                  </select>
+                </div>
               </div>
 
               {diagnosticForm.isCustomBranch && (
-                <div className="md:col-span-2 mt-1">
-                  <label className="block text-slate-300 font-semibold mb-1">Specify Custom Branch Name *</label>
+                <div className="mt-2">
+                  <label className="block text-slate-300 font-semibold mb-1">Custom Branch / Area Name *</label>
                   <input
                     type="text"
                     required
                     placeholder="e.g. Panthapath Main Branch"
                     value={diagnosticForm.customBranch}
-                    onChange={e => setDiagnosticForm({ ...diagnosticForm, customBranch: e.target.value })}
+                    onChange={e => setDiagnosticForm({ 
+                      ...diagnosticForm, 
+                      customBranch: e.target.value,
+                      area: e.target.value 
+                    })}
                     className="w-full bg-slate-900 border border-slate-700 rounded-xl px-3 py-2 text-white"
                   />
                 </div>

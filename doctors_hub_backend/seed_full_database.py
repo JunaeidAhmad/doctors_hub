@@ -12,10 +12,11 @@ django.setup()
 
 from django.utils.text import slugify
 from django.utils import timezone
-from accounts.models import User
+from accounts.models import User, Role
 from facilities.models import (
     Location, HospitalCategory, HospitalService, Hospital,
-    DiagnosticCenterCategory, DiagnosticService, DiagnosticCenter, Chamber
+    DiagnosticCenterCategory, DiagnosticService, DiagnosticCenter, Chamber,
+    FacilityMembership
 )
 from doctors.models import (
     DoctorSpecialty, Doctor, DoctorAffiliation, AffiliationSchedule
@@ -98,31 +99,48 @@ def inject_data():
     # ----------------------------------------------------
     print("\n[1/18] Seeding Users...")
     sample_users = [
-        {"phone": "01711000001", "first_name": "Rafiqul", "last_name": "Islam", "is_staff": False, "is_super": False},
-        {"phone": "01812000002", "first_name": "Nusrat", "last_name": "Jahan", "is_staff": False, "is_super": False},
-        {"phone": "01913000003", "first_name": "Tanvir", "last_name": "Ahmed", "is_staff": False, "is_super": False},
-        {"phone": "01614000004", "first_name": "Sadia", "last_name": "Sultana", "is_staff": False, "is_super": False},
-        {"phone": "01715000005", "first_name": "Kamrul", "last_name": "Hasan", "is_staff": True, "is_super": False},
-        {"phone": "01816000006", "first_name": "Farzana", "last_name": "Akter", "is_staff": False, "is_super": False},
-        {"phone": "01917000007", "first_name": "Mahmudul", "last_name": "Karim", "is_staff": False, "is_super": False},
-        {"phone": "01718000008", "first_name": "Ayesha", "last_name": "Siddiqua", "is_staff": False, "is_super": False},
-        {"phone": "01819000009", "first_name": "Zubair", "last_name": "Hossain", "is_staff": False, "is_super": False},
-        {"phone": "01700000000", "first_name": "Admin", "last_name": "User", "is_staff": True, "is_super": True},
+        # Requested Test Users for Admin Panel
+        {"phone": "0178787878", "password": "super123", "first_name": "Super", "last_name": "Admin", "role": Role.SUPER_ADMIN, "is_staff": True, "is_super": True},
+        {"phone": "0177777777", "password": "popular123", "first_name": "Popular", "last_name": "Admin", "role": Role.FACILITY_ADMIN, "is_staff": False, "is_super": False},
+        {"phone": "0188888888", "password": "square123", "first_name": "Square", "last_name": "Admin", "role": Role.FACILITY_ADMIN, "is_staff": False, "is_super": False},
+        {"phone": "0199999999", "password": "harun123", "first_name": "Prof. Dr.", "last_name": "Harun-Or-Rashid", "role": Role.DOCTOR, "is_staff": False, "is_super": False},
+
+        # Other Demo Users
+        {"phone": "01711000001", "password": "Password123!", "first_name": "Dr. Rafiqul", "last_name": "Islam", "role": Role.DOCTOR, "is_staff": False, "is_super": False},
+        {"phone": "01812000002", "password": "Password123!", "first_name": "Nusrat", "last_name": "Jahan", "role": "", "is_staff": False, "is_super": False},
+        {"phone": "01913000003", "password": "Password123!", "first_name": "Tanvir", "last_name": "Ahmed", "role": "", "is_staff": False, "is_super": False},
+        {"phone": "01614000004", "password": "Password123!", "first_name": "Sadia", "last_name": "Sultana", "role": "", "is_staff": False, "is_super": False},
+        {"phone": "01715000005", "password": "Password123!", "first_name": "Kamrul", "last_name": "Hasan", "role": Role.FACILITY_ADMIN, "is_staff": False, "is_super": False},
+        {"phone": "01816000006", "password": "Password123!", "first_name": "Farzana", "last_name": "Akter", "role": "", "is_staff": False, "is_super": False},
+        {"phone": "01917000007", "password": "Password123!", "first_name": "Mahmudul", "last_name": "Karim", "role": "", "is_staff": False, "is_super": False},
+        {"phone": "01718000008", "password": "Password123!", "first_name": "Ayesha", "last_name": "Siddiqua", "role": "", "is_staff": False, "is_super": False},
+        {"phone": "01819000009", "password": "Password123!", "first_name": "Zubair", "last_name": "Hossain", "role": "", "is_staff": False, "is_super": False},
+        {"phone": "01700000000", "password": "Password123!", "first_name": "Admin", "last_name": "User", "role": Role.SUPER_ADMIN, "is_staff": True, "is_super": True},
     ]
 
     created_users = []
     for u_data in sample_users:
         user = User.objects.filter(phone_number=u_data["phone"]).first()
+        raw_pass = u_data.get("password", "Password123!")
         if not user:
             user = User.objects.create_user(
                 phone_number=u_data["phone"],
-                password="Password123!",
+                password=raw_pass,
                 first_name=u_data["first_name"],
                 last_name=u_data["last_name"],
+                role=u_data.get("role", ""),
                 is_staff=u_data["is_staff"],
                 is_superuser=u_data["is_super"],
                 is_active=True
             )
+        else:
+            user.role = u_data.get("role", "")
+            user.is_staff = u_data["is_staff"]
+            user.is_superuser = u_data["is_super"]
+            user.first_name = u_data["first_name"]
+            user.last_name = u_data["last_name"]
+            user.set_password(raw_pass)
+            user.save()
         created_users.append(user)
     print(f"✓ Users ready: {User.objects.count()} total.")
 
@@ -399,6 +417,51 @@ def inject_data():
             if s_name in spec_map:
                 doc.specialties.add(spec_map[s_name])
         doc_map[d["name"]] = doc
+
+    # Link doctors to doctor users
+    doc_user_harun = User.objects.filter(phone_number="0199999999").first()
+    if doc_user_harun and "Prof. Dr. Harun-Or-Rashid" in doc_map:
+        harun_doc = doc_map["Prof. Dr. Harun-Or-Rashid"]
+        harun_doc.user = doc_user_harun
+        harun_doc.save()
+
+    doc_user_1 = User.objects.filter(phone_number="01711000001").first()
+    if doc_user_1 and "Prof. Dr. A. B. M. Abdullah" in doc_map:
+        first_doc = doc_map["Prof. Dr. A. B. M. Abdullah"]
+        first_doc.user = doc_user_1
+        first_doc.save()
+
+    # Link facility admin users to specific facilities
+    # Popular Diagnostic Centre (Dhanmondi Branch) -> 0177777777
+    popular_admin = User.objects.filter(phone_number="0177777777").first()
+    popular_loc = Location.objects.filter(name__icontains="Popular Diagnostic Centre", branch__icontains="Dhanmondi").first()
+    if popular_admin and popular_loc:
+        FacilityMembership.objects.get_or_create(
+            user=popular_admin,
+            location=popular_loc,
+            defaults={"role": FacilityMembership.MemberRole.ADMIN}
+        )
+
+    # Square Hospital (Panthapath Main) -> 0188888888
+    square_admin = User.objects.filter(phone_number="0188888888").first()
+    square_loc = Location.objects.filter(name__icontains="Square Hospital").first()
+    if square_admin and square_loc:
+        FacilityMembership.objects.get_or_create(
+            user=square_admin,
+            location=square_loc,
+            defaults={"role": FacilityMembership.MemberRole.ADMIN}
+        )
+
+    # General facility admin demo user (01715000005)
+    fac_user = User.objects.filter(phone_number="01715000005").first()
+    if fac_user:
+        for loc in Location.objects.filter(location_type__in=["hospital", "diagnostic_center"]):
+            FacilityMembership.objects.get_or_create(
+                user=fac_user,
+                location=loc,
+                defaults={"role": FacilityMembership.MemberRole.ADMIN}
+            )
+
     print(f"✓ Doctors ready: {Doctor.objects.count()} total.")
 
     # ----------------------------------------------------

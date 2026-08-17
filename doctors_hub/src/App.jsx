@@ -105,16 +105,34 @@ export default function App() {
 
   // Execute Search Navigation Handler (Decoupled per Domain)
   const handleExecuteSearch = (mode, param, locationOverride) => {
-    if (locationOverride) {
-      setSelectedLocation(locationOverride);
+    let locDiv = '';
+    let locDist = '';
+    let locArea = '';
+
+    if (typeof locationOverride === 'object' && locationOverride !== null) {
+      locDiv = locationOverride.division || '';
+      locDist = locationOverride.district || '';
+      locArea = locationOverride.area || '';
+    } else if (typeof locationOverride === 'string') {
+      locDiv = locationOverride;
     }
-    const loc = locationOverride || selectedLocation;
+
+    const appendLocationParams = (queryParams) => {
+      if (locDiv && locDiv !== 'All Bangladesh') queryParams.set('division', locDiv);
+      if (locDist && locDist !== 'All Districts') queryParams.set('district', locDist);
+      if (locArea && locArea !== 'All Areas') queryParams.set('area', locArea);
+      if (locDist && locDist !== 'All Districts') {
+        queryParams.set('loc', locDist);
+      } else if (locDiv && locDiv !== 'All Bangladesh') {
+        queryParams.set('loc', locDiv);
+      }
+    };
 
     if (mode === 'doctor') {
       if (param !== undefined && param !== null) setSelectedSpecialty(param);
       const targetSpec = param !== undefined && param !== null ? param : selectedSpecialty;
       const queryParams = new URLSearchParams();
-      if (loc && loc !== 'All Bangladesh') queryParams.set('loc', loc);
+      appendLocationParams(queryParams);
       if (targetSpec) queryParams.set('spec', targetSpec);
       const queryStr = queryParams.toString();
       navigate(`/doctor-search${queryStr ? `?${queryStr}` : ''}`);
@@ -123,14 +141,14 @@ export default function App() {
       if (param !== undefined && param !== null) setSelectedTest(param);
       const targetTest = param !== undefined && param !== null ? param : selectedTest;
       const queryParams = new URLSearchParams();
-      if (loc && loc !== 'All Bangladesh') queryParams.set('loc', loc);
+      appendLocationParams(queryParams);
       if (targetTest) queryParams.set('testcat', targetTest);
       const queryStr = queryParams.toString();
       navigate(`/diagnostics-search${queryStr ? `?${queryStr}` : ''}`);
       setActiveTab('diagnostics');
     } else if (mode === 'diagnostics_center') {
       const queryParams = new URLSearchParams();
-      if (loc && loc !== 'All Bangladesh') queryParams.set('loc', loc);
+      appendLocationParams(queryParams);
       if (param) queryParams.set('spec', param);
       const queryStr = queryParams.toString();
       navigate(`/diagnostics-search${queryStr ? `?${queryStr}` : ''}`);
@@ -139,7 +157,7 @@ export default function App() {
       if (param !== undefined && param !== null) setSelectedHospitalCategory(param);
       const targetCat = param !== undefined && param !== null ? param : selectedHospitalCategory;
       const queryParams = new URLSearchParams();
-      if (loc && loc !== 'All Bangladesh') queryParams.set('loc', loc);
+      appendLocationParams(queryParams);
       if (targetCat) queryParams.set('cat', targetCat);
       const queryStr = queryParams.toString();
       navigate(`/hospitals${queryStr ? `?${queryStr}` : ''}`);
@@ -150,6 +168,7 @@ export default function App() {
     }
     window.scrollTo({ top: 0, behavior: 'smooth' });
   };
+
 
   const handleNavClick = (tabId) => {
     setActiveTab(tabId);

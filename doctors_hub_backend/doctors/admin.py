@@ -1,24 +1,29 @@
 from django.contrib import admin
 from .models import DoctorSpecialty, Doctor, DoctorAffiliation, AffiliationSchedule
 
+
 class AffiliationScheduleInline(admin.TabularInline):
     model = AffiliationSchedule
     extra = 1
 
+
 class DoctorAffiliationInline(admin.TabularInline):
     model = DoctorAffiliation
     extra = 1
+
 
 @admin.register(DoctorSpecialty)
 class DoctorSpecialtyAdmin(admin.ModelAdmin):
     list_display = ('id', 'name', 'slug', 'icon')
     search_fields = ('name', 'slug')
 
+
 @admin.register(Doctor)
 class DoctorAdmin(admin.ModelAdmin):
-    list_display = ('id', 'name', 'qualification', 'experience')
-    search_fields = ('name', 'qualification')
+    list_display = ('id', 'name', 'user', 'qualification', 'experience')
+    search_fields = ('name', 'qualification', 'user__phone_number')
     inlines = [DoctorAffiliationInline]
+
 
 @admin.register(DoctorAffiliation)
 class DoctorAffiliationAdmin(admin.ModelAdmin):
@@ -26,6 +31,7 @@ class DoctorAffiliationAdmin(admin.ModelAdmin):
     list_filter = ('consultation_type',)
     search_fields = ('doctor__name', 'location__name')
     inlines = [AffiliationScheduleInline]
+
 
 @admin.register(AffiliationSchedule)
 class AffiliationScheduleAdmin(admin.ModelAdmin):

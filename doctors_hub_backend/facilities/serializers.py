@@ -5,9 +5,11 @@ from .models import (
 )
 
 class HospitalCategorySerializer(serializers.ModelSerializer):
+    hospital_count = serializers.IntegerField(read_only=True, required=False)
+
     class Meta:
         model = HospitalCategory
-        fields = ('id', 'name', 'slug', 'icon', 'description', 'count')
+        fields = ('id', 'name', 'slug', 'icon', 'description', 'count', 'hospital_count')
 
 
 class HospitalServiceSerializer(serializers.ModelSerializer):
@@ -23,39 +25,27 @@ class DiagnosticServiceSerializer(serializers.ModelSerializer):
 
 
 class DiagnosticCenterCategorySerializer(serializers.ModelSerializer):
+    center_count = serializers.IntegerField(read_only=True, required=False)
+
     class Meta:
         model = DiagnosticCenterCategory
-        fields = ('id', 'name', 'slug', 'icon', 'description')
+        fields = ('id', 'name', 'slug', 'icon', 'description', 'center_count')
 
 
 
 class LocationSerializer(serializers.ModelSerializer):
-    address_details = serializers.SerializerMethodField()
-
     class Meta:
         model = Location
         fields = (
             'id', 'location_type', 'name', 'branch', 'slug',
-            'address_line', 'area', 'city', 'district', 'division',
-            'postal_code', 'latitude', 'longitude', 'address_details',
+            'address_line', 'area', 'district', 'division',
             'phone', 'email', 'logo', 'image', 'description', 'tagline', 'badge',
             'rating', 'reviews_count', 'open_timing', 'is_verified', 'is_active', 'created_at'
         )
 
-    def get_address_details(self, obj):
-        return {
-            'address_line': obj.address_line,
-            'area': obj.area,
-            'city': obj.city,
-            'district': obj.district,
-            'division': obj.division,
-            'postal_code': obj.postal_code,
-            'latitude': str(obj.latitude) if obj.latitude is not None else None,
-            'longitude': str(obj.longitude) if obj.longitude is not None else None,
-        }
-
 # Backward-compatibility alias
 PracticeLocationSerializer = LocationSerializer
+
 
 
 
@@ -94,7 +84,6 @@ class HospitalSerializer(serializers.ModelSerializer):
                 'location_type': Location.LocationType.HOSPITAL,
                 'address_line': self.initial_data.get('address_line', self.initial_data.get('address', '')),
                 'area': self.initial_data.get('area', ''),
-                'city': self.initial_data.get('city', ''),
                 'district': self.initial_data.get('district', self.initial_data.get('city', 'Dhaka')),
                 'division': self.initial_data.get('division', self.initial_data.get('city', 'Dhaka')),
                 'phone': self.initial_data.get('phone', ''),
@@ -127,7 +116,7 @@ class HospitalSerializer(serializers.ModelSerializer):
         test_cat_ids = validated_data.pop('test_category_ids', None)
         if hasattr(self, 'initial_data') and instance.location:
             loc = instance.location
-            for field in ['name', 'branch', 'address_line', 'area', 'city', 'district', 'division', 'phone', 'email', 'description', 'tagline', 'badge', 'open_timing']:
+            for field in ['name', 'branch', 'address_line', 'area', 'district', 'division', 'phone', 'email', 'description', 'tagline', 'badge', 'open_timing']:
                 if field in self.initial_data:
                     setattr(loc, field, self.initial_data[field])
             if 'address' in self.initial_data and 'address_line' not in self.initial_data:
@@ -196,7 +185,6 @@ class DiagnosticCenterSerializer(serializers.ModelSerializer):
                 'location_type': Location.LocationType.DIAGNOSTIC_CENTER,
                 'address_line': self.initial_data.get('address_line', self.initial_data.get('address', '')),
                 'area': self.initial_data.get('area', ''),
-                'city': self.initial_data.get('city', ''),
                 'district': self.initial_data.get('district', self.initial_data.get('city', 'Dhaka')),
                 'division': self.initial_data.get('division', self.initial_data.get('city', 'Dhaka')),
                 'phone': self.initial_data.get('phone', ''),
@@ -229,7 +217,7 @@ class DiagnosticCenterSerializer(serializers.ModelSerializer):
         test_cat_ids = validated_data.pop('test_category_ids', None)
         if hasattr(self, 'initial_data') and instance.location:
             loc = instance.location
-            for field in ['name', 'branch', 'address_line', 'area', 'city', 'district', 'division', 'phone', 'email', 'description', 'tagline', 'badge', 'open_timing']:
+            for field in ['name', 'branch', 'address_line', 'area', 'district', 'division', 'phone', 'email', 'description', 'tagline', 'badge', 'open_timing']:
                 if field in self.initial_data:
                     setattr(loc, field, self.initial_data[field])
             if 'address' in self.initial_data and 'address_line' not in self.initial_data:
@@ -241,6 +229,7 @@ class DiagnosticCenterSerializer(serializers.ModelSerializer):
             if 'is_verified' in self.initial_data:
                 loc.is_verified = bool(self.initial_data['is_verified'])
             loc.save()
+
 
         instance = super().update(instance, validated_data)
         

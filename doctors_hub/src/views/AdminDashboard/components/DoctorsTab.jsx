@@ -2,15 +2,23 @@ import React from 'react';
 import { Search, Plus, Edit, Trash2, Stethoscope } from 'lucide-react';
 import { useAdminContext } from '../context/AdminContext';
 import DoctorModal from './modals/DoctorModal';
+import DoctorProfileEditor from './doctor/DoctorProfileEditor';
 
 export default function DoctorsTab() {
   const {
+    isDoctor,
+    isFacilityAdmin,
     doctors,
     searchTerm,
     setSearchTerm,
     handleOpenDoctorModal,
     handleDeleteDoctor
   } = useAdminContext();
+
+  // If logged in as Doctor, show dedicated single doctor profile editor
+  if (isDoctor) {
+    return <DoctorProfileEditor />;
+  }
 
   return (
     <>
@@ -26,12 +34,14 @@ export default function DoctorsTab() {
               className="w-full bg-slate-950 border border-slate-800 rounded-xl pl-9 pr-4 py-2 text-xs text-white placeholder-slate-500 focus:outline-none focus:border-teal-500"
             />
           </div>
-          <button
-            onClick={() => handleOpenDoctorModal()}
-            className="flex items-center gap-2 px-4 py-2.5 bg-teal-600 hover:bg-teal-500 text-white font-bold text-xs rounded-xl transition shadow-lg shadow-teal-600/20"
-          >
-            <Plus className="w-4 h-4" /> Add New Specialist Doctor
-          </button>
+          {!isFacilityAdmin && (
+            <button
+              onClick={() => handleOpenDoctorModal()}
+              className="flex items-center gap-2 px-4 py-2.5 bg-teal-600 hover:bg-teal-500 text-white font-bold text-xs rounded-xl transition shadow-lg shadow-teal-600/20 cursor-pointer"
+            >
+              <Plus className="w-4 h-4" /> Add New Specialist Doctor
+            </button>
+          )}
         </div>
 
         <div className="overflow-x-auto">
@@ -73,18 +83,20 @@ export default function DoctorsTab() {
                       <div className="text-slate-300 text-[11px]">
                         {(d.affiliations || []).map((aff, idx) => (
                           <div key={idx} className="truncate max-w-xs">
-                            • {aff.hospital?.name || aff.diagnostic_center?.name || 'Private Chamber'} ({aff.consultation_type || 'Doctor'})
+                            • {aff.hospital?.name || aff.diagnostic_center?.name || aff.chamber_name || 'Private Chamber'} ({aff.consultation_type || 'Doctor'})
                           </div>
                         ))}
                       </div>
                     </td>
                     <td className="py-4 px-4 text-right space-x-2 whitespace-nowrap">
-                      <button onClick={() => handleOpenDoctorModal(d)} className="p-2 bg-slate-800 text-slate-300 rounded-lg hover:bg-slate-700">
+                      <button onClick={() => handleOpenDoctorModal(d)} className="p-2 bg-slate-800 text-slate-300 rounded-lg hover:bg-slate-700 cursor-pointer">
                         <Edit className="w-4 h-4" />
                       </button>
-                      <button onClick={() => handleDeleteDoctor(d.id, d.name)} className="p-2 bg-rose-500/20 text-rose-400 rounded-lg hover:bg-rose-500/30">
-                        <Trash2 className="w-4 h-4" />
-                      </button>
+                      {!isFacilityAdmin && (
+                        <button onClick={() => handleDeleteDoctor(d.id, d.name)} className="p-2 bg-rose-500/20 text-rose-400 rounded-lg hover:bg-rose-500/30 cursor-pointer">
+                          <Trash2 className="w-4 h-4" />
+                        </button>
+                      )}
                     </td>
                   </tr>
                 ))}

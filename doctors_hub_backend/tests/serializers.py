@@ -3,10 +3,15 @@ from .models import TestCategory, Test, FacilityTest
 from facilities.models import Location
 from facilities.serializers import LocationSerializer
 
+
 class TestCategorySerializer(serializers.ModelSerializer):
+    test_count = serializers.IntegerField(read_only=True, required=False)
+    center_count = serializers.IntegerField(read_only=True, required=False)
+
     class Meta:
         model = TestCategory
-        fields = ('id', 'name', 'slug', 'icon', 'description', 'is_active', 'order')
+        fields = ('id', 'name', 'slug', 'icon', 'description', 'is_active', 'order', 'test_count', 'center_count')
+
 
 class TestSerializer(serializers.ModelSerializer):
     category_id = serializers.PrimaryKeyRelatedField(
@@ -14,7 +19,6 @@ class TestSerializer(serializers.ModelSerializer):
     )
     category_name = serializers.CharField(source='category.name', read_only=True)
     category_slug = serializers.CharField(source='category.slug', read_only=True)
-
 
     class Meta:
         model = Test
@@ -24,14 +28,15 @@ class TestSerializer(serializers.ModelSerializer):
             'report_time_hours', 'is_active'
         )
 
+
 class FacilityTestSerializer(serializers.ModelSerializer):
     test_details = TestSerializer(source='test', read_only=True)
     test_id = serializers.PrimaryKeyRelatedField(
-        queryset=Test.objects.all(), write_only=True, source='test'
+        queryset=Test.objects.all(), write_only=True, source='test', required=False
     )
     location_details = LocationSerializer(source='location', read_only=True)
     location_id = serializers.PrimaryKeyRelatedField(
-        queryset=Location.objects.all(), write_only=True, source='location'
+        queryset=Location.objects.all(), write_only=True, source='location', required=False
     )
     facility_name = serializers.CharField(source='location.name', read_only=True, default='')
 
@@ -42,3 +47,11 @@ class FacilityTestSerializer(serializers.ModelSerializer):
             'discounted_price', 'original_price', 'discount', 'report_time', 'is_available',
             'home_sample_collection', 'updated_at', 'facility_name'
         )
+
+    def to_internal_value(self, data):
+        mutable_data = data.copy() if hasattr(data, 'copy') else dict(data)
+        if 'location' in mutable_data and not mutable_data.get('location_id'):
+            mutable_data['location_id'] = mutable_data['location']
+        if 'test' in mutable_data and not mutable_data.get('test_id'):
+            mutable_data['test_id'] = mutable_data['test']
+        return super().to_internal_value(mutable_data)
