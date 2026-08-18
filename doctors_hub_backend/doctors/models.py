@@ -29,11 +29,13 @@ class Doctor(models.Model):
         on_delete=models.SET_NULL,
         related_name="doctor_profile",
     )
+    bmdc_number = models.CharField(max_length=50, unique=True, null=True, blank=True)
     name = models.CharField(max_length=200)
     slug = models.SlugField(max_length=250, unique=True, blank=True)
     specialties = models.ManyToManyField(DoctorSpecialty, related_name='doctors')
     qualification = models.TextField()
     experience = models.CharField(max_length=50)
+    is_verified = models.BooleanField(default=False)
 
     def save(self, *args, **kwargs):
         if not self.slug:
@@ -42,6 +44,7 @@ class Doctor(models.Model):
 
     def __str__(self):
         return f"Dr. {self.name}"
+
 
 
 class DoctorAffiliation(models.Model):

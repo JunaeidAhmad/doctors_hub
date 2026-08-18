@@ -150,43 +150,44 @@ export function AdminProvider({ children, currentUser }) {
   };
 
   const loadInitialDataBatched = async () => {
-    const fetchItem = async (apiCall, setter, fallback) => {
+    const fetchItem = async (fn, setter, fallback) => {
       try {
-        const data = await apiCall();
+        const data = await fn();
         setter(ensureArray(data, fallback));
       } catch (err) {
+        console.warn('Batched fetch error:', err);
         setter(fallback);
       }
     };
 
     // Slot 1: Core Hospitals, Tests, Doctors (starts immediately)
-    fetchItem(api.getHospitals, setHospitals, []);
-    fetchItem(api.getTests, setTests, []);
-    fetchItem(api.getDoctors, setDoctors, []);
+    fetchItem(() => api.getHospitals(), setHospitals, []);
+    fetchItem(() => api.getTests(), setTests, []);
+    fetchItem(() => api.getDoctors(), setDoctors, []);
 
     setLoading(false);
 
-    // Slot 2: Diagnostic Centers & Branch Tests (150ms delay)
+    // Slot 2: Diagnostic Centers & Branch Tests (100ms delay)
     setTimeout(() => {
-      fetchItem(api.getDiagnosticCenters, setDiagnosticCenters, []);
-      fetchItem(api.getDiagnosticCenterTests, setBranchTests, []);
-      fetchItem(api.getSpecialties, setDoctorSpecialties, []);
-    }, 150);
+      fetchItem(() => api.getDiagnosticCenters(), setDiagnosticCenters, []);
+      fetchItem(() => api.getDiagnosticCenterTests(), setBranchTests, []);
+      fetchItem(() => api.getSpecialties(), setDoctorSpecialties, []);
+    }, 100);
 
-    // Slot 3: Categories & Services (350ms delay)
+    // Slot 3: Categories & Services (200ms delay)
     setTimeout(() => {
-      fetchItem(api.getHospitalCategories, setHospitalCategories, []);
-      fetchItem(api.getDiagnosticCenterCategories, setDiagnosticCategories, []);
-      fetchItem(api.getHospitalServices, setHospitalServices, []);
-    }, 350);
+      fetchItem(() => api.getHospitalCategories(), setHospitalCategories, []);
+      fetchItem(() => api.getDiagnosticCenterCategories(), setDiagnosticCategories, []);
+      fetchItem(() => api.getHospitalServices(), setHospitalServices, []);
+    }, 200);
 
-    // Slot 4: Test Categories & Bookings (550ms delay)
+    // Slot 4: Test Categories & Bookings (300ms delay)
     setTimeout(() => {
-      fetchItem(api.getDiagnosticServices, setDiagnosticServices, []);
-      fetchItem(api.getTestCategories, setTestCategories, []);
-      fetchItem(api.getDoctorBookings, setDoctorBookings, []);
-      fetchItem(api.getLabBookings, setLabBookings, []);
-    }, 550);
+      fetchItem(() => api.getDiagnosticServices(), setDiagnosticServices, []);
+      fetchItem(() => api.getTestCategories(), setTestCategories, []);
+      fetchItem(() => api.getDoctorBookings(), setDoctorBookings, []);
+      fetchItem(() => api.getLabBookings(), setLabBookings, []);
+    }, 300);
   };
 
   const showNotification = (msg) => {

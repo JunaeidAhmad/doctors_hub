@@ -109,7 +109,7 @@ def test_anonymous_can_create_booking_publicly(api_client, managed_location, doc
     fac_test = FacilityTestFactory(location=managed_location, test=test_obj)
 
     # Doctor booking
-    doc_res = api_client.post("/api/doctor-bookings/", {
+    doc_res = api_client.post("/api/bookings/doctor/", {
         "affiliation": str(affiliation.id),
         "patient_name": "Rahim Ahmed",
         "patient_phone": "01711999888",
@@ -120,7 +120,7 @@ def test_anonymous_can_create_booking_publicly(api_client, managed_location, doc
     assert doc_res.data["patient_name"] == "Rahim Ahmed"
 
     # Lab booking
-    lab_res = api_client.post("/api/lab-bookings/", {
+    lab_res = api_client.post("/api/bookings/lab/", {
         "facility_test": str(fac_test.id),
         "patient_name": "Karim Mia",
         "patient_phone": "01811999777",
@@ -134,11 +134,12 @@ def test_anonymous_can_create_booking_publicly(api_client, managed_location, doc
 @pytest.mark.django_db
 def test_anonymous_cannot_enumerate_bookings(api_client):
     # Anonymous users cannot view bookings list
-    res_doc = api_client.get("/api/doctor-bookings/")
+    res_doc = api_client.get("/api/bookings/doctor/")
     assert res_doc.status_code in (status.HTTP_401_UNAUTHORIZED, status.HTTP_403_FORBIDDEN)
 
-    res_lab = api_client.get("/api/lab-bookings/")
+    res_lab = api_client.get("/api/bookings/lab/")
     assert res_lab.status_code in (status.HTTP_401_UNAUTHORIZED, status.HTTP_403_FORBIDDEN)
+
 
 
 # =========================================================================
@@ -220,7 +221,7 @@ def test_facility_admin_sees_only_own_location_bookings(api_client, facility_adm
         date="2026-09-01", slot="10:00"
     )
 
-    res = api_client.get("/api/doctor-bookings/")
+    res = api_client.get("/api/bookings/doctor/")
     assert res.status_code == status.HTTP_200_OK
     booking_ids = [b["id"] for b in (res.data.get("results") if isinstance(res.data, dict) else res.data)]
     assert str(b_managed.id) in booking_ids
@@ -260,7 +261,7 @@ def test_doctor_can_manage_own_affiliation_schedules(api_client, doctor_user, do
     schedule = AffiliationScheduleFactory(affiliation=aff, day_of_week="Monday")
 
     # Doctor updates own schedule -> 200 OK
-    res = api_client.patch(f"/api/affiliation-schedules/{schedule.id}/", {
+    res = api_client.patch(f"/api/schedules/{schedule.id}/", {
         "start_time": "14:00:00",
         "end_time": "18:00:00"
     })
@@ -275,10 +276,11 @@ def test_doctor_cannot_edit_other_doctor_schedules(api_client, doctor_user, othe
     aff_other = DoctorAffiliationFactory(doctor=other_doctor_profile, location=managed_location)
     schedule_other = AffiliationScheduleFactory(affiliation=aff_other, day_of_week="Tuesday")
 
-    res = api_client.patch(f"/api/affiliation-schedules/{schedule_other.id}/", {
+    res = api_client.patch(f"/api/schedules/{schedule_other.id}/", {
         "start_time": "15:00:00"
     })
     assert res.status_code == status.HTTP_403_FORBIDDEN
+
 
 
 # =========================================================================

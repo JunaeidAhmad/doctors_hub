@@ -43,14 +43,9 @@ class LocationSerializer(serializers.ModelSerializer):
             'rating', 'reviews_count', 'open_timing', 'is_verified', 'is_active', 'created_at'
         )
 
-# Backward-compatibility alias
-PracticeLocationSerializer = LocationSerializer
-
-
-
-
 
 class HospitalSerializer(serializers.ModelSerializer):
+
     location_details = LocationSerializer(source='location', read_only=True)
     location_id = serializers.PrimaryKeyRelatedField(
         queryset=Location.objects.all(), write_only=True, source='location'

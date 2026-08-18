@@ -44,11 +44,8 @@ class LocationViewSet(RoleScopedQuerysetMixin, viewsets.ModelViewSet):
             raise exceptions.PermissionDenied("Only administrators can create new facility locations.")
 
 
-# Backward compatibility
-PracticeLocationViewSet = LocationViewSet
-
-
 class HospitalCategoryViewSet(viewsets.ModelViewSet):
+
     queryset = HospitalCategory.objects.all().order_by('name')
     serializer_class = HospitalCategorySerializer
     permission_classes = (IsSuperAdminOrReadOnly,)

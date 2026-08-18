@@ -917,4 +917,91 @@ export const api = {
     });
     return handleResponse(res);
   },
+
+  // Onboarding Self-Registration
+  async registerFacility(data) {
+    const res = await fetchWithTimeout(`${BASE_URL}/auth/register/facility/`, {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify(data),
+    });
+    const json = await handleResponse(res);
+    if (json?.access) {
+      this.setSession(json.access, json.refresh, json.user);
+    }
+    return json;
+  },
+
+  async registerDoctor(data) {
+    const res = await fetchWithTimeout(`${BASE_URL}/auth/register/doctor/`, {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify(data),
+    });
+    const json = await handleResponse(res);
+    if (json?.access) {
+      this.setSession(json.access, json.refresh, json.user);
+    }
+    return json;
+  },
+
+  // Delegated Facility Staff Management
+  async getFacilityStaff(locationId) {
+    const res = await fetchWithTimeout(`${BASE_URL}/facilities/${locationId}/staff/`, {
+      headers: getHeaders(),
+    });
+    return handleResponse(res);
+  },
+
+  async addFacilityStaff(locationId, staffData) {
+    const res = await fetchWithTimeout(`${BASE_URL}/facilities/${locationId}/staff/`, {
+      method: 'POST',
+      headers: getHeaders(),
+      body: JSON.stringify(staffData),
+    });
+    return handleResponse(res);
+  },
+
+  async deleteFacilityStaff(locationId, userId) {
+    const res = await fetchWithTimeout(`${BASE_URL}/facilities/${locationId}/staff/${userId}/`, {
+      method: 'DELETE',
+      headers: getHeaders(),
+    });
+    if (res.status === 204) return true;
+    return handleResponse(res);
+  },
+
+  // Super Admin Verification Queue & Platform Admins
+  async getVerificationQueue() {
+    const res = await fetchWithTimeout(`${BASE_URL}/admin/verifications/`, {
+      headers: getHeaders(),
+    });
+    return handleResponse(res);
+  },
+
+  async performVerificationAction(entityType, entityId, action = 'approve') {
+    const res = await fetchWithTimeout(`${BASE_URL}/admin/verifications/${entityType}/${entityId}/`, {
+      method: 'POST',
+      headers: getHeaders(),
+      body: JSON.stringify({ action }),
+    });
+    return handleResponse(res);
+  },
+
+  async getPlatformAdmins() {
+    const res = await fetchWithTimeout(`${BASE_URL}/admin/platform-admins/`, {
+      headers: getHeaders(),
+    });
+    return handleResponse(res);
+  },
+
+  async createPlatformAdmin(data) {
+    const res = await fetchWithTimeout(`${BASE_URL}/admin/platform-admins/`, {
+      method: 'POST',
+      headers: getHeaders(),
+      body: JSON.stringify(data),
+    });
+    return handleResponse(res);
+  },
 };
+

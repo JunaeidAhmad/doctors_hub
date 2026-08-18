@@ -1,23 +1,24 @@
 import React from 'react';
 import { 
   Sparkles, Plus, Building2, FlaskConical, Stethoscope, TestTube, 
-  Calendar, Edit, Trash2, Activity, Layers, ArrowUpRight 
+  Calendar, Edit, Trash2, Activity, Layers, ArrowUpRight, RefreshCw 
 } from 'lucide-react';
 import { useAdminContext } from '../../context/AdminContext';
 
 export default function SuperAdminOverview() {
   const {
-    hospitals,
-    diagnosticCenters,
-    doctors,
-    tests,
-    doctorBookings,
-    labBookings,
-    doctorSpecialties,
-    hospitalCategories,
-    diagnosticCategories,
-    hospitalServices,
-    diagnosticServices,
+    hospitals = [],
+    diagnosticCenters = [],
+    doctors = [],
+    tests = [],
+    doctorBookings = [],
+    labBookings = [],
+    doctorSpecialties = [],
+    hospitalCategories = [],
+    diagnosticCategories = [],
+    hospitalServices = [],
+    diagnosticServices = [],
+    loading,
     handleOpenHospitalModal,
     handleOpenDiagnosticModal,
     handleOpenDoctorModal,
@@ -34,6 +35,16 @@ export default function SuperAdminOverview() {
     handleDeleteDiagService,
     setActiveTab
   } = useAdminContext();
+
+  const safeHospitals = hospitals || [];
+  const safeDiagnostics = diagnosticCenters || [];
+  const safeDoctors = doctors || [];
+  const safeTests = tests || [];
+  const safeDocBookings = doctorBookings || [];
+  const safeLabBookings = labBookings || [];
+  const safeDoctorSpecs = doctorSpecialties || [];
+  const safeHospitalCats = hospitalCategories || [];
+  const safeDiagCats = diagnosticCategories || [];
 
   return (
     <div className="space-y-6">
@@ -84,7 +95,7 @@ export default function SuperAdminOverview() {
             <Building2 className="w-5 h-5 group-hover:scale-110 transition-transform" />
             <span className="text-[10px] font-bold bg-emerald-500/20 text-emerald-300 px-2 py-0.5 rounded border border-emerald-500/30">Hospitals</span>
           </div>
-          <div className="text-2xl font-black text-white">{hospitals.length}</div>
+          <div className="text-2xl font-black text-white">{safeHospitals.length}</div>
           <div className="text-xs text-slate-400 font-semibold mt-1">Hospitals</div>
         </div>
 
@@ -93,7 +104,7 @@ export default function SuperAdminOverview() {
             <FlaskConical className="w-5 h-5 group-hover:scale-110 transition-transform" />
             <span className="text-[10px] font-bold bg-cyan-500/20 text-cyan-300 px-2 py-0.5 rounded border border-cyan-500/30">Diagnostics</span>
           </div>
-          <div className="text-2xl font-black text-white">{diagnosticCenters.length}</div>
+          <div className="text-2xl font-black text-white">{safeDiagnostics.length}</div>
           <div className="text-xs text-slate-400 font-semibold mt-1">Diagnostic Branches</div>
         </div>
 
@@ -102,7 +113,7 @@ export default function SuperAdminOverview() {
             <Stethoscope className="w-5 h-5 group-hover:scale-110 transition-transform" />
             <span className="text-[10px] font-bold bg-teal-500/20 text-teal-300 px-2 py-0.5 rounded border border-teal-500/30">Doctors</span>
           </div>
-          <div className="text-2xl font-black text-white">{doctors.length}</div>
+          <div className="text-2xl font-black text-white">{safeDoctors.length}</div>
           <div className="text-xs text-slate-400 font-semibold mt-1">Specialist Doctors</div>
         </div>
 
@@ -111,7 +122,7 @@ export default function SuperAdminOverview() {
             <TestTube className="w-5 h-5 group-hover:scale-110 transition-transform" />
             <span className="text-[10px] font-bold bg-purple-500/20 text-purple-300 px-2 py-0.5 rounded border border-purple-500/30">Tests</span>
           </div>
-          <div className="text-2xl font-black text-white">{tests.length}</div>
+          <div className="text-2xl font-black text-white">{safeTests.length}</div>
           <div className="text-xs text-slate-400 font-semibold mt-1">Base Tests</div>
         </div>
 
@@ -120,7 +131,7 @@ export default function SuperAdminOverview() {
             <Calendar className="w-5 h-5 group-hover:scale-110 transition-transform" />
             <span className="text-[10px] font-bold bg-amber-500/20 text-amber-300 px-2 py-0.5 rounded border border-amber-500/30">Serials</span>
           </div>
-          <div className="text-2xl font-black text-white">{doctorBookings.length}</div>
+          <div className="text-2xl font-black text-white">{safeDocBookings.length}</div>
           <div className="text-xs text-slate-400 font-semibold mt-1">Doctor Serials</div>
         </div>
 
@@ -129,7 +140,7 @@ export default function SuperAdminOverview() {
             <Calendar className="w-5 h-5 group-hover:scale-110 transition-transform" />
             <span className="text-[10px] font-bold bg-rose-500/20 text-rose-300 px-2 py-0.5 rounded border border-rose-500/30">Pickups</span>
           </div>
-          <div className="text-2xl font-black text-white">{labBookings.length}</div>
+          <div className="text-2xl font-black text-white">{safeLabBookings.length}</div>
           <div className="text-xs text-slate-400 font-semibold mt-1">Lab Pickups</div>
         </div>
       </div>
@@ -142,29 +153,32 @@ export default function SuperAdminOverview() {
           <div className="flex items-center justify-between mb-4 border-b border-slate-800 pb-3">
             <div className="flex items-center gap-2">
               <Stethoscope className="w-4 h-4 text-teal-400" />
-              <h3 className="font-bold text-sm text-white">Doctor Specialties ({doctorSpecialties.length})</h3>
+              <h3 className="font-bold text-sm text-white">Doctor Specialties ({safeDoctorSpecs.length})</h3>
             </div>
             <button
-              onClick={() => handleOpenDoctorSpecModal()}
-              className="p-1.5 bg-teal-500/20 hover:bg-teal-500/30 text-teal-300 rounded-lg text-xs font-bold flex items-center gap-1 transition"
+              onClick={() => handleOpenDoctorSpecModal && handleOpenDoctorSpecModal()}
+              className="p-1.5 bg-teal-500/20 hover:bg-teal-500/30 text-teal-300 rounded-lg text-xs font-bold flex items-center gap-1 transition cursor-pointer"
             >
               <Plus className="w-3.5 h-3.5" /> Add
             </button>
           </div>
           <div className="space-y-2 max-h-56 overflow-y-auto pr-1 text-xs">
-            {doctorSpecialties.map(spec => (
+            {safeDoctorSpecs.map(spec => (
               <div key={spec.id} className="flex items-center justify-between p-2.5 rounded-xl bg-slate-950/80 border border-slate-800/80 hover:border-teal-500/30">
                 <span className="text-slate-200 font-medium">{spec.name}</span>
                 <div className="flex items-center gap-1">
-                  <button onClick={() => handleOpenDoctorSpecModal(spec)} className="p-1 text-slate-400 hover:text-teal-400">
+                  <button onClick={() => handleOpenDoctorSpecModal && handleOpenDoctorSpecModal(spec)} className="p-1 text-slate-400 hover:text-teal-400 cursor-pointer">
                     <Edit className="w-3.5 h-3.5" />
                   </button>
-                  <button onClick={() => handleDeleteDoctorSpec(spec.id, spec.name)} className="p-1 text-slate-400 hover:text-rose-400">
+                  <button onClick={() => handleDeleteDoctorSpec && handleDeleteDoctorSpec(spec.id, spec.name)} className="p-1 text-slate-400 hover:text-rose-400 cursor-pointer">
                     <Trash2 className="w-3.5 h-3.5" />
                   </button>
                 </div>
               </div>
             ))}
+            {safeDoctorSpecs.length === 0 && (
+              <div className="text-center py-4 text-slate-500 text-xs">No doctor specialties found.</div>
+            )}
           </div>
         </div>
 
@@ -173,29 +187,32 @@ export default function SuperAdminOverview() {
           <div className="flex items-center justify-between mb-4 border-b border-slate-800 pb-3">
             <div className="flex items-center gap-2">
               <Building2 className="w-4 h-4 text-emerald-400" />
-              <h3 className="font-bold text-sm text-white">Hospital Categories ({hospitalCategories.length})</h3>
+              <h3 className="font-bold text-sm text-white">Hospital Categories ({safeHospitalCats.length})</h3>
             </div>
             <button
-              onClick={() => handleOpenHospitalCatModal()}
-              className="p-1.5 bg-emerald-500/20 hover:bg-emerald-500/30 text-emerald-300 rounded-lg text-xs font-bold flex items-center gap-1 transition"
+              onClick={() => handleOpenHospitalCatModal && handleOpenHospitalCatModal()}
+              className="p-1.5 bg-emerald-500/20 hover:bg-emerald-500/30 text-emerald-300 rounded-lg text-xs font-bold flex items-center gap-1 transition cursor-pointer"
             >
               <Plus className="w-3.5 h-3.5" /> Add
             </button>
           </div>
           <div className="space-y-2 max-h-56 overflow-y-auto pr-1 text-xs">
-            {hospitalCategories.map(cat => (
+            {safeHospitalCats.map(cat => (
               <div key={cat.id} className="flex items-center justify-between p-2.5 rounded-xl bg-slate-950/80 border border-slate-800/80 hover:border-emerald-500/30">
                 <span className="text-slate-200 font-medium">{cat.name}</span>
                 <div className="flex items-center gap-1">
-                  <button onClick={() => handleOpenHospitalCatModal(cat)} className="p-1 text-slate-400 hover:text-emerald-400">
+                  <button onClick={() => handleOpenHospitalCatModal && handleOpenHospitalCatModal(cat)} className="p-1 text-slate-400 hover:text-emerald-400 cursor-pointer">
                     <Edit className="w-3.5 h-3.5" />
                   </button>
-                  <button onClick={() => handleDeleteHospitalCat(cat.id, cat.name)} className="p-1 text-slate-400 hover:text-rose-400">
+                  <button onClick={() => handleDeleteHospitalCat && handleDeleteHospitalCat(cat.id, cat.name)} className="p-1 text-slate-400 hover:text-rose-400 cursor-pointer">
                     <Trash2 className="w-3.5 h-3.5" />
                   </button>
                 </div>
               </div>
             ))}
+            {safeHospitalCats.length === 0 && (
+              <div className="text-center py-4 text-slate-500 text-xs">No hospital categories found.</div>
+            )}
           </div>
         </div>
 
@@ -204,29 +221,32 @@ export default function SuperAdminOverview() {
           <div className="flex items-center justify-between mb-4 border-b border-slate-800 pb-3">
             <div className="flex items-center gap-2">
               <FlaskConical className="w-4 h-4 text-cyan-400" />
-              <h3 className="font-bold text-sm text-white">Diagnostics Categories ({diagnosticCategories.length})</h3>
+              <h3 className="font-bold text-sm text-white">Diagnostics Categories ({safeDiagCats.length})</h3>
             </div>
             <button
-              onClick={() => handleOpenDiagCatModal()}
-              className="p-1.5 bg-cyan-500/20 hover:bg-cyan-500/30 text-cyan-300 rounded-lg text-xs font-bold flex items-center gap-1 transition"
+              onClick={() => handleOpenDiagCatModal && handleOpenDiagCatModal()}
+              className="p-1.5 bg-cyan-500/20 hover:bg-cyan-500/30 text-cyan-300 rounded-lg text-xs font-bold flex items-center gap-1 transition cursor-pointer"
             >
               <Plus className="w-3.5 h-3.5" /> Add
             </button>
           </div>
           <div className="space-y-2 max-h-56 overflow-y-auto pr-1 text-xs">
-            {diagnosticCategories.map(cat => (
+            {safeDiagCats.map(cat => (
               <div key={cat.id} className="flex items-center justify-between p-2.5 rounded-xl bg-slate-950/80 border border-slate-800/80 hover:border-cyan-500/30">
                 <span className="text-slate-200 font-medium">{cat.name}</span>
                 <div className="flex items-center gap-1">
-                  <button onClick={() => handleOpenDiagCatModal(cat)} className="p-1 text-slate-400 hover:text-cyan-400">
+                  <button onClick={() => handleOpenDiagCatModal && handleOpenDiagCatModal(cat)} className="p-1 text-slate-400 hover:text-cyan-400 cursor-pointer">
                     <Edit className="w-3.5 h-3.5" />
                   </button>
-                  <button onClick={() => handleDeleteDiagCat(cat.id, cat.name)} className="p-1 text-slate-400 hover:text-rose-400">
+                  <button onClick={() => handleDeleteDiagCat && handleDeleteDiagCat(cat.id, cat.name)} className="p-1 text-slate-400 hover:text-rose-400 cursor-pointer">
                     <Trash2 className="w-3.5 h-3.5" />
                   </button>
                 </div>
               </div>
             ))}
+            {safeDiagCats.length === 0 && (
+              <div className="text-center py-4 text-slate-500 text-xs">No diagnostic categories found.</div>
+            )}
           </div>
         </div>
 

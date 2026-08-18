@@ -45,11 +45,14 @@ export default function AdminNavStrip() {
       { id: 'doctors', label: `Affiliated Doctors (${counts.doctors || 0})`, icon: Stethoscope },
       { id: 'doc-bookings', label: `Doctor Serials (${counts.docBookings || 0})`, icon: Calendar },
       { id: 'lab-bookings', label: `Lab Bookings (${counts.labBookings || 0})`, icon: Calendar },
+      { id: 'staff', label: 'Team & Staff', icon: Users },
     ];
   } else {
     // Super Admin (Full List)
     visibleTabs = [
       { id: 'overview', label: 'Overview', icon: Users },
+      { id: 'verification-queue', label: 'Verification Queue', icon: ShieldCheck },
+      { id: 'platform-admins', label: 'Platform Admins', icon: Crown },
       { id: 'hospitals', label: `Hospitals (${counts.hospitals || 0})`, icon: Building2 },
       { id: 'hospital-specs', label: `Hospital Categories (${counts.hospitalSpecs || 0})`, icon: Building2 },
       { id: 'hosp-services', label: `Hospital Services (${counts.hospServices || 0})`, icon: Activity },
@@ -64,8 +67,10 @@ export default function AdminNavStrip() {
       { id: 'add-tests-to-diagnostics', label: 'Add Tests to Diagnostics', icon: Layers },
       { id: 'branch-tests', label: `Diagnostic Test Prices (${counts.branchTests || 0})`, icon: Calculator },
       { id: 'lab-bookings', label: `Lab Bookings (${counts.labBookings || 0})`, icon: Calendar },
+      { id: 'staff', label: 'Facility Staff', icon: Users },
     ];
   }
+
 
   return (
     <div className="relative bg-slate-900/90 border border-slate-800/80 rounded-2xl p-2 shadow-xl backdrop-blur-md flex items-center gap-2">

@@ -18,8 +18,12 @@ import BookingsTab from './components/BookingsTab';
 import AddTestsToDiagnosticsTab from './components/AddTestsToDiagnosticsTab';
 import DoctorAffiliationsManager from './components/doctor/DoctorAffiliationsManager';
 import DoctorScheduleManager from './components/doctor/DoctorScheduleManager';
+import StaffTab from './components/StaffTab';
+import VerificationQueueTab from './components/VerificationQueueTab';
+import PlatformAdminsTab from './components/PlatformAdminsTab';
 
 function AdminDashboardContent({ onNavigate, onAdminLoggedIn }) {
+
   const {
     isStaff,
     isSuperAdmin,
@@ -153,6 +157,9 @@ function AdminDashboardContent({ onNavigate, onAdminLoggedIn }) {
 
         {/* ACTIVE TAB VIEWS */}
         {activeTab === 'overview' && <OverviewTab />}
+        {activeTab === 'verification-queue' && <VerificationQueueTab />}
+        {activeTab === 'platform-admins' && <PlatformAdminsTab />}
+        {activeTab === 'staff' && <StaffTab />}
         {activeTab === 'hospitals' && <HospitalsTab />}
         {activeTab === 'diagnostics' && <DiagnosticsTab />}
         {activeTab === 'add-tests-to-diagnostics' && <AddTestsToDiagnosticsTab />}
@@ -163,6 +170,7 @@ function AdminDashboardContent({ onNavigate, onAdminLoggedIn }) {
         {activeTab === 'branch-tests' && <BranchTestsTab />}
         {['doctor-specs', 'hospital-specs', 'diag-cats', 'hosp-services', 'diag-services', 'test-cats'].includes(activeTab) && <CategoriesTab />}
         {['doc-bookings', 'lab-bookings'].includes(activeTab) && <BookingsTab />}
+
 
       </main>
 

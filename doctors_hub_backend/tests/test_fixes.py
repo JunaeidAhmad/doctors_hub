@@ -141,14 +141,40 @@ def test_filterset_fields_covers_district_and_division():
 @pytest.mark.django_db
 def test_api_routes_work_without_aliases():
     client = APIClient()
-    endpoints = [
+    # Canonical endpoints return 200
+    canonical_endpoints = [
+        "/api/locations/",
+        "/api/hospitals/",
+        "/api/hospital-categories/",
+        "/api/diagnostic-centers/",
+        "/api/diagnostic-center-categories/",
+        "/api/specialties/",
+        "/api/doctors/",
+        "/api/affiliations/",
+        "/api/schedules/",
+        "/api/tests/",
+        "/api/facility-tests/",
+        "/api/test-categories/",
+    ]
+    for endpoint in canonical_endpoints:
+        res = client.get(endpoint)
+        assert res.status_code == 200, f"Failed GET request to canonical {endpoint}"
+
+    # Legacy alias routes return 404
+    legacy_alias_endpoints = [
         "/api/branches/",
+        "/api/practice-locations/",
         "/api/hospital-specialties/",
         "/api/doctor-specialties/",
+        "/api/doctor-affiliations/",
+        "/api/affiliation-schedules/",
         "/api/pathology-tests/",
         "/api/diagnostic-center-tests/",
         "/api/branch-tests/",
+        "/api/doctor-bookings/",
+        "/api/lab-bookings/",
     ]
-    for endpoint in endpoints:
+    for endpoint in legacy_alias_endpoints:
         res = client.get(endpoint)
-        assert res.status_code == 200, f"Failed GET request to {endpoint}"
+        assert res.status_code == 404, f"Legacy alias {endpoint} unexpectedly returned {res.status_code}"
+

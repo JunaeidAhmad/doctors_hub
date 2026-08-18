@@ -7,6 +7,7 @@ from django.utils import timezone
 class Role(models.TextChoices):
     SUPER_ADMIN = "super_admin", "Platform Super Admin"
     FACILITY_ADMIN = "facility_admin", "Facility Admin"
+    STAFF = "staff", "Facility Staff"
     DOCTOR = "doctor", "Doctor"
 
 
@@ -23,6 +24,7 @@ class UserManager(BaseUserManager):
         extra_fields.setdefault('is_staff', True)
         extra_fields.setdefault('is_superuser', True)
         extra_fields.setdefault('role', Role.SUPER_ADMIN)
+        extra_fields.setdefault('is_verified', True)
         return self.create_user(phone_number, password, **extra_fields)
 
 
@@ -33,6 +35,7 @@ class User(AbstractBaseUser, PermissionsMixin):
     last_name = models.CharField(max_length=50, blank=True)
     role = models.CharField(max_length=20, choices=Role.choices, blank=True, default="")
     is_active = models.BooleanField(default=True)
+    is_verified = models.BooleanField(default=False)
     is_staff = models.BooleanField(default=False)
     date_joined = models.DateTimeField(default=timezone.now)
 
@@ -48,7 +51,8 @@ class User(AbstractBaseUser, PermissionsMixin):
         if self.role == Role.SUPER_ADMIN:
             self.is_staff = True
             self.is_superuser = True
-        elif self.role in (Role.FACILITY_ADMIN, Role.DOCTOR, ""):
+            self.is_verified = True
+        elif self.role in (Role.FACILITY_ADMIN, Role.STAFF, Role.DOCTOR, ""):
             if not self.is_staff:
                 self.is_superuser = False
         super().save(*args, **kwargs)
@@ -62,11 +66,16 @@ class User(AbstractBaseUser, PermissionsMixin):
         return self.role == Role.FACILITY_ADMIN
 
     @property
+    def is_facility_staff(self):
+        return self.role == Role.STAFF
+
+    @property
     def is_doctor_role(self):
         return self.role == Role.DOCTOR
 
     @property
     def managed_location_ids(self):
-        if not self.is_facility_admin:
+        if not (self.is_facility_admin or self.is_facility_staff):
             return []
-        return list(self.facility_memberships.filter(role="admin").values_list("location_id", flat=True))
+        return list(self.facility_memberships.values_list("location_id", flat=True))
+

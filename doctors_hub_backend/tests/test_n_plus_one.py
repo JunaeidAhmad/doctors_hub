@@ -81,7 +81,7 @@ def test_doctor_bookings_list_no_n_plus_one():
     client = APIClient()
     client.force_authenticate(user=user)
     with CaptureQueriesContext(connection) as ctx:
-        res = client.get("/api/doctor/")
+        res = client.get("/api/bookings/doctor/")
         assert res.status_code == 200
         data = res.data.get("results", res.data)
         assert len(data) == 5
@@ -108,13 +108,14 @@ def test_lab_bookings_list_no_n_plus_one():
     client = APIClient()
     client.force_authenticate(user=user)
     with CaptureQueriesContext(connection) as ctx:
-        res = client.get("/api/lab/")
+        res = client.get("/api/bookings/lab/")
         assert res.status_code == 200
         data = res.data.get("results", res.data)
         assert len(data) == 5
 
     # 1 count query + 1 select_related query
     assert len(ctx.captured_queries) <= 3
+
 
 
 @pytest.mark.django_db

@@ -6,12 +6,9 @@ app_name = 'doctors'
 
 router = DefaultRouter()
 router.register(r'specialties', DoctorSpecialtyViewSet, basename='specialty')
-router.register(r'doctor-specialties', DoctorSpecialtyViewSet, basename='doctor-specialty')
 router.register(r'doctors', DoctorViewSet, basename='doctor')
 router.register(r'affiliations', DoctorAffiliationViewSet, basename='affiliation')
-router.register(r'doctor-affiliations', DoctorAffiliationViewSet, basename='doctor-affiliation')
 router.register(r'schedules', AffiliationScheduleViewSet, basename='schedule')
-router.register(r'affiliation-schedules', AffiliationScheduleViewSet, basename='affiliation-schedule')
 
 urlpatterns = [
     path('', include(router.urls)),
