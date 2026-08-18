@@ -19,7 +19,7 @@ import dj_database_url
 BASE_DIR = Path(__file__).resolve().parent.parent
 
 env = environ.Env(
-    DEBUG=(bool, False),
+    DEBUG=(bool, True),
 )
 _ENV_FILE = BASE_DIR / '.env'
 if _ENV_FILE.exists():
@@ -29,7 +29,7 @@ if _ENV_FILE.exists():
 # Quick-start development settings - unsuitable for production
 # See https://docs.djangoproject.com/en/5.2/howto/deployment/checklist/
 
-DEBUG = env('DEBUG', default=False)
+DEBUG = env.bool('DEBUG', default=True)
 
 if DEBUG:
     SECRET_KEY = env('SECRET_KEY', default='django-insecure-local-development-only')
