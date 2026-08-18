@@ -222,7 +222,17 @@ export default function StickyNavbar({ activeTab, setActiveTab, user, onOpenLogi
                 </div>
               )}
             </div>
-          ) : null}
+          ) : (
+            <div className="flex items-center gap-2">
+              <button
+                onClick={() => onOpenLogin && onOpenLogin()}
+                className="flex items-center gap-1.5 px-3.5 py-2 rounded-xl bg-emerald-600 hover:bg-emerald-700 text-white text-xs font-bold transition shadow-sm cursor-pointer"
+              >
+                <LogIn className="w-3.5 h-3.5" />
+                <span>Sign In</span>
+              </button>
+            </div>
+          )}
         </div>
 
 
@@ -269,7 +279,20 @@ export default function StickyNavbar({ activeTab, setActiveTab, user, onOpenLogi
                 Settings
               </button>
             </div>
-          ) : null}
+          ) : (
+            <div className="mb-3">
+              <button
+                onClick={() => {
+                  setMobileMenuOpen(false);
+                  onOpenLogin && onOpenLogin();
+                }}
+                className="flex w-full items-center justify-center gap-1.5 py-2.5 rounded-xl bg-emerald-600 text-white text-xs font-bold"
+              >
+                <LogIn className="w-4 h-4" />
+                <span>Sign In</span>
+              </button>
+            </div>
+          )}
 
           {isPrivileged && (
             <button

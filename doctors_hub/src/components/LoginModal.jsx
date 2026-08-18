@@ -152,17 +152,7 @@ export default function LoginModal({ onClose, onLoginSuccess, onOpenAdmin }) {
             </button>
           </div>
 
-          {onOpenAdmin && (
-            <div className="mt-3 pt-3 border-t border-slate-100 text-center">
-              <button
-                type="button"
-                onClick={onOpenAdmin}
-                className="text-[11px] text-teal-700 hover:text-teal-900 font-bold hover:underline inline-flex items-center gap-1 cursor-pointer"
-              >
-                <span>Hospital, Diagnostic Lab or Doctor? Partner & Admin Portal &rarr;</span>
-              </button>
-            </div>
-          )}
+
         </div>
 
       </div>

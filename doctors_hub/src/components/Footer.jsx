@@ -28,7 +28,7 @@ export default function Footer({ onSelectLocation, onNavigateAdmin }) {
             </div>
           </div>
 
-          {/* Col 2: Major Divisions & Cities 
+          {/* Col 2: Major Divisions & Cities */}
           <div>
             <h4 className="font-bold text-white uppercase tracking-wider text-xs mb-3">
               Divisions & Cities
@@ -46,7 +46,7 @@ export default function Footer({ onSelectLocation, onNavigateAdmin }) {
                 </li>
               ))}
             </ul>
-          </div> */}
+          </div>
 
           {/* Col 3: Quick Links */}
           <div>

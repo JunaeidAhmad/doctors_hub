@@ -41,16 +41,7 @@ export default function TopUtilityStrip({ selectedLocation, setSelectedLocation,
             <span>DGHS & BMDC Reg. Platform</span>
           </div>
 
-          {onNavigateAdmin && (
-            <button
-              onClick={onNavigateAdmin}
-              className="flex items-center gap-1 text-teal-400 hover:text-teal-300 font-bold transition-colors cursor-pointer bg-slate-800 hover:bg-slate-700/80 px-2.5 py-0.5 rounded-md border border-teal-500/30"
-              title="Hospital, Diagnostic Lab & Doctor Management Portal"
-            >
-              <LayoutDashboard className="w-3 h-3 text-teal-400" />
-              <span>Partner & Admin</span>
-            </button>
-          )}
+
         </div>
       </div>
     </div>
