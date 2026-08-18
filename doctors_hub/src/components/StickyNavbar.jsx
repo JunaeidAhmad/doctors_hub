@@ -222,26 +222,7 @@ export default function StickyNavbar({ activeTab, setActiveTab, user, onOpenLogi
                 </div>
               )}
             </div>
-          ) : (
-            <div className="flex items-center gap-2">
-              <button
-                onClick={() => setActiveTab('admin')}
-                className="flex items-center gap-1.5 px-3 py-2 rounded-xl border border-slate-200 bg-slate-50 hover:bg-slate-100 text-slate-700 hover:text-slate-900 text-xs font-bold transition shadow-xs cursor-pointer"
-                title="Sign in or register for Hospitals, Labs, Doctors & Admins"
-              >
-                <LayoutDashboard className="w-3.5 h-3.5 text-teal-600" />
-                <span>Partner Portal</span>
-              </button>
-
-              <button
-                onClick={() => onOpenLogin && onOpenLogin()}
-                className="flex items-center gap-1.5 px-3.5 py-2 rounded-xl bg-emerald-600 hover:bg-emerald-700 text-white text-xs font-bold transition shadow-sm cursor-pointer"
-              >
-                <LogIn className="w-3.5 h-3.5" />
-                <span>Sign In</span>
-              </button>
-            </div>
-          )}
+          ) : null}
         </div>
 
 
@@ -288,30 +269,7 @@ export default function StickyNavbar({ activeTab, setActiveTab, user, onOpenLogi
                 Settings
               </button>
             </div>
-          ) : (
-            <div className="grid grid-cols-2 gap-2 mb-3">
-              <button
-                onClick={() => {
-                  setMobileMenuOpen(false);
-                  setActiveTab('admin');
-                }}
-                className="flex items-center justify-center gap-1.5 py-2.5 rounded-xl border border-slate-200 bg-slate-50 text-slate-800 text-xs font-bold"
-              >
-                <LayoutDashboard className="w-4 h-4 text-teal-600" />
-                <span>Partner Portal</span>
-              </button>
-              <button
-                onClick={() => {
-                  setMobileMenuOpen(false);
-                  onOpenLogin && onOpenLogin();
-                }}
-                className="flex items-center justify-center gap-1.5 py-2.5 rounded-xl bg-emerald-600 text-white text-xs font-bold"
-              >
-                <LogIn className="w-4 h-4" />
-                <span>Sign In</span>
-              </button>
-            </div>
-          )}
+          ) : null}
 
           {isPrivileged && (
             <button

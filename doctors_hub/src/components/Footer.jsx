@@ -28,7 +28,7 @@ export default function Footer({ onSelectLocation, onNavigateAdmin }) {
             </div>
           </div>
 
-          {/* Col 2: Major Divisions & Cities */}
+          {/* Col 2: Major Divisions & Cities 
           <div>
             <h4 className="font-bold text-white uppercase tracking-wider text-xs mb-3">
               Divisions & Cities
@@ -46,7 +46,7 @@ export default function Footer({ onSelectLocation, onNavigateAdmin }) {
                 </li>
               ))}
             </ul>
-          </div>
+          </div> */}
 
           {/* Col 3: Quick Links */}
           <div>
@@ -56,15 +56,7 @@ export default function Footer({ onSelectLocation, onNavigateAdmin }) {
             <ul className="space-y-2">
               <li><a href="#search-doctors" className="hover:text-emerald-400 transition-colors">Search Doctors</a></li>
               <li><a href="#diagnostics" className="hover:text-emerald-400 transition-colors">Diagnostic & Lab Tests</a></li>
-              <li>
-                {onNavigateAdmin ? (
-                  <button onClick={onNavigateAdmin} className="text-teal-400 hover:text-teal-300 font-bold transition-colors cursor-pointer flex items-center gap-1">
-                    <span>👑 Partner & Admin Console</span>
-                  </button>
-                ) : (
-                  <a href="/admin" className="text-teal-400 hover:text-teal-300 font-bold transition-colors">Partner & Admin Console</a>
-                )}
-              </li>
+        
               <li><a href="#about" className="hover:text-emerald-400 transition-colors">About DoctorsHub BD</a></li>
               <li><a href="#contact" className="hover:text-emerald-400 transition-colors">24/7 Hotline 16263</a></li>
             </ul>
