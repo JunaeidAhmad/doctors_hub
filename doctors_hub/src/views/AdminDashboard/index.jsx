@@ -178,9 +178,9 @@ function AdminDashboardContent({ onNavigate, onAdminLoggedIn }) {
   );
 }
 
-export default function AdminDashboard({ currentUser, onNavigate, onAdminLoggedIn }) {
+export default function AdminDashboard({ currentUser, onNavigate, onAdminLoggedIn, onLogout }) {
   return (
-    <AdminProvider currentUser={currentUser}>
+    <AdminProvider currentUser={currentUser} onLogout={onLogout}>
       <AdminDashboardContent onNavigate={onNavigate} onAdminLoggedIn={onAdminLoggedIn} />
     </AdminProvider>
   );

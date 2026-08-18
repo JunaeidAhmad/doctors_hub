@@ -56,7 +56,15 @@ export default function SuperAdminOverview() {
             <Sparkles className="w-3.5 h-3.5" />
             <span>Platform Operations Command</span>
           </div>
-          <h2 className="text-2xl font-black text-white">Healthcare System Overview</h2>
+          <h2 className="text-2xl font-black text-white flex items-center gap-3">
+            <span>Healthcare System Overview</span>
+            {loading && (
+              <span className="inline-flex items-center gap-1.5 px-2.5 py-0.5 rounded-full bg-amber-500/20 border border-amber-500/30 text-amber-300 text-xs font-normal">
+                <RefreshCw className="w-3 h-3 animate-spin" />
+                <span>Syncing catalog data...</span>
+              </span>
+            )}
+          </h2>
           <p className="text-xs text-slate-400 mt-1">Real-time stats across all Hospitals, Diagnostics, Doctors & Master Test catalogs.</p>
         </div>
 
@@ -95,7 +103,9 @@ export default function SuperAdminOverview() {
             <Building2 className="w-5 h-5 group-hover:scale-110 transition-transform" />
             <span className="text-[10px] font-bold bg-emerald-500/20 text-emerald-300 px-2 py-0.5 rounded border border-emerald-500/30">Hospitals</span>
           </div>
-          <div className="text-2xl font-black text-white">{safeHospitals.length}</div>
+          <div className="text-2xl font-black text-white">
+            {loading ? <RefreshCw className="w-5 h-5 animate-spin text-emerald-400 inline" /> : safeHospitals.length}
+          </div>
           <div className="text-xs text-slate-400 font-semibold mt-1">Hospitals</div>
         </div>
 
@@ -104,7 +114,9 @@ export default function SuperAdminOverview() {
             <FlaskConical className="w-5 h-5 group-hover:scale-110 transition-transform" />
             <span className="text-[10px] font-bold bg-cyan-500/20 text-cyan-300 px-2 py-0.5 rounded border border-cyan-500/30">Diagnostics</span>
           </div>
-          <div className="text-2xl font-black text-white">{safeDiagnostics.length}</div>
+          <div className="text-2xl font-black text-white">
+            {loading ? <RefreshCw className="w-5 h-5 animate-spin text-cyan-400 inline" /> : safeDiagnostics.length}
+          </div>
           <div className="text-xs text-slate-400 font-semibold mt-1">Diagnostic Branches</div>
         </div>
 
@@ -113,7 +125,9 @@ export default function SuperAdminOverview() {
             <Stethoscope className="w-5 h-5 group-hover:scale-110 transition-transform" />
             <span className="text-[10px] font-bold bg-teal-500/20 text-teal-300 px-2 py-0.5 rounded border border-teal-500/30">Doctors</span>
           </div>
-          <div className="text-2xl font-black text-white">{safeDoctors.length}</div>
+          <div className="text-2xl font-black text-white">
+            {loading ? <RefreshCw className="w-5 h-5 animate-spin text-teal-400 inline" /> : safeDoctors.length}
+          </div>
           <div className="text-xs text-slate-400 font-semibold mt-1">Specialist Doctors</div>
         </div>
 
@@ -122,7 +136,9 @@ export default function SuperAdminOverview() {
             <TestTube className="w-5 h-5 group-hover:scale-110 transition-transform" />
             <span className="text-[10px] font-bold bg-purple-500/20 text-purple-300 px-2 py-0.5 rounded border border-purple-500/30">Tests</span>
           </div>
-          <div className="text-2xl font-black text-white">{safeTests.length}</div>
+          <div className="text-2xl font-black text-white">
+            {loading ? <RefreshCw className="w-5 h-5 animate-spin text-purple-400 inline" /> : safeTests.length}
+          </div>
           <div className="text-xs text-slate-400 font-semibold mt-1">Base Tests</div>
         </div>
 
@@ -131,7 +147,9 @@ export default function SuperAdminOverview() {
             <Calendar className="w-5 h-5 group-hover:scale-110 transition-transform" />
             <span className="text-[10px] font-bold bg-amber-500/20 text-amber-300 px-2 py-0.5 rounded border border-amber-500/30">Serials</span>
           </div>
-          <div className="text-2xl font-black text-white">{safeDocBookings.length}</div>
+          <div className="text-2xl font-black text-white">
+            {loading ? <RefreshCw className="w-5 h-5 animate-spin text-amber-400 inline" /> : safeDocBookings.length}
+          </div>
           <div className="text-xs text-slate-400 font-semibold mt-1">Doctor Serials</div>
         </div>
 
@@ -140,7 +158,9 @@ export default function SuperAdminOverview() {
             <Calendar className="w-5 h-5 group-hover:scale-110 transition-transform" />
             <span className="text-[10px] font-bold bg-rose-500/20 text-rose-300 px-2 py-0.5 rounded border border-rose-500/30">Pickups</span>
           </div>
-          <div className="text-2xl font-black text-white">{safeLabBookings.length}</div>
+          <div className="text-2xl font-black text-white">
+            {loading ? <RefreshCw className="w-5 h-5 animate-spin text-rose-400 inline" /> : safeLabBookings.length}
+          </div>
           <div className="text-xs text-slate-400 font-semibold mt-1">Lab Pickups</div>
         </div>
       </div>

@@ -10,7 +10,7 @@ function ensureArray(val, fallback = []) {
 
 const AdminContext = createContext(null);
 
-export function AdminProvider({ children, currentUser }) {
+export function AdminProvider({ children, currentUser, onLogout }) {
   const [activeTab, setActiveTab] = useState('overview'); 
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState('');
@@ -78,18 +78,20 @@ export function AdminProvider({ children, currentUser }) {
   const [branchTestBranchFilter, setBranchTestBranchFilter] = useState('');
   const [branchTestTestFilter, setBranchTestTestFilter] = useState('');
 
-  const [activeUser, setActiveUser] = useState(currentUser || api.getCurrentUser());
+  const [activeUser, setActiveUser] = useState(() => currentUser !== undefined ? currentUser : api.getCurrentUser());
 
-  const storedUser = activeUser || currentUser || api.getCurrentUser();
+  const storedUser = activeUser;
   const role = storedUser?.role || (storedUser?.is_superuser ? 'super_admin' : (storedUser?.phone_number === '01700000000' || storedUser?.phone === '01700000000' ? 'super_admin' : ''));
-  const isSuperAdmin = role === 'super_admin' || Boolean(storedUser?.is_superuser);
-  const isFacilityAdmin = role === 'facility_admin';
-  const isDoctor = role === 'doctor';
+  const isSuperAdmin = Boolean(storedUser) && (role === 'super_admin' || Boolean(storedUser?.is_superuser));
+  const isFacilityAdmin = Boolean(storedUser) && role === 'facility_admin';
+  const isDoctor = Boolean(storedUser) && role === 'doctor';
   const isStaff = Boolean(
-    isSuperAdmin || 
-    isFacilityAdmin || 
-    isDoctor || 
-    storedUser?.is_staff
+    storedUser && (
+      isSuperAdmin || 
+      isFacilityAdmin || 
+      isDoctor || 
+      storedUser?.is_staff
+    )
   );
 
   const handleLogout = () => {
@@ -99,14 +101,43 @@ export function AdminProvider({ children, currentUser }) {
     setHospitals([]);
     setDiagnosticCenters([]);
     setDoctors([]);
+    setTests([]);
     setBranchTests([]);
     setDoctorBookings([]);
     setLabBookings([]);
+    setDoctorSpecialties([]);
+    setHospitalCategories([]);
+    setDiagnosticCategories([]);
+    setHospitalServices([]);
+    setDiagnosticServices([]);
+    setTestCategories([]);
+    setShowHospitalModal(false);
+    setShowDiagnosticModal(false);
+    setShowDoctorModal(false);
+    setShowTestModal(false);
+    setShowBranchTestModal(false);
+    setShowDoctorSpecModal(false);
+    setShowHospitalCatModal(false);
+    setShowDiagCatModal(false);
+    setShowHospServiceModal(false);
+    setShowDiagServiceModal(false);
+    setShowTestCatModal(false);
+    setActiveTab('overview');
+    setError('');
+    setSuccessMsg('');
+    if (onLogout) {
+      onLogout();
+    }
   };
 
   useEffect(() => {
-    setActiveUser(currentUser || api.getCurrentUser());
-    loadInitialData();
+    const usr = currentUser !== undefined ? currentUser : api.getCurrentUser();
+    setActiveUser(usr);
+    if (usr) {
+      loadInitialData();
+    } else {
+      setLoading(false);
+    }
   }, [currentUser]);
 
   const loadInitialData = async () => {
@@ -252,6 +283,18 @@ export function AdminProvider({ children, currentUser }) {
     setShowDiagServiceModal(true);
   };
 
+  const handleOpenTestModal = (t = null) => {
+    setActiveTab('tests');
+    setEditingTest(t);
+    setShowTestModal(true);
+  };
+
+  const handleOpenTestCatModal = (tc = null) => {
+    setActiveTab('test-cats');
+    setEditingTestCat(tc);
+    setShowTestCatModal(true);
+  };
+
   // Delete helpers
   const handleDeleteHospital = async (id, name) => {
     if (!window.confirm(`Delete Hospital "${name}"?`)) return;
@@ -283,6 +326,28 @@ export function AdminProvider({ children, currentUser }) {
       loadInitialData();
     } catch (err) {
       alert(`Failed to delete doctor: ${err.message}`);
+    }
+  };
+
+  const handleDeleteTest = async (id, name) => {
+    if (!window.confirm(`Delete Base Test "${name}"?`)) return;
+    try {
+      await api.deleteTest(id).catch(() => null);
+      setTests(prev => prev.filter(t => String(t.id) !== String(id)));
+      showNotification(`Test "${name}" deleted.`);
+    } catch (err) {
+      alert(`Error deleting test: ${err.message}`);
+    }
+  };
+
+  const handleDeleteTestCat = async (id, name) => {
+    if (!window.confirm(`Delete Test Category "${name}"?`)) return;
+    try {
+      await api.deleteTestCategory(id).catch(() => null);
+      setTestCategories(prev => prev.filter(tc => String(tc.id) !== String(id)));
+      showNotification(`Test Category "${name}" deleted.`);
+    } catch (err) {
+      alert(`Error deleting category: ${err.message}`);
     }
   };
 
@@ -399,7 +464,7 @@ export function AdminProvider({ children, currentUser }) {
     showHospitalModal, setShowHospitalModal, editingHospital, setEditingHospital, handleOpenHospitalModal,
     showDiagnosticModal, setShowDiagnosticModal, editingDiagnostic, setEditingDiagnostic, handleOpenDiagnosticModal,
     showDoctorModal, setShowDoctorModal, editingDoctor, setEditingDoctor, handleOpenDoctorModal,
-    showTestModal, setShowTestModal, editingTest, setEditingTest,
+    showTestModal, setShowTestModal, editingTest, setEditingTest, handleOpenTestModal,
     showBranchTestModal, setShowBranchTestModal, editingBranchTest, setEditingBranchTest, branchTestPrefill, handleOpenBranchTestModal,
 
     // Category Modal states & openers
@@ -408,7 +473,7 @@ export function AdminProvider({ children, currentUser }) {
     showDiagCatModal, setShowDiagCatModal, editingDiagCat, setEditingDiagCat, diagCatDefaultParent, handleOpenDiagCatModal,
     showHospServiceModal, setShowHospServiceModal, editingHospService, setEditingHospService, handleOpenHospServiceModal,
     showDiagServiceModal, setShowDiagServiceModal, editingDiagService, setEditingDiagService, handleOpenDiagServiceModal,
-    showTestCatModal, setShowTestCatModal, editingTestCat, setEditingTestCat,
+    showTestCatModal, setShowTestCatModal, editingTestCat, setEditingTestCat, handleOpenTestCatModal,
 
     // Filters
     branchTestBranchFilter, setBranchTestBranchFilter,
@@ -418,6 +483,8 @@ export function AdminProvider({ children, currentUser }) {
     handleDeleteHospital,
     handleDeleteDiagnostic,
     handleDeleteDoctor,
+    handleDeleteTest,
+    handleDeleteTestCat,
     handleDeleteBranchTest,
     handleDeleteDoctorSpec,
     handleDeleteHospitalCat,

@@ -1,7 +1,7 @@
 import React, { useRef } from 'react';
 import { 
   Users, Building2, FlaskConical, Stethoscope, Activity, TestTube, 
-  Calculator, Calendar, ChevronLeft, ChevronRight, Layers, Clock, ShieldCheck 
+  Calculator, Calendar, ChevronLeft, ChevronRight, Layers, Clock, ShieldCheck, Crown 
 } from 'lucide-react';
 import { useAdminContext } from '../context/AdminContext';
 

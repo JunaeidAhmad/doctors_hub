@@ -2,7 +2,7 @@ import React from 'react';
 import { HeartPulse, MapPin, Phone, Mail, Clock, ShieldCheck, Heart } from 'lucide-react';
 import { LOCATIONS } from '../data/constants';
 
-export default function Footer({ onSelectLocation }) {
+export default function Footer({ onSelectLocation, onNavigateAdmin }) {
   return (
     <footer id="contact" className="bg-slate-950 text-slate-400 pt-16 pb-8 border-t border-slate-800 text-xs">
       <div className="max-w-7xl mx-auto px-4 sm:px-8">
@@ -38,7 +38,7 @@ export default function Footer({ onSelectLocation }) {
                 <li key={loc}>
                   <button
                     onClick={() => onSelectLocation(loc)}
-                    className="hover:text-emerald-400 transition-colors flex items-center gap-1.5"
+                    className="hover:text-emerald-400 transition-colors flex items-center gap-1.5 cursor-pointer"
                   >
                     <MapPin className="w-3 h-3 text-emerald-500" />
                     <span>Doctor Chambers in {loc}</span>
@@ -56,8 +56,16 @@ export default function Footer({ onSelectLocation }) {
             <ul className="space-y-2">
               <li><a href="#search-doctors" className="hover:text-emerald-400 transition-colors">Search Doctors</a></li>
               <li><a href="#diagnostics" className="hover:text-emerald-400 transition-colors">Diagnostic & Lab Tests</a></li>
+              <li>
+                {onNavigateAdmin ? (
+                  <button onClick={onNavigateAdmin} className="text-teal-400 hover:text-teal-300 font-bold transition-colors cursor-pointer flex items-center gap-1">
+                    <span>👑 Partner & Admin Console</span>
+                  </button>
+                ) : (
+                  <a href="/admin" className="text-teal-400 hover:text-teal-300 font-bold transition-colors">Partner & Admin Console</a>
+                )}
+              </li>
               <li><a href="#about" className="hover:text-emerald-400 transition-colors">About DoctorsHub BD</a></li>
-              <li><a href="#contact" className="hover:text-emerald-400 transition-colors">Patient Help & Support</a></li>
               <li><a href="#contact" className="hover:text-emerald-400 transition-colors">24/7 Hotline 16263</a></li>
             </ul>
           </div>

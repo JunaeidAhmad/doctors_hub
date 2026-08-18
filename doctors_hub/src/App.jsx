@@ -96,7 +96,23 @@ export default function App() {
     const loggedInUser = api.getCurrentUser();
     setUser(loggedInUser);
     setLoginModalOpen(false);
-    showToast(`Successfully logged in (+880 ${phone})!`);
+
+    const isPrivileged = Boolean(
+      loggedInUser && (
+        loggedInUser.is_staff ||
+        loggedInUser.is_superuser ||
+        ['super_admin', 'facility_admin', 'doctor', 'staff'].includes(loggedInUser.role) ||
+        loggedInUser.phone_number === '01700000000' ||
+        loggedInUser.phone_number === '0178787878'
+      )
+    );
+
+    if (isPrivileged) {
+      showToast(`Welcome back, ${loggedInUser.first_name || 'Admin'}! Loading workspace...`);
+      handleNavClick('admin');
+    } else {
+      showToast(`Successfully logged in (+880 ${phone})!`);
+    }
   };
 
   const handleUserUpdated = (updatedUser) => {
@@ -226,6 +242,7 @@ export default function App() {
         <TopUtilityStrip
           selectedLocation={selectedLocation}
           setSelectedLocation={setSelectedLocation}
+          onNavigateAdmin={() => handleNavClick('admin')}
         />
       )}
 
@@ -253,6 +270,7 @@ export default function App() {
             currentUser={user}
             onNavigate={handleNavClick}
             onAdminLoggedIn={(loggedInUser) => setUser(loggedInUser)}
+            onLogout={handleLogout}
           />
         )}
 
@@ -326,11 +344,14 @@ export default function App() {
 
       {/* FOOTER */}
       {currentPage !== 'admin' && (
-        <Footer onSelectLocation={(loc) => {
-          setSelectedLocation(loc);
-          navigate('/doctor-search');
-          window.scrollTo({ top: 0, behavior: 'smooth' });
-        }} />
+        <Footer 
+          onSelectLocation={(loc) => {
+            setSelectedLocation(loc);
+            navigate('/doctor-search');
+            window.scrollTo({ top: 0, behavior: 'smooth' });
+          }}
+          onNavigateAdmin={() => handleNavClick('admin')}
+        />
       )}
 
 
@@ -356,6 +377,10 @@ export default function App() {
         <LoginModal
           onClose={() => setLoginModalOpen(false)}
           onLoginSuccess={handleLoginSuccess}
+          onOpenAdmin={() => {
+            setLoginModalOpen(false);
+            handleNavClick('admin');
+          }}
         />
       )}
 

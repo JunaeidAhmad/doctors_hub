@@ -2,7 +2,7 @@ import React, { useState } from 'react';
 import { X, Phone, ArrowRight, ShieldCheck, Lock, User } from 'lucide-react';
 import { api } from '../services/api';
 
-export default function LoginModal({ onClose, onLoginSuccess }) {
+export default function LoginModal({ onClose, onLoginSuccess, onOpenAdmin }) {
   const [isRegister, setIsRegister] = useState(false);
   const [phone, setPhone] = useState('');
   const [password, setPassword] = useState('');
@@ -131,7 +131,7 @@ export default function LoginModal({ onClose, onLoginSuccess }) {
             <button
               type="submit"
               disabled={loading}
-              className="w-full py-3 rounded-xl bg-emerald-600 hover:bg-emerald-700 text-white font-bold text-xs uppercase tracking-wider shadow-md transition-all flex items-center justify-center gap-2 disabled:opacity-50"
+              className="w-full py-3 rounded-xl bg-emerald-600 hover:bg-emerald-700 text-white font-bold text-xs uppercase tracking-wider shadow-md transition-all flex items-center justify-center gap-2 disabled:opacity-50 cursor-pointer"
             >
               <span>{loading ? (isRegister ? 'Registering...' : 'Signing In...') : (isRegister ? 'Register' : 'Sign In')}</span>
               <ArrowRight className="w-4 h-4" />
@@ -146,11 +146,23 @@ export default function LoginModal({ onClose, onLoginSuccess }) {
                 setIsRegister(!isRegister);
                 setError('');
               }}
-              className="text-emerald-600 hover:underline font-bold"
+              className="text-emerald-600 hover:underline font-bold cursor-pointer"
             >
               {isRegister ? 'Sign In' : 'Create Account'}
             </button>
           </div>
+
+          {onOpenAdmin && (
+            <div className="mt-3 pt-3 border-t border-slate-100 text-center">
+              <button
+                type="button"
+                onClick={onOpenAdmin}
+                className="text-[11px] text-teal-700 hover:text-teal-900 font-bold hover:underline inline-flex items-center gap-1 cursor-pointer"
+              >
+                <span>Hospital, Diagnostic Lab or Doctor? Partner & Admin Portal &rarr;</span>
+              </button>
+            </div>
+          )}
         </div>
 
       </div>

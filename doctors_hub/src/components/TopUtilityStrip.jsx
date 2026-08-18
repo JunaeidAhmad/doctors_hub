@@ -1,8 +1,8 @@
 import React from 'react';
-import { Phone, Mail, Clock, MapPin, ShieldCheck } from 'lucide-react';
+import { Phone, Mail, Clock, ShieldCheck, LayoutDashboard } from 'lucide-react';
 import { LOCATIONS } from '../data/constants';
 
-export default function TopUtilityStrip({ selectedLocation, setSelectedLocation }) {
+export default function TopUtilityStrip({ selectedLocation, setSelectedLocation, onNavigateAdmin }) {
   return (
     <div className="bg-slate-900 text-slate-200 text-xs py-2 px-4 sm:px-8 border-b border-slate-800">
       <div className="max-w-7xl mx-auto flex flex-col sm:flex-row justify-between items-center gap-2">
@@ -34,29 +34,23 @@ export default function TopUtilityStrip({ selectedLocation, setSelectedLocation 
           </a>
         </div>
 
-        {/* Right side: Location selector & Verified Portal Tag */}
+        {/* Right side: Verified Portal Tag & Partner Portal Link */}
         <div className="flex items-center gap-4">
-          {/* Location selector commented out as requested
-          <div className="flex items-center gap-1.5 text-slate-400">
-            <MapPin className="w-3.5 h-3.5 text-emerald-400" />
-            <select
-              value={selectedLocation}
-              onChange={(e) => setSelectedLocation(e.target.value)}
-              className="bg-slate-800 text-slate-200 border border-slate-700 rounded px-2 py-0.5 text-xs focus:outline-none focus:border-emerald-500 transition-colors cursor-pointer"
-            >
-              {LOCATIONS.map((loc) => (
-                <option key={loc} value={loc}>
-                  {loc}
-                </option>
-              ))}
-            </select>
-          </div>
-          */}
-
           <div className="hidden lg:flex items-center gap-1 text-emerald-400 font-medium">
             <ShieldCheck className="w-3.5 h-3.5" />
             <span>DGHS & BMDC Reg. Platform</span>
           </div>
+
+          {onNavigateAdmin && (
+            <button
+              onClick={onNavigateAdmin}
+              className="flex items-center gap-1 text-teal-400 hover:text-teal-300 font-bold transition-colors cursor-pointer bg-slate-800 hover:bg-slate-700/80 px-2.5 py-0.5 rounded-md border border-teal-500/30"
+              title="Hospital, Diagnostic Lab & Doctor Management Portal"
+            >
+              <LayoutDashboard className="w-3 h-3 text-teal-400" />
+              <span>Partner & Admin</span>
+            </button>
+          )}
         </div>
       </div>
     </div>
