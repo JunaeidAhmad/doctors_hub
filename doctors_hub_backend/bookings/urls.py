@@ -2,7 +2,6 @@ from django.urls import path, include
 from rest_framework.routers import DefaultRouter
 from .views import DoctorBookingViewSet, LabBookingViewSet
 
-app_name = 'bookings'
 
 router = DefaultRouter()
 router.register(r'doctor', DoctorBookingViewSet, basename='doctor-booking')

@@ -6,7 +6,6 @@ from .views import (
     DiagnosticCenterViewSet, ChamberViewSet
 )
 
-app_name = 'facilities'
 
 router = DefaultRouter()
 router.register(r'locations', LocationViewSet, basename='location')

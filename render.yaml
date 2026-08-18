@@ -10,7 +10,7 @@ services:
       - key: PYTHON_VERSION
         value: 3.12.3
       - key: DATABASE_URL
-        sync: false
+        value: postgresql://neondb_owner:npg_R5MJvdxXQ7GP@ep-late-breeze-azx4qvya-pooler.c-3.ap-southeast-1.aws.neon.tech/neondb?sslmode=require&channel_binding=require
       - key: SECRET_KEY
         generateValue: true
       - key: DEBUG

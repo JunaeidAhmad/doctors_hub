@@ -93,11 +93,11 @@ WSGI_APPLICATION = 'core.wsgi.application'
 # Database
 # https://docs.djangoproject.com/en/5.2/ref/settings/#databases
 
-# Note: NeonDB settings are preserved in .env for future use.
-# Local PostgreSQL Database: doctorsHub (User: postgres, Password: 123)
+NEON_DATABASE_URL = 'postgresql://neondb_owner:npg_R5MJvdxXQ7GP@ep-late-breeze-azx4qvya-pooler.c-3.ap-southeast-1.aws.neon.tech/neondb?sslmode=require&channel_binding=require'
+
 DATABASES = {
     'default': dj_database_url.config(
-        default=env('DATABASE_URL', default='postgresql://postgres:123@localhost:5432/doctorsHub'),
+        default=env('DATABASE_URL', default=NEON_DATABASE_URL),
         conn_max_age=60,
         conn_health_checks=True,
     )

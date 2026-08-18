@@ -11,7 +11,6 @@ from .views import (
     PlatformAdminListCreateAPIView
 )
 
-app_name = 'accounts'
 
 urlpatterns = [
     # Authentication & Profile
