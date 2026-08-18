@@ -215,6 +215,7 @@ class DiagnosticCenterViewSet(SlugOrPkLookupMixin, RoleScopedQuerysetMixin, view
     permission_classes = (ScopedFacilityOrReadOnly,)
     slug_field = 'location__slug'
     filter_backends = [DjangoFilterBackend, filters.SearchFilter]
+    filterset_class = DiagnosticCenterFilter
     search_fields = ['location__name', 'location__branch', 'location__address_line', 'location__area', 'location__district', 'location__division']
     scope_location_field = "location_id__in"
 
