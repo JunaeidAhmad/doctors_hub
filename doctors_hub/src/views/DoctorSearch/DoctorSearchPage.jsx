@@ -1,8 +1,8 @@
-import React, { useState, useMemo, useEffect } from 'react';
-import { useSearchParams, useLocation } from 'react-router-dom';
-import { Stethoscope, MapPin, Filter, ArrowLeft, Building2, ShieldCheck, Calendar, Clock, ArrowRight, X, Heart, Award, ArrowDownAZ, ArrowUpAZ } from 'lucide-react';
+import React, { useState, useMemo, useEffect, useRef } from 'react';
+import { useSearchParams } from 'react-router-dom';
+import { Stethoscope, MapPin, Filter, ArrowLeft, Building2, Calendar, Clock, ArrowRight, ArrowDownAZ, ArrowUpAZ } from 'lucide-react';
 import { DIVISIONS, findDivisionForDistrict } from '../../data/constants';
-import { api, ensureArray, isPageReload, getIsInitialLoad } from '../../services/api';
+import { api, ensureArray } from '../../services/api';
 import Pagination from '../../components/Pagination';
 import CascadingLocationFilter from '../../components/CascadingLocationFilter';
 
@@ -24,7 +24,7 @@ export default function DoctorSearchPage({
   onNavigateHome
 }) {
   const [searchParams, setSearchParams] = useSearchParams();
-  const routerLocation = useLocation();
+  const lastParamsRef = useRef(searchParams.toString());
 
   const getParam = (key, fallback) => {
     const v = searchParams.get(key);
@@ -60,16 +60,38 @@ export default function DoctorSearchPage({
   const [keyword, setKeyword] = useState(() => {
     return getParam('q', initialKeyword);
   });
-  const [maxFee, setMaxFee] = useState(2500);
+  const [maxFee, setMaxFee] = useState(3000);
   const [selectedDay, setSelectedDay] = useState('All');
 
+  // Pagination & Sorting
+  const [currentPage, setCurrentPage] = useState(() => {
+    const p = parseInt(getParam('page', '1'), 10);
+    return isNaN(p) || p < 1 ? 1 : p;
+  });
+  const [sortOrder, setSortOrder] = useState(() => {
+    return getParam('sort', 'asc') === 'desc' ? 'desc' : 'asc';
+  });
+  const pageSize = 10;
+  const [totalPages, setTotalPages] = useState(1);
+
+  const [specialties, setSpecialties] = useState([]);
+  const [doctors, setDoctors] = useState([]);
+  const [selectedSlots, setSelectedSlots] = useState({});
+  const [isLoading, setIsLoading] = useState(false);
+
+  // Sync state when URL searchParams change externally (back/forward navigation)
   useEffect(() => {
+    if (lastParamsRef.current === searchParams.toString()) return;
+    lastParamsRef.current = searchParams.toString();
+
     const urlSpec = searchParams.get('spec');
     const urlDiv = searchParams.get('division');
     const urlDist = searchParams.get('district');
     const urlLoc = searchParams.get('loc');
     const urlQ = searchParams.get('q');
     const urlArea = searchParams.get('area');
+    const urlPage = searchParams.get('page');
+    const urlSort = searchParams.get('sort');
 
     setSpecialty(urlSpec || '');
     if (urlDiv) {
@@ -81,7 +103,7 @@ export default function DoctorSearchPage({
         if (found) setDivision(found);
         else setDivision('All Bangladesh');
       }
-    } else {
+    } else if (urlDiv === null && urlLoc === null) {
       setDivision('All Bangladesh');
     }
 
@@ -89,14 +111,17 @@ export default function DoctorSearchPage({
       setDistrict(urlDist);
     } else if (urlLoc && !DIVISIONS.includes(urlLoc) && urlLoc !== 'All Bangladesh') {
       setDistrict(urlLoc);
-    } else {
+    } else if (urlDist === null && urlLoc === null) {
       setDistrict('All Districts');
     }
 
-    if (urlArea !== null) setArea(urlArea);
-    if (urlQ !== null) setKeyword(urlQ);
+    if (urlArea !== null) setArea(urlArea || 'All Areas');
+    if (urlQ !== null) setKeyword(urlQ || '');
+    if (urlPage) setCurrentPage(Math.max(1, parseInt(urlPage, 10) || 1));
+    if (urlSort) setSortOrder(urlSort === 'desc' ? 'desc' : 'asc');
   }, [searchParams]);
 
+  // Sync URL when filter states change
   useEffect(() => {
     const params = new URLSearchParams();
     if (specialty) params.set('spec', specialty);
@@ -104,89 +129,81 @@ export default function DoctorSearchPage({
     if (district && district !== 'All Districts') params.set('district', district);
     if (area && area !== 'All Areas') params.set('area', area);
     if (keyword.trim()) params.set('q', keyword.trim());
+    if (currentPage > 1) params.set('page', String(currentPage));
+    if (sortOrder !== 'asc') params.set('sort', sortOrder);
 
     const next = params.toString();
-    if (next !== searchParams.toString()) {
+    if (next !== lastParamsRef.current) {
+      lastParamsRef.current = next;
       setSearchParams(params, { replace: true });
     }
-  }, [specialty, division, district, area, keyword, searchParams, setSearchParams]);
+  }, [specialty, division, district, area, keyword, currentPage, sortOrder, setSearchParams]);
 
-  const [chambers, setChambers] = useState([]);
-  const [specialties, setSpecialties] = useState([]);
-  const [doctors, setDoctors] = useState([]);
-  const [selectedSlots, setSelectedSlots] = useState({});
-
-  // Pagination & Sorting
-  const [currentPage, setCurrentPage] = useState(1);
-  const [sortOrder, setSortOrder] = useState('asc');
-  const pageSize = 10;
-  const [totalPages, setTotalPages] = useState(1);
-
+  // Fetch specialties metadata once on mount
   useEffect(() => {
     let isMounted = true;
+    api.getSearchMetadata()
+      .then((meta) => {
+        if (isMounted && meta && meta.specialties) {
+          setSpecialties(ensureArray(meta.specialties));
+        }
+      })
+      .catch(() => {
+        api.getSpecialties()
+          .then((data) => {
+            if (isMounted && data !== null) setSpecialties(ensureArray(data));
+          })
+          .catch(() => {});
+      });
 
-    // Debounced server-side search/filter for doctors
+    return () => { isMounted = false; };
+  }, []);
+
+  // Debounced server-side search/filter for doctors
+  useEffect(() => {
+    let isMounted = true;
     const delay = keyword.trim() ? 350 : 0;
     const timer = setTimeout(() => {
+      setIsLoading(true);
       api.getDoctors({
         specialty: specialty || undefined,
         division: division !== 'All Bangladesh' ? division : undefined,
         district: district !== 'All Districts' ? district : undefined,
         area: area !== 'All Areas' ? area : undefined,
         search: keyword.trim() || undefined,
-        fee_max: maxFee < 5000 ? maxFee : undefined,
+        fee_max: maxFee < 3000 ? maxFee : undefined,
         day: selectedDay !== 'All' ? selectedDay : undefined,
         page: currentPage,
         page_size: pageSize
       })
         .then((data) => {
           if (isMounted) {
-            setDoctors(ensureArray(data));
-            if (data && typeof data === 'object' && data.count) {
-              setTotalPages(Math.ceil(data.count / pageSize));
-            } else {
-              setTotalPages(1);
+            let docList = [];
+            let totalCount = 0;
+            if (data) {
+              docList = ensureArray(data);
+              totalCount = (typeof data === 'object' && data.count) ? data.count : docList.length;
             }
+            setDoctors(docList);
+            setTotalPages(Math.max(1, Math.ceil(totalCount / pageSize)));
           }
         })
-        .catch(() => {});
+        .catch(() => {
+          if (isMounted) {
+            setDoctors([]);
+            setTotalPages(1);
+          }
+        })
+        .finally(() => {
+          if (isMounted) setIsLoading(false);
+        });
     }, delay);
 
-    return () => { isMounted = false; clearTimeout(timer); };
+    return () => {
+      isMounted = false;
+      clearTimeout(timer);
+    };
   }, [specialty, division, district, area, keyword, maxFee, selectedDay, currentPage]);
-
-
-  useEffect(() => {
-    let isMounted = true;
-
-    api.getBranches({ location })
-      .then((data) => {
-        if (isMounted && data !== null) {
-          setChambers(ensureArray(data));
-        }
-      })
-      .catch(() => {});
-
-    api.getSearchFacets({ location, area })
-      .then((facets) => {
-        if (isMounted && facets && facets.specialties) {
-          setSpecialties(ensureArray(facets.specialties));
-        }
-      })
-      .catch(() => {
-        api.getSearchMetadata()
-          .then((meta) => {
-            if (isMounted && meta && meta.specialties) setSpecialties(ensureArray(meta.specialties));
-          })
-          .catch(() => {
-            api.getSpecialties().then((data) => {
-              if (isMounted && data !== null) setSpecialties(ensureArray(data));
-            });
-          });
-      });
-
-    return () => { isMounted = false; };
-  }, [location, area]);
 
   // Combine doctor affiliations with chambers for display
   const doctorChambersList = useMemo(() => {
@@ -241,7 +258,7 @@ export default function DoctorSearchPage({
 
           // Filter affiliation by Fee
           const affFee = Number(aff.fee) || doc.fee || 1000;
-          if (maxFee && maxFee < 5000 && affFee > maxFee) {
+          if (maxFee && maxFee < 3000 && affFee > maxFee) {
             return;
           }
 
@@ -293,7 +310,6 @@ export default function DoctorSearchPage({
     return [];
   }, [doctors, division, district, area, maxFee, selectedDay]);
 
-  // Use already-filtered chambers from backend
   const filteredChambers = doctorChambersList;
 
   const totalMatchingDoctors = useMemo(() => {
@@ -318,10 +334,6 @@ export default function DoctorSearchPage({
   }, [filteredChambers, sortOrder]);
 
   const paginatedChambers = sortedChambers;
-
-  useEffect(() => {
-    setCurrentPage(1);
-  }, [specialty, division, district, area, keyword, maxFee, selectedDay]);
 
   const handleSelectSlot = (docId, slotTime) => {
     setSelectedSlots(prev => ({
@@ -368,12 +380,15 @@ export default function DoctorSearchPage({
               <div className="relative flex-1 min-w-[130px]">
                 <select
                   value={specialty}
-                  onChange={(e) => setSpecialty(e.target.value)}
+                  onChange={(e) => {
+                    setSpecialty(e.target.value);
+                    setCurrentPage(1);
+                  }}
                   className="w-full bg-slate-900 text-white text-xs font-semibold border border-slate-700 rounded-xl px-3 py-2.5 focus:outline-none focus:border-emerald-500 cursor-pointer"
                 >
                   <option value="">All Specialties</option>
                   {specialties.map((s) => (
-                    <option key={s.id} value={s.name}>{s.name}</option>
+                    <option key={s.id || s.name} value={s.name}>{s.name}</option>
                   ))}
                 </select>
               </div>
@@ -387,6 +402,7 @@ export default function DoctorSearchPage({
                   setDivision(d);
                   setDistrict(dist);
                   setArea(a);
+                  setCurrentPage(1);
                 }}
                 theme="dark"
                 accent="emerald"
@@ -399,7 +415,10 @@ export default function DoctorSearchPage({
                   type="text"
                   placeholder="Doctor, keyword..."
                   value={keyword}
-                  onChange={(e) => setKeyword(e.target.value)}
+                  onChange={(e) => {
+                    setKeyword(e.target.value);
+                    setCurrentPage(1);
+                  }}
                   className="w-full bg-slate-900 text-white text-xs border border-slate-700 rounded-xl px-3 py-2.5 placeholder-slate-500 focus:outline-none focus:border-emerald-500 font-medium"
                 />
               </div>
@@ -422,7 +441,7 @@ export default function DoctorSearchPage({
                   <Filter className="w-4 h-4 text-emerald-600" />
                   Refine Search
                 </h3>
-                {(specialty || division !== 'All Bangladesh' || district !== 'All Districts' || area !== 'All Areas' || keyword || selectedDay !== 'All') && (
+                {(specialty || division !== 'All Bangladesh' || district !== 'All Districts' || area !== 'All Areas' || keyword || selectedDay !== 'All' || maxFee < 3000) && (
                   <button
                     onClick={() => {
                       setSpecialty('');
@@ -431,7 +450,8 @@ export default function DoctorSearchPage({
                       setArea('All Areas');
                       setKeyword('');
                       setSelectedDay('All');
-                      setMaxFee(2500);
+                      setMaxFee(3000);
+                      setCurrentPage(1);
                     }}
                     className="text-[11px] font-semibold text-rose-500 hover:underline cursor-pointer"
                   >
@@ -440,24 +460,6 @@ export default function DoctorSearchPage({
                 )}
               </div>
 
-              {/* Cascading Location Filter in Sidebar */}
-              <CascadingLocationFilter
-                division={division}
-                district={district}
-                area={area}
-                onChange={({ division: d, district: dist, area: a }) => {
-                  setDivision(d);
-                  setDistrict(dist);
-                  setArea(a);
-                }}
-                theme="light"
-                accent="emerald"
-                layout="stacked"
-                showLabels={true}
-              />
-
-
-
               {/* Day filter */}
               <div>
                 <label className="block text-xs font-bold text-slate-700 mb-2">Available Day</label>
@@ -465,7 +467,10 @@ export default function DoctorSearchPage({
                   {['All', 'Sat', 'Sun', 'Mon', 'Tue', 'Wed', 'Thu', 'Fri'].map((day) => (
                     <button
                       key={day}
-                      onClick={() => setSelectedDay(day)}
+                      onClick={() => {
+                        setSelectedDay(day);
+                        setCurrentPage(1);
+                      }}
                       className={`py-1.5 rounded-lg border font-semibold text-center transition-all ${
                         selectedDay === day
                           ? 'bg-emerald-600 text-white border-emerald-600 shadow-xs'
@@ -490,7 +495,10 @@ export default function DoctorSearchPage({
                   max="3000"
                   step="100"
                   value={maxFee}
-                  onChange={(e) => setMaxFee(Number(e.target.value))}
+                  onChange={(e) => {
+                    setMaxFee(Number(e.target.value));
+                    setCurrentPage(1);
+                  }}
                   className="w-full accent-emerald-600 cursor-pointer"
                 />
               </div>
@@ -499,7 +507,12 @@ export default function DoctorSearchPage({
 
           {/* Right Doctor Cards Container */}
           <div className="lg:col-span-3 space-y-6">
-            {filteredChambers.length === 0 ? (
+            {isLoading ? (
+              <div className="bg-white p-12 rounded-2xl border border-slate-200 text-center space-y-3">
+                <div className="w-8 h-8 border-3 border-emerald-500 border-t-transparent rounded-full animate-spin mx-auto" />
+                <p className="text-xs text-slate-500 font-medium">Finding specialist doctors...</p>
+              </div>
+            ) : filteredChambers.length === 0 ? (
               <div className="bg-white p-12 rounded-2xl border border-slate-200 text-center space-y-3">
                 <Stethoscope className="w-12 h-12 text-slate-300 mx-auto" />
                 <h3 className="text-lg font-bold text-slate-800">No Doctors Found</h3>

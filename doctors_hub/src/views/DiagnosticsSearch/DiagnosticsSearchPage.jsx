@@ -8,9 +8,6 @@ import {
 import { DIVISIONS, findDivisionForDistrict } from '../../data/constants';
 import { api, ensureArray, isPageReload, getIsInitialLoad } from '../../services/api';
 import Pagination from '../../components/Pagination';
-import CascadingLocationFilter from '../../components/CascadingLocationFilter';
-
-
 
 // Fallback Test Categories
 const FALLBACK_TEST_CATEGORIES = [
@@ -40,7 +37,7 @@ const FALLBACK_CENTER_CATEGORIES = [
   { id: 'private-independent-', name: 'Private / Independent Chain', slug: 'private-independent-', count: 35 },
 ];
 
-// Fallback Verified Diagnostic Centers with Comprehensive Tests (including Cardiac Tests)
+// Fallback Verified Diagnostic Centers with Comprehensive Tests for all test categories
 const FALLBACK_DIAGNOSTIC_CENTERS = [
   {
     id: 'center-popular-panthapath',
@@ -118,6 +115,54 @@ const FALLBACK_DIAGNOSTIC_CENTERS = [
         report_time: '12 Hours',
         home_sample_collection: false,
       },
+      {
+        id: 'pop-t9',
+        test_details: { id: 'test-ct1', name: 'CT Scan Whole Abdomen & Pelvis (128-Slice)', category_name: 'CT Scan Body Imaging', category_slug: 'ct-scan', description: 'High-speed multi-slice computed tomography with IV contrast' },
+        price: 8000,
+        original_price: 9500,
+        report_time: '6 Hours',
+        home_sample_collection: false,
+      },
+      {
+        id: 'pop-t10',
+        test_details: { id: 'test-usg1', name: '4D Pregnancy Anomaly Ultrasound Scan', category_name: 'Ultrasound / USG', category_slug: 'ultrasound-usg', description: 'High-definition 4D obstetric ultrasound anomaly screening with Doppler' },
+        price: 2800,
+        original_price: 3400,
+        report_time: '1 Hour',
+        home_sample_collection: false,
+      },
+      {
+        id: 'pop-t11',
+        test_details: { id: 'test-endo1', name: 'Video Upper GI Endoscopy with Biopsy', category_name: 'Endoscopy & Colonoscopy', category_slug: 'endoscopy-colonoscopy', description: 'High-definition endoscopic visualization of esophagus, stomach and duodenum' },
+        price: 4200,
+        original_price: 5000,
+        report_time: '2 Hours',
+        home_sample_collection: false,
+      },
+      {
+        id: 'pop-t12',
+        test_details: { id: 'test-gen1', name: 'RT-PCR Viral Panel & Quantitative DNA Screening', category_name: 'Genetic & Molecular', category_slug: 'genetic-molecular', description: 'High-sensitivity real-time PCR genetic assay' },
+        price: 3800,
+        original_price: 4500,
+        report_time: '24 Hours',
+        home_sample_collection: true,
+      },
+      {
+        id: 'pop-t13',
+        test_details: { id: 'test-sero1', name: 'Dengue NS1 Antigen & Antibody Duo (IgG/IgM)', category_name: 'Serology & Immunity', category_slug: 'serology', description: 'Rapid automated ELISA confirmation for acute dengue fever' },
+        price: 1100,
+        original_price: 1400,
+        report_time: '2 Hours',
+        home_sample_collection: true,
+      },
+      {
+        id: 'pop-t14',
+        test_details: { id: 'test-micro1', name: 'Urine Routine & Microscopic Examination (R/M/E)', category_name: 'Microbiology & Culture', category_slug: 'microbiology', description: 'Full physical, chemical and automated microscopic examination of urine' },
+        price: 300,
+        original_price: 400,
+        report_time: '2 Hours',
+        home_sample_collection: true,
+      },
     ]
   },
   {
@@ -179,6 +224,22 @@ const FALLBACK_DIAGNOSTIC_CENTERS = [
         original_price: 900,
         report_time: '2 Hours',
         home_sample_collection: false,
+      },
+      {
+        id: 'ibn-t7',
+        test_details: { id: 'test-usg2', name: 'USG of Whole Abdomen with Pelvic Organs', category_name: 'Ultrasound / USG', category_slug: 'ultrasound-usg', description: 'Complete abdominal ultrasonography by consultant sonologist' },
+        price: 1800,
+        original_price: 2200,
+        report_time: '1 Hour',
+        home_sample_collection: false,
+      },
+      {
+        id: 'ibn-t8',
+        test_details: { id: 'test-sero2', name: 'Viral Hepatitis Profile (HBsAg, Anti-HCV, Anti-HIV)', category_name: 'Serology & Immunity', category_slug: 'serology', description: 'Chemiluminescence immunoassay for infectious viral blood markers' },
+        price: 2200,
+        original_price: 2800,
+        report_time: '4 Hours',
+        home_sample_collection: true,
       },
     ]
   },
@@ -242,6 +303,14 @@ const FALLBACK_DIAGNOSTIC_CENTERS = [
         report_time: '6 Hours',
         home_sample_collection: true,
       },
+      {
+        id: 'lab-t7',
+        test_details: { id: 'test-micro2', name: 'Automated Blood Culture & Antibiotic Sensitivity', category_name: 'Microbiology & Culture', category_slug: 'microbiology', description: 'Continuous-monitoring automated blood culture with MIC antibiogram' },
+        price: 1800,
+        original_price: 2200,
+        report_time: '48 Hours',
+        home_sample_collection: false,
+      },
     ]
   },
   {
@@ -287,6 +356,14 @@ const FALLBACK_DIAGNOSTIC_CENTERS = [
         original_price: 3000,
         report_time: '1 Hour',
         home_sample_collection: false,
+      },
+      {
+        id: 'med-t5',
+        test_details: { id: 'test-hem1', name: 'Peripheral Blood Film (PBF Study)', category_name: 'Hematology', category_slug: 'hematology', description: 'Expert hematologist morphological review of red cells, white cells & platelets' },
+        price: 650,
+        original_price: 800,
+        report_time: '4 Hours',
+        home_sample_collection: true,
       },
     ]
   },
@@ -341,6 +418,30 @@ const FALLBACK_DIAGNOSTIC_CENTERS = [
         original_price: 4000,
         report_time: '6 Hours',
         home_sample_collection: false,
+      },
+      {
+        id: 'sq-t6',
+        test_details: { id: 'test-ct2', name: 'HRCT Chest (High Resolution CT)', category_name: 'CT Scan Body Imaging', category_slug: 'ct-scan', description: 'Detailed lung parenchyma and airway imaging for interstitial lung conditions' },
+        price: 6500,
+        original_price: 7800,
+        report_time: '4 Hours',
+        home_sample_collection: false,
+      },
+      {
+        id: 'sq-t7',
+        test_details: { id: 'test-endo2', name: 'Full Video Colonoscopy & Polypectomy Screening', category_name: 'Endoscopy & Colonoscopy', category_slug: 'endoscopy-colonoscopy', description: 'Complete colorectal examination with sedation and histopathology sampling' },
+        price: 6500,
+        original_price: 7800,
+        report_time: '4 Hours',
+        home_sample_collection: false,
+      },
+      {
+        id: 'sq-t8',
+        test_details: { id: 'test-gen2', name: 'High-Risk HPV DNA Screening by PCR', category_name: 'Genetic & Molecular', category_slug: 'genetic-molecular', description: 'Molecular testing for 14 high-risk human papillomavirus genotypes' },
+        price: 4200,
+        original_price: 5200,
+        report_time: '48 Hours',
+        home_sample_collection: true,
       },
     ]
   },
@@ -409,6 +510,7 @@ const filterOfferingByCategory = (offering, selectedCat, testCats = []) => {
 
 export default function DiagnosticsSearchPage({
   initialTest = '',
+  initialLocation = 'All Bangladesh',
   onBookLabTest,
   onNavigateHome
 }) {
@@ -432,7 +534,7 @@ export default function DiagnosticsSearchPage({
     if (isRefresh) return 'All Bangladesh';
     const urlDiv = getParam('division', '');
     if (urlDiv) return urlDiv;
-    const urlLoc = getParam('loc', 'All Bangladesh');
+    const urlLoc = getParam('loc', initialLocation);
     if (DIVISIONS.includes(urlLoc)) return urlLoc;
     const found = findDivisionForDistrict(urlLoc);
     if (found) return found;
@@ -668,6 +770,16 @@ const resolveTestCategoryName = (val, testCats = []) => {
       )
     );
   }, [selectedTestCategory, displayTestCategories]);
+
+  const currentLocationLabel = useMemo(() => {
+    if (district && district !== 'All Districts') {
+      return area && area !== 'All Areas' ? `${area}, ${district}` : district;
+    }
+    if (division && division !== 'All Bangladesh') {
+      return `${division} Division`;
+    }
+    return 'All Bangladesh';
+  }, [division, district, area]);
 
   // Fetch filtered Diagnostic Centers from backend
   useEffect(() => {
@@ -908,7 +1020,7 @@ const resolveTestCategoryName = (val, testCats = []) => {
               )}
             </div>
 
-            <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 gap-3">
+            <div className="grid grid-cols-1 sm:grid-cols-3 gap-3">
               
               {/* 1. Test Category Filter */}
               <div>
@@ -948,25 +1060,7 @@ const resolveTestCategoryName = (val, testCats = []) => {
                 </select>
               </div>
 
-              {/* 3. Cascading Location Filter (Division -> District -> Thana) */}
-              <div className="sm:col-span-2 lg:col-span-1 xl:col-span-1">
-                <CascadingLocationFilter
-                  division={division}
-                  district={district}
-                  area={area}
-                  onChange={({ division: d, district: dist, area: a }) => {
-                    setDivision(d);
-                    setDistrict(dist);
-                    setArea(a);
-                  }}
-                  theme="dark"
-                  accent="teal"
-                  layout="inline"
-                  showLabels={true}
-                />
-              </div>
-
-              {/* 4. Search Keyword Filter */}
+              {/* 3. Search Keyword Filter */}
               <div className="relative">
                 <label className="block text-[11px] font-bold text-slate-400 mb-1">Search Keyword</label>
                 <div className="relative">
@@ -1079,7 +1173,7 @@ const resolveTestCategoryName = (val, testCats = []) => {
               <div>
                 <h3 className="text-lg font-bold text-slate-800">No Diagnostic Centers Found</h3>
                 <p className="text-xs text-slate-500 mt-1">
-                  No diagnostic centers matched your search for <strong>{activeTestCatObj?.name || resolveTestCategoryName(selectedTestCategory, displayTestCategories) || 'the current filter'}</strong> in {selectedLocation}.
+                  No diagnostic centers matched your search for <strong>{activeTestCatObj?.name || resolveTestCategoryName(selectedTestCategory, displayTestCategories) || 'the current filter'}</strong> in {currentLocationLabel}.
                 </p>
               </div>
               <button

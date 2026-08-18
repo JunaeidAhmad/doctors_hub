@@ -40,6 +40,7 @@ export default function HomePage({
         setDoctorKeyword={setDoctorKeyword}
         selectedLocation={selectedLocation}
         setSelectedLocation={setSelectedLocation}
+        onExecuteSearch={onExecuteSearch}
         onSearchExecute={onExecuteSearch}
         activeEngineTab={activeEngineTab}
         setActiveEngineTab={setActiveEngineTab}

@@ -414,7 +414,7 @@ export default function DiagnosticModal() {
                     <button
                       key={cat.id}
                       type="button"
-                      onClick={() => toggleDiagnosticTestCategorySelection(cat.id)}
+                      onClick={() => toggleTestCategorySelection(cat.id)}
                       className={`px-2.5 py-1 rounded-xl border text-[11px] font-bold transition flex items-center gap-1.5 ${
                         isSelected 
                           ? 'bg-emerald-500/20 text-emerald-300 border-emerald-500/50 shadow-sm shadow-emerald-500/20' 

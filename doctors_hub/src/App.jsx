@@ -335,6 +335,7 @@ export default function App() {
         {currentPage === 'diagnostics-search' && (
           <DiagnosticsSearchPage
             initialTest={selectedTest}
+            initialLocation={selectedLocation}
             onBookLabTest={(test) => setBookingLabState(test)}
             onNavigateHome={() => handleNavClick('home')}
           />

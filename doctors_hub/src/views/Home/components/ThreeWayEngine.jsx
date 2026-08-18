@@ -26,10 +26,12 @@ export default function ThreeWayEngine({
   selectedHospitalCategory: propHospitalCat,
   setSelectedHospitalCategory: propSetHospitalCat,
   searchKeyword,
+  doctorKeyword,
   setDoctorKeyword,
   selectedLocation,
   setSelectedLocation,
   onExecuteSearch,
+  onSearchExecute,
   activeEngineTab,
   setActiveEngineTab
 }) {
@@ -86,6 +88,24 @@ export default function ThreeWayEngine({
     district: 'All Districts',
     area: 'All Areas'
   });
+
+  useEffect(() => {
+    if (typeof selectedLocation === 'string' && selectedLocation) {
+      setDoctorLocState(prev => ({ ...prev, division: selectedLocation }));
+      setDiagLocState(prev => ({ ...prev, division: selectedLocation }));
+      setHospLocState(prev => ({ ...prev, division: selectedLocation }));
+    }
+  }, [selectedLocation]);
+
+  const handleSearch = (mode, param, locState) => {
+    if (typeof setActiveEngineTab === 'function') {
+      setActiveEngineTab(mode);
+    }
+    const searchFn = onExecuteSearch || onSearchExecute;
+    if (typeof searchFn === 'function') {
+      searchFn(mode, param, locState);
+    }
+  };
 
   return (
     <div className="relative pt-8 mt-2 z-30 max-w-7xl mx-auto px-4 sm:px-8">
@@ -168,10 +188,8 @@ export default function ThreeWayEngine({
             {/* Search Button */}
             <div className="pt-2 border-t border-slate-200/60">
               <button
-                onClick={() => {
-                  setActiveEngineTab('doctor');
-                  onExecuteSearch('doctor', selectedSpecialty, doctorLocState);
-                }}
+                type="button"
+                onClick={() => handleSearch('doctor', selectedSpecialty, doctorLocState)}
                 className="w-full py-2.5 rounded-lg bg-emerald-600 hover:bg-emerald-700 text-white font-bold text-xs uppercase tracking-wider transition-all flex items-center justify-center gap-2 shadow-sm active:scale-95 cursor-pointer"
               >
                 <Search className="w-3.5 h-3.5" />
@@ -239,10 +257,8 @@ export default function ThreeWayEngine({
             {/* Search Button */}
             <div className="pt-2 border-t border-slate-200/60">
               <button
-                onClick={() => {
-                  setActiveEngineTab('diagnostics');
-                  onExecuteSearch('diagnostics', selectedTest, diagLocState);
-                }}
+                type="button"
+                onClick={() => handleSearch('diagnostics', selectedTest, diagLocState)}
                 className="w-full py-2.5 rounded-lg bg-teal-600 hover:bg-teal-700 text-white font-bold text-xs uppercase tracking-wider transition-all flex items-center justify-center gap-2 shadow-sm active:scale-95 cursor-pointer"
               >
                 <Search className="w-3.5 h-3.5" />
@@ -309,10 +325,8 @@ export default function ThreeWayEngine({
             {/* Search Button */}
             <div className="pt-2 border-t border-slate-200/60">
               <button
-                onClick={() => {
-                  setActiveEngineTab('hospital');
-                  onExecuteSearch('hospital', selectedHospitalCategory, hospLocState);
-                }}
+                type="button"
+                onClick={() => handleSearch('hospital', selectedHospitalCategory, hospLocState)}
                 className="w-full py-2.5 rounded-lg bg-cyan-600 hover:bg-cyan-700 text-white font-bold text-xs uppercase tracking-wider transition-all flex items-center justify-center gap-2 shadow-sm active:scale-95 cursor-pointer"
               >
                 <Search className="w-3.5 h-3.5" />
