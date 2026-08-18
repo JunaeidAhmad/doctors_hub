@@ -19,21 +19,24 @@ import dj_database_url
 BASE_DIR = Path(__file__).resolve().parent.parent
 
 env = environ.Env(
-    DEBUG=(bool, False)
+    DEBUG=(bool, False),
 )
-environ.Env.read_env(os.path.join(BASE_DIR, '.env'))
+_ENV_FILE = BASE_DIR / '.env'
+if _ENV_FILE.exists():
+    environ.Env.read_env(_ENV_FILE)
 
 
 # Quick-start development settings - unsuitable for production
 # See https://docs.djangoproject.com/en/5.2/howto/deployment/checklist/
 
-# SECURITY WARNING: keep the secret key used in production secret!
-SECRET_KEY = env('SECRET_KEY', default='django-insecure-3b8uop)p6w1_jfn@(*u_$j*bq9r&^n4gk&u&&-)x)e&2h2vwze')
-
-# SECURITY WARNING: don't run with debug turned on in production!
 DEBUG = env('DEBUG', default=False)
 
-ALLOWED_HOSTS = env.list('ALLOWED_HOSTS', default=['*'])
+if DEBUG:
+    SECRET_KEY = env('SECRET_KEY', default='django-insecure-local-development-only')
+else:
+    SECRET_KEY = env('SECRET_KEY')          # REQUIRED; app refuses to boot if unset
+
+ALLOWED_HOSTS = env.list('ALLOWED_HOSTS', default=['*'] if DEBUG else [])
 RENDER_EXTERNAL_HOSTNAME = os.environ.get('RENDER_EXTERNAL_HOSTNAME')
 if RENDER_EXTERNAL_HOSTNAME:
     ALLOWED_HOSTS.append(RENDER_EXTERNAL_HOSTNAME)
@@ -93,11 +96,14 @@ WSGI_APPLICATION = 'core.wsgi.application'
 # Database
 # https://docs.djangoproject.com/en/5.2/ref/settings/#databases
 
-NEON_DATABASE_URL = 'postgresql://neondb_owner:npg_R5MJvdxXQ7GP@ep-late-breeze-azx4qvya-pooler.c-3.ap-southeast-1.aws.neon.tech/neondb?sslmode=require&channel_binding=require'
+if DEBUG:
+    _DATABASE_URL = env('DATABASE_URL', default='postgresql://postgres:postgres@localhost:5432/doctorsHub')
+else:
+    _DATABASE_URL = env('DATABASE_URL')     # REQUIRED
 
 DATABASES = {
     'default': dj_database_url.config(
-        default=env('DATABASE_URL', default=NEON_DATABASE_URL),
+        default=_DATABASE_URL,
         conn_max_age=60,
         conn_health_checks=True,
     )
@@ -183,9 +189,20 @@ SIMPLE_JWT = {
     'AUTH_HEADER_TYPES': ('Bearer',),
 }
 
-CORS_ALLOW_ALL_ORIGINS = True
-
+CORS_ALLOW_ALL_ORIGINS = DEBUG
+CORS_ALLOWED_ORIGINS = env.list('CORS_ALLOWED_ORIGINS', default=[])
 CORS_ALLOW_CREDENTIALS = False
+CSRF_TRUSTED_ORIGINS = env.list('CSRF_TRUSTED_ORIGINS', default=CORS_ALLOWED_ORIGINS)
+
+if not DEBUG:
+    SECURE_PROXY_SSL_HEADER = ('HTTP_X_FORWARDED_PROTO', 'https')
+    SECURE_SSL_REDIRECT = env.bool('SECURE_SSL_REDIRECT', default=True)
+    SESSION_COOKIE_SECURE = True
+    CSRF_COOKIE_SECURE = True
+    SECURE_HSTS_SECONDS = env.int('SECURE_HSTS_SECONDS', default=31536000)
+    SECURE_HSTS_INCLUDE_SUBDOMAINS = True
+    SECURE_HSTS_PRELOAD = True
+    SECURE_CONTENT_TYPE_NOSNIFF = True
 
 LOGGING = {
     'version': 1,
