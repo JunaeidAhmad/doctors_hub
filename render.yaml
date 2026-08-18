@@ -1,0 +1,19 @@
+services:
+  - type: web
+    name: doctors-hub
+    runtime: python
+    region: singapore
+    plan: free
+    buildCommand: ./build.sh
+    startCommand: gunicorn --chdir doctors_hub_backend core.wsgi:application
+    envVars:
+      - key: PYTHON_VERSION
+        value: 3.12.3
+      - key: DATABASE_URL
+        sync: false
+      - key: SECRET_KEY
+        generateValue: true
+      - key: DEBUG
+        value: "False"
+      - key: ALLOWED_HOSTS
+        value: "*"

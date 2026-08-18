@@ -46,12 +46,8 @@ def get_or_create_location(name, branch, loc_type, addr_info, phone="", email=""
             slug=slug,
             address_line=addr_info.get("line", ""),
             area=addr_info.get("area", ""),
-            city=addr_info.get("city", ""),
             district=addr_info.get("district", "Dhaka"),
             division=addr_info.get("division", "Dhaka"),
-            postal_code=addr_info.get("post", ""),
-            latitude=Decimal(str(addr_info["lat"])) if "lat" in addr_info else None,
-            longitude=Decimal(str(addr_info["lng"])) if "lng" in addr_info else None,
             phone=phone,
             email=email,
             tagline=tagline,
@@ -68,14 +64,8 @@ def get_or_create_location(name, branch, loc_type, addr_info, phone="", email=""
         loc.branch = branch
         loc.address_line = addr_info.get("line", "")
         loc.area = addr_info.get("area", "")
-        loc.city = addr_info.get("city", "")
         loc.district = addr_info.get("district", "Dhaka")
         loc.division = addr_info.get("division", "Dhaka")
-        loc.postal_code = addr_info.get("post", "")
-        if "lat" in addr_info:
-            loc.latitude = Decimal(str(addr_info["lat"]))
-        if "lng" in addr_info:
-            loc.longitude = Decimal(str(addr_info["lng"]))
         loc.phone = phone
         loc.email = email
         loc.tagline = tagline
@@ -593,7 +583,8 @@ def inject_data():
 
         for t in item.get("tests", []):
             t_slug = f"{slugify(t['name'])}-{slug}"
-            t_obj = Test.objects.filter(category=cat_obj, name=t["name"]).first()
+            t_id = seed_uuid(f"Test:{t_slug}")
+            t_obj = Test.objects.filter(id=t_id).first() or Test.objects.filter(slug=t_slug).first() or Test.objects.filter(category=cat_obj, name=t["name"]).first()
             sample = t.get("sample", "Blood (Serum)")
             fasting = t.get("fasting", False)
             hours = t.get("hours", 12)
@@ -602,10 +593,10 @@ def inject_data():
 
             if not t_obj:
                 t_obj = Test.objects.create(
-                    id=seed_uuid(f"Test:{t_slug}"),
+                    id=t_id,
                     category=cat_obj,
                     name=t["name"],
-                    slug=slugify(t["name"]),
+                    slug=t_slug,
                     code=t.get("code", f"REF-{idx:02d}"),
                     sample_type=sample,
                     fasting_required=fasting,
@@ -615,6 +606,9 @@ def inject_data():
                     is_active=True
                 )
             else:
+                t_obj.category = cat_obj
+                t_obj.name = t["name"]
+                t_obj.slug = t_slug
                 t_obj.code = t.get("code", f"REF-{idx:02d}")
                 t_obj.sample_type = sample
                 t_obj.fasting_required = fasting
