@@ -1,6 +1,6 @@
 services:
   - type: web
-    name: doctors-hub-backend
+    name: doctors-hub
     runtime: python
     rootDir: doctors_hub_backend
     buildCommand: "./build.sh"
@@ -15,6 +15,6 @@ services:
       - key: DATABASE_URL
         sync: false
       - key: ALLOWED_HOSTS
-        value: doctors-hub-backend.onrender.com
+        value: doctors-hub.onrender.com
       - key: CORS_ALLOWED_ORIGINS
         sync: false          # your Vercel domain(s), with scheme
