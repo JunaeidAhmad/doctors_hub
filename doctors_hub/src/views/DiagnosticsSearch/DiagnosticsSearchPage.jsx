@@ -362,7 +362,13 @@ const filterOfferingByCategory = (offering, selectedCat, testCats = []) => {
       cId === needle ||
       cSlug === needle ||
       cName === needle ||
-      (needle.length >= 4 && (cId.includes(needle) || cSlug.includes(needle) || cName.includes(needle) || needle.includes(cSlug) || needle.includes(cName)))
+      (needle.length >= 4 && (
+        cId.includes(needle) || 
+        (cSlug && cSlug.includes(needle)) || 
+        (cName && cName.includes(needle)) || 
+        (cSlug && needle.includes(cSlug)) || 
+        (cName && needle.includes(cName))
+      ))
     );
   });
 
@@ -606,6 +612,7 @@ const resolveTestCategoryName = (val, testCats = []) => {
       String(c.name || '').toLowerCase() === clean.toLowerCase()
     )
   );
+  if (found && found.name) return found.name;
   return clean
     .split(/[-_]+/)
     .map(word => word.charAt(0).toUpperCase() + word.slice(1).toLowerCase())
@@ -624,8 +631,8 @@ const resolveTestCategoryName = (val, testCats = []) => {
         String(c.id).toLowerCase() === needle ||
         String(c.slug || '').toLowerCase() === needle ||
         String(c.name || '').toLowerCase() === needle ||
-        needle.includes(String(c.slug || '').toLowerCase()) ||
-        String(c.name || '').toLowerCase().includes(needle)
+        (c.slug && needle.includes(String(c.slug).toLowerCase())) ||
+        (c.name && String(c.name).toLowerCase().includes(needle))
       )
     );
     return found ? found.id : selectedTestCategory;
@@ -640,8 +647,8 @@ const resolveTestCategoryName = (val, testCats = []) => {
         String(c.id).toLowerCase() === needle ||
         String(c.slug || '').toLowerCase() === needle ||
         String(c.name || '').toLowerCase() === needle ||
-        needle.includes(String(c.slug || '').toLowerCase()) ||
-        String(c.name || '').toLowerCase().includes(needle)
+        (c.slug && needle.includes(String(c.slug).toLowerCase())) ||
+        (c.name && String(c.name).toLowerCase().includes(needle))
       )
     );
     return found ? (found.id || found.slug || found.name) : selectedCenterCategory;
@@ -656,8 +663,8 @@ const resolveTestCategoryName = (val, testCats = []) => {
         String(c.id).toLowerCase() === needle ||
         String(c.slug || '').toLowerCase() === needle ||
         String(c.name || '').toLowerCase() === needle ||
-        needle.includes(String(c.slug || '').toLowerCase()) ||
-        String(c.name || '').toLowerCase().includes(needle)
+        (c.slug && needle.includes(String(c.slug).toLowerCase())) ||
+        (c.name && String(c.name).toLowerCase().includes(needle))
       )
     );
   }, [selectedTestCategory, displayTestCategories]);

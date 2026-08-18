@@ -1,6 +1,6 @@
 import React from 'react';
 import { HeartPulse, MapPin, Phone, Mail, Clock, ShieldCheck, Heart } from 'lucide-react';
-import { LOCATIONS } from '../data/constants';
+import { DIVISIONS } from '../data/constants';
 
 export default function Footer({ onSelectLocation, onNavigateAdmin }) {
   return (
@@ -34,13 +34,13 @@ export default function Footer({ onSelectLocation, onNavigateAdmin }) {
               Divisions & Cities
             </h4>
             <ul className="space-y-2">
-              {LOCATIONS.slice(1).map((loc) => (
+              {DIVISIONS.map((loc) => (
                 <li key={loc}>
                   <button
                     onClick={() => onSelectLocation(loc)}
-                    className="hover:text-emerald-400 transition-colors flex items-center gap-1.5 cursor-pointer"
+                    className="hover:text-emerald-400 transition-colors flex items-center gap-1.5 cursor-pointer text-left"
                   >
-                    <MapPin className="w-3 h-3 text-emerald-500" />
+                    <MapPin className="w-3 h-3 text-emerald-500 shrink-0" />
                     <span>Doctor Chambers in {loc}</span>
                   </button>
                 </li>

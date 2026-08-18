@@ -29,7 +29,7 @@ export default function ThreeWayEngine({
   setDoctorKeyword,
   selectedLocation,
   setSelectedLocation,
-  onSearchExecute,
+  onExecuteSearch,
   activeEngineTab,
   setActiveEngineTab
 }) {
@@ -161,6 +161,7 @@ export default function ThreeWayEngine({
                 accent="emerald"
                 layout="stacked"
                 showLabels={true}
+                divisionOnly={true}
               />
             </div>
 
@@ -169,7 +170,7 @@ export default function ThreeWayEngine({
               <button
                 onClick={() => {
                   setActiveEngineTab('doctor');
-                  onSearchExecute('doctor', selectedSpecialty, doctorLocState);
+                  onExecuteSearch('doctor', selectedSpecialty, doctorLocState);
                 }}
                 className="w-full py-2.5 rounded-lg bg-emerald-600 hover:bg-emerald-700 text-white font-bold text-xs uppercase tracking-wider transition-all flex items-center justify-center gap-2 shadow-sm active:scale-95 cursor-pointer"
               >
@@ -231,6 +232,7 @@ export default function ThreeWayEngine({
                 accent="teal"
                 layout="stacked"
                 showLabels={true}
+                divisionOnly={true}
               />
             </div>
 
@@ -239,7 +241,7 @@ export default function ThreeWayEngine({
               <button
                 onClick={() => {
                   setActiveEngineTab('diagnostics');
-                  onSearchExecute('diagnostics', selectedTest, diagLocState);
+                  onExecuteSearch('diagnostics', selectedTest, diagLocState);
                 }}
                 className="w-full py-2.5 rounded-lg bg-teal-600 hover:bg-teal-700 text-white font-bold text-xs uppercase tracking-wider transition-all flex items-center justify-center gap-2 shadow-sm active:scale-95 cursor-pointer"
               >
@@ -300,6 +302,7 @@ export default function ThreeWayEngine({
                 accent="cyan"
                 layout="stacked"
                 showLabels={true}
+                divisionOnly={true}
               />
             </div>
 
@@ -308,7 +311,7 @@ export default function ThreeWayEngine({
               <button
                 onClick={() => {
                   setActiveEngineTab('hospital');
-                  onSearchExecute('hospital', selectedHospitalCategory, hospLocState);
+                  onExecuteSearch('hospital', selectedHospitalCategory, hospLocState);
                 }}
                 className="w-full py-2.5 rounded-lg bg-cyan-600 hover:bg-cyan-700 text-white font-bold text-xs uppercase tracking-wider transition-all flex items-center justify-center gap-2 shadow-sm active:scale-95 cursor-pointer"
               >

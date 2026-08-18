@@ -17,7 +17,8 @@ export default function CascadingLocationFilter({
   accent = 'emerald', // 'emerald' | 'teal' | 'cyan'
   layout = 'stacked', // 'stacked' | 'inline' | 'grid'
   showLabels = true,
-  className = ''
+  className = '',
+  divisionOnly = false
 }) {
   const currentDistricts = division && division !== 'All Bangladesh' 
     ? getDistrictsForDivision(division) 
@@ -104,7 +105,7 @@ export default function CascadingLocationFilter({
       </div>
 
       {/* 2. SECONDARY LEVEL: DISTRICT (Opens only when a specific Division is selected) */}
-      {division && division !== 'All Bangladesh' && (
+      {!divisionOnly && division && division !== 'All Bangladesh' && (
         <div className={`transition-all duration-300 animate-in fade-in slide-in-from-top-1 ${layout === 'inline' ? 'flex-1 min-w-[140px]' : ''}`}>
           {showLabels && (
             <label className={`block text-[11px] font-bold mb-1 ${accentLabel}`}>
@@ -132,7 +133,7 @@ export default function CascadingLocationFilter({
       )}
 
       {/* 3. TERTIARY LEVEL: AREA / THANA (Opens only when a specific District is selected) */}
-      {division && division !== 'All Bangladesh' && district && district !== 'All Districts' && (
+      {!divisionOnly && division && division !== 'All Bangladesh' && district && district !== 'All Districts' && (
         <div className={`transition-all duration-300 animate-in fade-in slide-in-from-top-1 ${layout === 'inline' ? 'flex-1 min-w-[140px]' : ''}`}>
           {showLabels && (
             <label className={`block text-[11px] font-bold mb-1 ${accentLabel}`}>
