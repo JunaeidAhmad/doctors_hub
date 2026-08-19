@@ -14,13 +14,25 @@ class DoctorSpecialtySerializer(serializers.ModelSerializer):
 
 class AffiliationScheduleSerializer(serializers.ModelSerializer):
     id = serializers.UUIDField(required=False)
+    affiliation_id = serializers.PrimaryKeyRelatedField(
+        queryset=DoctorAffiliation.objects.all(), write_only=True, source='affiliation', required=False
+    )
+    affiliation = serializers.PrimaryKeyRelatedField(
+        queryset=DoctorAffiliation.objects.all(), required=False
+    )
 
     class Meta:
         model = AffiliationSchedule
-        fields = ('id', 'affiliation', 'day_of_week', 'start_time', 'end_time')
+        fields = ('id', 'affiliation', 'affiliation_id', 'day_of_week', 'start_time', 'end_time')
         extra_kwargs = {
             'affiliation': {'required': False}
         }
+
+    def to_internal_value(self, data):
+        mutable_data = data.copy() if hasattr(data, 'copy') else dict(data)
+        if 'affiliation_id' in mutable_data and not mutable_data.get('affiliation'):
+            mutable_data['affiliation'] = mutable_data['affiliation_id']
+        return super().to_internal_value(mutable_data)
 
 
 class DoctorAffiliationSerializer(serializers.ModelSerializer):

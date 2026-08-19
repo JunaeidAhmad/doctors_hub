@@ -55,4 +55,47 @@
   box-shadow: 0 0 12px rgba(34, 211, 238, 0.9);
 }
 
+/* Motion primitives — fast, ease-out, small travel */
+@keyframes fadeIn { 
+  from { opacity: 0; transform: translateY(4px); } 
+  to { opacity: 1; transform: none; } 
+}
+@keyframes slideInRight { 
+  from { opacity: 0; transform: translateX(24px); } 
+  to { opacity: 1; transform: none; } 
+}
+@keyframes scaleIn { 
+  from { opacity: 0; transform: scale(.96); } 
+  to { opacity: 1; transform: none; } 
+}
+@keyframes shimmer { 
+  100% { background-position: -200% 0; } 
+}
+@keyframes rowIn { 
+  from { opacity: 0; transform: translateY(6px); } 
+  to { opacity: 1; transform: none; } 
+}
+
+.animate-fadeIn { 
+  animation: fadeIn .18s ease-out both; 
+}
+.animate-slideInRight { 
+  animation: slideInRight .24s cubic-bezier(.22,1,.36,1) both; 
+}
+.animate-scaleIn { 
+  animation: scaleIn .18s ease-out both; 
+}
+.skeleton { 
+  background: linear-gradient(90deg, #1e293b 25%, #334155 37%, #1e293b 63%);
+  background-size: 200% 100%; 
+  animation: shimmer 1.2s infinite linear; 
+}
+
+@media (prefers-reduced-motion: reduce) {
+  *, *::before, *::after { 
+    animation-duration: .001ms !important; 
+    transition-duration: .001ms !important; 
+  }
+}
+
 

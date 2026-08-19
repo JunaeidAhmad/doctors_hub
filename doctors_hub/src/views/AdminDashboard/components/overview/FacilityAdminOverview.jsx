@@ -82,17 +82,21 @@ export default function FacilityAdminOverview() {
             </div>
           </div>
 
-          {/* Quick Action Button */}
+          {/* Quick Action Buttons */}
           <div className="flex flex-wrap lg:flex-col gap-2.5 shrink-0">
             <button
-              onClick={() => {
-                if (isHospital && activeHospital) handleOpenHospitalModal(activeHospital);
-                else if (activeDiagnostic) handleOpenDiagnosticModal(activeDiagnostic);
-              }}
+              onClick={() => setActiveTab(isHospital ? 'hospitals' : 'diagnostics')}
               className="px-4 py-2.5 bg-teal-600 hover:bg-teal-500 text-white font-bold text-xs rounded-xl flex items-center gap-2 shadow-lg shadow-teal-600/20 transition cursor-pointer"
             >
               <Edit className="w-3.5 h-3.5" />
               <span>Edit Facility Profile</span>
+            </button>
+            <button
+              onClick={() => setActiveTab('doctors')}
+              className="px-4 py-2.5 bg-emerald-600 hover:bg-emerald-500 text-white font-bold text-xs rounded-xl flex items-center gap-2 shadow-lg shadow-emerald-600/20 transition cursor-pointer"
+            >
+              <Plus className="w-3.5 h-3.5" />
+              <span>Affiliated Doctors</span>
             </button>
             <button
               onClick={() => setActiveTab('branch-tests')}

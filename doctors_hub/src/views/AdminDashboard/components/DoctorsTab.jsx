@@ -1,19 +1,35 @@
-import React from 'react';
+import React, { useState } from 'react';
 import { Search, Plus, Edit, Trash2, Stethoscope } from 'lucide-react';
 import { useAdminContext } from '../context/AdminContext';
 import DoctorModal from './modals/DoctorModal';
 import DoctorProfileEditor from './doctor/DoctorProfileEditor';
+import AffiliateDoctorDrawer from './facility/AffiliateDoctorDrawer';
 
 export default function DoctorsTab() {
   const {
     isDoctor,
     isFacilityAdmin,
+    isHospitalAdmin,
+    isDiagnosticAdmin,
+    isSuperAdmin,
+    storedUser,
+    hospitals = [],
+    diagnosticCenters = [],
     doctors,
     searchTerm,
     setSearchTerm,
     handleOpenDoctorModal,
     handleDeleteDoctor
   } = useAdminContext();
+
+  const [showAffiliateDrawer, setShowAffiliateDrawer] = useState(false);
+
+  const managedLoc = storedUser?.managed_locations?.[0];
+  const myFacility = isDiagnosticAdmin 
+    ? (diagnosticCenters[0] || managedLoc || hospitals[0]) 
+    : (hospitals[0] || managedLoc || diagnosticCenters[0]);
+  const myFacilityId = myFacility?.id || managedLoc?.id;
+  const myFacilityName = myFacility?.name || managedLoc?.name;
 
   // If logged in as Doctor, show dedicated single doctor profile editor
   if (isDoctor) {
@@ -34,7 +50,14 @@ export default function DoctorsTab() {
               className="w-full bg-slate-950 border border-slate-800 rounded-xl pl-9 pr-4 py-2 text-xs text-white placeholder-slate-500 focus:outline-none focus:border-teal-500"
             />
           </div>
-          {!isFacilityAdmin && (
+          {isFacilityAdmin ? (
+            <button
+              onClick={() => setShowAffiliateDrawer(true)}
+              className="flex items-center gap-2 px-4 py-2.5 bg-teal-600 hover:bg-teal-500 text-white font-bold text-xs rounded-xl transition shadow-lg shadow-teal-600/20 cursor-pointer"
+            >
+              <Plus className="w-4 h-4" /> Onboard / Affiliate Doctor
+            </button>
+          ) : (
             <button
               onClick={() => handleOpenDoctorModal()}
               className="flex items-center gap-2 px-4 py-2.5 bg-teal-600 hover:bg-teal-500 text-white font-bold text-xs rounded-xl transition shadow-lg shadow-teal-600/20 cursor-pointer"
@@ -106,6 +129,15 @@ export default function DoctorsTab() {
       </div>
 
       <DoctorModal />
+
+      {isFacilityAdmin && (
+        <AffiliateDoctorDrawer
+          isOpen={showAffiliateDrawer}
+          onClose={() => setShowAffiliateDrawer(false)}
+          facilityId={myFacilityId}
+          facilityName={myFacilityName}
+        />
+      )}
     </>
   );
 }

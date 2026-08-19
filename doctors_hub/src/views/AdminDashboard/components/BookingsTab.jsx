@@ -1,9 +1,21 @@
 import React from 'react';
 import { Search, Calendar, TestTube, CheckCircle } from 'lucide-react';
 import { useAdminContext } from '../context/AdminContext';
+import { api } from '../../../services/api';
+import StatusBadge from './shared/StatusBadge';
 
 export default function BookingsTab() {
-  const { activeTab, doctorBookings, labBookings, searchTerm, setSearchTerm } = useAdminContext();
+  const { 
+    activeTab, 
+    doctorBookings, 
+    labBookings, 
+    searchTerm, 
+    setSearchTerm,
+    loadAllData,
+    setSuccessMsg,
+    setError,
+    showNotification
+  } = useAdminContext();
   
   const isDoctor = activeTab === 'doc-bookings';
   const title = isDoctor ? 'Doctor Serial Appointments' : 'Home Lab Sample Pickups';
@@ -99,16 +111,7 @@ export default function BookingsTab() {
                       )}
                     </td>
                     <td className="py-4 px-4">
-                      <span className={`inline-flex items-center gap-1 px-2.5 py-1 rounded-lg text-[10px] font-bold ${
-                        b.status === 'confirmed' ? 'bg-emerald-500/20 text-emerald-300 border border-emerald-500/30' :
-                        b.status === 'completed' ? 'bg-cyan-500/20 text-cyan-300 border border-cyan-500/30' :
-                        b.status === 'cancelled' ? 'bg-rose-500/20 text-rose-300 border border-rose-500/30' :
-                        b.status === 'no_show' ? 'bg-amber-500/20 text-amber-300 border border-amber-500/30' :
-                        'bg-slate-500/20 text-slate-300 border border-slate-500/30'
-                      }`}>
-                        <CheckCircle className="w-3 h-3" />
-                        <span className="capitalize">{b.status || 'Pending'}</span>
-                      </span>
+                      <StatusBadge status={b.status} />
                     </td>
                     <td className="py-4 px-4 text-right">
                       <select

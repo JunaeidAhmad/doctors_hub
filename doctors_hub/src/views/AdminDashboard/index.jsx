@@ -21,6 +21,7 @@ import DoctorScheduleManager from './components/doctor/DoctorScheduleManager';
 import StaffTab from './components/StaffTab';
 import VerificationQueueTab from './components/VerificationQueueTab';
 import PlatformAdminsTab from './components/PlatformAdminsTab';
+import FacilityProfile from './components/facility/FacilityProfile';
 
 function AdminDashboardContent({ onNavigate, onAdminLoggedIn }) {
 
@@ -28,6 +29,8 @@ function AdminDashboardContent({ onNavigate, onAdminLoggedIn }) {
     isStaff,
     isSuperAdmin,
     isFacilityAdmin,
+    isHospitalAdmin,
+    isDiagnosticAdmin,
     isDoctor,
     storedUser,
     activeUser,
@@ -50,17 +53,28 @@ function AdminDashboardContent({ onNavigate, onAdminLoggedIn }) {
   let roleTitle = 'Platform Administrator';
   let RoleIcon = Crown;
   let roleColor = 'text-amber-400 bg-amber-500/10 border-amber-500/30';
+  let headerFacilityName = '';
 
   if (isDoctor) {
     const docName = (doctors && doctors[0]?.name) || storedUser?.first_name || 'Specialist Doctor';
     roleTitle = `Doctor: ${docName}`;
     RoleIcon = Stethoscope;
     roleColor = 'text-teal-300 bg-teal-500/10 border-teal-500/30';
+    headerFacilityName = `Dr. ${docName}`;
   } else if (isFacilityAdmin) {
-    const facName = (hospitals && hospitals[0]?.name) || (diagnosticCenters && diagnosticCenters[0]?.name) || 'Managed Facility';
-    roleTitle = `Facility: ${facName}`;
-    RoleIcon = hospitals && hospitals.length > 0 ? Building2 : FlaskConical;
-    roleColor = 'text-cyan-300 bg-cyan-500/10 border-cyan-500/30';
+    const managedLoc = storedUser?.managed_locations?.[0];
+    const isHosp = isHospitalAdmin || managedLoc?.location_type === 'hospital' || (hospitals && hospitals.length > 0);
+    const fac = isHosp ? hospitals?.[0] : diagnosticCenters?.[0];
+    const facName = managedLoc?.name || fac?.name || (isHosp ? 'Hospital' : 'Diagnostic Center');
+    const facBranch = managedLoc?.branch || fac?.branch;
+    const branchLabel = facBranch ? ` (${facBranch})` : '';
+    
+    roleTitle = `${isHosp ? 'Hospital' : 'Diagnostic'}: ${facName}${branchLabel}`;
+    headerFacilityName = `${facName}${branchLabel}`;
+    RoleIcon = isHosp ? Building2 : FlaskConical;
+    roleColor = isHosp 
+      ? 'text-emerald-300 bg-emerald-500/10 border-emerald-500/30' 
+      : 'text-cyan-300 bg-cyan-500/10 border-cyan-500/30';
   } else if (isSuperAdmin) {
     roleTitle = 'Platform Super Admin';
     RoleIcon = Crown;
@@ -78,13 +92,19 @@ function AdminDashboardContent({ onNavigate, onAdminLoggedIn }) {
           
           {/* Brand & Context Title */}
           <div className="flex items-center gap-3">
-            <div className="p-2 rounded-xl bg-teal-500/10 border border-teal-500/20 text-teal-400 shrink-0">
-              <ShieldAlert className="w-5 h-5" />
+            <div className={`p-2.5 rounded-2xl ${isFacilityAdmin ? (hospitals?.length > 0 ? 'bg-emerald-500/10 border border-emerald-500/20 text-emerald-400' : 'bg-cyan-500/10 border border-cyan-500/20 text-cyan-400') : 'bg-teal-500/10 border border-teal-500/20 text-teal-400'} shrink-0`}>
+              <RoleIcon className="w-5 h-5" />
             </div>
             <div>
-              <div className="flex items-center gap-2">
+              <div className="flex flex-wrap items-center gap-2">
                 <h1 className="font-extrabold text-white text-base sm:text-lg leading-tight">
-                  DoctorsHub Admin Console
+                  {headerFacilityName ? (
+                    <span>
+                      {headerFacilityName} <span className="text-slate-400 font-semibold text-sm">Console</span>
+                    </span>
+                  ) : (
+                    'DoctorsHub Admin Console'
+                  )}
                 </h1>
                 <span className={`inline-flex items-center gap-1 px-2.5 py-0.5 rounded-full border text-[11px] font-bold ${roleColor}`}>
                   <RoleIcon className="w-3 h-3" />
@@ -168,8 +188,8 @@ function AdminDashboardContent({ onNavigate, onAdminLoggedIn }) {
           {activeTab === 'verification-queue' && <VerificationQueueTab />}
           {activeTab === 'platform-admins' && <PlatformAdminsTab />}
           {activeTab === 'staff' && <StaffTab />}
-          {activeTab === 'hospitals' && <HospitalsTab />}
-          {activeTab === 'diagnostics' && <DiagnosticsTab />}
+          {activeTab === 'hospitals' && (isSuperAdmin ? <HospitalsTab /> : <FacilityProfile kind="hospital" />)}
+          {activeTab === 'diagnostics' && (isSuperAdmin ? <DiagnosticsTab /> : <FacilityProfile kind="diagnostic" />)}
           {activeTab === 'add-tests-to-diagnostics' && <AddTestsToDiagnosticsTab />}
           {activeTab === 'doctors' && <DoctorsTab />}
           {activeTab === 'doc-affiliations' && <DoctorAffiliationsManager />}

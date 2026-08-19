@@ -1,5 +1,5 @@
 import React, { useState, useEffect } from 'react';
-import { XCircle, Calculator, Building2, FlaskConical, CheckCircle2, Circle } from 'lucide-react';
+import { XCircle, Calculator, Building2, FlaskConical, CheckCircle2, Circle, Clock, TestTube } from 'lucide-react';
 import { useAdminContext } from '../../context/AdminContext';
 import { api } from '../../../../services/api';
 import { calculateFinalPrice } from '../../utils/adminHelpers';
@@ -29,6 +29,7 @@ export default function BranchTestModal() {
     original_price: '700',
     discount: '25% OFF',
     price: '525',
+    report_time: '',
     is_available: true,
     home_sample_collection: false
   });
@@ -39,12 +40,13 @@ export default function BranchTestModal() {
       setBranchTestForm({
         id: editingBranchTest.id,
         facility_type: isHosp ? 'hospital' : 'diagnostic_center',
-        center: !isHosp ? editingBranchTest.location_id : '',
-        hospital: isHosp ? editingBranchTest.location_id : '',
-        test: editingBranchTest.test_id,
+        center: !isHosp ? (editingBranchTest.location_id || editingBranchTest.location) : '',
+        hospital: isHosp ? (editingBranchTest.location_id || editingBranchTest.location) : '',
+        test: editingBranchTest.test_id || editingBranchTest.test || '',
         original_price: editingBranchTest.original_price ? editingBranchTest.original_price.toString() : (editingBranchTest.price ? editingBranchTest.price.toString() : ''),
         discount: editingBranchTest.discount || '',
         price: editingBranchTest.price ? editingBranchTest.price.toString() : (editingBranchTest.discounted_price ? editingBranchTest.discounted_price.toString() : ''),
+        report_time: editingBranchTest.report_time || (editingBranchTest.test_details?.report_time_hours ? `${editingBranchTest.test_details.report_time_hours} hours` : ''),
         is_available: editingBranchTest.is_available ?? true,
         home_sample_collection: editingBranchTest.home_sample_collection ?? false
       });
@@ -60,6 +62,7 @@ export default function BranchTestModal() {
         original_price: '700',
         discount: '25% OFF',
         price: '525',
+        report_time: '',
         is_available: true,
         home_sample_collection: false
       });
@@ -69,6 +72,13 @@ export default function BranchTestModal() {
   if (!showBranchTestModal) return null;
 
   const isEditing = Boolean(editingBranchTest);
+
+  const currentTest = editingBranchTest?.test_details || (tests || []).find(t => String(t.id) === String(branchTestForm.test || editingBranchTest?.test_id || editingBranchTest?.test));
+  const testName = currentTest?.name || editingBranchTest?.test_name || 'Diagnostic Test';
+  const categoryName = currentTest?.category_name || currentTest?.category?.name || '';
+  const sampleType = currentTest?.sample_type || '';
+  const facilityName = editingBranchTest?.facility_name || editingBranchTest?.location_details?.name || '';
+  const branchName = editingBranchTest?.location_details?.branch || '';
 
   const handleSaveBranchTest = async (e) => {
     e.preventDefault();
@@ -82,6 +92,7 @@ export default function BranchTestModal() {
         price: parseFloat(branchTestForm.price) || 0,
         original_price: branchTestForm.original_price ? parseFloat(branchTestForm.original_price) : null,
         discount: branchTestForm.discount,
+        report_time: branchTestForm.report_time,
         is_available: branchTestForm.is_available,
         home_sample_collection: branchTestForm.home_sample_collection
       };
@@ -114,6 +125,38 @@ export default function BranchTestModal() {
       }
     >
       <form id="drawer-form" onSubmit={handleSaveBranchTest} className="space-y-4 text-sm">
+        {/* EDITING TEST HEADER BANNER */}
+        {isEditing && (
+          <div className="p-4 bg-gradient-to-r from-amber-500/10 via-slate-900 to-slate-900 border border-amber-500/20 rounded-2xl">
+            <div className="flex items-start gap-3">
+              <div className="p-2.5 rounded-xl bg-amber-500/20 border border-amber-500/30 text-amber-400 shrink-0">
+                <TestTube className="w-5 h-5" />
+              </div>
+              <div className="min-w-0 flex-1">
+                <div className="text-[10px] font-extrabold text-amber-400 uppercase tracking-wider">Offered Test</div>
+                <h4 className="text-white font-bold text-base leading-tight mt-0.5">{testName}</h4>
+                <div className="flex flex-wrap items-center gap-2 mt-2">
+                  {categoryName && (
+                    <span className="px-2 py-0.5 rounded-md bg-slate-800 border border-slate-700 text-[10px] font-semibold text-slate-300">
+                      {categoryName}
+                    </span>
+                  )}
+                  {sampleType && (
+                    <span className="px-2 py-0.5 rounded-md bg-slate-800 border border-slate-700 text-[10px] font-medium text-slate-400">
+                      Sample: {sampleType}
+                    </span>
+                  )}
+                  {facilityName && (
+                    <span className="px-2 py-0.5 rounded-md bg-slate-800/80 text-[10px] font-medium text-slate-400">
+                      {facilityName} {branchName ? `(${branchName})` : ''}
+                    </span>
+                  )}
+                </div>
+              </div>
+            </div>
+          </div>
+        )}
+
         {/* FACILITY TYPE SELECTOR */}
         <div>
           <label className="block text-slate-300 font-semibold mb-1">Facility Type *</label>
@@ -184,22 +227,25 @@ export default function BranchTestModal() {
           </div>
         )}
 
-        <div>
-          <label className="block text-slate-300 font-semibold mb-1">Select Test *</label>
-          <select
-            required
-            disabled={isEditing}
-            value={branchTestForm.test}
-            onChange={e => setBranchTestForm({ ...branchTestForm, test: e.target.value })}
-            className="w-full bg-slate-950 border border-slate-800 rounded-xl px-3 py-2 text-white font-bold disabled:opacity-50 disabled:cursor-not-allowed"
-          >
-            <option value="">Select Diagnostic Test</option>
-            {(tests || []).map(t => (
-              <option key={t.id} value={t.id}>{t.name}</option>
-            ))}
-          </select>
-        </div>
+        {/* SELECT TEST (ONLY WHEN ADDING NEW) */}
+        {!isEditing && (
+          <div>
+            <label className="block text-slate-300 font-semibold mb-1">Select Test *</label>
+            <select
+              required
+              value={branchTestForm.test}
+              onChange={e => setBranchTestForm({ ...branchTestForm, test: e.target.value })}
+              className="w-full bg-slate-950 border border-slate-800 rounded-xl px-3 py-2 text-white font-bold"
+            >
+              <option value="">Select Diagnostic Test</option>
+              {(tests || []).map(t => (
+                <option key={t.id} value={t.id}>{t.name}</option>
+              ))}
+            </select>
+          </div>
+        )}
 
+        {/* PRICING FIELDS */}
         <div className="grid grid-cols-2 gap-3">
           <div>
             <label className="block text-slate-300 font-semibold mb-1">Original Price (৳) *</label>
@@ -242,7 +288,25 @@ export default function BranchTestModal() {
           />
         </div>
 
-        <div className="flex items-center gap-4 mt-2">
+        {/* REPORT DELIVERY TIME FIELD */}
+        <div>
+          <label className="block text-slate-300 font-semibold mb-1">Report Delivery Time</label>
+          <div className="relative">
+            <input
+              type="text"
+              placeholder="e.g. Same Day (6-8 Hours), 24 Hours, 2-3 Days"
+              value={branchTestForm.report_time}
+              onChange={e => setBranchTestForm({ ...branchTestForm, report_time: e.target.value })}
+              className="w-full bg-slate-950 border border-slate-800 rounded-xl px-3.5 py-2 text-white text-xs placeholder-slate-500 focus:outline-none focus:border-teal-500 transition pr-9"
+            />
+            <div className="absolute right-3 top-1/2 -translate-y-1/2 pointer-events-none text-slate-500">
+              <Clock className="w-4 h-4" />
+            </div>
+          </div>
+        </div>
+
+        {/* AVAILABILITY CHECKBOXES */}
+        <div className="flex items-center gap-4 mt-2 pt-2 border-t border-slate-800/80">
           <label className="flex items-center gap-2 cursor-pointer">
             <input 
               type="checkbox" 

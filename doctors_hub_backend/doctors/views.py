@@ -91,8 +91,15 @@ class DoctorViewSet(SlugOrPkLookupMixin, RoleScopedQuerysetMixin, viewsets.Model
             if hasattr(user, "doctor_profile") and user.doctor_profile:
                 raise exceptions.ValidationError("You already have a doctor profile.")
             serializer.save(user=user)
+        elif getattr(user, "is_facility_admin", False):
+            affs = self.request.data.get("affiliations") or []
+            loc_ids = {str(a.get("location_id") or a.get("location")) for a in affs if a.get("location_id") or a.get("location")}
+            managed_ids = set(map(str, getattr(user, "managed_location_ids", [])))
+            if loc_ids and not loc_ids.issubset(managed_ids):
+                raise exceptions.PermissionDenied("You can only onboard doctors into facilities you manage.")
+            serializer.save()
         else:
-            raise exceptions.PermissionDenied("Only super admins and doctors can create doctor profiles.")
+            raise exceptions.PermissionDenied("Only super admins, facility admins, and doctors can create doctor profiles.")
 
 
 class DoctorAffiliationViewSet(RoleScopedQuerysetMixin, viewsets.ModelViewSet):

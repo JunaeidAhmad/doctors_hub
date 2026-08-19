@@ -585,10 +585,13 @@ export const api = {
     return handleResponse(res);
   },
   async patchDiagnosticCenter(id, data) {
+    const isFormData = data instanceof FormData;
+    const headers = getHeaders();
+    if (isFormData) delete headers['Content-Type'];
     const res = await fetchWithTimeout(`${BASE_URL}/diagnostic-centers/${id}/`, {
       method: 'PATCH',
-      headers: getHeaders(),
-      body: JSON.stringify(data),
+      headers,
+      body: isFormData ? data : JSON.stringify(data),
     });
     return handleResponse(res);
   },
@@ -765,10 +768,13 @@ export const api = {
   },
   async patchHospital(id, data) {
     clearCache();
+    const isFormData = data instanceof FormData;
+    const headers = getHeaders();
+    if (isFormData) delete headers['Content-Type'];
     const res = await fetchWithTimeout(`${BASE_URL}/hospitals/${id}/`, {
       method: 'PATCH',
-      headers: getHeaders(),
-      body: JSON.stringify(data),
+      headers,
+      body: isFormData ? data : JSON.stringify(data),
     });
     return handleResponse(res);
   },
@@ -852,6 +858,64 @@ export const api = {
     });
     if (res.status === 204 || res.status === 200) return true;
     return handleResponse(res);
+  },
+
+  // Doctor Affiliations
+  async createDoctorAffiliation(data) {
+    const res = await fetchWithTimeout(`${BASE_URL}/affiliations/`, {
+      method: 'POST',
+      headers: getHeaders(),
+      body: JSON.stringify(data),
+    });
+    return handleResponse(res);
+  },
+  async updateDoctorAffiliation(id, data) {
+    const res = await fetchWithTimeout(`${BASE_URL}/affiliations/${id}/`, {
+      method: 'PATCH',
+      headers: getHeaders(),
+      body: JSON.stringify(data),
+    });
+    return handleResponse(res);
+  },
+  async deleteDoctorAffiliation(id) {
+    const res = await fetchWithTimeout(`${BASE_URL}/affiliations/${id}/`, {
+      method: 'DELETE',
+      headers: getHeaders(),
+    });
+    if (res.status === 204 || res.status === 200) return true;
+    return handleResponse(res);
+  },
+
+  // Affiliation Schedules
+  async createAffiliationSchedule(data) {
+    const res = await fetchWithTimeout(`${BASE_URL}/schedules/`, {
+      method: 'POST',
+      headers: getHeaders(),
+      body: JSON.stringify(data),
+    });
+    return handleResponse(res);
+  },
+  async deleteAffiliationSchedule(id) {
+    const res = await fetchWithTimeout(`${BASE_URL}/schedules/${id}/`, {
+      method: 'DELETE',
+      headers: getHeaders(),
+    });
+    if (res.status === 204 || res.status === 200) return true;
+    return handleResponse(res);
+  },
+
+  // Facility Doctor Onboarding
+  async onboardFacilityDoctor(locationId, { doctor, affiliation }) {
+    let docId = doctor?.id;
+    if (!docId) {
+      const newDoc = await this.createDoctor(doctor);
+      docId = newDoc.id;
+    }
+    return this.createDoctorAffiliation({
+      doctor: docId,
+      location_id: locationId,
+      ...affiliation,
+    });
   },
 
   // Doctor Booking

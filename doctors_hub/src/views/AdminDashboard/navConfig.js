@@ -111,12 +111,14 @@ export const navConfig = {
       group: 'OFFERINGS',
       items: [
         { id: 'branch-tests', label: 'Offered Tests', icon: Calculator },
-        { id: 'add-tests-to-diagnostics', label: 'Add Tests', icon: List }
+        { id: 'add-tests-to-diagnostics', label: 'Add Tests', icon: List },
+        { id: 'doctors', label: 'Affiliated Doctors', icon: Stethoscope }
       ]
     },
     {
       group: 'BOOKINGS',
       items: [
+        { id: 'doc-bookings', label: 'Doctor Appointments', icon: Calendar },
         { id: 'lab-bookings', label: 'Lab Bookings', icon: Calendar }
       ]
     },

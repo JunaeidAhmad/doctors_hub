@@ -20,15 +20,20 @@ export default function DoctorAffiliationsManager() {
 
   const [showModal, setShowModal] = useState(false);
   const [editingAff, setEditingAff] = useState(null);
-  const [facilityName, setFacilityName] = useState('');
+  const [selectedLocationId, setSelectedLocationId] = useState('');
   const [consultationType, setConsultationType] = useState('OPD');
   const [fee, setFee] = useState('1500');
   const [saving, setSaving] = useState(false);
   const [localErr, setLocalErr] = useState('');
 
+  const allLocations = [
+    ...(hospitals || []).map(h => ({ id: h.id, name: `${h.name} (${h.branch || 'Main'})`, type: 'hospital' })),
+    ...(diagnosticCenters || []).map(dc => ({ id: dc.id, name: `${dc.name} (${dc.branch || 'Main'})`, type: 'diagnostic' }))
+  ];
+
   const handleOpenAddModal = () => {
     setEditingAff(null);
-    setFacilityName('');
+    setSelectedLocationId(allLocations[0]?.id || '');
     setConsultationType('OPD');
     setFee('1500');
     setLocalErr('');
@@ -37,7 +42,7 @@ export default function DoctorAffiliationsManager() {
 
   const handleOpenEditModal = (aff) => {
     setEditingAff(aff);
-    setFacilityName(aff.hospital?.name || aff.diagnostic_center?.name || aff.facility_name || aff.chamber_name || '');
+    setSelectedLocationId(aff.location_id || aff.location?.id || '');
     setConsultationType(aff.consultation_type || 'OPD');
     setFee(String(aff.fee || '1500'));
     setLocalErr('');
@@ -58,10 +63,10 @@ export default function DoctorAffiliationsManager() {
       } else {
         // Create new affiliation
         await api.createDoctorAffiliation({
-          doctor_id: doctor.id,
+          doctor: doctor?.id,
+          location_id: selectedLocationId || allLocations[0]?.id,
           consultation_type: consultationType,
-          fee: parseFloat(fee) || 1500,
-          location_name: facilityName
+          fee: parseFloat(fee) || 1500
         });
       }
 
@@ -194,16 +199,21 @@ export default function DoctorAffiliationsManager() {
 
             <form onSubmit={handleSaveAffiliation} className="space-y-4 text-xs">
               <div>
-                <label className="block text-slate-300 font-bold mb-1.5">Hospital or Chamber Name</label>
-                <input
-                  type="text"
+                <label className="block text-slate-300 font-bold mb-1.5">Hospital or Chamber Location *</label>
+                <select
                   required
                   disabled={Boolean(editingAff)}
-                  value={facilityName}
-                  onChange={e => setFacilityName(e.target.value)}
-                  placeholder="e.g. Bangladesh Specialized Hospital or Private Chamber"
-                  className="w-full bg-slate-950 border border-slate-800 rounded-xl px-4 py-2.5 text-white focus:outline-none focus:border-teal-500 disabled:opacity-60"
-                />
+                  value={selectedLocationId}
+                  onChange={e => setSelectedLocationId(e.target.value)}
+                  className="w-full bg-slate-950 border border-slate-800 rounded-xl px-4 py-2.5 text-white focus:outline-none focus:border-teal-500 disabled:opacity-60 font-semibold"
+                >
+                  <option value="">Select Hospital / Chamber</option>
+                  {allLocations.map(loc => (
+                    <option key={loc.id} value={loc.id}>
+                      {loc.name} {loc.type === 'hospital' ? '(Hospital)' : '(Diagnostic Center)'}
+                    </option>
+                  ))}
+                </select>
               </div>
 
               <div>

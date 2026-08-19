@@ -52,6 +52,20 @@ export default function AdminSidebar() {
     return null;
   };
 
+  const roleStyles = isHospitalAdmin ? {
+    active: 'bg-emerald-500/15 text-emerald-300 border border-emerald-500/30 shadow-sm shadow-emerald-500/10',
+    iconActive: 'text-emerald-400',
+    badgeActive: 'bg-emerald-500 text-emerald-950 font-black',
+  } : isDiagnosticAdmin ? {
+    active: 'bg-cyan-500/15 text-cyan-300 border border-cyan-500/30 shadow-sm shadow-cyan-500/10',
+    iconActive: 'text-cyan-400',
+    badgeActive: 'bg-cyan-500 text-cyan-950 font-black',
+  } : {
+    active: 'bg-teal-500/15 text-teal-300 border border-teal-500/30 shadow-sm shadow-teal-500/10',
+    iconActive: 'text-teal-400',
+    badgeActive: 'bg-teal-500 text-teal-950 font-black',
+  };
+
   return (
     <aside className="w-64 bg-slate-900/90 border-r border-slate-800/80 flex-shrink-0 min-h-[calc(100vh-80px)] p-4 flex flex-col gap-6 sticky top-20 overflow-y-auto">
       {visibleGroups.map(group => (
@@ -67,19 +81,19 @@ export default function AdminSidebar() {
               <button
                 key={tab.id}
                 onClick={() => { setActiveTab(tab.id); if (setSearchTerm) setSearchTerm(''); }}
-                className={`px-3 py-2 rounded-xl text-xs font-semibold flex items-center justify-between transition-all cursor-pointer ${
+                className={`px-3 py-2 rounded-xl text-xs font-semibold flex items-center justify-between transition-all duration-150 cursor-pointer ${
                   isActive 
-                    ? 'bg-teal-500/10 text-teal-400 border border-teal-500/20' 
-                    : 'text-slate-400 hover:bg-slate-800 hover:text-slate-200'
+                    ? roleStyles.active 
+                    : 'text-slate-400 hover:bg-slate-800/80 hover:text-slate-200 hover:translate-x-0.5'
                 }`}
               >
                 <div className="flex items-center gap-3">
-                  <Icon className={`w-4 h-4 ${isActive ? 'text-teal-400' : 'text-slate-500'}`} />
+                  <Icon className={`w-4 h-4 transition-colors ${isActive ? roleStyles.iconActive : 'text-slate-500'}`} />
                   <span>{tab.label}</span>
                 </div>
                 {badgeCount != null && badgeCount > 0 && (
                   <span className={`px-2 py-0.5 rounded-full text-[9px] font-bold ${
-                    isActive ? 'bg-teal-500 text-teal-950' : 'bg-slate-700 text-slate-300'
+                    isActive ? roleStyles.badgeActive : 'bg-slate-800 text-slate-300'
                   }`}>
                     {badgeCount}
                   </span>

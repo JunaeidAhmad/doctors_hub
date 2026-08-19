@@ -18,9 +18,17 @@ export default function AddTestsToDiagnosticsTab() {
     setBranchTests,
     showNotification,
     setActiveTab,
-    loadAllData
+    loadAllData,
+    isSuperAdmin,
+    isFacilityAdmin,
+    isHospitalAdmin,
+    isDiagnosticAdmin
   } = useAdminContext();
-  const [facilityType, setFacilityType] = useState('diagnostic_center'); // 'diagnostic_center' | 'hospital'
+
+  const lockedFacility = isSuperAdmin ? null : (hospitals[0] || diagnosticCenters[0]);
+  const defaultType = !isSuperAdmin ? (hospitals[0] ? 'hospital' : 'diagnostic_center') : 'diagnostic_center';
+
+  const [facilityType, setFacilityType] = useState(defaultType); // 'diagnostic_center' | 'hospital'
   const [selectedCenterId, setSelectedCenterId] = useState(diagnosticCenters[0]?.id || '');
   const [selectedHospitalId, setSelectedHospitalId] = useState(hospitals[0]?.id || '');
   const [selectedCatIds, setSelectedCatIds] = useState([]);
@@ -29,6 +37,19 @@ export default function AddTestsToDiagnosticsTab() {
   const [showConfirmModal, setShowConfirmModal] = useState(false);
   const [showSuccessModal, setShowSuccessModal] = useState(false);
   const [savedSummary, setSavedSummary] = useState(null);
+
+  // Sync locked facility for facility admins
+  useEffect(() => {
+    if (!isSuperAdmin && lockedFacility) {
+      const isHosp = Boolean(hospitals[0]);
+      setFacilityType(isHosp ? 'hospital' : 'diagnostic_center');
+      if (isHosp) {
+        setSelectedHospitalId(lockedFacility.id);
+      } else {
+        setSelectedCenterId(lockedFacility.id);
+      }
+    }
+  }, [isSuperAdmin, lockedFacility, hospitals, diagnosticCenters]);
 
   // When facility selection or type changes, pre-populate existing category associations
   useEffect(() => {
@@ -248,15 +269,26 @@ export default function AddTestsToDiagnosticsTab() {
             <Sparkles className="w-3.5 h-3.5" />
             <span>Category-Based Test Association</span>
           </div>
-          <h2 className="text-2xl font-black text-white">Add Test Categories to Diagnostics & Labs</h2>
+          <h2 className="text-2xl font-black text-white">
+            {isSuperAdmin ? 'Add Test Categories to Diagnostics & Labs' : 'Add Diagnostic Tests to Facility'}
+          </h2>
           <p className="text-xs text-slate-400 mt-1">
-            Assign entire test categories to a diagnostic center or hospital lab. All tests under selected categories will automatically be associated with that facility.
+            {isSuperAdmin 
+              ? 'Assign entire test categories to a diagnostic center or hospital lab. All tests under selected categories will automatically be associated with that facility.'
+              : `Assign test categories and customize offer pricing for ${currentFacility?.name || 'your facility'} (${currentFacility?.branch || 'Main'}).`}
           </p>
+
+          {!isSuperAdmin && currentFacility && (
+            <div className="mt-3 inline-flex items-center gap-2 px-3 py-1.5 bg-slate-950 border border-teal-500/30 rounded-xl text-xs font-bold text-teal-300">
+              {facilityType === 'hospital' ? <Building2 className="w-4 h-4 text-emerald-400" /> : <FlaskConical className="w-4 h-4 text-cyan-400" />}
+              <span>Facility: {currentFacility.name} ({currentFacility.branch || 'Main Branch'})</span>
+            </div>
+          )}
         </div>
 
         <button
           onClick={() => setActiveTab && setActiveTab('branch-tests')}
-          className="px-4 py-2.5 bg-slate-800 hover:bg-slate-700 text-slate-200 font-bold text-xs rounded-xl flex items-center gap-2 border border-slate-700 transition shrink-0"
+          className="px-4 py-2.5 bg-slate-800 hover:bg-slate-700 text-slate-200 font-bold text-xs rounded-xl flex items-center gap-2 border border-slate-700 transition shrink-0 cursor-pointer"
         >
           <TestTube className="w-4 h-4 text-cyan-400" />
           <span>View All Test Offerings & Price List</span>
@@ -264,12 +296,13 @@ export default function AddTestsToDiagnosticsTab() {
         </button>
       </div>
 
-      {/* STEP 1: FACILITY SELECTION CARD */}
-      <div className="bg-slate-900 border border-slate-800 rounded-2xl p-6 shadow-xl space-y-4">
-        <div className="flex items-center gap-2 text-sm font-bold text-white uppercase tracking-wider border-b border-slate-800 pb-3">
-          <Building2 className="w-4 h-4 text-cyan-400" />
-          <span>Step 1: Select Facility Type & Facility</span>
-        </div>
+      {/* STEP 1: FACILITY SELECTION CARD (SUPER ADMIN ONLY) */}
+      {isSuperAdmin && (
+        <div className="bg-slate-900 border border-slate-800 rounded-2xl p-6 shadow-xl space-y-4 animate-fadeIn">
+          <div className="flex items-center gap-2 text-sm font-bold text-white uppercase tracking-wider border-b border-slate-800 pb-3">
+            <Building2 className="w-4 h-4 text-cyan-400" />
+            <span>Step 1: Select Facility Type & Facility</span>
+          </div>
 
         <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
           {/* Facility Type Selector Toggle */}
@@ -370,6 +403,7 @@ export default function AddTestsToDiagnosticsTab() {
           </div>
         )}
       </div>
+      )}
 
       {/* STEP 2: CATEGORY MULTI-SELECT SECTION */}
       <div className="bg-slate-900 border border-slate-800 rounded-2xl p-6 shadow-xl space-y-4">
