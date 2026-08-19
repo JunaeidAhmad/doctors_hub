@@ -95,7 +95,6 @@ class DoctorAffiliationFactory(factory.django.DjangoModelFactory):
 
     doctor = factory.SubFactory(DoctorFactory)
     location = factory.SubFactory(LocationFactory)
-    consultation_type = "Chamber"
     fee = 1000.00
 
 

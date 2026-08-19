@@ -10,7 +10,7 @@ export default function HospitalDetailPage({ hospitalId, onBookDoctorSlot, onBoo
   const [hospital, setHospital] = useState(null);
   const [loading, setLoading] = useState(true);
   const [activeTab, setActiveTab] = useState('doctors'); // Default tab: 'doctors' (Doctor Chamber) | 'services' | 'diagnostic'
-  const [doctorConsultationFilter, setDoctorConsultationFilter] = useState('Doctor'); // Default to Doctor Chamber
+
   const [doctorSpecialtyFilter, setDoctorSpecialtyFilter] = useState('All');
   const [testSearch, setTestSearch] = useState('');
   const [testCategoryFilter, setTestCategoryFilter] = useState('All');
@@ -103,13 +103,7 @@ export default function HospitalDetailPage({ hospitalId, onBookDoctorSlot, onBoo
         };
       });
   
-  // Filter doctors based on consultation_type
-  const doctorsList = allDoctors.filter(doc => {
-    if (doc.affiliations && doc.affiliations.length > 0) {
-      return doc.affiliations.some(a => !a.consultation_type || a.consultation_type === doctorConsultationFilter || (doctorConsultationFilter === 'Doctor' && a.consultation_type === 'Chamber'));
-    }
-    return true;
-  });
+  const doctorsList = allDoctors;
 
   const facilityBadges = hospital.facility_types && hospital.facility_types.length > 0
     ? hospital.facility_types
@@ -283,34 +277,7 @@ export default function HospitalDetailPage({ hospitalId, onBookDoctorSlot, onBoo
         {activeTab === 'doctors' && (
           <div className="space-y-6">
             
-            {/* Filter controls */}
             <div className="bg-white p-4 rounded-2xl border border-slate-200 flex flex-wrap items-center justify-between gap-4">
-              <div className="flex items-center gap-2">
-                <span className="text-xs font-bold text-slate-700">Filter Chamber Category:</span>
-                <div className="inline-flex p-1 bg-slate-100 rounded-xl">
-                  <button
-                    onClick={() => setDoctorConsultationFilter('Doctor')}
-                    className={`px-3 py-1.5 rounded-lg text-xs font-bold transition-all ${
-                      doctorConsultationFilter === 'Doctor'
-                        ? 'bg-emerald-600 text-white shadow-xs'
-                        : 'text-slate-600 hover:text-slate-900'
-                    }`}
-                  >
-                    Doctor Chamber
-                  </button>
-                  <button
-                    onClick={() => setDoctorConsultationFilter('In-patient')}
-                    className={`px-3 py-1.5 rounded-lg text-xs font-bold transition-all ${
-                      doctorConsultationFilter === 'In-patient'
-                        ? 'bg-emerald-600 text-white shadow-xs'
-                        : 'text-slate-600 hover:text-slate-900'
-                    }`}
-                  >
-                    In-patient Specialists
-                  </button>
-                </div>
-              </div>
-
               {/* Specialty filter */}
               <div className="flex items-center gap-2">
                 <span className="text-xs font-bold text-slate-700">Specialty:</span>
@@ -329,9 +296,9 @@ export default function HospitalDetailPage({ hospitalId, onBookDoctorSlot, onBoo
             {filteredDoctors.length === 0 ? (
               <div className="bg-white p-12 rounded-2xl border border-slate-200 text-center space-y-3">
                 <Stethoscope className="w-12 h-12 text-slate-300 mx-auto" />
-                <h3 className="text-lg font-bold text-slate-800">No {doctorConsultationFilter} Doctors Listed</h3>
+                <h3 className="text-lg font-bold text-slate-800">No Doctors Listed</h3>
                 <p className="text-xs text-slate-500 max-w-md mx-auto">
-                  No doctors currently registered under <strong>"{doctorConsultationFilter}"</strong> status for this branch. Try toggling between Doctor Chamber and In-patient filters.
+                  No doctors currently registered for this branch.
                 </p>
               </div>
             ) : (
@@ -341,10 +308,7 @@ export default function HospitalDetailPage({ hospitalId, onBookDoctorSlot, onBoo
                     ? doc.specialties.map(s => s.name || s).join(', ')
                     : (doc.specialty || doc.specialty_details?.name || 'Specialist Doctor');
                   
-                  const affiliation = (doc.affiliations || []).find(a => 
-                    a.consultation_type === doctorConsultationFilter || 
-                    (doctorConsultationFilter === 'Doctor' && (a.consultation_type === 'Chamber' || !a.consultation_type))
-                  ) || doc.affiliations?.[0] || {};
+                  const affiliation = doc.affiliations?.[0] || {};
                   const fee = affiliation.fee || doc.fee || 1200;
                   const schedules = affiliation.schedules || [];
                   const slots = ['09:00 AM', '10:00 AM', '11:30 AM', '04:00 PM', '05:30 PM'];
@@ -354,12 +318,8 @@ export default function HospitalDetailPage({ hospitalId, onBookDoctorSlot, onBoo
                     <div key={doc.id} className="bg-white p-6 rounded-2xl border border-slate-200 shadow-xs flex flex-col justify-between space-y-4 hover:border-emerald-300 transition-colors">
                       <div className="space-y-2">
                         <div className="flex items-center justify-between">
-                          <span className={`px-2.5 py-0.5 rounded-full text-[10px] font-extrabold uppercase ${
-                            doctorConsultationFilter === 'In-patient' 
-                              ? 'bg-purple-100 text-purple-800' 
-                              : 'bg-emerald-100 text-emerald-800'
-                          }`}>
-                            {doctorConsultationFilter === 'Doctor' ? 'Chamber Doctor' : 'In-patient Specialist'}
+                          <span className="px-2.5 py-0.5 rounded-full text-[10px] font-extrabold uppercase bg-emerald-100 text-emerald-800">
+                            Specialist Doctor
                           </span>
                           <span className="text-xs font-bold text-slate-500">{doc.experience || '10+ Years Exp'}</span>
                         </div>

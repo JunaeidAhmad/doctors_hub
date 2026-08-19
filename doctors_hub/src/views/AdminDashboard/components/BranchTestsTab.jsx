@@ -1,4 +1,4 @@
-import React from 'react';
+import React, { useState, useMemo } from 'react';
 import { Search, Plus, Trash2, Calculator, Building2, FlaskConical } from 'lucide-react';
 import { useAdminContext } from '../context/AdminContext';
 import BranchTestModal from './modals/BranchTestModal';
@@ -6,16 +6,32 @@ import BranchTestModal from './modals/BranchTestModal';
 export default function BranchTestsTab() {
   const {
     branchTests,
-    diagnosticCenters,
-    hospitals,
+    testCategories = [],
     searchTerm,
     setSearchTerm,
-    branchTestBranchFilter,
-    setBranchTestBranchFilter,
     handleOpenBranchTestModal,
     handleDeleteBranchTest,
     isSuperAdmin
   } = useAdminContext();
+
+  const [selectedCategory, setSelectedCategory] = useState('');
+
+  // Extract valid category options (from testCategories and any categories present in branchTests)
+  const categoryOptions = useMemo(() => {
+    const list = (testCategories || []).filter(c => c && c.id !== 'all');
+    if (list.length > 0) return list;
+
+    // Fallback: extract distinct categories from branchTests
+    const catMap = new Map();
+    (branchTests || []).forEach(bt => {
+      const catId = bt?.test_details?.category_id || bt?.test_details?.category?.id || bt?.test_details?.category_name;
+      const catName = bt?.test_details?.category_name || bt?.test_details?.category?.name;
+      if (catId && catName && !catMap.has(String(catId))) {
+        catMap.set(String(catId), { id: String(catId), name: catName });
+      }
+    });
+    return Array.from(catMap.values());
+  }, [testCategories, branchTests]);
 
   return (
     <>
@@ -26,28 +42,23 @@ export default function BranchTestsTab() {
               <Search className="w-4 h-4 absolute left-3 top-3 text-slate-400" />
               <input
                 type="text"
-                placeholder="Search facility name or test..."
+                placeholder="Search test name or sample..."
                 value={searchTerm}
                 onChange={(e) => setSearchTerm(e.target.value)}
-                className="w-full bg-slate-950 border border-slate-800 rounded-xl pl-9 pr-4 py-2 text-xs text-white focus:outline-none focus:border-teal-500"
+                className="w-full bg-slate-950 border border-slate-800 rounded-xl pl-9 pr-4 py-2 text-xs text-white placeholder-slate-500 focus:outline-none focus:border-teal-500"
               />
             </div>
             <select
-              value={branchTestBranchFilter}
-              onChange={(e) => setBranchTestBranchFilter(e.target.value)}
-              className="bg-slate-950 border border-slate-800 rounded-xl px-3 py-2 text-xs text-white font-semibold"
+              value={selectedCategory}
+              onChange={(e) => setSelectedCategory(e.target.value)}
+              className="bg-slate-950 border border-slate-800 rounded-xl px-3 py-2 text-xs text-white font-semibold focus:outline-none focus:border-teal-500"
             >
-              <option value="">Filter by All Facilities</option>
-              <optgroup label="Diagnostic Centers">
-                {(diagnosticCenters || []).map(dc => (
-                  <option key={`dc-${dc.id}`} value={`dc-${dc.id}`}>{dc.name} ({dc.branch})</option>
-                ))}
-              </optgroup>
-              <optgroup label="Hospitals (Internal Diagnostics)">
-                {(hospitals || []).map(h => (
-                  <option key={`hosp-${h.id}`} value={`hosp-${h.id}`}>{h.name} ({h.branch || 'Main'})</option>
-                ))}
-              </optgroup>
+              <option value="">All Test Categories</option>
+              {categoryOptions.map(cat => (
+                <option key={cat.id || cat.slug || cat.name} value={cat.id || cat.name}>
+                  {cat.name}
+                </option>
+              ))}
             </select>
           </div>
           <button
@@ -80,20 +91,23 @@ export default function BranchTestsTab() {
                 .filter(bt => {
                   const facilityName = bt?.facility_name || bt?.location_details?.name || '';
                   const testName = bt?.test_details?.name || '';
-                  const matchesSearch = `${facilityName} ${testName}`.toLowerCase().includes((searchTerm || '').toLowerCase());
+                  const catName = bt?.test_details?.category_name || bt?.test_details?.category?.name || '';
+                  const sampleType = bt?.test_details?.sample_type || '';
+                  const matchesSearch = `${facilityName} ${testName} ${catName} ${sampleType}`.toLowerCase().includes((searchTerm || '').toLowerCase());
                   
-                  if (!branchTestBranchFilter) return matchesSearch;
-                  if (branchTestBranchFilter.startsWith('dc-')) {
-                    const targetId = branchTestBranchFilter.replace('dc-', '');
-                    const centerId = bt?.location_id;
-                    return matchesSearch && centerId === targetId;
-                  }
-                  if (branchTestBranchFilter.startsWith('hosp-')) {
-                    const targetId = branchTestBranchFilter.replace('hosp-', '');
-                    const hospId = bt?.location_id;
-                    return matchesSearch && hospId === targetId;
-                  }
-                  return matchesSearch;
+                  if (!selectedCategory) return matchesSearch;
+
+                  const btCatId = String(bt?.test_details?.category_id || bt?.test_details?.category?.id || bt?.test_details?.category || '');
+                  const btCatName = String(bt?.test_details?.category_name || bt?.test_details?.category?.name || '').toLowerCase();
+                  const btCatSlug = String(bt?.test_details?.category_slug || bt?.test_details?.category?.slug || '').toLowerCase();
+                  const targetCat = String(selectedCategory).toLowerCase();
+
+                  const matchesCategory = 
+                    btCatId === String(selectedCategory) ||
+                    btCatName === targetCat ||
+                    btCatSlug === targetCat;
+
+                  return matchesSearch && matchesCategory;
                 })
                 .map(bt => {
                   const isHospital = bt?.facility_type === 'hospital' || bt?.location_details?.location_type === 'hospital';

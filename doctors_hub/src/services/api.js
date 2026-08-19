@@ -813,8 +813,8 @@ export const api = {
   async deleteChamber(id) { clearCache(); return this.deleteDiagnosticCenter(id); },
 
   // Doctors
-  async getDoctors({ specialty = '', location = '', division = '', district = '', area = '', search = '', consultation_type = '', hospital = '', diagnostic_center = '', fee_max = '', day = '', page = 1, page_size = 10 } = {}) {
-    const key = `doc_${specialty}_${location}_${division}_${district}_${area}_${search}_${consultation_type}_${hospital}_${diagnostic_center}_${fee_max}_${day}_${page}_${page_size}`;
+  async getDoctors({ specialty = '', location = '', division = '', district = '', area = '', search = '', hospital = '', diagnostic_center = '', fee_max = '', day = '', page = 1, page_size = 10 } = {}) {
+    const key = `doc_${specialty}_${location}_${division}_${district}_${area}_${search}_${hospital}_${diagnostic_center}_${fee_max}_${day}_${page}_${page_size}`;
     return fetchWithDeduplicationAndCache(key, async () => {
       const url = new URL(`${BASE_URL}/doctors/`);
       if (specialty) url.searchParams.append('specialty', specialty);
@@ -823,7 +823,6 @@ export const api = {
       if (district && district !== 'All Districts') url.searchParams.append('district', district);
       if (area && area !== 'All Areas') url.searchParams.append('area', area);
       if (search) url.searchParams.append('search', search);
-      if (consultation_type) url.searchParams.append('consultation_type', consultation_type);
       if (hospital) url.searchParams.append('hospital', hospital);
       if (diagnostic_center) url.searchParams.append('diagnostic_center', diagnostic_center);
       if (fee_max) url.searchParams.append('fee_max', fee_max);

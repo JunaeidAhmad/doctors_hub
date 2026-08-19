@@ -49,20 +49,13 @@ class Doctor(models.Model):
 
 
 class DoctorAffiliation(models.Model):
-    CONSULTATION_TYPES = [
-        ("In-patient", "In-patient"),
-        ("Chamber", "Chamber"),
-        ("Doctor", "Doctor"),
-        ("OPD", "OPD"),
-    ]
     id = models.UUIDField(primary_key=True, default=uuid.uuid4, editable=False)
     doctor = models.ForeignKey(Doctor, on_delete=models.CASCADE, related_name="affiliations")
     location = models.ForeignKey(Location, on_delete=models.CASCADE, related_name="affiliations")
-    consultation_type = models.CharField(max_length=50, choices=CONSULTATION_TYPES, default="Chamber")
     fee = models.DecimalField(max_digits=8, decimal_places=2)
 
     def __str__(self):
-        return f"{self.doctor.name} @ {self.location.name} ({self.consultation_type})"
+        return f"{self.doctor.name} @ {self.location.name}"
 
 
 class AffiliationSchedule(models.Model):

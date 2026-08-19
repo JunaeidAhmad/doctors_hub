@@ -27,8 +27,7 @@ class DoctorAdmin(admin.ModelAdmin):
 
 @admin.register(DoctorAffiliation)
 class DoctorAffiliationAdmin(admin.ModelAdmin):
-    list_display = ('id', 'doctor', 'location', 'consultation_type', 'fee')
-    list_filter = ('consultation_type',)
+    list_display = ('id', 'doctor', 'location', 'fee')
     search_fields = ('doctor__name', 'location__name')
     inlines = [AffiliationScheduleInline]
 

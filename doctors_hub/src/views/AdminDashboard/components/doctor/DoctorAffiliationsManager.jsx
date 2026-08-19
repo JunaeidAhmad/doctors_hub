@@ -10,6 +10,7 @@ export default function DoctorAffiliationsManager() {
   const {
     doctors,
     hospitals,
+    diagnosticCenters,
     loadAllData,
     setSuccessMsg,
     setError
@@ -21,7 +22,6 @@ export default function DoctorAffiliationsManager() {
   const [showModal, setShowModal] = useState(false);
   const [editingAff, setEditingAff] = useState(null);
   const [selectedLocationId, setSelectedLocationId] = useState('');
-  const [consultationType, setConsultationType] = useState('OPD');
   const [fee, setFee] = useState('1500');
   const [saving, setSaving] = useState(false);
   const [localErr, setLocalErr] = useState('');
@@ -34,7 +34,6 @@ export default function DoctorAffiliationsManager() {
   const handleOpenAddModal = () => {
     setEditingAff(null);
     setSelectedLocationId(allLocations[0]?.id || '');
-    setConsultationType('OPD');
     setFee('1500');
     setLocalErr('');
     setShowModal(true);
@@ -43,7 +42,6 @@ export default function DoctorAffiliationsManager() {
   const handleOpenEditModal = (aff) => {
     setEditingAff(aff);
     setSelectedLocationId(aff.location_id || aff.location?.id || '');
-    setConsultationType(aff.consultation_type || 'OPD');
     setFee(String(aff.fee || '1500'));
     setLocalErr('');
     setShowModal(true);
@@ -57,7 +55,6 @@ export default function DoctorAffiliationsManager() {
     try {
       if (editingAff && editingAff.id) {
         await api.updateDoctorAffiliation(editingAff.id, {
-          consultation_type: consultationType,
           fee: parseFloat(fee) || 1500
         });
       } else {
@@ -65,7 +62,6 @@ export default function DoctorAffiliationsManager() {
         await api.createDoctorAffiliation({
           doctor: doctor?.id,
           location_id: selectedLocationId || allLocations[0]?.id,
-          consultation_type: consultationType,
           fee: parseFloat(fee) || 1500
         });
       }
@@ -122,9 +118,6 @@ export default function DoctorAffiliationsManager() {
             
             <div className="flex items-start justify-between">
               <div>
-                <span className="px-2.5 py-0.5 rounded-full bg-teal-500/20 text-teal-300 text-[10px] font-bold uppercase tracking-wider">
-                  {aff.consultation_type || 'OPD Consultation'}
-                </span>
                 <h3 className="text-base font-bold text-white mt-1">
                   {aff.hospital?.name || aff.diagnostic_center?.name || aff.chamber_name || aff.facility_name || 'Specialist Chamber'}
                 </h3>
@@ -213,19 +206,6 @@ export default function DoctorAffiliationsManager() {
                       {loc.name} {loc.type === 'hospital' ? '(Hospital)' : '(Diagnostic Center)'}
                     </option>
                   ))}
-                </select>
-              </div>
-
-              <div>
-                <label className="block text-slate-300 font-bold mb-1.5">Consultation Type</label>
-                <select
-                  value={consultationType}
-                  onChange={e => setConsultationType(e.target.value)}
-                  className="w-full bg-slate-950 border border-slate-800 rounded-xl px-4 py-2.5 text-white focus:outline-none focus:border-teal-500"
-                >
-                  <option value="OPD">Hospital OPD Consultation</option>
-                  <option value="Chamber">Private Consultation Chamber</option>
-                  <option value="In-patient">In-patient Rounds & Clinical Care</option>
                 </select>
               </div>
 

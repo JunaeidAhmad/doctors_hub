@@ -104,9 +104,16 @@ export default function DoctorsTab() {
                     </td>
                     <td className="py-4 px-4">
                       <div className="text-slate-300 text-[11px]">
-                        {(d.affiliations || []).map((aff, idx) => (
+                        {(d.affiliations || [])
+                          .filter(aff => {
+                            const affLocId = String(aff.location_details?.id || aff.location_id || aff.location || aff.hospital?.id || aff.diagnostic_center?.id || '');
+                            const allLocs = [...hospitals, ...diagnosticCenters];
+                            const managedIds = new Set(allLocs.map(l => String(l.location_details?.id || l.location || l.id)));
+                            return managedIds.size === 0 || managedIds.has(affLocId);
+                          })
+                          .map((aff, idx) => (
                           <div key={idx} className="truncate max-w-xs">
-                            • {aff.hospital?.name || aff.diagnostic_center?.name || aff.chamber_name || 'Private Chamber'} ({aff.consultation_type || 'Doctor'})
+                            • {aff.hospital?.name || aff.diagnostic_center?.name || aff.chamber_name || 'Private Chamber'}
                           </div>
                         ))}
                       </div>

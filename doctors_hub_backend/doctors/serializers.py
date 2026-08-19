@@ -57,7 +57,7 @@ class DoctorAffiliationSerializer(serializers.ModelSerializer):
     class Meta:
         model = DoctorAffiliation
         fields = (
-            'id', 'doctor', 'location_id', 'location_details', 'consultation_type', 'fee',
+            'id', 'doctor', 'location_id', 'location_details', 'fee',
             'facility_name', 'district', 'division', 'area', 'schedules', 'doctor_name', 'qualification', 'experience', 'specialties'
         )
 
@@ -78,3 +78,27 @@ class DoctorSerializer(serializers.ModelSerializer):
     class Meta:
         model = Doctor
         fields = ('id', 'name', 'slug', 'specialties', 'specialty_ids', 'qualification', 'experience', 'description', 'bmdc_number', 'is_verified', 'affiliations')
+
+    def create(self, validated_data):
+        affiliations_data = validated_data.pop('affiliations', None)
+        specialties_data = validated_data.pop('specialties', None)
+        doctor = Doctor.objects.create(**validated_data)
+        if specialties_data is not None:
+            doctor.specialties.set(specialties_data)
+        if affiliations_data:
+            for aff_data in affiliations_data:
+                schedules_data = aff_data.pop('schedules', [])
+                aff = DoctorAffiliation.objects.create(doctor=doctor, **aff_data)
+                for sched_data in schedules_data:
+                    AffiliationSchedule.objects.create(affiliation=aff, **sched_data)
+        return doctor
+
+    def update(self, instance, validated_data):
+        validated_data.pop('affiliations', None)
+        specialties_data = validated_data.pop('specialties', None)
+        for attr, value in validated_data.items():
+            setattr(instance, attr, value)
+        instance.save()
+        if specialties_data is not None:
+            instance.specialties.set(specialties_data)
+        return instance

@@ -514,13 +514,12 @@ def inject_data():
         if not doc or not loc:
             continue
 
-        aff = DoctorAffiliation.objects.filter(doctor=doc, location=loc, consultation_type=aff_info["type"]).first()
+        aff = DoctorAffiliation.objects.filter(doctor=doc, location=loc).first()
         if not aff:
             aff = DoctorAffiliation.objects.create(
-                id=seed_uuid(f"DoctorAffiliation:{doc.name}:{loc.name}:{aff_info['type']}"),
+                id=seed_uuid(f"DoctorAffiliation:{doc.name}:{loc.name}"),
                 doctor=doc,
                 location=loc,
-                consultation_type=aff_info["type"],
                 fee=aff_info["fee"]
             )
         else:

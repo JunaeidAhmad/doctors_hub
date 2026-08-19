@@ -57,7 +57,7 @@ function AdminDashboardContent({ onNavigate, onAdminLoggedIn }) {
 
   if (isDoctor) {
     const docName = (doctors && doctors[0]?.name) || storedUser?.first_name || 'Specialist Doctor';
-    roleTitle = `Doctor: ${docName}`;
+    roleTitle = 'Doctor';
     RoleIcon = Stethoscope;
     roleColor = 'text-teal-300 bg-teal-500/10 border-teal-500/30';
     headerFacilityName = `Dr. ${docName}`;
@@ -69,7 +69,7 @@ function AdminDashboardContent({ onNavigate, onAdminLoggedIn }) {
     const facBranch = managedLoc?.branch || fac?.branch;
     const branchLabel = facBranch ? ` (${facBranch})` : '';
     
-    roleTitle = `${isHosp ? 'Hospital' : 'Diagnostic'}: ${facName}${branchLabel}`;
+    roleTitle = isHosp ? 'Hospital Admin' : 'Diagnostic Admin';
     headerFacilityName = `${facName}${branchLabel}`;
     RoleIcon = isHosp ? Building2 : FlaskConical;
     roleColor = isHosp 
@@ -100,7 +100,7 @@ function AdminDashboardContent({ onNavigate, onAdminLoggedIn }) {
                 <h1 className="font-extrabold text-white text-base sm:text-lg leading-tight">
                   {headerFacilityName ? (
                     <span>
-                      {headerFacilityName} <span className="text-slate-400 font-semibold text-sm">Console</span>
+                      {headerFacilityName} 
                     </span>
                   ) : (
                     'DoctorsHub Admin Console'

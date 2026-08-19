@@ -1,11 +1,11 @@
 import React, { useState } from 'react';
 import { 
   Stethoscope, UserPlus, Link2, Clock, CheckCircle2, 
-  AlertCircle, RefreshCw, X, DollarSign, Calendar
+  AlertCircle, RefreshCw, X, DollarSign, Calendar, Plus, Trash2
 } from 'lucide-react';
 import { useAdminContext } from '../../context/AdminContext';
 import { api } from '../../../../services/api';
-import { Drawer, SearchSelect, EditableField, Toggle } from '../shared';
+import { Drawer, SearchSelect, EditableField } from '../shared';
 
 const DAYS_OF_WEEK = [
   'Saturday', 'Sunday', 'Monday', 'Tuesday', 
@@ -40,22 +40,50 @@ export default function AffiliateDoctorDrawer({
 
   // Affiliation Details State
   const [affiliation, setAffiliation] = useState({
-    consultation_type: 'OPD',
     fee: '1200'
   });
 
-  // Schedule Slot State
-  const [includeSchedule, setIncludeSchedule] = useState(false);
-  const [schedule, setSchedule] = useState({
-    day_of_week: 'Saturday',
-    start_time: '17:00:00',
-    end_time: '20:00:00'
-  });
+  // Visiting Schedule Slots State
+  const [schedules, setSchedules] = useState([
+    {
+      id: `temp-sched-${Date.now()}`,
+      day_of_week: 'Saturday',
+      start_time: '17:00',
+      end_time: '20:00'
+    }
+  ]);
 
   const [isSaving, setIsSaving] = useState(false);
   const [errorMsg, setErrorMsg] = useState('');
 
   const selectedDoctorObj = doctors.find(d => String(d.id) === String(selectedDoctorId));
+
+  const handleAddScheduleSlot = () => {
+    setSchedules(prev => [
+      ...prev,
+      {
+        id: `temp-sched-${Date.now()}-${Math.random()}`,
+        day_of_week: 'Saturday',
+        start_time: '17:00',
+        end_time: '20:00'
+      }
+    ]);
+  };
+
+  const handleUpdateScheduleSlot = (schedIndex, field, value) => {
+    setSchedules(prev => {
+      const next = [...prev];
+      next[schedIndex] = {
+        ...next[schedIndex],
+        [field]: value
+      };
+      return next;
+    });
+  };
+
+  const handleRemoveScheduleSlot = (schedIndex) => {
+    setSchedules(prev => prev.filter((_, sIdx) => sIdx !== schedIndex));
+  };
 
   const resetForm = () => {
     setSelectedDoctorId('');
@@ -68,10 +96,16 @@ export default function AffiliateDoctorDrawer({
       specialty_ids: doctorSpecialties[0] ? [doctorSpecialties[0].id] : []
     });
     setAffiliation({
-      consultation_type: 'OPD',
       fee: '1200'
     });
-    setIncludeSchedule(false);
+    setSchedules([
+      {
+        id: `temp-sched-${Date.now()}`,
+        day_of_week: 'Saturday',
+        start_time: '17:00',
+        end_time: '20:00'
+      }
+    ]);
     setErrorMsg('');
   };
 
@@ -116,7 +150,6 @@ export default function AffiliateDoctorDrawer({
       }
 
       const affPayload = {
-        consultation_type: affiliation.consultation_type,
         fee: parseFloat(affiliation.fee) || 1200
       };
 
@@ -125,17 +158,26 @@ export default function AffiliateDoctorDrawer({
         affiliation: affPayload
       });
 
-      // If user configured a schedule slot, add it
-      if (includeSchedule && resultAff?.id) {
-        try {
-          await api.createAffiliationSchedule({
-            affiliation_id: resultAff.id,
-            day_of_week: schedule.day_of_week,
-            start_time: schedule.start_time,
-            end_time: schedule.end_time
-          });
-        } catch (schedErr) {
-          console.warn('Affiliation created, but schedule slot creation failed:', schedErr);
+      // If user configured schedule slots, add each
+      if (schedules.length > 0 && resultAff?.id) {
+        for (const sched of schedules) {
+          try {
+            const startTimeFormatted = sched.start_time?.length === 5 
+              ? `${sched.start_time}:00` 
+              : (sched.start_time || '17:00:00');
+            const endTimeFormatted = sched.end_time?.length === 5 
+              ? `${sched.end_time}:00` 
+              : (sched.end_time || '20:00:00');
+
+            await api.createAffiliationSchedule({
+              affiliation_id: resultAff.id,
+              day_of_week: sched.day_of_week || 'Saturday',
+              start_time: startTimeFormatted,
+              end_time: endTimeFormatted
+            });
+          } catch (schedErr) {
+            console.warn('Affiliation created, but schedule slot creation failed:', schedErr);
+          }
         }
       }
 
@@ -346,21 +388,10 @@ export default function AffiliateDoctorDrawer({
         {/* AFFILIATION PARAMETERS */}
         <div className="pt-3 border-t border-slate-800 space-y-3">
           <h4 className="font-bold text-white text-xs uppercase tracking-wider text-slate-400">
-            Consultation & Fee at this Facility
+            Consultation fee at this Facility
           </h4>
           <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
-            <div>
-              <label className="block text-slate-300 font-semibold mb-1">Consultation Type</label>
-              <select
-                value={affiliation.consultation_type}
-                onChange={e => setAffiliation({ ...affiliation, consultation_type: e.target.value })}
-                className="w-full bg-slate-950 border border-slate-800 rounded-xl px-3 py-2 text-white font-semibold focus:outline-none focus:border-teal-500"
-              >
-                <option value="OPD">OPD Consultation</option>
-                <option value="Chamber">Private Chamber</option>
-                <option value="In-patient">In-patient Care</option>
-              </select>
-            </div>
+
             <div>
               <label className="block text-slate-300 font-semibold mb-1">Visiting Fee (৳) *</label>
               <input
@@ -376,55 +407,84 @@ export default function AffiliateDoctorDrawer({
           </div>
         </div>
 
-        {/* OPTIONAL VISITING SCHEDULE SLOT */}
+        {/* VISITING SCHEDULE SLOTS */}
         <div className="pt-3 border-t border-slate-800 space-y-3">
-          <Toggle
-            id="include_sched_toggle"
-            checked={includeSchedule}
-            onChange={setIncludeSchedule}
-            label="Add Initial Visiting Schedule Slot"
-            description="Optionally configure doctor's first weekly visiting time slot right now."
-          />
-
-          {includeSchedule && (
-            <div className="p-3 bg-slate-950 border border-slate-800 rounded-xl space-y-3 animate-fadeIn">
-              <div>
-                <label className="block text-slate-300 font-semibold mb-1">Visiting Day</label>
-                <select
-                  value={schedule.day_of_week}
-                  onChange={e => setSchedule({ ...schedule, day_of_week: e.target.value })}
-                  className="w-full bg-slate-900 border border-slate-700 rounded-lg px-2.5 py-1.5 text-white font-semibold focus:outline-none focus:border-teal-500"
-                >
-                  {DAYS_OF_WEEK.map(d => (
-                    <option key={d} value={d}>{d}</option>
-                  ))}
-                </select>
+          <div className="bg-slate-950/70 border border-slate-800/60 rounded-xl p-3 space-y-2.5">
+            <div className="flex items-center justify-between">
+              <div className="flex items-center gap-1.5 text-[11px] font-bold text-slate-300">
+                <Clock className="w-3.5 h-3.5 text-teal-400" />
+                <span>Visiting Days & Schedule Slots</span>
               </div>
-
-              <div className="grid grid-cols-2 gap-2">
-                <div>
-                  <label className="block text-slate-400 text-[11px] mb-1">Start Time</label>
-                  <input
-                    type="time"
-                    step="60"
-                    value={schedule.start_time.slice(0, 5)}
-                    onChange={e => setSchedule({ ...schedule, start_time: `${e.target.value}:00` })}
-                    className="w-full bg-slate-900 border border-slate-700 rounded-lg px-2 py-1 text-white font-mono"
-                  />
-                </div>
-                <div>
-                  <label className="block text-slate-400 text-[11px] mb-1">End Time</label>
-                  <input
-                    type="time"
-                    step="60"
-                    value={schedule.end_time.slice(0, 5)}
-                    onChange={e => setSchedule({ ...schedule, end_time: `${e.target.value}:00` })}
-                    className="w-full bg-slate-900 border border-slate-700 rounded-lg px-2 py-1 text-white font-mono"
-                  />
-                </div>
-              </div>
+              <button
+                type="button"
+                onClick={handleAddScheduleSlot}
+                className="px-2 py-0.5 bg-slate-800 hover:bg-slate-700 text-teal-300 border border-teal-500/20 rounded-lg text-[10px] font-bold flex items-center gap-1 transition cursor-pointer"
+              >
+                <Plus className="w-3 h-3" />
+                <span>Add Time Slot</span>
+              </button>
             </div>
-          )}
+
+            {schedules.length === 0 ? (
+              <div className="text-[11px] text-slate-500 italic py-1">
+                No schedule slots added yet. Click &quot;Add Time Slot&quot; above.
+              </div>
+            ) : (
+              <div className="space-y-2">
+                {schedules.map((s, sIdx) => (
+                  <div key={s.id || sIdx} className="bg-slate-900 border border-slate-800/80 rounded-xl p-2.5 flex flex-wrap items-center gap-2 text-xs">
+                    
+                    <div className="flex-1 min-w-[110px]">
+                      <label className="block text-[10px] text-slate-400 font-semibold mb-0.5">Day</label>
+                      <select
+                        value={s.day_of_week}
+                        onChange={e => handleUpdateScheduleSlot(sIdx, 'day_of_week', e.target.value)}
+                        className="w-full bg-slate-950 border border-slate-800 rounded-lg px-2 py-1.5 text-white text-[11px] focus:outline-none focus:border-teal-500"
+                      >
+                        {DAYS_OF_WEEK.map(day => (
+                          <option key={day} value={day}>{day}</option>
+                        ))}
+                      </select>
+                    </div>
+
+                    <div className="w-24">
+                      <label className="block text-[10px] text-slate-400 font-semibold mb-0.5">Start Time</label>
+                      <input
+                        type="time"
+                        required
+                        value={s.start_time ? s.start_time.slice(0, 5) : '17:00'}
+                        onChange={e => handleUpdateScheduleSlot(sIdx, 'start_time', e.target.value)}
+                        className="w-full bg-slate-950 border border-slate-800 rounded-lg px-2 py-1.5 text-white text-[11px] focus:outline-none focus:border-teal-500"
+                      />
+                    </div>
+
+                    <div className="w-24">
+                      <label className="block text-[10px] text-slate-400 font-semibold mb-0.5">End Time</label>
+                      <input
+                        type="time"
+                        required
+                        value={s.end_time ? s.end_time.slice(0, 5) : '20:00'}
+                        onChange={e => handleUpdateScheduleSlot(sIdx, 'end_time', e.target.value)}
+                        className="w-full bg-slate-950 border border-slate-800 rounded-lg px-2 py-1.5 text-white text-[11px] focus:outline-none focus:border-teal-500"
+                      />
+                    </div>
+
+                    <div className="self-end pb-1">
+                      <button
+                        type="button"
+                        onClick={() => handleRemoveScheduleSlot(sIdx)}
+                        className="p-1.5 text-rose-400 hover:text-rose-300 hover:bg-rose-500/10 rounded-lg transition cursor-pointer"
+                        title="Remove slot"
+                      >
+                        <Trash2 className="w-3.5 h-3.5" />
+                      </button>
+                    </div>
+
+                  </div>
+                ))}
+              </div>
+            )}
+          </div>
         </div>
 
       </form>

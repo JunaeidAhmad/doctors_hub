@@ -119,7 +119,7 @@ export default function DoctorScheduleManager() {
                       {aff.hospital?.name || aff.diagnostic_center?.name || aff.chamber_name || aff.facility_name || 'Consultation Location'}
                     </h3>
                     <p className="text-xs text-slate-400">
-                      Type: {aff.consultation_type || 'OPD'} • Fee: ৳{aff.fee || 1500}
+                      Fee: ৳{aff.fee || 1500}
                     </p>
                   </div>
                 </div>
@@ -202,7 +202,7 @@ export default function DoctorScheduleManager() {
                 >
                   {affiliations.map(aff => (
                     <option key={aff.id} value={aff.id}>
-                      {aff.hospital?.name || aff.diagnostic_center?.name || aff.facility_name || aff.chamber_name} ({aff.consultation_type})
+                      {aff.hospital?.name || aff.diagnostic_center?.name || aff.facility_name || aff.chamber_name}
                     </option>
                   ))}
                 </select>

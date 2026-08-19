@@ -23,7 +23,6 @@ class DoctorFilter(django_filters.FilterSet):
     location = django_filters.CharFilter(method='filter_location')
     fee_max = django_filters.NumberFilter(field_name='affiliations__fee', lookup_expr='lte')
     day = django_filters.CharFilter(field_name='affiliations__schedules__day_of_week', lookup_expr='icontains')
-    consultation_type = django_filters.CharFilter(field_name='affiliations__consultation_type', lookup_expr='iexact')
     hospital = django_filters.UUIDFilter(field_name='affiliations__location')
     diagnostic_center = django_filters.UUIDFilter(field_name='affiliations__location')
 
@@ -31,7 +30,7 @@ class DoctorFilter(django_filters.FilterSet):
         model = Doctor
         fields = [
             'specialty', 'specialties', 'area', 'district', 'division',
-            'location', 'fee_max', 'day', 'consultation_type', 'hospital', 'diagnostic_center'
+            'location', 'fee_max', 'day', 'hospital', 'diagnostic_center'
         ]
 
     def filter_specialty(self, queryset, name, value):

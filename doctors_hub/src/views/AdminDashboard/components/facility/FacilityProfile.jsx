@@ -28,7 +28,6 @@ export default function FacilityProfile({ kind = 'hospital' }) {
   const categories = isHospital ? hospitalCategories : diagnosticCategories;
   const availableServices = isHospital ? hospitalServices : diagnosticServices;
 
-  const [savingSection, setSavingSection] = useState(null);
   const [isSavingAll, setIsSavingAll] = useState(false);
 
   // Form State
@@ -83,27 +82,10 @@ export default function FacilityProfile({ kind = 'hospital' }) {
     }
   }, [facility, categories, isHospital]);
 
-  const handleSaveSection = async (sectionName, payload) => {
-    if (!facility?.id) return;
-    setSavingSection(sectionName);
-    try {
-      if (isHospital) {
-        await api.patchHospital(facility.id, payload);
-      } else {
-        await api.patchDiagnosticCenter(facility.id, payload);
-      }
-      showNotification(`${sectionName} updated successfully!`);
-      await loadAllData();
-    } catch (err) {
-      alert(`Error updating ${sectionName}: ${err.message}`);
-    } finally {
-      setSavingSection(null);
-    }
-  };
-
-  const handleSaveAll = async (e) => {
+  
+    const handleSaveAll = async (e) => {
     e?.preventDefault();
-    if (!facility?.id) return;
+    const facilityId = facility?.id || facility?.location_id || facility?.location_details?.id || facility?.location; if (!facilityId) { alert("Error: Facility ID is missing!"); return; }
     setIsSavingAll(true);
     try {
       const payload = {
@@ -121,15 +103,25 @@ export default function FacilityProfile({ kind = 'hospital' }) {
         open_timing: formData.open_timing,
         category_id: formData.category_id || null,
         service_ids: formData.service_ids,
-        logo: formData.logo,
-        image: formData.image,
       };
+      
       if (isHospital) {
         payload.has_diagnostic_center = formData.has_diagnostic_center;
-        await api.patchHospital(facility.id, payload);
-      } else {
-        await api.patchDiagnosticCenter(facility.id, payload);
       }
+
+      const fd = new FormData();
+      if (formData.logo instanceof File) fd.append('logo', formData.logo);
+      if (formData.image instanceof File) fd.append('image', formData.image);
+      const hasFiles = [...fd.keys()].length > 0;
+
+      if (isHospital) {
+        await api.patchHospital(facilityId, payload);
+        if (hasFiles) await api.patchHospital(facilityId, fd);
+      } else {
+        await api.patchDiagnosticCenter(facilityId, payload);
+        if (hasFiles) await api.patchDiagnosticCenter(facilityId, fd);
+      }
+      
       showNotification('Facility profile updated successfully!');
       await loadAllData();
     } catch (err) {
@@ -176,20 +168,7 @@ export default function FacilityProfile({ kind = 'hospital' }) {
         description={`Manage and update official public information for ${formData.branch || 'your branch'}.`}
         icon={isHospital ? Building2 : FlaskConical}
         badge={isHospital ? 'Hospital Admin' : 'Diagnostic Admin'}
-        actionButton={
-          <button
-            onClick={handleSaveAll}
-            disabled={isSavingAll}
-            className={`flex items-center gap-2 px-5 py-2.5 rounded-xl font-bold text-xs text-white shadow-lg transition active:scale-95 cursor-pointer ${
-              isHospital 
-                ? 'bg-emerald-600 hover:bg-emerald-500 shadow-emerald-600/20' 
-                : 'bg-cyan-600 hover:bg-cyan-500 shadow-cyan-600/20'
-            }`}
-          >
-            {isSavingAll ? <RefreshCw className="w-4 h-4 animate-spin" /> : <Save className="w-4 h-4" />}
-            <span>Save All Changes</span>
-          </button>
-        }
+        
       />
 
       {/* FACILITY HERO CARD */}
@@ -241,23 +220,7 @@ export default function FacilityProfile({ kind = 'hospital' }) {
           description="General naming, branch identification, and public tagline."
           icon={Tag}
           color={primaryColor}
-          actions={
-            <button
-              onClick={() => handleSaveSection('Identity', {
-                name: formData.name,
-                branch: formData.branch,
-                tagline: formData.tagline,
-                badge: formData.badge,
-                description: formData.description
-              })}
-              disabled={savingSection === 'Identity'}
-              className="px-3 py-1.5 bg-slate-800 hover:bg-slate-700 text-slate-200 font-bold text-xs rounded-xl flex items-center gap-1.5 transition cursor-pointer"
-            >
-              {savingSection === 'Identity' ? <RefreshCw className="w-3.5 h-3.5 animate-spin" /> : <Save className="w-3.5 h-3.5 text-teal-400" />}
-              <span>Save</span>
-            </button>
-          }
-        >
+          >
           <div className="space-y-4">
             <EditableField
               label="Facility Full Name"
@@ -304,22 +267,7 @@ export default function FacilityProfile({ kind = 'hospital' }) {
           description="Geographic details for patient navigation and search filtering."
           icon={MapPin}
           color={primaryColor}
-          actions={
-            <button
-              onClick={() => handleSaveSection('Location', {
-                division: formData.division,
-                district: formData.district,
-                area: formData.area,
-                address_line: formData.address_line
-              })}
-              disabled={savingSection === 'Location'}
-              className="px-3 py-1.5 bg-slate-800 hover:bg-slate-700 text-slate-200 font-bold text-xs rounded-xl flex items-center gap-1.5 transition cursor-pointer"
-            >
-              {savingSection === 'Location' ? <RefreshCw className="w-3.5 h-3.5 animate-spin" /> : <Save className="w-3.5 h-3.5 text-teal-400" />}
-              <span>Save</span>
-            </button>
-          }
-        >
+          >
           <div className="space-y-4">
             <div className="grid grid-cols-1 sm:grid-cols-3 gap-3">
               <EditableField
@@ -357,21 +305,7 @@ export default function FacilityProfile({ kind = 'hospital' }) {
           description="Helpline numbers, inquiries email, and operating schedule."
           icon={Phone}
           color={primaryColor}
-          actions={
-            <button
-              onClick={() => handleSaveSection('Contact', {
-                phone: formData.phone,
-                email: formData.email,
-                open_timing: formData.open_timing
-              })}
-              disabled={savingSection === 'Contact'}
-              className="px-3 py-1.5 bg-slate-800 hover:bg-slate-700 text-slate-200 font-bold text-xs rounded-xl flex items-center gap-1.5 transition cursor-pointer"
-            >
-              {savingSection === 'Contact' ? <RefreshCw className="w-3.5 h-3.5 animate-spin" /> : <Save className="w-3.5 h-3.5 text-teal-400" />}
-              <span>Save</span>
-            </button>
-          }
-        >
+          >
           <div className="space-y-4">
             <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
               <EditableField
@@ -403,20 +337,7 @@ export default function FacilityProfile({ kind = 'hospital' }) {
           description="Primary facility tier and multi-select clinical amenities."
           icon={Activity}
           color={primaryColor}
-          actions={
-            <button
-              onClick={() => handleSaveSection('Classification', {
-                category_id: formData.category_id || null,
-                service_ids: formData.service_ids
-              })}
-              disabled={savingSection === 'Classification'}
-              className="px-3 py-1.5 bg-slate-800 hover:bg-slate-700 text-slate-200 font-bold text-xs rounded-xl flex items-center gap-1.5 transition cursor-pointer"
-            >
-              {savingSection === 'Classification' ? <RefreshCw className="w-3.5 h-3.5 animate-spin" /> : <Save className="w-3.5 h-3.5 text-teal-400" />}
-              <span>Save</span>
-            </button>
-          }
-        >
+          >
           <div className="space-y-4">
             <div>
               <label className="block text-xs font-semibold text-slate-300 mb-1.5">
@@ -470,28 +391,7 @@ export default function FacilityProfile({ kind = 'hospital' }) {
           description="Facility logo and banner cover photography."
           icon={ImageIcon}
           color={primaryColor}
-          actions={
-            <button
-              onClick={() => {
-                const fd = new FormData();
-                if (formData.logo instanceof File) fd.append('logo', formData.logo);
-                if (formData.image instanceof File) fd.append('image', formData.image);
-                
-                // Only send if files were actually changed
-                if ([...fd.keys()].length > 0) {
-                  handleSaveSection('Media', fd);
-                } else {
-                  showNotification('No new files selected to upload.');
-                }
-              }}
-              disabled={savingSection === 'Media'}
-              className="px-3 py-1.5 bg-slate-800 hover:bg-slate-700 text-slate-200 font-bold text-xs rounded-xl flex items-center gap-1.5 transition cursor-pointer"
-            >
-              {savingSection === 'Media' ? <RefreshCw className="w-3.5 h-3.5 animate-spin" /> : <Save className="w-3.5 h-3.5 text-teal-400" />}
-              <span>Upload</span>
-            </button>
-          }
-        >
+          >
           <div className="space-y-4">
             <EditableField
               type="file"
@@ -525,19 +425,7 @@ export default function FacilityProfile({ kind = 'hospital' }) {
             description="Control whether this hospital operates an in-house diagnostic laboratory."
             icon={FlaskConical}
             color="emerald"
-            actions={
-              <button
-                onClick={() => handleSaveSection('Capabilities', {
-                  has_diagnostic_center: formData.has_diagnostic_center
-                })}
-                disabled={savingSection === 'Capabilities'}
-                className="px-3 py-1.5 bg-slate-800 hover:bg-slate-700 text-slate-200 font-bold text-xs rounded-xl flex items-center gap-1.5 transition cursor-pointer"
-              >
-                {savingSection === 'Capabilities' ? <RefreshCw className="w-3.5 h-3.5 animate-spin" /> : <Save className="w-3.5 h-3.5 text-teal-400" />}
-                <span>Save</span>
-              </button>
-            }
-          >
+            >
             <div className="space-y-4">
               <Toggle
                 id="hospital_lab_toggle"
@@ -562,6 +450,36 @@ export default function FacilityProfile({ kind = 'hospital' }) {
           </SectionCard>
         )}
 
+      </div>
+
+      {/* STICKY BOTTOM SAVE BAR */}
+      <div className="bg-slate-900 border border-slate-800 rounded-2xl p-5 shadow-2xl flex flex-wrap items-center justify-between gap-4 sticky bottom-6 z-20 backdrop-blur-xl bg-slate-900/90 mt-8">
+        <div>
+          <div className="text-white font-bold text-sm flex items-center gap-2">
+            <ShieldCheck className="w-4 h-4 text-teal-400" />
+            <span>Review & Save</span>
+          </div>
+          <p className="text-xs text-slate-400 mt-0.5">
+            Don't forget to save your profile updates so they are visible to patients.
+          </p>
+        </div>
+
+        <button
+          onClick={handleSaveAll}
+          disabled={isSavingAll}
+          className={`px-6 py-3 font-bold text-xs rounded-xl shadow-lg transition flex items-center gap-2 disabled:opacity-50 cursor-pointer text-white ${
+            isHospital 
+              ? 'bg-gradient-to-r from-emerald-600 to-teal-600 hover:from-emerald-500 hover:to-teal-500 shadow-emerald-600/30' 
+              : 'bg-gradient-to-r from-cyan-600 to-blue-600 hover:from-cyan-500 hover:to-blue-500 shadow-cyan-600/30'
+          }`}
+        >
+          {isSavingAll ? (
+            <RefreshCw className="w-4 h-4 animate-spin" />
+          ) : (
+            <Save className="w-4 h-4" />
+          )}
+          <span>Save All Profile Changes</span>
+        </button>
       </div>
     </div>
   );

@@ -7,7 +7,6 @@ from tests.models import FacilityTest
 class DoctorBookingSerializer(serializers.ModelSerializer):
     doctor_name = serializers.CharField(source='affiliation.doctor.name', read_only=True)
     facility_name = serializers.CharField(source='affiliation.location.name', read_only=True)
-    consultation_type = serializers.CharField(source='affiliation.consultation_type', read_only=True)
     affiliation_id = serializers.PrimaryKeyRelatedField(
         queryset=DoctorAffiliation.objects.all(), write_only=True, source='affiliation'
     )
@@ -16,7 +15,7 @@ class DoctorBookingSerializer(serializers.ModelSerializer):
         model = DoctorBooking
         fields = (
             'id', 'user', 'status', 'notes', 'created_at', 'updated_at', 'affiliation_id',
-            'date', 'slot', 'patient_name', 'patient_phone', 'doctor_name', 'facility_name', 'consultation_type'
+            'date', 'slot', 'patient_name', 'patient_phone', 'doctor_name', 'facility_name'
         )
         read_only_fields = ('user', 'created_at', 'updated_at')
 
