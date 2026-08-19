@@ -13,7 +13,8 @@ export default function BranchTestsTab() {
     branchTestBranchFilter,
     setBranchTestBranchFilter,
     handleOpenBranchTestModal,
-    handleDeleteBranchTest
+    handleDeleteBranchTest,
+    isSuperAdmin
   } = useAdminContext();
 
   return (
@@ -38,12 +39,12 @@ export default function BranchTestsTab() {
             >
               <option value="">Filter by All Facilities</option>
               <optgroup label="Diagnostic Centers">
-                {diagnosticCenters.map(dc => (
+                {(diagnosticCenters || []).map(dc => (
                   <option key={`dc-${dc.id}`} value={`dc-${dc.id}`}>{dc.name} ({dc.branch})</option>
                 ))}
               </optgroup>
               <optgroup label="Hospitals (Internal Diagnostics)">
-                {hospitals.map(h => (
+                {(hospitals || []).map(h => (
                   <option key={`hosp-${h.id}`} value={`hosp-${h.id}`}>{h.name} ({h.branch || 'Main'})</option>
                 ))}
               </optgroup>
@@ -61,81 +62,108 @@ export default function BranchTestsTab() {
           <table className="w-full text-left text-xs text-slate-300">
             <thead className="bg-slate-950 text-slate-400 text-[11px] uppercase tracking-wider border-b border-slate-800">
               <tr>
-                <th className="py-3.5 px-4">Facility & Branch</th>
+                {isSuperAdmin && <th className="py-3.5 px-4">Facility & Branch</th>}
                 <th className="py-3.5 px-4">Test Name</th>
+                <th className="py-3.5 px-4">Category</th>
+                <th className="py-3.5 px-4">Sample Type</th>
                 <th className="py-3.5 px-4">Original Price</th>
                 <th className="py-3.5 px-4">Discount</th>
                 <th className="py-3.5 px-4">Offer Price</th>
+                <th className="py-3.5 px-4">Report Time</th>
+                <th className="py-3.5 px-4">Availability</th>
+                <th className="py-3.5 px-4">Home Collection</th>
                 <th className="py-3.5 px-4 text-right">Actions</th>
               </tr>
             </thead>
             <tbody className="divide-y divide-slate-800/60">
               {(branchTests || [])
                 .filter(bt => {
-                  const facilityName = bt?.hospital_name || bt?.hospital?.name || bt?.center_name || bt?.center?.name || '';
-                  const testName = bt?.test_name || bt?.test?.name || '';
+                  const facilityName = bt?.facility_name || bt?.location_details?.name || '';
+                  const testName = bt?.test_details?.name || '';
                   const matchesSearch = `${facilityName} ${testName}`.toLowerCase().includes((searchTerm || '').toLowerCase());
                   
                   if (!branchTestBranchFilter) return matchesSearch;
                   if (branchTestBranchFilter.startsWith('dc-')) {
                     const targetId = branchTestBranchFilter.replace('dc-', '');
-                    const centerId = bt.center?.id || bt.center;
+                    const centerId = bt?.location_id;
                     return matchesSearch && centerId === targetId;
                   }
                   if (branchTestBranchFilter.startsWith('hosp-')) {
                     const targetId = branchTestBranchFilter.replace('hosp-', '');
-                    const hospId = bt.hospital?.id || bt.hospital;
+                    const hospId = bt?.location_id;
                     return matchesSearch && hospId === targetId;
                   }
                   return matchesSearch;
                 })
                 .map(bt => {
-                  const isHospital = Boolean(bt.hospital || bt.hospital_name || bt.facility_type === 'hospital');
-                  const facilityName = bt.hospital_name || bt.hospital?.name || bt.center_name || bt.center?.name || 'Medical Facility';
-                  const branchName = bt.hospital_branch || bt.hospital?.branch || bt.center_branch || bt.center?.branch || 'Main Branch';
+                  const isHospital = bt?.facility_type === 'hospital' || bt?.location_details?.location_type === 'hospital';
+                  const facilityName = bt?.facility_name || bt?.location_details?.name || 'Medical Facility';
+                  const branchName = bt?.location_details?.branch || 'Main Branch';
                   
                   return (
                     <tr key={bt.id} className="hover:bg-slate-800/40 transition">
-                      <td className="py-4 px-4 font-bold">
-                        <div className="flex items-center gap-2">
-                          {isHospital ? (
-                            <span className="p-1.5 rounded-lg bg-emerald-500/10 border border-emerald-500/20 text-emerald-400" title="Hospital Diagnostics">
-                              <Building2 className="w-3.5 h-3.5" />
-                            </span>
-                          ) : (
-                            <span className="p-1.5 rounded-lg bg-cyan-500/10 border border-cyan-500/20 text-cyan-400" title="Diagnostic Center">
-                              <FlaskConical className="w-3.5 h-3.5" />
-                            </span>
-                          )}
-                          <div>
-                            <div className="text-white text-xs font-bold">{facilityName}</div>
-                            <div className="text-[10px] text-slate-400 font-normal">
-                              {branchName} • <span className={isHospital ? "text-emerald-400 font-semibold" : "text-cyan-400 font-semibold"}>
-                                {isHospital ? "Internal Hospital Lab" : "Diagnostic Center"}
+                      {isSuperAdmin && (
+                        <td className="py-4 px-4 font-bold">
+                          <div className="flex items-center gap-2">
+                            {isHospital ? (
+                              <span className="p-1.5 rounded-lg bg-emerald-500/10 border border-emerald-500/20 text-emerald-400" title="Hospital Diagnostics">
+                                <Building2 className="w-3.5 h-3.5" />
                               </span>
+                            ) : (
+                              <span className="p-1.5 rounded-lg bg-cyan-500/10 border border-cyan-500/20 text-cyan-400" title="Diagnostic Center">
+                                <FlaskConical className="w-3.5 h-3.5" />
+                              </span>
+                            )}
+                            <div>
+                              <div className="text-white text-xs font-bold">{facilityName}</div>
+                              <div className="text-[10px] text-slate-400 font-normal">
+                                {branchName}
+                              </div>
                             </div>
                           </div>
-                        </div>
-                      </td>
+                        </td>
+                      )}
                       <td className="py-4 px-4 font-bold text-white">
                         <div className="flex items-center gap-1.5">
                           <Calculator className="w-3.5 h-3.5 text-amber-400" />
-                          <span>{bt.test_name || bt.test?.name || 'Diagnostic Test'}</span>
+                          <span>{bt?.test_details?.name || 'Diagnostic Test'}</span>
                         </div>
                       </td>
+                      <td className="py-4 px-4">
+                        <span className="px-2 py-1 rounded-md bg-slate-800 text-[10px] text-slate-300">
+                          {bt?.test_details?.category_name || 'N/A'}
+                        </span>
+                      </td>
+                      <td className="py-4 px-4 text-slate-400">
+                        {bt?.test_details?.sample_type || 'N/A'}
+                      </td>
                       <td className="py-4 px-4 line-through text-slate-500">
-                        ৳{bt.original_price || bt.price}
+                        {bt.original_price != null ? `৳${bt.original_price}` : '-'}
                       </td>
                       <td className="py-4 px-4 text-rose-400 font-bold">
-                        {bt.discount || '0%'}
+                        {bt.discount || '-'}
                       </td>
                       <td className="py-4 px-4 text-emerald-400 font-black text-sm">
-                        ৳{bt.price}
+                        ৳{bt.price || bt.discounted_price || 0}
+                      </td>
+                      <td className="py-4 px-4 text-slate-400">
+                        {bt.report_time || (bt?.test_details?.report_time_hours ? `${bt.test_details.report_time_hours} hours` : 'N/A')}
+                      </td>
+                      <td className="py-4 px-4">
+                        <div className={`w-3 h-3 rounded-full ${bt.is_available ? 'bg-emerald-500' : 'bg-rose-500'}`} title={bt.is_available ? 'Available' : 'Unavailable'} />
+                      </td>
+                      <td className="py-4 px-4">
+                        {bt.home_sample_collection ? <span className="text-emerald-400 font-bold text-[10px] bg-emerald-500/10 px-2 py-1 rounded">Yes</span> : <span className="text-slate-500 text-[10px]">No</span>}
                       </td>
                       <td className="py-4 px-4 text-right whitespace-nowrap">
-                        <button onClick={() => handleDeleteBranchTest(bt.id)} className="p-2 bg-rose-500/20 text-rose-400 rounded-lg hover:bg-rose-500/30">
-                          <Trash2 className="w-4 h-4" />
-                        </button>
+                        <div className="flex justify-end gap-2">
+                          <button onClick={() => handleOpenBranchTestModal(bt)} className="p-2 bg-slate-800 hover:bg-slate-700 text-slate-300 rounded-lg">
+                            Edit
+                          </button>
+                          <button onClick={() => handleDeleteBranchTest(bt.id)} className="p-2 bg-rose-500/20 text-rose-400 rounded-lg hover:bg-rose-500/30">
+                            <Trash2 className="w-4 h-4" />
+                          </button>
+                        </div>
                       </td>
                     </tr>
                   );

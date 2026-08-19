@@ -623,6 +623,18 @@ export const api = {
     });
     return handleResponse(res);
   },
+  async updateFacilityTest(id, data) {
+    const payload = { ...data };
+    if (data.test) payload.test_id = data.test;
+    const res = await fetchWithTimeout(`${BASE_URL}/facility-tests/${id}/`, {
+      method: 'PATCH',
+      headers: getHeaders(),
+      body: JSON.stringify(payload),
+    });
+    clearCache();
+    return handleResponse(res);
+  },
+  async updateDiagnosticCenterTest(id, data) { return this.updateFacilityTest(id, data); },
   async deleteDiagnosticCenterTest(id) {
     const res = await fetchWithTimeout(`${BASE_URL}/facility-tests/${id}/`, {
       method: 'DELETE',
@@ -827,7 +839,7 @@ export const api = {
   },
   async updateDoctor(id, doctorData) {
     const res = await fetchWithTimeout(`${BASE_URL}/doctors/${id}/`, {
-      method: 'PUT',
+      method: 'PATCH',
       headers: getHeaders(),
       body: JSON.stringify(doctorData),
     });

@@ -99,11 +99,15 @@ class HospitalSerializer(serializers.ModelSerializer):
         if test_cat_ids:
             from tests.models import Test, FacilityTest
             tests = Test.objects.filter(category_id__in=test_cat_ids)
+            prices = {}
+            if hasattr(self, 'initial_data'):
+                prices = self.initial_data.get('prices', {})
             for test in tests:
+                price = prices.get(str(test.id), 500.00)
                 FacilityTest.objects.get_or_create(
                     location=hospital.location,
                     test=test,
-                    defaults={'price': 500.00, 'is_available': True}
+                    defaults={'price': price, 'is_available': True}
                 )
         return hospital
 
@@ -129,11 +133,15 @@ class HospitalSerializer(serializers.ModelSerializer):
         if test_cat_ids:
             from tests.models import Test, FacilityTest
             tests = Test.objects.filter(category_id__in=test_cat_ids)
+            prices = {}
+            if hasattr(self, 'initial_data'):
+                prices = self.initial_data.get('prices', {})
             for test in tests:
+                price = prices.get(str(test.id), 500.00)
                 FacilityTest.objects.get_or_create(
                     location=instance.location,
                     test=test,
-                    defaults={'price': 500.00, 'is_available': True}
+                    defaults={'price': price, 'is_available': True}
                 )
         return instance
 
@@ -200,11 +208,15 @@ class DiagnosticCenterSerializer(serializers.ModelSerializer):
         if test_cat_ids:
             from tests.models import Test, FacilityTest
             tests = Test.objects.filter(category_id__in=test_cat_ids)
+            prices = {}
+            if hasattr(self, 'initial_data'):
+                prices = self.initial_data.get('prices', {})
             for test in tests:
+                price = prices.get(str(test.id), 500.00)
                 FacilityTest.objects.get_or_create(
                     location=diagnostic.location,
                     test=test,
-                    defaults={'price': 500.00, 'is_available': True}
+                    defaults={'price': price, 'is_available': True}
                 )
         return diagnostic
 
@@ -231,11 +243,15 @@ class DiagnosticCenterSerializer(serializers.ModelSerializer):
         if test_cat_ids:
             from tests.models import Test, FacilityTest
             tests = Test.objects.filter(category_id__in=test_cat_ids)
+            prices = {}
+            if hasattr(self, 'initial_data'):
+                prices = self.initial_data.get('prices', {})
             for test in tests:
+                price = prices.get(str(test.id), 500.00)
                 FacilityTest.objects.get_or_create(
                     location=instance.location,
                     test=test,
-                    defaults={'price': 500.00, 'is_available': True}
+                    defaults={'price': price, 'is_available': True}
                 )
         return instance
 

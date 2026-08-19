@@ -81,15 +81,19 @@ export function AdminProvider({ children, currentUser, onLogout }) {
   const [activeUser, setActiveUser] = useState(() => currentUser !== undefined ? currentUser : api.getCurrentUser());
 
   const storedUser = activeUser;
-  const role = storedUser?.role || (storedUser?.is_superuser ? 'super_admin' : (storedUser?.phone_number === '01700000000' || storedUser?.phone === '01700000000' ? 'super_admin' : ''));
+  const role = storedUser?.role || (storedUser?.is_superuser ? 'super_admin' : '');
   const isSuperAdmin = Boolean(storedUser) && (role === 'super_admin' || Boolean(storedUser?.is_superuser));
   const isFacilityAdmin = Boolean(storedUser) && role === 'facility_admin';
+  const isHospitalAdmin = isFacilityAdmin && storedUser?.managed_locations?.some(loc => loc.location_type === 'hospital');
+  const isDiagnosticAdmin = isFacilityAdmin && storedUser?.managed_locations?.some(loc => loc.location_type === 'diagnostic_center');
   const isDoctor = Boolean(storedUser) && role === 'doctor';
+  const isStaffRole = Boolean(storedUser) && role === 'staff';
   const isStaff = Boolean(
     storedUser && (
       isSuperAdmin || 
       isFacilityAdmin || 
       isDoctor || 
+      isStaffRole ||
       storedUser?.is_staff
     )
   );
@@ -438,7 +442,10 @@ export function AdminProvider({ children, currentUser, onLogout }) {
     role,
     isSuperAdmin,
     isFacilityAdmin,
+    isHospitalAdmin,
+    isDiagnosticAdmin,
     isDoctor,
+    isStaffRole,
     activeTab, setActiveTab,
     loading, setLoading,
     error, setError,

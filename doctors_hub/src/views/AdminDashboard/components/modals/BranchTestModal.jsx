@@ -1,8 +1,9 @@
 import React, { useState, useEffect } from 'react';
-import { XCircle, Calculator, Building2, FlaskConical } from 'lucide-react';
+import { XCircle, Calculator, Building2, FlaskConical, CheckCircle2, Circle } from 'lucide-react';
 import { useAdminContext } from '../../context/AdminContext';
 import { api } from '../../../../services/api';
 import { calculateFinalPrice } from '../../utils/adminHelpers';
+import Drawer from '../shared/Drawer';
 
 export default function BranchTestModal() {
   const {
@@ -13,7 +14,9 @@ export default function BranchTestModal() {
     diagnosticCenters,
     hospitals,
     tests,
-    setBranchTests,
+    isSuperAdmin,
+    isFacilityAdmin,
+    loadAllData,
     showNotification
   } = useAdminContext();
 
@@ -26,24 +29,24 @@ export default function BranchTestModal() {
     original_price: '700',
     discount: '25% OFF',
     price: '525',
-    report_delivery_date: new Date().toISOString().split('T')[0],
-    report_time_slot: '05:00 PM - 09:00 PM'
+    is_available: true,
+    home_sample_collection: false
   });
 
   useEffect(() => {
     if (editingBranchTest) {
-      const isHosp = Boolean(editingBranchTest.hospital || editingBranchTest.hospital_name || editingBranchTest.facility_type === 'hospital');
+      const isHosp = editingBranchTest.facility_type === 'hospital' || editingBranchTest.location_details?.location_type === 'hospital';
       setBranchTestForm({
         id: editingBranchTest.id,
         facility_type: isHosp ? 'hospital' : 'diagnostic_center',
-        center: editingBranchTest.center?.id || editingBranchTest.center || '',
-        hospital: editingBranchTest.hospital?.id || editingBranchTest.hospital || '',
-        test: editingBranchTest.test?.id || editingBranchTest.test || (tests[0]?.id || ''),
-        original_price: editingBranchTest.original_price ? editingBranchTest.original_price.toString() : (editingBranchTest.price ? editingBranchTest.price.toString() : '700'),
-        discount: editingBranchTest.discount || '25% OFF',
-        price: editingBranchTest.price ? editingBranchTest.price.toString() : '525',
-        report_delivery_date: new Date().toISOString().split('T')[0],
-        report_time_slot: '05:00 PM - 09:00 PM'
+        center: !isHosp ? editingBranchTest.location_id : '',
+        hospital: isHosp ? editingBranchTest.location_id : '',
+        test: editingBranchTest.test_id,
+        original_price: editingBranchTest.original_price ? editingBranchTest.original_price.toString() : (editingBranchTest.price ? editingBranchTest.price.toString() : ''),
+        discount: editingBranchTest.discount || '',
+        price: editingBranchTest.price ? editingBranchTest.price.toString() : (editingBranchTest.discounted_price ? editingBranchTest.discounted_price.toString() : ''),
+        is_available: editingBranchTest.is_available ?? true,
+        home_sample_collection: editingBranchTest.home_sample_collection ?? false
       });
     } else {
       const isHospPrefill = branchTestPrefill?.type === 'hospital';
@@ -51,27 +54,26 @@ export default function BranchTestModal() {
       setBranchTestForm({
         id: '',
         facility_type: isHospPrefill ? 'hospital' : 'diagnostic_center',
-        center: isDiagPrefill ? branchTestPrefill.id : (diagnosticCenters[0]?.id || ''),
-        hospital: isHospPrefill ? branchTestPrefill.id : (hospitals[0]?.id || ''),
-        test: tests[0]?.id || '',
+        center: isDiagPrefill ? branchTestPrefill.id : ((diagnosticCenters || [])[0]?.id || ''),
+        hospital: isHospPrefill ? branchTestPrefill.id : ((hospitals || [])[0]?.id || ''),
+        test: (tests || [])[0]?.id || '',
         original_price: '700',
         discount: '25% OFF',
         price: '525',
-        report_delivery_date: new Date().toISOString().split('T')[0],
-        report_time_slot: '05:00 PM - 09:00 PM'
+        is_available: true,
+        home_sample_collection: false
       });
     }
   }, [editingBranchTest, showBranchTestModal, branchTestPrefill, diagnosticCenters, hospitals, tests]);
 
   if (!showBranchTestModal) return null;
 
+  const isEditing = Boolean(editingBranchTest);
+
   const handleSaveBranchTest = async (e) => {
     e.preventDefault();
     try {
       const isHosp = branchTestForm.facility_type === 'hospital';
-      const selectedTest = tests.find(t => String(t.id) === String(branchTestForm.test));
-      const selectedCenter = !isHosp ? diagnosticCenters.find(dc => String(dc.id) === String(branchTestForm.center)) : null;
-      const selectedHospital = isHosp ? hospitals.find(h => String(h.id) === String(branchTestForm.hospital)) : null;
 
       const payload = {
         test: branchTestForm.test,
@@ -80,44 +82,19 @@ export default function BranchTestModal() {
         price: parseFloat(branchTestForm.price) || 0,
         original_price: branchTestForm.original_price ? parseFloat(branchTestForm.original_price) : null,
         discount: branchTestForm.discount,
-        report_time: `${branchTestForm.report_delivery_date} | ${branchTestForm.report_time_slot}`
+        is_available: branchTestForm.is_available,
+        home_sample_collection: branchTestForm.home_sample_collection
       };
 
-      let resData;
-      try {
-        resData = await api.createDiagnosticCenterTest(payload);
-      } catch (err) {
-        console.warn("Backend save failed, updating local state:", err);
+      if (isEditing) {
+        await api.updateFacilityTest(editingBranchTest.id, payload);
+        showNotification(`Test price offering updated!`);
+      } else {
+        await api.createDiagnosticCenterTest(payload);
+        showNotification(`Test added to facility!`);
       }
 
-      const newEntry = {
-        id: resData?.id || branchTestForm.id || `bt-custom-${Date.now()}`,
-        facility_type: branchTestForm.facility_type,
-        center: !isHosp ? (selectedCenter?.id || branchTestForm.center) : null,
-        center_name: !isHosp ? (selectedCenter?.name || '') : '',
-        center_branch: !isHosp ? (selectedCenter?.branch || '') : '',
-        hospital: isHosp ? (selectedHospital?.id || branchTestForm.hospital) : null,
-        hospital_name: isHosp ? (selectedHospital?.name || '') : '',
-        hospital_branch: isHosp ? (selectedHospital?.branch || '') : '',
-        test: selectedTest?.id || branchTestForm.test,
-        test_name: selectedTest?.name || 'Diagnostic Test',
-        original_price: branchTestForm.original_price,
-        discount: branchTestForm.discount,
-        price: branchTestForm.price
-      };
-
-      setBranchTests(prev => {
-        const existingIdx = prev.findIndex(b => String(b.id) === String(newEntry.id));
-        if (existingIdx >= 0) {
-          const updated = [...prev];
-          updated[existingIdx] = newEntry;
-          return updated;
-        }
-        return [newEntry, ...prev];
-      });
-
-      const facilityName = selectedHospital ? selectedHospital.name : (selectedCenter ? selectedCenter.name : 'Facility');
-      showNotification(`Test "${newEntry.test_name}" added to ${facilityName}!`);
+      await loadAllData();
       setShowBranchTestModal(false);
     } catch (err) {
       alert(`Error saving test price offering: ${err.message}`);
@@ -125,19 +102,26 @@ export default function BranchTestModal() {
   };
 
   return (
-    <div className="fixed inset-0 z-50 bg-slate-950/80 backdrop-blur-md flex items-center justify-center p-4">
-      <div className="bg-slate-900 border border-slate-800 rounded-3xl p-6 max-w-md w-full space-y-4 shadow-2xl">
-        <div className="flex items-center justify-between border-b border-slate-800 pb-3">
-          <h3 className="text-base font-bold text-white">Add Diagnostic Test Price Offering</h3>
-          <button onClick={() => setShowBranchTestModal(false)} className="text-slate-400 hover:text-white">
-            <XCircle className="w-5 h-5" />
-          </button>
-        </div>
-
-        <form onSubmit={handleSaveBranchTest} className="space-y-3 text-xs">
-          {/* FACILITY TYPE SELECTOR */}
-          <div>
-            <label className="block text-slate-300 font-semibold mb-1">Facility Type *</label>
+    <Drawer
+      isOpen={showBranchTestModal}
+      onClose={() => setShowBranchTestModal(false)}
+      title={isEditing ? 'Edit Offered Test' : 'Add Offered Test'}
+      footer={
+        <>
+          <button type="button" onClick={() => setShowBranchTestModal(false)} className="px-5 py-2.5 bg-slate-800 text-slate-300 font-bold rounded-xl hover:bg-slate-700">Cancel</button>
+          <button type="submit" form="drawer-form" className="px-6 py-2.5 bg-teal-600 hover:bg-teal-500 text-white font-bold rounded-xl shadow-lg shadow-teal-600/20">Save Pricing</button>
+        </>
+      }
+    >
+      <form id="drawer-form" onSubmit={handleSaveBranchTest} className="space-y-4 text-sm">
+        {/* FACILITY TYPE SELECTOR */}
+        <div>
+          <label className="block text-slate-300 font-semibold mb-1">Facility Type *</label>
+          {isFacilityAdmin || isEditing ? (
+            <div className="px-3 py-2 bg-slate-950 border border-slate-800 rounded-xl text-slate-400 cursor-not-allowed">
+              {branchTestForm.facility_type === 'hospital' ? 'Hospital Lab' : 'Diagnostic Center'}
+            </div>
+          ) : (
             <div className="grid grid-cols-2 gap-2 p-1 bg-slate-950 border border-slate-800 rounded-xl">
               <button
                 type="button"
@@ -162,105 +146,126 @@ export default function BranchTestModal() {
                 <Building2 className="w-3.5 h-3.5" /> Hospital Lab
               </button>
             </div>
-          </div>
-
-          {/* TARGET SELECTION DEPENDING ON FACILITY TYPE */}
-          {branchTestForm.facility_type === 'diagnostic_center' ? (
-            <div>
-              <label className="block text-slate-300 font-semibold mb-1">Select Standalone Diagnostic Center *</label>
-              <select
-                required
-                value={branchTestForm.center}
-                onChange={e => setBranchTestForm({ ...branchTestForm, center: e.target.value })}
-                className="w-full bg-slate-950 border border-slate-800 rounded-xl px-3 py-2 text-white font-bold"
-              >
-                <option value="">Select Diagnostic Center</option>
-                {diagnosticCenters.map(dc => (
-                  <option key={dc.id} value={dc.id}>{dc.name} ({dc.branch})</option>
-                ))}
-              </select>
-            </div>
-          ) : (
-            <div>
-              <label className="block text-slate-300 font-semibold mb-1">Select Hospital (Internal Diagnostics) *</label>
-              <select
-                required
-                value={branchTestForm.hospital}
-                onChange={e => setBranchTestForm({ ...branchTestForm, hospital: e.target.value })}
-                className="w-full bg-slate-950 border border-slate-800 rounded-xl px-3 py-2 text-white font-bold"
-              >
-                <option value="">Select Hospital Branch</option>
-                {hospitals.map(h => (
-                  <option key={h.id} value={h.id}>{h.name} ({h.branch || 'Main'})</option>
-                ))}
-              </select>
-            </div>
           )}
+        </div>
 
+        {/* TARGET SELECTION DEPENDING ON FACILITY TYPE */}
+        {branchTestForm.facility_type === 'diagnostic_center' ? (
           <div>
-            <label className="block text-slate-300 font-semibold mb-1">Select Test *</label>
+            <label className="block text-slate-300 font-semibold mb-1">Select Standalone Diagnostic Center *</label>
             <select
               required
-              value={branchTestForm.test}
-              onChange={e => setBranchTestForm({ ...branchTestForm, test: e.target.value })}
-              className="w-full bg-slate-950 border border-slate-800 rounded-xl px-3 py-2 text-white font-bold"
+              disabled={isFacilityAdmin || isEditing}
+              value={branchTestForm.center}
+              onChange={e => setBranchTestForm({ ...branchTestForm, center: e.target.value })}
+              className="w-full bg-slate-950 border border-slate-800 rounded-xl px-3 py-2 text-white font-bold disabled:opacity-50 disabled:cursor-not-allowed"
             >
-              <option value="">Select Diagnostic Test</option>
-              {tests.map(t => (
-                <option key={t.id} value={t.id}>{t.name}</option>
+              <option value="">Select Diagnostic Center</option>
+              {(diagnosticCenters || []).map(dc => (
+                <option key={dc.id} value={dc.id}>{dc.name} ({dc.branch})</option>
               ))}
             </select>
           </div>
-
-          <div className="grid grid-cols-2 gap-3">
-            <div>
-              <label className="block text-slate-300 font-semibold mb-1">Original Price (৳) *</label>
-              <input
-                type="number"
-                required
-                value={branchTestForm.original_price}
-                onChange={e => {
-                  const newOrig = e.target.value;
-                  const calcPrice = calculateFinalPrice(newOrig, branchTestForm.discount);
-                  setBranchTestForm({ ...branchTestForm, original_price: newOrig, price: calcPrice });
-                }}
-                className="w-full bg-slate-950 border border-slate-800 rounded-xl px-3 py-2 text-white font-mono"
-              />
-            </div>
-            <div>
-              <label className="block text-slate-300 font-semibold mb-1">Discount Tag *</label>
-              <input
-                type="text"
-                required
-                placeholder="e.g. 25% OFF"
-                value={branchTestForm.discount}
-                onChange={e => {
-                  const newDist = e.target.value;
-                  const calcPrice = calculateFinalPrice(branchTestForm.original_price, newDist);
-                  setBranchTestForm({ ...branchTestForm, discount: newDist, price: calcPrice });
-                }}
-                className="w-full bg-slate-950 border border-slate-800 rounded-xl px-3 py-2 text-white"
-              />
-            </div>
-          </div>
-
+        ) : (
           <div>
-            <label className="block text-emerald-400 font-bold mb-1">Final Discounted Offer Price (৳) *</label>
+            <label className="block text-slate-300 font-semibold mb-1">Select Hospital (Internal Diagnostics) *</label>
+            <select
+              required
+              disabled={isFacilityAdmin || isEditing}
+              value={branchTestForm.hospital}
+              onChange={e => setBranchTestForm({ ...branchTestForm, hospital: e.target.value })}
+              className="w-full bg-slate-950 border border-slate-800 rounded-xl px-3 py-2 text-white font-bold disabled:opacity-50 disabled:cursor-not-allowed"
+            >
+              <option value="">Select Hospital Branch</option>
+              {(hospitals || []).map(h => (
+                <option key={h.id} value={h.id}>{h.name} ({h.branch || 'Main'})</option>
+              ))}
+            </select>
+          </div>
+        )}
+
+        <div>
+          <label className="block text-slate-300 font-semibold mb-1">Select Test *</label>
+          <select
+            required
+            disabled={isEditing}
+            value={branchTestForm.test}
+            onChange={e => setBranchTestForm({ ...branchTestForm, test: e.target.value })}
+            className="w-full bg-slate-950 border border-slate-800 rounded-xl px-3 py-2 text-white font-bold disabled:opacity-50 disabled:cursor-not-allowed"
+          >
+            <option value="">Select Diagnostic Test</option>
+            {(tests || []).map(t => (
+              <option key={t.id} value={t.id}>{t.name}</option>
+            ))}
+          </select>
+        </div>
+
+        <div className="grid grid-cols-2 gap-3">
+          <div>
+            <label className="block text-slate-300 font-semibold mb-1">Original Price (৳) *</label>
             <input
               type="number"
               required
-              value={branchTestForm.price}
-              onChange={e => setBranchTestForm({ ...branchTestForm, price: e.target.value })}
-              className="w-full bg-slate-950 border border-emerald-500/50 rounded-xl px-3 py-2 text-emerald-300 font-bold font-mono"
+              value={branchTestForm.original_price}
+              onChange={e => {
+                const newOrig = e.target.value;
+                const calcPrice = calculateFinalPrice(newOrig, branchTestForm.discount);
+                setBranchTestForm({ ...branchTestForm, original_price: newOrig, price: calcPrice });
+              }}
+              className="w-full bg-slate-950 border border-slate-800 rounded-xl px-3 py-2 text-white font-mono"
             />
           </div>
-
-          <div className="flex justify-end gap-2 pt-3 border-t border-slate-800">
-            <button type="button" onClick={() => setShowBranchTestModal(false)} className="px-4 py-2 bg-slate-800 text-slate-300 font-bold rounded-xl">Cancel</button>
-            <button type="submit" className="px-5 py-2 bg-teal-600 hover:bg-teal-500 text-white font-bold rounded-xl shadow-lg shadow-teal-600/20">Save Test Pricing</button>
+          <div>
+            <label className="block text-slate-300 font-semibold mb-1">Discount Tag</label>
+            <input
+              type="text"
+              placeholder="e.g. 25% OFF"
+              value={branchTestForm.discount}
+              onChange={e => {
+                const newDist = e.target.value;
+                const calcPrice = calculateFinalPrice(branchTestForm.original_price, newDist);
+                setBranchTestForm({ ...branchTestForm, discount: newDist, price: calcPrice });
+              }}
+              className="w-full bg-slate-950 border border-slate-800 rounded-xl px-3 py-2 text-white"
+            />
           </div>
-        </form>
-      </div>
-    </div>
+        </div>
+
+        <div>
+          <label className="block text-emerald-400 font-bold mb-1">Final Discounted Offer Price (৳) *</label>
+          <input
+            type="number"
+            required
+            value={branchTestForm.price}
+            onChange={e => setBranchTestForm({ ...branchTestForm, price: e.target.value })}
+            className="w-full bg-slate-950 border border-emerald-500/50 rounded-xl px-3 py-2 text-emerald-300 font-bold font-mono"
+          />
+        </div>
+
+        <div className="flex items-center gap-4 mt-2">
+          <label className="flex items-center gap-2 cursor-pointer">
+            <input 
+              type="checkbox" 
+              checked={branchTestForm.is_available} 
+              onChange={e => setBranchTestForm({...branchTestForm, is_available: e.target.checked})} 
+              className="hidden" 
+            />
+            {branchTestForm.is_available ? <CheckCircle2 className="w-5 h-5 text-emerald-400" /> : <Circle className="w-5 h-5 text-slate-500" />}
+            <span className="text-slate-300 font-semibold">Available</span>
+          </label>
+
+          <label className="flex items-center gap-2 cursor-pointer">
+            <input 
+              type="checkbox" 
+              checked={branchTestForm.home_sample_collection} 
+              onChange={e => setBranchTestForm({...branchTestForm, home_sample_collection: e.target.checked})} 
+              className="hidden" 
+            />
+            {branchTestForm.home_sample_collection ? <CheckCircle2 className="w-5 h-5 text-emerald-400" /> : <Circle className="w-5 h-5 text-slate-500" />}
+            <span className="text-slate-300 font-semibold">Home Collection</span>
+          </label>
+        </div>
+      </form>
+    </Drawer>
   );
 }

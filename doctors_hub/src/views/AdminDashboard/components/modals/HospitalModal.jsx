@@ -80,7 +80,8 @@ export default function HospitalModal() {
         logo: editingHospital.logo || '',
         image: editingHospital.image || '',
         description: editingHospital.description || '',
-        is_verified: editingHospital.is_verified ?? true
+        is_verified: editingHospital.is_verified ?? true,
+        has_diagnostic_center: editingHospital.has_diagnostic_center ?? false
       });
     } else {
       setHospitalForm({
@@ -92,7 +93,7 @@ export default function HospitalModal() {
         branch: 'Dhanmondi',
         isCustomBranch: false,
         customBranch: '',
-        category_id: hospitalCategories[0]?.id || '',
+        category_id: (hospitalCategories || [])[0]?.id || '',
         service_ids: (hospitalServices || []).slice(0, 3).map(s => s.id),
         address: '',
         phone: '',
@@ -105,7 +106,8 @@ export default function HospitalModal() {
         logo: 'https://images.unsplash.com/photo-1519494026892-80bbd2d6fd0d?auto=format&fit=crop&w=600&q=80',
         image: 'https://images.unsplash.com/photo-1519494026892-80bbd2d6fd0d?auto=format&fit=crop&w=600&q=80',
         description: '',
-        is_verified: true
+        is_verified: true,
+        has_diagnostic_center: false
       });
     }
   }, [editingHospital, showHospitalModal, hospitalCategories, hospitalServices]);
@@ -137,7 +139,8 @@ export default function HospitalModal() {
         logo: hospitalForm.logo,
         image: hospitalForm.image,
         description: hospitalForm.description,
-        is_verified: hospitalForm.is_verified
+        is_verified: hospitalForm.is_verified,
+        has_diagnostic_center: hospitalForm.has_diagnostic_center
       };
 
       if (editingHospital) {
@@ -331,7 +334,7 @@ export default function HospitalModal() {
             />
           </div>
 
-          <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+          <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
             <div>
               <label className="block text-slate-300 font-semibold mb-1">Contact Phone</label>
               <input
@@ -339,6 +342,15 @@ export default function HospitalModal() {
                 value={hospitalForm.phone}
                 onChange={e => setHospitalForm({ ...hospitalForm, phone: e.target.value })}
                 className="w-full bg-slate-950 border border-slate-800 rounded-xl px-3 py-2 text-white font-mono"
+              />
+            </div>
+            <div>
+              <label className="block text-slate-300 font-semibold mb-1">Email</label>
+              <input
+                type="email"
+                value={hospitalForm.email}
+                onChange={e => setHospitalForm({ ...hospitalForm, email: e.target.value })}
+                className="w-full bg-slate-950 border border-slate-800 rounded-xl px-3 py-2 text-white"
               />
             </div>
             <div>
@@ -405,6 +417,19 @@ export default function HospitalModal() {
                 );
               })}
             </div>
+          </div>
+
+          <div className="flex items-center gap-2 pt-2">
+            <input
+              type="checkbox"
+              id="has_diagnostic_center"
+              checked={hospitalForm.has_diagnostic_center}
+              onChange={e => setHospitalForm({ ...hospitalForm, has_diagnostic_center: e.target.checked })}
+              className="w-4 h-4 text-emerald-500 bg-slate-950 border-slate-700 rounded focus:ring-emerald-500 focus:ring-offset-slate-900"
+            />
+            <label htmlFor="has_diagnostic_center" className="text-slate-300 font-bold">
+              Has Internal Diagnostic Center / Lab
+            </label>
           </div>
 
           <div className="flex justify-end gap-3 pt-4 border-t border-slate-800">

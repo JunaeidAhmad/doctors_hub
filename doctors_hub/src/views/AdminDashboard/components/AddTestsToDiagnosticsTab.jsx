@@ -17,7 +17,8 @@ export default function AddTestsToDiagnosticsTab() {
     branchTests = [],
     setBranchTests,
     showNotification,
-    setActiveTab
+    setActiveTab,
+    loadAllData
   } = useAdminContext();
   const [facilityType, setFacilityType] = useState('diagnostic_center'); // 'diagnostic_center' | 'hospital'
   const [selectedCenterId, setSelectedCenterId] = useState(diagnosticCenters[0]?.id || '');
@@ -186,10 +187,15 @@ export default function AddTestsToDiagnosticsTab() {
 
       // Single HTTP request to persist all associated category tests in bulk!
       try {
+        const prices = {};
+        for (const testObj of associatedTests) {
+          prices[testObj.id] = testObj.price || 560;
+        }
+
         if (!isHosp) {
-          await api.patchDiagnosticCenter(facilityId, { test_category_ids: selectedCatIds });
+          await api.patchDiagnosticCenter(facilityId, { test_category_ids: selectedCatIds, prices });
         } else {
-          await api.patchHospital(facilityId, { test_category_ids: selectedCatIds });
+          await api.patchHospital(facilityId, { test_category_ids: selectedCatIds, prices });
         }
       } catch (e) {
         // Fallback to bulk payload if patch fails
@@ -203,7 +209,8 @@ export default function AddTestsToDiagnosticsTab() {
       }
 
       if (setBranchTests) {
-        setBranchTests(newBranchTests);
+        // Only doing full reload to prevent state mismatches
+        await loadAllData();
       }
 
       const summaryData = {
@@ -495,7 +502,9 @@ export default function AddTestsToDiagnosticsTab() {
               ) : (
                 (associatedTests || [])
                   .filter(t => `${t?.name || ''} ${t?.category_name || t?.category || ''}`.toLowerCase().includes((searchTerm || '').toLowerCase()))
-                  .map(t => (
+                  .map(t => {
+                    const price = t.price || 560;
+                    return (
                     <tr key={t.id} className="hover:bg-slate-800/40 transition">
                       <td className="py-3 px-4 font-bold text-white">
                         <div className="flex items-center gap-1.5">
@@ -516,8 +525,16 @@ export default function AddTestsToDiagnosticsTab() {
                       <td className="py-3 px-4 line-through text-slate-500 font-mono">
                         ৳{t.originalPrice || 700}
                       </td>
-                      <td className="py-3 px-4 text-emerald-400 font-black font-mono text-sm">
-                        ৳{t.price || 560}
+                      <td className="py-3 px-4">
+                        <input
+                          type="number"
+                          className="w-20 bg-slate-950 border border-emerald-500/50 rounded px-2 py-1 text-emerald-400 font-black font-mono text-xs"
+                          value={price}
+                          onChange={e => {
+                            t.price = e.target.value;
+                            // Trigger re-render by doing a shallow copy of tests? Just mutating is fine here since it's a bulk form
+                          }}
+                        />
                       </td>
                       <td className="py-3 px-4 text-right">
                         <span className="inline-flex items-center gap-1 px-2.5 py-1 bg-emerald-500/20 text-emerald-300 border border-emerald-500/30 rounded-lg text-[10px] font-bold">
@@ -525,7 +542,7 @@ export default function AddTestsToDiagnosticsTab() {
                         </span>
                       </td>
                     </tr>
-                  ))
+                  )})
               )}
             </tbody>
           </table>

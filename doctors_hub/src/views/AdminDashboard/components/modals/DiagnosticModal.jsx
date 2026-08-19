@@ -357,7 +357,7 @@ export default function DiagnosticModal() {
               />
             </div>
 
-            <div className="grid grid-cols-1 md:grid-cols-2 gap-3">
+            <div className="grid grid-cols-1 md:grid-cols-3 gap-3">
               <div>
                 <label className="block text-slate-300 font-semibold mb-1">Contact Phone</label>
                 <input
@@ -365,6 +365,15 @@ export default function DiagnosticModal() {
                   value={diagnosticForm.phone}
                   onChange={e => setDiagnosticForm({ ...diagnosticForm, phone: e.target.value })}
                   className="w-full bg-slate-950 border border-slate-800 rounded-xl px-3 py-2 text-white font-mono"
+                />
+              </div>
+              <div>
+                <label className="block text-slate-300 font-semibold mb-1">Email</label>
+                <input
+                  type="email"
+                  value={diagnosticForm.email}
+                  onChange={e => setDiagnosticForm({ ...diagnosticForm, email: e.target.value })}
+                  className="w-full bg-slate-950 border border-slate-800 rounded-xl px-3 py-2 text-white"
                 />
               </div>
               <div>

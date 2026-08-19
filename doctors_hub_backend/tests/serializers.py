@@ -39,13 +39,14 @@ class FacilityTestSerializer(serializers.ModelSerializer):
         queryset=Location.objects.all(), write_only=True, source='location', required=False
     )
     facility_name = serializers.CharField(source='location.name', read_only=True, default='')
+    facility_type = serializers.CharField(source='location.location_type', read_only=True, default='')
 
     class Meta:
         model = FacilityTest
         fields = (
             'id', 'location_id', 'location_details', 'test_id', 'test_details', 'price',
             'discounted_price', 'original_price', 'discount', 'report_time', 'is_available',
-            'home_sample_collection', 'updated_at', 'facility_name'
+            'home_sample_collection', 'updated_at', 'facility_name', 'facility_type'
         )
 
     def to_internal_value(self, data):

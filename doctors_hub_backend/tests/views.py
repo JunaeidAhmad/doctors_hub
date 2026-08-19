@@ -86,3 +86,19 @@ class FacilityTestViewSet(RoleScopedQuerysetMixin, viewsets.ModelViewSet):
                 raise exceptions.PermissionDenied("You do not have permission to manage tests for this location.")
 
         serializer.save()
+
+    def perform_update(self, serializer):
+        user = self.request.user
+        if not user or not user.is_authenticated:
+            raise exceptions.NotAuthenticated()
+
+        if not getattr(user, "is_super_admin", False):
+            loc = serializer.validated_data.get("location")
+            # If location wasn't provided in the patch data, fallback to the instance's location
+            if not loc:
+                loc = serializer.instance.location
+            loc_id = loc.id if loc else None
+            if not loc_id or loc_id not in user.managed_location_ids:
+                raise exceptions.PermissionDenied("You do not have permission to manage tests for this location.")
+
+        serializer.save()

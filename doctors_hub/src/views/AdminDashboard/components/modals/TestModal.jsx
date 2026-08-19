@@ -30,7 +30,7 @@ export default function TestModal() {
       setTestForm({
         id: '',
         name: '',
-        category: testCategories[0]?.id || '',
+        category: (testCategories || [])[0]?.id || '',
         fasting_required: false,
         description: ''
       });

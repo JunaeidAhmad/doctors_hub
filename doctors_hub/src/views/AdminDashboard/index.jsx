@@ -6,7 +6,7 @@ import {
 import { AdminProvider, useAdminContext } from './context/AdminContext';
 
 import AdminLoginForm from './components/AdminLoginForm';
-import AdminNavStrip from './components/AdminNavStrip';
+import AdminSidebar from './components/AdminSidebar';
 import OverviewTab from './components/OverviewTab';
 import HospitalsTab from './components/HospitalsTab';
 import DiagnosticsTab from './components/DiagnosticsTab';
@@ -135,42 +135,50 @@ function AdminDashboardContent({ onNavigate, onAdminLoggedIn }) {
       </header>
 
       {/* Main Container */}
-      <main className="max-w-7xl mx-auto px-4 sm:px-6 pt-6 space-y-6">
+      <main className="max-w-7xl mx-auto flex gap-6 px-4 sm:px-6 pt-6">
 
-        {/* Notifications */}
-        {successMsg && (
-          <div className="bg-emerald-500/20 border border-emerald-500/40 text-emerald-300 p-4 rounded-2xl text-xs font-bold flex items-center gap-2 animate-fadeIn">
-            <CheckCircle className="w-4 h-4 text-emerald-400 shrink-0" />
-            <span>{successMsg}</span>
-          </div>
-        )}
-
-        {error && (
-          <div className="bg-rose-500/20 border border-rose-500/40 text-rose-300 p-4 rounded-2xl text-xs font-bold flex items-center gap-2 animate-fadeIn">
-            <AlertCircle className="w-4 h-4 text-rose-400 shrink-0" />
-            <span>{error}</span>
-          </div>
-        )}
-
-        {/* TOP NAVIGATION MENU TABS */}
-        <AdminNavStrip />
+        {/* SIDEBAR */}
+        <div className="hidden md:block">
+          <AdminSidebar />
+        </div>
 
         {/* ACTIVE TAB VIEWS */}
-        {activeTab === 'overview' && <OverviewTab />}
-        {activeTab === 'verification-queue' && <VerificationQueueTab />}
-        {activeTab === 'platform-admins' && <PlatformAdminsTab />}
-        {activeTab === 'staff' && <StaffTab />}
-        {activeTab === 'hospitals' && <HospitalsTab />}
-        {activeTab === 'diagnostics' && <DiagnosticsTab />}
-        {activeTab === 'add-tests-to-diagnostics' && <AddTestsToDiagnosticsTab />}
-        {activeTab === 'doctors' && <DoctorsTab />}
-        {activeTab === 'doc-affiliations' && <DoctorAffiliationsManager />}
-        {activeTab === 'doc-schedules' && <DoctorScheduleManager />}
-        {activeTab === 'tests' && <TestsTab />}
-        {activeTab === 'branch-tests' && <BranchTestsTab />}
-        {['doctor-specs', 'hospital-specs', 'diag-cats', 'hosp-services', 'diag-services', 'test-cats'].includes(activeTab) && <CategoriesTab />}
-        {['doc-bookings', 'lab-bookings'].includes(activeTab) && <BookingsTab />}
+        <div className="flex-1 space-y-6 min-w-0">
+          {/* Notifications */}
+          {successMsg && (
+            <div className="bg-emerald-500/20 border border-emerald-500/40 text-emerald-300 p-4 rounded-2xl text-xs font-bold flex items-center gap-2 animate-fadeIn">
+              <CheckCircle className="w-4 h-4 text-emerald-400 shrink-0" />
+              <span>{successMsg}</span>
+            </div>
+          )}
 
+          {error && (
+            <div className="bg-rose-500/20 border border-rose-500/40 text-rose-300 p-4 rounded-2xl text-xs font-bold flex items-center gap-2 animate-fadeIn">
+              <AlertCircle className="w-4 h-4 text-rose-400 shrink-0" />
+              <span>{error}</span>
+            </div>
+          )}
+
+          {/* MOBILE NAV (optional but keeping simple for now) */}
+          <div className="md:hidden overflow-x-auto pb-2">
+            <AdminSidebar />
+          </div>
+
+          {activeTab === 'overview' && <OverviewTab />}
+          {activeTab === 'verification-queue' && <VerificationQueueTab />}
+          {activeTab === 'platform-admins' && <PlatformAdminsTab />}
+          {activeTab === 'staff' && <StaffTab />}
+          {activeTab === 'hospitals' && <HospitalsTab />}
+          {activeTab === 'diagnostics' && <DiagnosticsTab />}
+          {activeTab === 'add-tests-to-diagnostics' && <AddTestsToDiagnosticsTab />}
+          {activeTab === 'doctors' && <DoctorsTab />}
+          {activeTab === 'doc-affiliations' && <DoctorAffiliationsManager />}
+          {activeTab === 'doc-schedules' && <DoctorScheduleManager />}
+          {activeTab === 'tests' && <TestsTab />}
+          {activeTab === 'branch-tests' && <BranchTestsTab />}
+          {['doctor-specs', 'hospital-specs', 'diag-cats', 'hosp-services', 'diag-services', 'test-cats'].includes(activeTab) && <CategoriesTab />}
+          {['doc-bookings', 'lab-bookings'].includes(activeTab) && <BookingsTab />}
+        </div>
 
       </main>
 

@@ -53,10 +53,10 @@ export default function DoctorModal() {
         name: '',
         qualification: 'MBBS, FCPS (Medicine)',
         experience: '12+ Yrs Exp.',
-        selectedSpecialties: doctorSpecialties[0] ? [doctorSpecialties[0].id] : [],
+        selectedSpecialties: (doctorSpecialties || [])[0] ? [(doctorSpecialties || [])[0].id] : [],
         affiliations: [
           {
-            hospital: hospitals[0]?.id || null,
+            hospital: (hospitals || [])[0]?.id || null,
             diagnostic_center: null,
             consultation_type: 'Doctor',
             fee: '1200',

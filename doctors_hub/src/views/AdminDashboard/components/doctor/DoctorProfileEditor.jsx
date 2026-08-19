@@ -15,6 +15,7 @@ export default function DoctorProfileEditor() {
   const doctor = doctors && doctors.length > 0 ? doctors[0] : null;
 
   const [name, setName] = useState('');
+  const [bmdcNumber, setBmdcNumber] = useState('');
   const [qualification, setQualification] = useState('');
   const [experience, setExperience] = useState('');
   const [selectedSpecialtyIds, setSelectedSpecialtyIds] = useState([]);
@@ -26,6 +27,7 @@ export default function DoctorProfileEditor() {
   useEffect(() => {
     if (doctor) {
       setName(doctor.name || '');
+      setBmdcNumber(doctor.bmdc_number || '');
       setQualification(doctor.qualification || '');
       setExperience(doctor.experience || '');
       setDescription(doctor.description || '');
@@ -65,6 +67,7 @@ export default function DoctorProfileEditor() {
     try {
       const payload = {
         name: name.trim(),
+        bmdc_number: bmdcNumber.trim(),
         qualification: qualification.trim(),
         experience: experience.trim(),
         description: description.trim(),
@@ -137,6 +140,21 @@ export default function DoctorProfileEditor() {
               value={name}
               onChange={(e) => setName(e.target.value)}
               placeholder="Prof. Dr. Harun-Or-Rashid"
+              className="w-full bg-slate-950 border border-slate-800 rounded-xl px-4 py-3 text-sm text-white focus:outline-none focus:border-teal-500"
+            />
+          </div>
+
+          <div>
+            <label className="block text-slate-300 text-xs font-bold mb-2 flex items-center gap-1.5">
+              <Award className="w-3.5 h-3.5 text-teal-400" />
+              <span>BMDC Registration Number</span>
+            </label>
+            <input
+              type="text"
+              required
+              value={bmdcNumber}
+              onChange={(e) => setBmdcNumber(e.target.value)}
+              placeholder="A-12345"
               className="w-full bg-slate-950 border border-slate-800 rounded-xl px-4 py-3 text-sm text-white focus:outline-none focus:border-teal-500"
             />
           </div>
