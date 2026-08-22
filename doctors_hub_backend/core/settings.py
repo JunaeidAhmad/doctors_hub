@@ -59,7 +59,6 @@ INSTALLED_APPS = [
     'tests',
     'bookings',
     'django_filters',
-    'django_extensions',
     'drf_spectacular',
     'drf_spectacular_sidecar',
 ]
