@@ -1,4 +1,5 @@
 from rest_framework import serializers
+from drf_spectacular.utils import extend_schema_field
 from .models import (
     Location, HospitalCategory, HospitalService, Hospital,
     DiagnosticCenterCategory, DiagnosticService, DiagnosticCenter, Chamber
@@ -146,6 +147,19 @@ class HospitalSerializer(serializers.ModelSerializer):
         return instance
 
 
+class DiagnosticCenterOfferedTestSummarySerializer(serializers.Serializer):
+    id = serializers.UUIDField()
+    price = serializers.DecimalField(max_digits=10, decimal_places=2)
+    discounted_price = serializers.DecimalField(max_digits=10, decimal_places=2, allow_null=True, required=False)
+    original_price = serializers.DecimalField(max_digits=10, decimal_places=2, allow_null=True, required=False)
+    discount = serializers.IntegerField(required=False)
+    report_time = serializers.CharField(allow_blank=True, required=False)
+    is_available = serializers.BooleanField(default=True)
+    home_sample_collection = serializers.BooleanField(default=False)
+    facility_name = serializers.CharField(allow_blank=True, required=False)
+    facility_type = serializers.CharField(allow_blank=True, required=False)
+
+
 class DiagnosticCenterSerializer(serializers.ModelSerializer):
     location_details = LocationSerializer(source='location', read_only=True)
     location_id = serializers.PrimaryKeyRelatedField(
@@ -171,6 +185,7 @@ class DiagnosticCenterSerializer(serializers.ModelSerializer):
             'services', 'service_ids', 'offered_tests', 'test_category_ids'
         )
 
+    @extend_schema_field(DiagnosticCenterOfferedTestSummarySerializer(many=True))
     def get_offered_tests(self, obj):
         if not obj.location:
             return []

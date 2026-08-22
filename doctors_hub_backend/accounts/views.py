@@ -1,10 +1,11 @@
 import uuid
 from django.shortcuts import get_object_or_404
-from rest_framework import generics, permissions, status
+from rest_framework import generics, permissions, status, serializers
 from rest_framework.response import Response
 from rest_framework.views import APIView
 from rest_framework.throttling import ScopedRateThrottle
 from rest_framework_simplejwt.tokens import RefreshToken
+from drf_spectacular.utils import extend_schema, OpenApiParameter, OpenApiTypes
 
 from .models import User, Role
 from .serializers import UserSerializer, UserProfileSerializer, LoginSerializer
@@ -18,11 +19,124 @@ from doctors.models import Doctor
 from core.permissions import IsSuperAdmin
 
 
+# Schema Support Serializers
+class LoginResponseSerializer(serializers.Serializer):
+    user = UserSerializer()
+    refresh = serializers.CharField()
+    access = serializers.CharField()
+
+
+class RegisteredLocationSummarySerializer(serializers.Serializer):
+    id = serializers.UUIDField()
+    name = serializers.CharField()
+    branch = serializers.CharField(allow_blank=True)
+    location_type = serializers.CharField()
+    is_verified = serializers.BooleanField()
+
+
+class FacilityRegisterResponseSerializer(serializers.Serializer):
+    status = serializers.CharField()
+    message = serializers.CharField()
+    user = UserSerializer()
+    location = RegisteredLocationSummarySerializer()
+    refresh = serializers.CharField()
+    access = serializers.CharField()
+
+
+class RegisteredDoctorSummarySerializer(serializers.Serializer):
+    id = serializers.UUIDField()
+    name = serializers.CharField()
+    bmdc_number = serializers.CharField()
+    is_verified = serializers.BooleanField()
+
+
+class DoctorRegisterResponseSerializer(serializers.Serializer):
+    status = serializers.CharField()
+    message = serializers.CharField()
+    user = UserSerializer()
+    doctor = RegisteredDoctorSummarySerializer()
+    refresh = serializers.CharField()
+    access = serializers.CharField()
+
+
+class FacilityStaffMemberSerializer(serializers.Serializer):
+    user_id = serializers.UUIDField()
+    membership_id = serializers.UUIDField()
+    phone_number = serializers.CharField()
+    first_name = serializers.CharField()
+    last_name = serializers.CharField(allow_blank=True)
+    role = serializers.CharField()
+    is_active = serializers.BooleanField()
+    created_at = serializers.DateTimeField()
+
+
+class FacilityStaffSummarySerializer(serializers.Serializer):
+    user_id = serializers.UUIDField()
+    membership_id = serializers.UUIDField()
+    phone_number = serializers.CharField()
+    first_name = serializers.CharField()
+    last_name = serializers.CharField(allow_blank=True)
+    role = serializers.CharField()
+
+
+class FacilityStaffCreateResponseSerializer(serializers.Serializer):
+    status = serializers.CharField()
+    message = serializers.CharField()
+    staff = FacilityStaffSummarySerializer()
+
+
+class VerificationQueueResponseSerializer(serializers.Serializer):
+    pending_facilities = serializers.ListField(child=serializers.DictField())
+    pending_doctors = serializers.ListField(child=serializers.DictField())
+    total_pending = serializers.IntegerField()
+
+
+class VerificationActionRequestSerializer(serializers.Serializer):
+    action = serializers.ChoiceField(choices=["approve", "reject"], default="approve")
+
+
+class VerificationActionResponseSerializer(serializers.Serializer):
+    status = serializers.CharField()
+    message = serializers.CharField()
+
+
+class PlatformAdminItemSerializer(serializers.Serializer):
+    id = serializers.UUIDField()
+    phone_number = serializers.CharField()
+    first_name = serializers.CharField()
+    last_name = serializers.CharField(allow_blank=True)
+    is_active = serializers.BooleanField()
+    date_joined = serializers.DateTimeField()
+
+
+class PlatformAdminCreateRequestSerializer(serializers.Serializer):
+    phone_number = serializers.CharField()
+    password = serializers.CharField()
+    first_name = serializers.CharField(required=False, allow_blank=True)
+    last_name = serializers.CharField(required=False, allow_blank=True)
+
+
+class PlatformAdminCreateResponseSerializer(serializers.Serializer):
+    status = serializers.CharField()
+    message = serializers.CharField()
+    user = UserSerializer()
+
+
 class LoginAPIView(APIView):
     throttle_classes = [ScopedRateThrottle]
     throttle_scope = "login"
     permission_classes = (permissions.AllowAny,)
 
+    @extend_schema(
+        tags=["Authentication & Profile"],
+        summary="User login with credentials",
+        description="Authenticates a user via phone number and password, returning JWT access and refresh tokens along with user profile metadata.",
+        request=LoginSerializer,
+        responses={
+            200: LoginResponseSerializer,
+            400: OpenApiTypes.OBJECT
+        }
+    )
     def post(self, request, *args, **kwargs):
         serializer = LoginSerializer(data=request.data)
         serializer.is_valid(raise_exception=True)
@@ -35,6 +149,11 @@ class LoginAPIView(APIView):
         }, status=status.HTTP_200_OK)
 
 
+@extend_schema(
+    tags=["Authentication & Profile"],
+    summary="Retrieve or update authenticated user profile",
+    description="Fetches current user details, role, and managed facility permissions, or updates profile fields (first name, last name)."
+)
 class UserProfileAPIView(generics.RetrieveUpdateAPIView):
     serializer_class = UserProfileSerializer
     permission_classes = (permissions.IsAuthenticated,)
@@ -48,6 +167,16 @@ class FacilityRegisterAPIView(APIView):
     throttle_scope = "register"
     permission_classes = (permissions.AllowAny,)
 
+    @extend_schema(
+        tags=["Authentication & Profile"],
+        summary="Self-register a new facility admin and facility location",
+        description="Public registration endpoint for new hospital or diagnostic facility admins. Creates user account and location pending Super Admin verification.",
+        request=FacilityRegistrationSerializer,
+        responses={
+            201: FacilityRegisterResponseSerializer,
+            400: OpenApiTypes.OBJECT
+        }
+    )
     def post(self, request, *args, **kwargs):
         serializer = FacilityRegistrationSerializer(data=request.data)
         serializer.is_valid(raise_exception=True)
@@ -77,6 +206,16 @@ class DoctorRegisterAPIView(APIView):
     throttle_scope = "register"
     permission_classes = (permissions.AllowAny,)
 
+    @extend_schema(
+        tags=["Authentication & Profile"],
+        summary="Self-register a new doctor profile and user account",
+        description="Public registration endpoint for medical doctors with BMDC number and specialties. Account remains unverified until reviewed by Super Admin.",
+        request=DoctorRegistrationSerializer,
+        responses={
+            201: DoctorRegisterResponseSerializer,
+            400: OpenApiTypes.OBJECT
+        }
+    )
     def post(self, request, *args, **kwargs):
         serializer = DoctorRegistrationSerializer(data=request.data)
         serializer.is_valid(raise_exception=True)
@@ -114,6 +253,18 @@ class FacilityStaffListCreateAPIView(APIView):
         except (ValueError, TypeError):
             return False
 
+    @extend_schema(
+        tags=["Admin & Staff Management"],
+        summary="List staff members for a facility location",
+        description="Returns all staff assigned to a specific facility location. Requires Facility Admin membership or Super Admin role.",
+        parameters=[
+            OpenApiParameter("location_id", OpenApiTypes.UUID, OpenApiParameter.PATH, description="UUID of the facility location")
+        ],
+        responses={
+            200: FacilityStaffMemberSerializer(many=True),
+            403: OpenApiTypes.OBJECT
+        }
+    )
     def get(self, request, location_id):
         if not self._check_facility_admin_permission(request.user, location_id):
             return Response({"detail": "You do not have permission to manage staff for this facility."}, status=status.HTTP_403_FORBIDDEN)
@@ -137,6 +288,20 @@ class FacilityStaffListCreateAPIView(APIView):
         ]
         return Response(staff_data, status=status.HTTP_200_OK)
 
+    @extend_schema(
+        tags=["Admin & Staff Management"],
+        summary="Add a staff member to a facility location",
+        description="Creates or assigns a user as staff to the specified facility location.",
+        parameters=[
+            OpenApiParameter("location_id", OpenApiTypes.UUID, OpenApiParameter.PATH, description="UUID of the facility location")
+        ],
+        request=StaffCreateSerializer,
+        responses={
+            201: FacilityStaffCreateResponseSerializer,
+            400: OpenApiTypes.OBJECT,
+            403: OpenApiTypes.OBJECT
+        }
+    )
     def post(self, request, location_id):
         if not self._check_facility_admin_permission(request.user, location_id):
             return Response({"detail": "You do not have permission to add staff to this facility."}, status=status.HTTP_403_FORBIDDEN)
@@ -189,6 +354,20 @@ class FacilityStaffListCreateAPIView(APIView):
 class FacilityStaffDeleteAPIView(APIView):
     permission_classes = (permissions.IsAuthenticated,)
 
+    @extend_schema(
+        tags=["Admin & Staff Management"],
+        summary="Remove a staff member from a facility location",
+        description="Revokes staff membership of a user from the specified facility location.",
+        parameters=[
+            OpenApiParameter("location_id", OpenApiTypes.UUID, OpenApiParameter.PATH, description="UUID of the facility location"),
+            OpenApiParameter("user_id", OpenApiTypes.UUID, OpenApiParameter.PATH, description="UUID of the user to remove")
+        ],
+        responses={
+            204: None,
+            403: OpenApiTypes.OBJECT,
+            404: OpenApiTypes.OBJECT
+        }
+    )
     def delete(self, request, location_id, user_id):
         if not (request.user.is_super_admin or FacilityMembership.objects.filter(
             user=request.user, location_id=location_id, role=FacilityMembership.MemberRole.ADMIN
@@ -208,6 +387,15 @@ class FacilityStaffDeleteAPIView(APIView):
 class VerificationQueueAPIView(APIView):
     permission_classes = (IsSuperAdmin,)
 
+    @extend_schema(
+        tags=["Admin & Staff Management"],
+        summary="List pending facility and doctor verifications",
+        description="Returns all self-registered facilities and doctors awaiting Super Admin verification.",
+        responses={
+            200: VerificationQueueResponseSerializer,
+            403: OpenApiTypes.OBJECT
+        }
+    )
     def get(self, request):
         pending_locations = Location.objects.filter(is_verified=False).select_related(
             "hospital_detail", "diagnostic_center_detail"
@@ -257,6 +445,22 @@ class VerificationQueueAPIView(APIView):
 class VerificationApproveRejectAPIView(APIView):
     permission_classes = (IsSuperAdmin,)
 
+    @extend_schema(
+        tags=["Admin & Staff Management"],
+        summary="Approve or reject a pending facility or doctor verification",
+        description="Allows Super Admin to approve (marking verified and live) or reject (deactivating) a pending registration.",
+        parameters=[
+            OpenApiParameter("entity_type", OpenApiTypes.STR, OpenApiParameter.PATH, description="Entity type: 'facility' or 'doctor'"),
+            OpenApiParameter("entity_id", OpenApiTypes.UUID, OpenApiParameter.PATH, description="UUID of the facility location or doctor")
+        ],
+        request=VerificationActionRequestSerializer,
+        responses={
+            200: VerificationActionResponseSerializer,
+            400: OpenApiTypes.OBJECT,
+            403: OpenApiTypes.OBJECT,
+            404: OpenApiTypes.OBJECT
+        }
+    )
     def post(self, request, entity_type, entity_id):
         action = request.data.get("action", "approve").lower()
 
@@ -295,6 +499,15 @@ class VerificationApproveRejectAPIView(APIView):
 class PlatformAdminListCreateAPIView(APIView):
     permission_classes = (IsSuperAdmin,)
 
+    @extend_schema(
+        tags=["Admin & Staff Management"],
+        summary="List all Platform Super Admins",
+        description="Returns a list of all users with the Super Admin role. Accessible only by Super Admins.",
+        responses={
+            200: PlatformAdminItemSerializer(many=True),
+            403: OpenApiTypes.OBJECT
+        }
+    )
     def get(self, request):
         super_admins = User.objects.filter(role=Role.SUPER_ADMIN)
         data = [
@@ -310,6 +523,17 @@ class PlatformAdminListCreateAPIView(APIView):
         ]
         return Response(data, status=status.HTTP_200_OK)
 
+    @extend_schema(
+        tags=["Admin & Staff Management"],
+        summary="Create or promote a Platform Super Admin",
+        description="Creates a new super admin user or promotes an existing user account to Super Admin.",
+        request=PlatformAdminCreateRequestSerializer,
+        responses={
+            201: PlatformAdminCreateResponseSerializer,
+            400: OpenApiTypes.OBJECT,
+            403: OpenApiTypes.OBJECT
+        }
+    )
     def post(self, request):
         phone = request.data.get("phone_number", "").strip()
         pwd = request.data.get("password", "").strip()
@@ -318,6 +542,13 @@ class PlatformAdminListCreateAPIView(APIView):
 
         if not phone or not pwd:
             return Response({"detail": "phone_number and password are required."}, status=status.HTTP_400_BAD_REQUEST)
+
+        from core.validators import bangladesh_phone_validator
+        from django.core.exceptions import ValidationError as DjangoValidationError
+        try:
+            bangladesh_phone_validator(phone)
+        except DjangoValidationError as e:
+            return Response({"detail": e.message}, status=status.HTTP_400_BAD_REQUEST)
 
         if User.objects.filter(phone_number=phone).exists():
             u = User.objects.get(phone_number=phone)

@@ -1,8 +1,9 @@
-from rest_framework import permissions, status, exceptions
+from rest_framework import permissions, status, exceptions, serializers
 from rest_framework.response import Response
 from rest_framework.views import APIView
 from django.db import models
 from django.db.models import Count
+from drf_spectacular.utils import extend_schema, OpenApiParameter, OpenApiTypes
 
 from accounts.serializers import UserProfileSerializer
 from doctors.models import DoctorSpecialty, Doctor, DoctorAffiliation
@@ -23,9 +24,51 @@ from tests.serializers import TestCategorySerializer, TestSerializer, FacilityTe
 from bookings.serializers import DoctorBookingSerializer, LabBookingSerializer
 
 
+class SearchMetadataResponseSerializer(serializers.Serializer):
+    specialties = DoctorSpecialtySerializer(many=True)
+    test_categories = TestCategorySerializer(many=True)
+    hospital_categories = HospitalCategorySerializer(many=True)
+    diagnostic_center_categories = DiagnosticCenterCategorySerializer(many=True)
+
+
+class SearchFacetsResponseSerializer(serializers.Serializer):
+    total_doctors = serializers.IntegerField()
+    total_hospitals = serializers.IntegerField()
+    total_diagnostic_centers = serializers.IntegerField()
+    specialties = DoctorSpecialtySerializer(many=True)
+    hospital_categories = HospitalCategorySerializer(many=True)
+    diagnostic_center_categories = DiagnosticCenterCategorySerializer(many=True)
+    test_categories = TestCategorySerializer(many=True)
+    districts = serializers.ListField(child=serializers.CharField())
+    divisions = serializers.ListField(child=serializers.CharField())
+
+
+class AdminDashboardInitResponseSerializer(serializers.Serializer):
+    current_user = UserProfileSerializer()
+    hospitals = HospitalSerializer(many=True)
+    diagnostic_centers = DiagnosticCenterSerializer(many=True)
+    doctors = DoctorSerializer(many=True)
+    tests = TestSerializer(many=True)
+    branch_tests = FacilityTestSerializer(many=True)
+    doctor_bookings = DoctorBookingSerializer(many=True)
+    lab_bookings = LabBookingSerializer(many=True)
+    doctor_specialties = DoctorSpecialtySerializer(many=True)
+    hospital_categories = HospitalCategorySerializer(many=True)
+    diagnostic_categories = DiagnosticCenterCategorySerializer(many=True)
+    hospital_services = HospitalServiceSerializer(many=True)
+    diagnostic_services = DiagnosticServiceSerializer(many=True)
+    test_categories = TestCategorySerializer(many=True)
+
+
 class SearchMetadataAPIView(APIView):
     permission_classes = (permissions.AllowAny,)
 
+    @extend_schema(
+        tags=['Search & Discovery'],
+        summary='Retrieve taxonomy metadata for search filters',
+        description='Returns all available doctor specialties, test categories, hospital categories, and diagnostic center categories with counts for populating global search dropdowns.',
+        responses={200: SearchMetadataResponseSerializer}
+    )
     def get(self, request, *args, **kwargs):
         specialties = DoctorSpecialty.objects.annotate(doctor_count=Count('doctors', distinct=True)).order_by('name')
         test_categories = TestCategory.objects.annotate(test_count=Count('tests', distinct=True)).order_by('name')
@@ -47,6 +90,19 @@ class SearchFacetsAPIView(APIView):
     """
     permission_classes = (permissions.AllowAny,)
 
+    @extend_schema(
+        tags=['Search & Discovery'],
+        summary='Real-time faceted search counts and taxonomy aggregations',
+        description='Returns dynamic counts of matching doctors, hospitals, diagnostic centers, specialties, and categories filtered by location, area, or keyword search query.',
+        parameters=[
+            OpenApiParameter('location', OpenApiTypes.STR, OpenApiParameter.QUERY, description='District, division, or area name filter (e.g. Dhaka, Chittagong)'),
+            OpenApiParameter('loc', OpenApiTypes.STR, OpenApiParameter.QUERY, description='Alias for location parameter'),
+            OpenApiParameter('area', OpenApiTypes.STR, OpenApiParameter.QUERY, description='Specific area name filter (e.g. Dhanmondi, Banani, Mirpur)'),
+            OpenApiParameter('search', OpenApiTypes.STR, OpenApiParameter.QUERY, description='Search query text matching doctor name, hospital, category, or test'),
+            OpenApiParameter('q', OpenApiTypes.STR, OpenApiParameter.QUERY, description='Alias for search parameter'),
+        ],
+        responses={200: SearchFacetsResponseSerializer}
+    )
     def get(self, request, *args, **kwargs):
         loc_filter = request.query_params.get('location') or request.query_params.get('loc')
         area_filter = request.query_params.get('area')
@@ -138,6 +194,15 @@ class SearchFacetsAPIView(APIView):
 class AdminInitAPIView(APIView):
     permission_classes = (permissions.IsAuthenticated,)
 
+    @extend_schema(
+        tags=['Admin & Staff Management'],
+        summary='Initialize Admin Dashboard scoped data',
+        description='Returns dashboard reference taxonomies, profile details, and role-scoped facilities, doctors, bookings, and tests based on whether the authenticated user is Super Admin, Facility Admin, or Doctor.',
+        responses={
+            200: AdminDashboardInitResponseSerializer,
+            403: OpenApiTypes.OBJECT
+        }
+    )
     def get(self, request, *args, **kwargs):
         user = request.user
 

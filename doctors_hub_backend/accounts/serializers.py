@@ -1,6 +1,14 @@
 from rest_framework import serializers
+from drf_spectacular.utils import extend_schema_field
 from .models import User
 from django.contrib.auth import authenticate
+
+
+class ManagedLocationSummarySerializer(serializers.Serializer):
+    id = serializers.UUIDField()
+    name = serializers.CharField()
+    branch = serializers.CharField(allow_blank=True)
+    location_type = serializers.CharField()
 
 
 class UserSerializer(serializers.ModelSerializer):
@@ -15,6 +23,7 @@ class UserSerializer(serializers.ModelSerializer):
             'managed_locations', 'doctor_id'
         )
 
+    @extend_schema_field(ManagedLocationSummarySerializer(many=True))
     def get_managed_locations(self, obj):
         if not getattr(obj, 'is_facility_admin', False):
             return []
@@ -29,6 +38,7 @@ class UserSerializer(serializers.ModelSerializer):
             for m in memberships
         ]
 
+    @extend_schema_field(serializers.CharField(allow_null=True))
     def get_doctor_id(self, obj):
         profile = getattr(obj, 'doctor_profile', None)
         return str(profile.id) if profile else None
@@ -47,6 +57,7 @@ class UserProfileSerializer(serializers.ModelSerializer):
         )
         read_only_fields = ('id', 'phone_number', 'role', 'is_staff', 'is_superuser', 'managed_locations', 'doctor_id')
 
+    @extend_schema_field(ManagedLocationSummarySerializer(many=True))
     def get_managed_locations(self, obj):
         if not getattr(obj, 'is_facility_admin', False):
             return []
@@ -61,6 +72,7 @@ class UserProfileSerializer(serializers.ModelSerializer):
             for m in memberships
         ]
 
+    @extend_schema_field(serializers.CharField(allow_null=True))
     def get_doctor_id(self, obj):
         profile = getattr(obj, 'doctor_profile', None)
         return str(profile.id) if profile else None

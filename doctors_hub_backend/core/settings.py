@@ -59,6 +59,9 @@ INSTALLED_APPS = [
     'tests',
     'bookings',
     'django_filters',
+    'django_extensions',
+    'drf_spectacular',
+    'drf_spectacular_sidecar',
 ]
 
 MIDDLEWARE = [
@@ -153,9 +156,10 @@ STORAGES = {
         "BACKEND": "django.core.files.storage.FileSystemStorage",
     },
     "staticfiles": {
-        "BACKEND": "whitenoise.storage.CompressedManifestStaticFilesStorage",
+        "BACKEND": "whitenoise.storage.CompressedManifestStaticFilesStorage" if not DEBUG else "django.contrib.staticfiles.storage.StaticFilesStorage",
     },
 }
+WHITENOISE_MANIFEST_STRICT = False
 
 # Default primary key field type
 # https://docs.djangoproject.com/en/5.2/ref/settings/#default-auto-field
@@ -165,6 +169,7 @@ DEFAULT_AUTO_FIELD = 'django.db.models.BigAutoField'
 AUTH_USER_MODEL = 'accounts.User'
 
 REST_FRAMEWORK = {
+    'DEFAULT_SCHEMA_CLASS': 'drf_spectacular.openapi.AutoSchema',
     'DEFAULT_AUTHENTICATION_CLASSES': (
         'rest_framework_simplejwt.authentication.JWTAuthentication',
     ),
@@ -180,6 +185,27 @@ REST_FRAMEWORK = {
         'register': '60/hour',
         'login': '120/hour'
     }
+}
+
+SPECTACULAR_SETTINGS = {
+    'TITLE': "Doctor's Hub API",
+    'DESCRIPTION': "Backend REST API for Doctor's Hub - A platform for searching doctors, hospital and diagnostic facilities, diagnostic tests, booking appointments, and role-based healthcare administration.",
+    'VERSION': '1.0.0',
+    'SERVE_INCLUDE_SCHEMA': False,
+    'SWAGGER_UI_DIST': 'SIDECAR',
+    'SWAGGER_UI_FAVICON_HREF': 'SIDECAR',
+    'REDOC_DIST': 'SIDECAR',
+    'COMPONENT_SPLIT_REQUEST': True,
+    'SCHEMA_PATH_PREFIX': r'/api/',
+    'TAGS': [
+        {'name': 'Authentication & Profile', 'description': 'User authentication, profile management, and self-registration'},
+        {'name': 'Doctors', 'description': 'Doctor directory, specialties, affiliations, and schedules'},
+        {'name': 'Facilities', 'description': 'Hospitals, diagnostic centers, categories, services, and chambers'},
+        {'name': 'Diagnostic Tests', 'description': 'Diagnostic tests, test categories, and facility test offerings'},
+        {'name': 'Bookings', 'description': 'Doctor appointment and lab test bookings'},
+        {'name': 'Search & Discovery', 'description': 'Aggregated metadata and dynamic facet search endpoints'},
+        {'name': 'Admin & Staff Management', 'description': 'Facility staff management, verification queue, and platform administration'},
+    ],
 }
 
 from datetime import timedelta

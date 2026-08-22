@@ -1,9 +1,11 @@
 import uuid
 from django.db import transaction
+from django.core.exceptions import ValidationError as DjangoValidationError
 from rest_framework import serializers
 from accounts.models import User, Role
 from facilities.models import Location, Hospital, DiagnosticCenter, HospitalCategory, DiagnosticCenterCategory, FacilityMembership
 from doctors.models import Doctor, DoctorSpecialty
+from core.validators import bangladesh_phone_validator
 
 
 class FacilityRegistrationSerializer(serializers.Serializer):
@@ -24,6 +26,10 @@ class FacilityRegistrationSerializer(serializers.Serializer):
 
     def validate_phone_number(self, value):
         phone = value.strip()
+        try:
+            bangladesh_phone_validator(phone)
+        except DjangoValidationError as e:
+            raise serializers.ValidationError(e.message)
         if User.objects.filter(phone_number=phone).exists():
             raise serializers.ValidationError("A user with this phone number already exists.")
         return phone
@@ -120,6 +126,10 @@ class DoctorRegistrationSerializer(serializers.Serializer):
 
     def validate_phone_number(self, value):
         phone = value.strip()
+        try:
+            bangladesh_phone_validator(phone)
+        except DjangoValidationError as e:
+            raise serializers.ValidationError(e.message)
         if User.objects.filter(phone_number=phone).exists():
             raise serializers.ValidationError("A user with this phone number already exists.")
         return phone
@@ -188,4 +198,9 @@ class StaffCreateSerializer(serializers.Serializer):
     role_title = serializers.CharField(max_length=50, required=False, default="Staff")
 
     def validate_phone_number(self, value):
-        return value.strip()
+        phone = value.strip()
+        try:
+            bangladesh_phone_validator(phone)
+        except DjangoValidationError as e:
+            raise serializers.ValidationError(e.message)
+        return phone

@@ -1,6 +1,7 @@
 from rest_framework import viewsets, filters, exceptions
 from django_filters.rest_framework import DjangoFilterBackend
 import django_filters
+from drf_spectacular.utils import extend_schema
 from core.mixins import SlugOrPkLookupMixin
 from core.permissions import IsDoctorOwnerOrReadOnly, ScopedFacilityOrReadOnly, IsSuperAdminOrReadOnly
 from core.scoping import RoleScopedQuerysetMixin
@@ -8,6 +9,7 @@ from .models import DoctorSpecialty, Doctor, DoctorAffiliation, AffiliationSched
 from .serializers import DoctorSpecialtySerializer, DoctorSerializer, DoctorAffiliationSerializer, AffiliationScheduleSerializer
 
 
+@extend_schema(tags=['Doctors'])
 class DoctorSpecialtyViewSet(viewsets.ModelViewSet):
     queryset = DoctorSpecialty.objects.all().order_by('name')
     serializer_class = DoctorSpecialtySerializer
@@ -54,6 +56,7 @@ class DoctorFilter(django_filters.FilterSet):
         ).distinct()
 
 
+@extend_schema(tags=['Doctors'])
 class DoctorViewSet(SlugOrPkLookupMixin, RoleScopedQuerysetMixin, viewsets.ModelViewSet):
     queryset = Doctor.objects.all().prefetch_related(
         'specialties',
@@ -101,6 +104,7 @@ class DoctorViewSet(SlugOrPkLookupMixin, RoleScopedQuerysetMixin, viewsets.Model
             raise exceptions.PermissionDenied("Only super admins, facility admins, and doctors can create doctor profiles.")
 
 
+@extend_schema(tags=['Doctors'])
 class DoctorAffiliationViewSet(RoleScopedQuerysetMixin, viewsets.ModelViewSet):
     queryset = DoctorAffiliation.objects.all().select_related(
         'doctor',
@@ -153,6 +157,7 @@ class DoctorAffiliationViewSet(RoleScopedQuerysetMixin, viewsets.ModelViewSet):
         raise exceptions.PermissionDenied("You do not have permission to create doctor affiliations.")
 
 
+@extend_schema(tags=['Doctors'])
 class AffiliationScheduleViewSet(RoleScopedQuerysetMixin, viewsets.ModelViewSet):
     queryset = AffiliationSchedule.objects.all().select_related(
         'affiliation__doctor',

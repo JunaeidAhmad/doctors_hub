@@ -224,8 +224,10 @@ export default function App() {
 
   const handleConfirmLabBooking = (labData) => {
     setBookingLabState(null);
+    const serviceLabel = labData.isHomeTest ? 'Home pickup scheduled' : 'Appointment scheduled';
+    const centerPart = labData.centerName ? ` at ${labData.centerName}` : '';
     showToast(
-      `Lab Booking Confirmed! Ref: ${labData.bookingRef} for ${labData.testName}. Pickup scheduled on ${labData.pickupDate}.`
+      `Lab Booking Confirmed! Ref: ${labData.bookingRef} for ${labData.testName}. ${serviceLabel} on ${labData.pickupDate}${centerPart}.`
     );
   };
 

@@ -1,11 +1,13 @@
 import django_filters
 from rest_framework import viewsets, filters, exceptions
+from drf_spectacular.utils import extend_schema
 from .models import TestCategory, Test, FacilityTest
 from .serializers import TestCategorySerializer, TestSerializer, FacilityTestSerializer
 from core.permissions import ScopedFacilityOrReadOnly, IsSuperAdminOrReadOnly
 from core.scoping import RoleScopedQuerysetMixin
 
 
+@extend_schema(tags=['Diagnostic Tests'])
 class TestCategoryViewSet(viewsets.ModelViewSet):
     queryset = TestCategory.objects.all().order_by('name')
     serializer_class = TestCategorySerializer
@@ -32,6 +34,7 @@ class TestFilter(django_filters.FilterSet):
         ).distinct()
 
 
+@extend_schema(tags=['Diagnostic Tests'])
 class TestViewSet(viewsets.ModelViewSet):
     queryset = Test.objects.all().select_related('category').order_by('name')
     serializer_class = TestSerializer
@@ -61,6 +64,7 @@ class FacilityTestFilter(django_filters.FilterSet):
         ).distinct()
 
 
+@extend_schema(tags=['Diagnostic Tests'])
 class FacilityTestViewSet(RoleScopedQuerysetMixin, viewsets.ModelViewSet):
     queryset = FacilityTest.objects.all().select_related('location', 'test', 'test__category').order_by('test__name')
     serializer_class = FacilityTestSerializer

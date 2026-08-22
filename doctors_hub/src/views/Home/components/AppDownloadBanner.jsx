@@ -10,7 +10,7 @@ export default function AppDownloadBanner({ showToast }) {
         <div className="max-w-xl">
           <div className="inline-flex items-center gap-2 px-3 py-1 rounded-full bg-emerald-500/20 border border-emerald-400/40 text-emerald-300 text-xs font-bold uppercase tracking-wider mb-4">
             <Smartphone className="w-3.5 h-3.5" />
-            <span>Mobile App Download Indicator</span>
+            <span>Download Mobile App</span>
           </div>
 
           <h2 className="text-3xl sm:text-4xl font-black text-white leading-tight">

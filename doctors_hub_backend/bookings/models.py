@@ -25,12 +25,15 @@ class BaseBooking(models.Model):
         abstract = True
 
 
+from core.validators import bangladesh_phone_validator
+
+
 class DoctorBooking(BaseBooking):
     affiliation = models.ForeignKey(DoctorAffiliation, on_delete=models.CASCADE, related_name="bookings")
     date = models.DateField()
     slot = models.CharField(max_length=50)
     patient_name = models.CharField(max_length=100)
-    patient_phone = models.CharField(max_length=20, blank=True, default="")
+    patient_phone = models.CharField(max_length=20, blank=True, default="", validators=[bangladesh_phone_validator])
 
     class Meta:
         constraints = [
@@ -51,7 +54,7 @@ class LabBooking(BaseBooking):
     facility_test = models.ForeignKey(FacilityTest, on_delete=models.CASCADE, related_name="bookings")
     pickup_date = models.DateField()
     patient_name = models.CharField(max_length=100)
-    patient_phone = models.CharField(max_length=20, default="")
+    patient_phone = models.CharField(max_length=20, default="", validators=[bangladesh_phone_validator])
     pickup_address_line = models.CharField(max_length=300, default="")
     pickup_area = models.CharField(max_length=100, blank=True, default="")
     pickup_city = models.CharField(max_length=100, blank=True, default="")

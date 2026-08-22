@@ -1,9 +1,11 @@
 from rest_framework import viewsets, permissions, exceptions
+from drf_spectacular.utils import extend_schema
 from .models import DoctorBooking, LabBooking
 from .serializers import DoctorBookingSerializer, LabBookingSerializer
 from core.permissions import PublicCreateAdminManage
 
 
+@extend_schema(tags=['Bookings'])
 class DoctorBookingViewSet(viewsets.ModelViewSet):
     queryset = DoctorBooking.objects.all().select_related(
         'user',
@@ -43,6 +45,7 @@ class DoctorBookingViewSet(viewsets.ModelViewSet):
             serializer.save()
 
 
+@extend_schema(tags=['Bookings'])
 class LabBookingViewSet(viewsets.ModelViewSet):
     queryset = LabBooking.objects.all().select_related(
         'user',

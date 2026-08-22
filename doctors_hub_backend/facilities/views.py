@@ -1,6 +1,7 @@
 from rest_framework import viewsets, filters, exceptions
 from django_filters.rest_framework import DjangoFilterBackend
 import django_filters
+from drf_spectacular.utils import extend_schema
 from core.mixins import SlugOrPkLookupMixin
 from core.permissions import ScopedFacilityOrReadOnly, IsSuperAdminOrReadOnly
 from core.scoping import RoleScopedQuerysetMixin
@@ -16,6 +17,7 @@ from .serializers import (
 )
 
 
+@extend_schema(tags=['Facilities'])
 class LocationViewSet(RoleScopedQuerysetMixin, viewsets.ModelViewSet):
     queryset = Location.objects.all()
     serializer_class = LocationSerializer
@@ -44,6 +46,7 @@ class LocationViewSet(RoleScopedQuerysetMixin, viewsets.ModelViewSet):
             raise exceptions.PermissionDenied("Only administrators can create new facility locations.")
 
 
+@extend_schema(tags=['Facilities'])
 class HospitalCategoryViewSet(viewsets.ModelViewSet):
 
     queryset = HospitalCategory.objects.all().order_by('name')
@@ -51,6 +54,7 @@ class HospitalCategoryViewSet(viewsets.ModelViewSet):
     permission_classes = (IsSuperAdminOrReadOnly,)
 
 
+@extend_schema(tags=['Facilities'])
 class HospitalServiceViewSet(viewsets.ModelViewSet):
     queryset = HospitalService.objects.all().order_by('name')
     serializer_class = HospitalServiceSerializer
@@ -93,6 +97,7 @@ class HospitalFilter(django_filters.FilterSet):
         ).distinct()
 
 
+@extend_schema(tags=['Facilities'])
 class HospitalViewSet(SlugOrPkLookupMixin, RoleScopedQuerysetMixin, viewsets.ModelViewSet):
     queryset = Hospital.objects.all().select_related('location', 'category').prefetch_related('services').order_by('location__name').distinct()
     serializer_class = HospitalSerializer
@@ -121,12 +126,14 @@ class HospitalViewSet(SlugOrPkLookupMixin, RoleScopedQuerysetMixin, viewsets.Mod
         serializer.save()
 
 
+@extend_schema(tags=['Facilities'])
 class DiagnosticCenterCategoryViewSet(viewsets.ModelViewSet):
     queryset = DiagnosticCenterCategory.objects.all().order_by('name')
     serializer_class = DiagnosticCenterCategorySerializer
     permission_classes = (IsSuperAdminOrReadOnly,)
 
 
+@extend_schema(tags=['Facilities'])
 class DiagnosticServiceViewSet(viewsets.ModelViewSet):
     queryset = DiagnosticService.objects.all().order_by('name')
     serializer_class = DiagnosticServiceSerializer
@@ -203,6 +210,7 @@ class DiagnosticCenterFilter(django_filters.FilterSet):
         ).distinct()
 
 
+@extend_schema(tags=['Facilities'])
 class DiagnosticCenterViewSet(SlugOrPkLookupMixin, RoleScopedQuerysetMixin, viewsets.ModelViewSet):
     queryset = DiagnosticCenter.objects.all().select_related(
         'location', 'category'
@@ -242,6 +250,7 @@ class DiagnosticCenterViewSet(SlugOrPkLookupMixin, RoleScopedQuerysetMixin, view
         serializer.save()
 
 
+@extend_schema(tags=['Facilities'])
 class ChamberViewSet(RoleScopedQuerysetMixin, viewsets.ModelViewSet):
     queryset = Chamber.objects.all().select_related('location', 'doctor').order_by('location__name')
     serializer_class = ChamberSerializer

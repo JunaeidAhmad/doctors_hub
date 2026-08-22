@@ -331,9 +331,9 @@ export default function FacilityProfile({ kind = 'hospital' }) {
           </div>
         </SectionCard>
 
-        {/* 4. CLASSIFICATION & SERVICES */}
+        {/* 4. CATEGORY & SERVICES */}
         <SectionCard
-          title="Classification & Facilities"
+          title="Category & Services"
           description="Primary facility tier and multi-select clinical amenities."
           icon={Activity}
           color={primaryColor}
@@ -357,7 +357,7 @@ export default function FacilityProfile({ kind = 'hospital' }) {
 
             <div>
               <label className="block text-xs font-semibold text-slate-300 mb-1.5">
-                Available Services & Departments (Click to toggle)
+                Available Services (Click to toggle)
               </label>
               <div className="flex flex-wrap gap-2 p-3 bg-slate-950 border border-slate-800 rounded-xl max-h-44 overflow-y-auto">
                 {availableServices.map(srv => {
