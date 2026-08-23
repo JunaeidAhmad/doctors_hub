@@ -36,6 +36,7 @@ export function AdminProvider({ children, currentUser, onLogout }) {
   // Bookings States
   const [doctorBookings, setDoctorBookings] = useState([]);
   const [labBookings, setLabBookings] = useState([]);
+  const [dashboardCounts, setDashboardCounts] = useState({});
 
   // Modal Control States
   const [showHospitalModal, setShowHospitalModal] = useState(false);
@@ -98,8 +99,8 @@ export function AdminProvider({ children, currentUser, onLogout }) {
     )
   );
 
-  const handleLogout = () => {
-    api.logout();
+  const handleLogout = async () => {
+    await api.logout();
     clearCache();
     setActiveUser(null);
     setHospitals([]);
@@ -154,9 +155,12 @@ export function AdminProvider({ children, currentUser, onLogout }) {
       // 1. Try single aggregated backend endpoint (BFF Pattern - 1 Request)
       const res = await api.getAdminDashboardInit().catch(() => null);
 
-      if (res && typeof res === 'object' && Array.isArray(res.hospitals)) {
+      if (res && typeof res === 'object' && (Array.isArray(res.hospitals) || Array.isArray(res.doctors))) {
         if (res.current_user) {
           setActiveUser(res.current_user);
+        }
+        if (res.counts) {
+          setDashboardCounts(res.counts);
         }
         setHospitals(ensureArray(res.hospitals, []));
         setDiagnosticCenters(ensureArray(res.diagnostic_centers, []));
@@ -422,19 +426,19 @@ export function AdminProvider({ children, currentUser, onLogout }) {
   };
 
   const counts = {
-    hospitals: (hospitals || []).length,
-    diagnostics: (diagnosticCenters || []).length,
-    doctors: (doctors || []).length,
+    hospitals: dashboardCounts.hospitals ?? (hospitals || []).length,
+    diagnostics: dashboardCounts.diagnostic_centers ?? (diagnosticCenters || []).length,
+    doctors: dashboardCounts.doctors ?? (doctors || []).length,
     doctorSpecs: (doctorSpecialties || []).length,
     hospitalSpecs: (hospitalCategories || []).length,
     diagCats: (diagnosticCategories || []).length,
     hospServices: (hospitalServices || []).length,
     diagServices: (diagnosticServices || []).length,
-    tests: (tests || []).length,
+    tests: dashboardCounts.tests ?? (tests || []).length,
     testCats: (testCategories || []).length,
-    branchTests: (branchTests || []).length,
-    docBookings: (doctorBookings || []).length,
-    labBookings: (labBookings || []).length
+    branchTests: dashboardCounts.branch_tests ?? (branchTests || []).length,
+    docBookings: dashboardCounts.doctor_bookings ?? (doctorBookings || []).length,
+    labBookings: dashboardCounts.lab_bookings ?? (labBookings || []).length
   };
 
   const value = {

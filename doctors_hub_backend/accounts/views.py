@@ -1,10 +1,12 @@
 import uuid
+from django.conf import settings
 from django.shortcuts import get_object_or_404
 from rest_framework import generics, permissions, status, serializers
 from rest_framework.response import Response
 from rest_framework.views import APIView
 from rest_framework.throttling import ScopedRateThrottle
 from rest_framework_simplejwt.tokens import RefreshToken
+from django.core.cache import cache
 from drf_spectacular.utils import extend_schema, OpenApiParameter, OpenApiTypes
 
 from .models import User, Role
@@ -19,10 +21,34 @@ from doctors.models import Doctor
 from core.permissions import IsSuperAdmin
 
 
+# Refresh cookie helpers for cross-site cookie hardening
+REFRESH_COOKIE_NAME = "refresh_token"
+
+
+def _refresh_cookie_kwargs():
+    """Cross-site cookie requires SameSite=None + Secure in production."""
+    cross_site = not getattr(settings, 'DEBUG', True)
+    return {
+        "httponly": True,
+        "secure": True if cross_site else False,
+        "samesite": "None" if cross_site else "Lax",
+        "path": "/",
+    }
+
+
+def set_refresh_cookie(response, refresh):
+    response.set_cookie(
+        key=REFRESH_COOKIE_NAME,
+        value=str(refresh),
+        max_age=7 * 24 * 60 * 60,
+        **_refresh_cookie_kwargs(),
+    )
+    return response
+
+
 # Schema Support Serializers
 class LoginResponseSerializer(serializers.Serializer):
     user = UserSerializer()
-    refresh = serializers.CharField()
     access = serializers.CharField()
 
 
@@ -39,7 +65,6 @@ class FacilityRegisterResponseSerializer(serializers.Serializer):
     message = serializers.CharField()
     user = UserSerializer()
     location = RegisteredLocationSummarySerializer()
-    refresh = serializers.CharField()
     access = serializers.CharField()
 
 
@@ -55,7 +80,6 @@ class DoctorRegisterResponseSerializer(serializers.Serializer):
     message = serializers.CharField()
     user = UserSerializer()
     doctor = RegisteredDoctorSummarySerializer()
-    refresh = serializers.CharField()
     access = serializers.CharField()
 
 
@@ -122,8 +146,6 @@ class PlatformAdminCreateResponseSerializer(serializers.Serializer):
     user = UserSerializer()
 
 
-from django.conf import settings
-
 
 class RefreshResponseSerializer(serializers.Serializer):
     access = serializers.CharField()
@@ -151,18 +173,9 @@ class LoginAPIView(APIView):
         refresh = RefreshToken.for_user(user)
         response = Response({
             "user": UserSerializer(user).data,
-            "refresh": str(refresh),
             "access": str(refresh.access_token),
         }, status=status.HTTP_200_OK)
-        response.set_cookie(
-            key="refresh_token",
-            value=str(refresh),
-            httponly=True,
-            samesite="Lax",
-            secure=not getattr(settings, 'DEBUG', True),
-            max_age=7 * 24 * 60 * 60,
-        )
-        return response
+        return set_refresh_cookie(response, refresh)
 
 
 class CookieTokenRefreshAPIView(APIView):
@@ -175,7 +188,7 @@ class CookieTokenRefreshAPIView(APIView):
         responses={200: RefreshResponseSerializer}
     )
     def post(self, request, *args, **kwargs):
-        refresh_token = request.data.get("refresh") or request.COOKIES.get("refresh_token")
+        refresh_token = request.data.get("refresh") or request.COOKIES.get(REFRESH_COOKIE_NAME)
         if not refresh_token:
             return Response({"detail": "Refresh token is required."}, status=status.HTTP_400_BAD_REQUEST)
         try:
@@ -195,7 +208,12 @@ class LogoutAPIView(APIView):
     )
     def post(self, request, *args, **kwargs):
         response = Response({"detail": "Successfully logged out."}, status=status.HTTP_200_OK)
-        response.delete_cookie("refresh_token")
+        kwargs_cookie = _refresh_cookie_kwargs()
+        response.delete_cookie(
+            REFRESH_COOKIE_NAME,
+            path=kwargs_cookie["path"],
+            samesite=kwargs_cookie["samesite"],
+        )
         return response
 
 
@@ -235,7 +253,7 @@ class FacilityRegisterAPIView(APIView):
         location = result["location"]
         refresh = RefreshToken.for_user(user)
 
-        return Response({
+        response = Response({
             "status": "success",
             "message": "Facility registered successfully. It will be live in public search once verified by Super Admin.",
             "user": UserSerializer(user).data,
@@ -246,9 +264,9 @@ class FacilityRegisterAPIView(APIView):
                 "location_type": location.location_type,
                 "is_verified": location.is_verified
             },
-            "refresh": str(refresh),
             "access": str(refresh.access_token),
         }, status=status.HTTP_201_CREATED)
+        return set_refresh_cookie(response, refresh)
 
 
 class DoctorRegisterAPIView(APIView):
@@ -274,7 +292,7 @@ class DoctorRegisterAPIView(APIView):
         doctor = result["doctor"]
         refresh = RefreshToken.for_user(user)
 
-        return Response({
+        response = Response({
             "status": "success",
             "message": "Doctor profile registered successfully. It will be live in public search once verified by Super Admin.",
             "user": UserSerializer(user).data,
@@ -284,9 +302,9 @@ class DoctorRegisterAPIView(APIView):
                 "bmdc_number": doctor.bmdc_number,
                 "is_verified": doctor.is_verified
             },
-            "refresh": str(refresh),
             "access": str(refresh.access_token),
         }, status=status.HTTP_201_CREATED)
+        return set_refresh_cookie(response, refresh)
 
 
 class FacilityStaffListCreateAPIView(APIView):
@@ -520,10 +538,12 @@ class VerificationApproveRejectAPIView(APIView):
                 loc.is_verified = True
                 loc.save()
                 User.objects.filter(facility_memberships__location=loc).update(is_verified=True)
+                cache.delete('search_metadata_global')
                 return Response({"status": "success", "message": f"{loc.name} has been verified and is now live."})
             elif action == "reject":
                 loc.is_active = False
                 loc.save()
+                cache.delete('search_metadata_global')
                 return Response({"status": "success", "message": f"{loc.name} has been rejected."})
             return Response({"detail": "Invalid action. Choose 'approve' or 'reject'."}, status=status.HTTP_400_BAD_REQUEST)
 
@@ -535,11 +555,13 @@ class VerificationApproveRejectAPIView(APIView):
                 if doc.user:
                     doc.user.is_verified = True
                     doc.user.save()
+                cache.delete('search_metadata_global')
                 return Response({"status": "success", "message": f"Dr. {doc.name} has been verified and is now live."})
             elif action == "reject":
                 if doc.user:
                     doc.user.is_active = False
                     doc.user.save()
+                cache.delete('search_metadata_global')
                 return Response({"status": "success", "message": f"Dr. {doc.name} has been rejected."})
             return Response({"detail": "Invalid action. Choose 'approve' or 'reject'."}, status=status.HTTP_400_BAD_REQUEST)
 

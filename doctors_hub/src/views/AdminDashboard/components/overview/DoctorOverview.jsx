@@ -168,7 +168,7 @@ export default function DoctorOverview() {
                 </div>
                 <div className="text-slate-400 flex items-center gap-2">
                   <MapPin className="w-3.5 h-3.5 text-teal-400 shrink-0" />
-                  <span>{aff.location?.area || aff.location?.city || 'Dhaka'}</span>
+                  <span>{aff.location?.area || 'Dhaka'}</span>
                 </div>
                 {Array.isArray(aff.schedules) && aff.schedules.length > 0 && (
                   <div className="pt-2 border-t border-slate-900 flex flex-wrap gap-1.5">

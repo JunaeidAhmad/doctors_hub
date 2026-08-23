@@ -9,8 +9,13 @@ class Location(models.Model):
         DIAGNOSTIC_CENTER = "diagnostic_center", "Diagnostic Center"
         CHAMBER = "chamber", "Chamber"
 
+    class OwnershipType(models.TextChoices):
+        PRIVATE = "private", "Private"
+        GOVERNMENT = "government", "Government"
+
     id = models.UUIDField(primary_key=True, default=uuid.uuid4, editable=False)
     location_type = models.CharField(max_length=30, choices=LocationType.choices)
+    ownership_type = models.CharField(max_length=20, choices=OwnershipType.choices, default=OwnershipType.PRIVATE)
     address_line = models.CharField(max_length=300)
     area = models.CharField(max_length=100, blank=True, db_index=True) #thana
     district = models.CharField(max_length=100, db_index=True)

@@ -8,6 +8,7 @@ import {
 import { DIVISIONS, findDivisionForDistrict } from '../../data/constants';
 import { api, ensureArray, isPageReload, getIsInitialLoad } from '../../services/api';
 import Pagination from '../../components/Pagination';
+import CascadingLocationFilter from "../../components/CascadingLocationFilter";
 
 // Fallback Test Categories
 const FALLBACK_TEST_CATEGORIES = [
@@ -42,10 +43,10 @@ const FALLBACK_DIAGNOSTIC_CENTERS = [
   {
     id: 'center-popular-panthapath',
     name: 'Popular Diagnostic Centre',
+    ownership_type: 'private',
     branch: 'Panthapath Branch',
     address: 'House 16, Road 2, Dhanmondi / Panthapath, Dhaka',
     district: 'Dhaka',
-    city: 'Dhaka',
     open_timing: '07:00 AM - 11:00 PM',
     is_verified: true,
     category: { name: 'Multi-Specialty / General Diagnostic Center' },
@@ -171,7 +172,6 @@ const FALLBACK_DIAGNOSTIC_CENTERS = [
     branch: 'Dhanmondi Branch',
     address: 'House 48, Road 9/A, Dhanmondi, Dhaka',
     district: 'Dhaka',
-    city: 'Dhaka',
     open_timing: '07:30 AM - 10:30 PM',
     is_verified: true,
     category: { name: 'Cardiac Diagnostics Focused' },
@@ -249,7 +249,6 @@ const FALLBACK_DIAGNOSTIC_CENTERS = [
     branch: 'Gulshan Branch',
     address: 'House 13/A, Road 35, Gulshan-2, Dhaka',
     district: 'Dhaka',
-    city: 'Dhaka',
     open_timing: '24 Hours Open',
     is_verified: true,
     category: { name: 'Cardiac Diagnostics Focused' },
@@ -319,7 +318,6 @@ const FALLBACK_DIAGNOSTIC_CENTERS = [
     branch: 'Dhanmondi Branch',
     address: 'House 71/A, Road 5/A, Dhanmondi, Dhaka',
     district: 'Dhaka',
-    city: 'Dhaka',
     open_timing: '08:00 AM - 10:00 PM',
     is_verified: true,
     category: { name: 'Pathology Lab Focused' },
@@ -373,7 +371,6 @@ const FALLBACK_DIAGNOSTIC_CENTERS = [
     branch: 'Panthapath',
     address: '18/F, Bir Uttam Qazi Nuruzzaman Sarak, West Panthapath, Dhaka',
     district: 'Dhaka',
-    city: 'Dhaka',
     open_timing: '24 Hours Open',
     is_verified: true,
     category: { name: 'Hospital-Affiliated Lab' },
@@ -572,6 +569,11 @@ export default function DiagnosticsSearchPage({
     return 'all';
   });
 
+  const [ownershipType, setOwnershipType] = useState(() => {
+    if (isRefresh) return 'all';
+    return getParam('ownership', 'all');
+  });
+
   const [searchKeyword, setSearchKeyword] = useState(() => {
     if (isRefresh) return '';
     const urlQ = getParam('q', '');
@@ -593,15 +595,27 @@ export default function DiagnosticsSearchPage({
     const urlLoc = searchParams.get('loc');
     const urlArea = searchParams.get('area');
     const urlQ = searchParams.get('q');
+    const urlOwn = searchParams.get('ownership');
 
     if (urlTestCat !== null) {
       setSelectedTestCategory(urlTestCat || 'all');
     } else if (initialTest && initialTest !== 'diagnostics' && initialTest !== 'diagnostics-search') {
       setSelectedTestCategory(initialTest);
+    } else {
+      setSelectedTestCategory('all');
     }
     
     if (urlCat !== null) {
       setSelectedCenterCategory(urlCat || 'all');
+    } else {
+      setSelectedCenterCategory('all');
+    setOwnershipType('all');
+    }
+
+    if (urlOwn !== null) {
+      setOwnershipType(urlOwn || 'all');
+    } else {
+      setOwnershipType('all');
     }
 
     if (urlDiv) {
@@ -625,8 +639,8 @@ export default function DiagnosticsSearchPage({
       setDistrict('All Districts');
     }
 
-    if (urlArea !== null) setArea(urlArea || 'All Areas');
-    if (urlQ !== null) setSearchKeyword(urlQ || '');
+    setArea(urlArea || 'All Areas');
+    setSearchKeyword(urlQ || '');
   }, [searchParams, initialTest, isRefresh]);
 
 
@@ -792,7 +806,7 @@ const resolveTestCategoryName = (val, testCats = []) => {
         district: district !== 'All Districts' ? district : undefined,
         area: area !== 'All Areas' ? area : undefined,
         testcat: selectedTestCategory !== 'all' ? selectedTestCategory : undefined,
-        category: selectedCenterCategory !== 'all' ? selectedCenterCategory : undefined,
+        ownership_type: ownershipType !== 'all' ? ownershipType : undefined,
         search: searchKeyword.trim() || undefined,
         page: currentPage,
         page_size: pageSize
@@ -823,15 +837,16 @@ const resolveTestCategoryName = (val, testCats = []) => {
     }, delay);
 
     return () => { isMounted = false; clearTimeout(timer); };
-  }, [division, district, area, selectedTestCategory, selectedCenterCategory, searchKeyword, currentPage]);
+  }, [division, district, area, selectedTestCategory, ownershipType, searchKeyword, currentPage]);
 
   const handleResetFilters = () => {
     setSelectedTestCategory('all');
-    setSelectedCenterCategory('all');
     setDivision('All Bangladesh');
     setDistrict('All Districts');
     setArea('All Areas');
+    setOwnershipType('all');
     setSearchKeyword('');
+    setCurrentPage(1);
   };
 
   // Serialize filters to URL query parameters
@@ -842,6 +857,7 @@ const resolveTestCategoryName = (val, testCats = []) => {
     if (area && area !== 'All Areas') params.set('area', area);
     if (selectedTestCategory && selectedTestCategory !== 'all') params.set('testcat', selectedTestCategory);
     if (selectedCenterCategory && selectedCenterCategory !== 'all') params.set('cat', selectedCenterCategory);
+    if (ownershipType && ownershipType !== 'all') params.set('ownership', ownershipType);
     if (searchKeyword.trim()) params.set('q', searchKeyword.trim());
 
     const next = params.toString();
@@ -859,16 +875,14 @@ const resolveTestCategoryName = (val, testCats = []) => {
       if (division && division !== 'All Bangladesh') {
         const divLow = division.toLowerCase();
         const matchesDiv = String(center.division || '').toLowerCase().includes(divLow) ||
-          String(center.district || '').toLowerCase().includes(divLow) ||
-          String(center.city || '').toLowerCase().includes(divLow);
+          String(center.district || '').toLowerCase().includes(divLow);
         if (!matchesDiv) return null;
       }
 
       // Filter center by District
       if (district && district !== 'All Districts') {
         const distLow = district.toLowerCase();
-        const matchesDist = String(center.district || '').toLowerCase().includes(distLow) ||
-          String(center.city || '').toLowerCase().includes(distLow);
+        const matchesDist = String(center.district || '').toLowerCase().includes(distLow);
         if (!matchesDist) return null;
       }
 
@@ -878,6 +892,12 @@ const resolveTestCategoryName = (val, testCats = []) => {
         const matchesArea = String(center.area || '').toLowerCase().includes(areaLow) ||
           String(center.branch || '').toLowerCase().includes(areaLow);
         if (!matchesArea) return null;
+      }
+
+      // Filter center by Ownership Type
+      if (ownershipType && ownershipType !== 'all') {
+        const centerOwn = String(center.ownership_type || center.location_details?.ownership_type || 'private').toLowerCase();
+        if (centerOwn !== ownershipType.toLowerCase()) return null;
       }
 
       const allOffered = ensureArray(center.offered_tests || center.tests, []);
@@ -920,22 +940,7 @@ const resolveTestCategoryName = (val, testCats = []) => {
         return null;
       }
 
-      // Check center category match
-      let centerCategoryMatches = true;
-      if (selectedCenterCategory && selectedCenterCategory !== 'all') {
-        const cCat = String(selectedCenterCategory).toLowerCase();
-        const cats = [
-          center.category?.name,
-          center.category?.slug,
-          center.category?.id,
-          center.category,
-          ...(Array.isArray(center.categories) ? center.categories.map(c => typeof c === 'object' ? c?.name : c) : [])
-        ].filter(Boolean).map(c => String(c).toLowerCase());
 
-        centerCategoryMatches = cats.some(c => c.includes(cCat) || cCat.includes(c));
-      }
-
-      if (!centerCategoryMatches) return null;
 
       return {
         ...center,
@@ -945,7 +950,7 @@ const resolveTestCategoryName = (val, testCats = []) => {
         isCenterMatch: true
       };
     }).filter(Boolean);
-  }, [diagnosticCenters, division, district, area, selectedTestCategory, selectedCenterCategory, searchKeyword, displayTestCategories]);
+  }, [diagnosticCenters, division, district, area, ownershipType, selectedTestCategory, searchKeyword, displayTestCategories]);
 
 
   // Toggle expanded other tests for a center
@@ -1008,7 +1013,7 @@ const resolveTestCategoryName = (val, testCats = []) => {
                 <Filter className="w-4 h-4 text-emerald-400" />
                 <span>Diagnostic Center & Test Search Filters</span>
               </div>
-              {(selectedCenterCategory !== 'all' || selectedTestCategory !== 'all' || division !== 'All Bangladesh' || district !== 'All Districts' || area !== 'All Areas' || searchKeyword) && (
+              {(ownershipType !== 'all' || selectedTestCategory !== 'all' || division !== 'All Bangladesh' || district !== 'All Districts' || area !== 'All Areas' || searchKeyword) && (
                 <button
                   type="button"
                   onClick={handleResetFilters}
@@ -1020,57 +1025,93 @@ const resolveTestCategoryName = (val, testCats = []) => {
               )}
             </div>
 
-            <div className="grid grid-cols-1 sm:grid-cols-3 gap-3">
+            <div className="flex flex-wrap items-start gap-3">
               
               {/* 1. Test Category Filter */}
-              <div>
-                <label className="block text-[11px] font-bold text-cyan-400 mb-1 flex items-center gap-1">
-                  <Heart className="w-3 h-3 text-cyan-400" />
+              <div className="flex-1 min-w-[160px]">
+                <label className="block text-[11px] font-bold text-slate-300 mb-1 flex items-center gap-1.5 whitespace-nowrap">
+                  <Heart className="w-3.5 h-3.5 text-emerald-400 shrink-0" />
                   <span>Test Category</span>
                 </label>
-                <select
-                  value={normalizedTestCatValue}
-                  onChange={(e) => setSelectedTestCategory(e.target.value)}
-                  className="w-full bg-slate-900 border border-cyan-500/80 rounded-xl px-3 py-2.5 text-xs text-white focus:outline-none focus:border-emerald-400 font-bold cursor-pointer"
-                >
-                  <option value="all">All Test Categories</option>
-                  {displayTestCategories.filter(c => c && c.id !== 'all').map(cat => (
-                    <option key={cat.id} value={cat.id}>{cat.name}</option>
-                  ))}
-                </select>
+                <div className="relative">
+                  <select
+                    value={normalizedTestCatValue}
+                    onChange={(e) => {
+                      setSelectedTestCategory(e.target.value);
+                      setCurrentPage(1);
+                    }}
+                    className="w-full bg-slate-900 border border-slate-700 rounded-xl pl-3 pr-8 py-2.5 text-xs text-white focus:outline-none focus:border-emerald-500 font-semibold appearance-none cursor-pointer shadow-xs"
+                  >
+                    <option value="all">All Test Categories</option>
+                    {displayTestCategories.filter(c => c && c.id !== 'all').map(cat => (
+                      <option key={cat.id} value={cat.id}>{cat.name}</option>
+                    ))}
+                  </select>
+                  <div className="pointer-events-none absolute inset-y-0 right-0 flex items-center px-3 text-slate-400">
+                    <ChevronRight className="w-4 h-4 rotate-90" />
+                  </div>
+                </div>
               </div>
 
-              {/* 2. Diagnostic Center Category Filter */}
-              <div>
-                <label className="block text-[11px] font-bold text-teal-400 mb-1 flex items-center gap-1">
-                  <Building2 className="w-3 h-3 text-teal-400" />
-                  <span>Center Specialization</span>
+              {/* 2. Cascading Location Filter (Division -> District -> Area) */}
+              <CascadingLocationFilter
+                division={division}
+                district={district}
+                area={area}
+                onChange={({ division: d, district: dist, area: a }) => {
+                  setDivision(d);
+                  setDistrict(dist);
+                  setArea(a);
+                  setCurrentPage(1);
+                }}
+                theme="dark"
+                accent="emerald"
+                layout="inline"
+                showLabels={true}
+              />
+
+              {/* 3. Ownership Type Filter */}
+              <div className="flex-1 min-w-[140px]">
+                <label className="block text-[11px] font-bold text-slate-300 mb-1 flex items-center gap-1.5 whitespace-nowrap">
+                  <Building2 className="w-3.5 h-3.5 text-emerald-400 shrink-0" />
+                  <span>Ownership</span>
                 </label>
-                <select
-                  value={normalizedCenterCatValue}
-                  onChange={(e) => setSelectedCenterCategory(e.target.value)}
-                  className="w-full bg-slate-900 border border-teal-500/80 rounded-xl px-3 py-2.5 text-xs text-white focus:outline-none focus:border-teal-400 font-bold cursor-pointer"
-                >
-                  <option value="all">All Center Specializations</option>
-                  {displayCenterCategories.filter(c => c && c.id !== 'all').map(cat => (
-                    <option key={cat.id || cat.slug} value={cat.id || cat.slug || cat.name}>
-                      {cat.name}
-                    </option>
-                  ))}
-                </select>
+                <div className="relative">
+                  <select
+                    value={ownershipType}
+                    onChange={(e) => {
+                      setOwnershipType(e.target.value);
+                      setCurrentPage(1);
+                    }}
+                    className="w-full bg-slate-900 border border-slate-700 rounded-xl pl-3 pr-8 py-2.5 text-xs text-white focus:outline-none focus:border-emerald-500 font-semibold appearance-none cursor-pointer shadow-xs"
+                  >
+                    <option value="all">Any Ownership</option>
+                    <option value="private">Private</option>
+                    <option value="government">Government</option>
+                  </select>
+                  <div className="pointer-events-none absolute inset-y-0 right-0 flex items-center px-3 text-slate-400">
+                    <ChevronRight className="w-4 h-4 rotate-90" />
+                  </div>
+                </div>
               </div>
 
-              {/* 3. Search Keyword Filter */}
-              <div className="relative">
-                <label className="block text-[11px] font-bold text-slate-400 mb-1">Search Keyword</label>
+              {/* 4. Search Keyword Filter */}
+              <div className="flex-1 min-w-[180px]">
+                <label className="block text-[11px] font-bold text-slate-300 mb-1 flex items-center gap-1.5 whitespace-nowrap">
+                  <Search className="w-3.5 h-3.5 text-emerald-400 shrink-0" />
+                  <span>Search</span>
+                </label>
                 <div className="relative">
                   <Search className="w-4 h-4 text-slate-400 absolute left-3 top-1/2 -translate-y-1/2" />
                   <input
                     type="text"
                     placeholder="Search center, test (e.g. ECG)..."
                     value={searchKeyword}
-                    onChange={(e) => setSearchKeyword(e.target.value)}
-                    className="w-full bg-slate-900 border border-slate-700 rounded-xl pl-9 pr-3 py-2.5 text-xs text-white placeholder-slate-400 focus:outline-none focus:border-emerald-400 font-medium"
+                    onChange={(e) => {
+                      setSearchKeyword(e.target.value);
+                      setCurrentPage(1);
+                    }}
+                    className="w-full bg-slate-900 border border-slate-700 rounded-xl pl-9 pr-3 py-2.5 text-xs text-white placeholder-slate-400 focus:outline-none focus:border-emerald-500 font-medium shadow-xs"
                   />
                 </div>
               </div>
@@ -1078,21 +1119,21 @@ const resolveTestCategoryName = (val, testCats = []) => {
             </div>
 
             {/* ACTIVE FILTER PILLS */}
-            {(selectedTestCategory !== 'all' || selectedCenterCategory !== 'all' || division !== 'All Bangladesh' || district !== 'All Districts' || area !== 'All Areas' || searchKeyword) && (
+            {(ownershipType !== 'all' || selectedTestCategory !== 'all' || division !== 'All Bangladesh' || district !== 'All Districts' || area !== 'All Areas' || searchKeyword) && (
               <div className="flex flex-wrap items-center gap-2 pt-2 border-t border-slate-700/60 text-xs">
                 <span className="text-slate-400 font-bold">Active Filters:</span>
                 
                 {selectedTestCategory !== 'all' && (
-                  <span className="inline-flex items-center gap-1.5 px-3 py-1 rounded-full bg-cyan-500/20 text-cyan-300 border border-cyan-500/40 font-bold">
+                  <span className="inline-flex items-center gap-1.5 px-3 py-1 rounded-full bg-emerald-500/20 text-emerald-300 border border-emerald-500/40 font-bold">
                     <span>Test Category: {activeTestCatObj?.name || resolveTestCategoryName(selectedTestCategory, displayTestCategories)}</span>
                     <button onClick={() => setSelectedTestCategory('all')} className="hover:text-white cursor-pointer"><X className="w-3 h-3" /></button>
                   </span>
                 )}
 
-                {selectedCenterCategory !== 'all' && (
-                  <span className="inline-flex items-center gap-1.5 px-3 py-1 rounded-full bg-teal-500/20 text-teal-300 border border-teal-500/40 font-bold">
-                    <span>Center Type: {resolveCenterCategoryName(selectedCenterCategory, displayCenterCategories)}</span>
-                    <button onClick={() => setSelectedCenterCategory('all')} className="hover:text-white cursor-pointer"><X className="w-3 h-3" /></button>
+                {ownershipType !== 'all' && (
+                  <span className="inline-flex items-center gap-1.5 px-3 py-1 rounded-full bg-emerald-500/20 text-emerald-300 border border-emerald-500/40 font-bold">
+                    <span>Ownership: {ownershipType.charAt(0).toUpperCase() + ownershipType.slice(1)}</span>
+                    <button onClick={() => setOwnershipType('all')} className="hover:text-white cursor-pointer"><X className="w-3 h-3" /></button>
                   </span>
                 )}
 
@@ -1201,7 +1242,7 @@ const resolveTestCategoryName = (val, testCats = []) => {
                       <div>
                         <div className="flex items-center gap-2 flex-wrap">
                           <span className="text-[10px] font-extrabold text-emerald-800 bg-emerald-100 px-2.5 py-0.5 rounded uppercase tracking-wider">
-                            {center.district || center.city || "Diagnostic Center"}
+                            {center.district || "Diagnostic Center"}
                           </span>
                           {(center.categories || (center.category ? [center.category] : [])).map((cat, idx) => {
                             const catName = resolveCenterCategoryName(cat, displayCenterCategories);

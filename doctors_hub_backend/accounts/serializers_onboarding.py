@@ -10,6 +10,7 @@ from core.validators import bangladesh_phone_validator
 
 class FacilityRegistrationSerializer(serializers.Serializer):
     facility_type = serializers.ChoiceField(choices=["diagnostic_center", "hospital"])
+    ownership_type = serializers.ChoiceField(choices=["private", "government"], default="private")
     name = serializers.CharField(max_length=250)
     branch = serializers.CharField(max_length=200, required=False, allow_blank=True, default="")
     license_number = serializers.CharField(max_length=100, required=False, allow_blank=True, default="")
@@ -50,6 +51,7 @@ class FacilityRegistrationSerializer(serializers.Serializer):
         first_name = validated_data.get("first_name", "") or name
         last_name = validated_data.get("last_name", "")
         email = validated_data.get("email", "")
+        ownership_type = validated_data.get("ownership_type", "private")
 
         # 1. Create User
         user = User.objects.create(
@@ -68,6 +70,7 @@ class FacilityRegistrationSerializer(serializers.Serializer):
             name=name,
             branch=branch,
             location_type=fac_type,
+            ownership_type=ownership_type,
             division=division,
             district=district,
             area=area,

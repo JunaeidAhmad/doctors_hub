@@ -71,17 +71,17 @@ export default function CascadingLocationFilter({
 
   const containerClasses = {
     stacked: 'space-y-3',
-    inline: 'flex flex-wrap sm:flex-nowrap items-center gap-2',
+    inline: 'contents',
     grid: 'grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-3'
   }[layout] || 'space-y-3';
 
   return (
     <div className={`${containerClasses} ${className}`}>
       {/* 1. PRIMARY LEVEL: DIVISION / ALL BANGLADESH */}
-      <div className={layout === 'inline' ? 'flex-1 min-w-[140px]' : ''}>
+      <div className={layout === 'inline' ? 'flex-1 min-w-[160px]' : ''}>
         {showLabels && (
-          <label className={`block text-[11px] font-bold mb-1 flex items-center gap-1 ${isDark ? 'text-slate-300' : 'text-slate-700'}`}>
-            <MapPin className={`w-3.5 h-3.5 ${accentLabel}`} />
+          <label className={`block text-[11px] font-bold mb-1 flex items-center gap-1 ${isDark ? 'text-slate-300' : 'text-slate-700'} whitespace-nowrap`}>
+            <MapPin className={`w-3.5 h-3.5 ${accentLabel} shrink-0`} />
             <span>Division / Location</span>
           </label>
         )}
@@ -89,7 +89,7 @@ export default function CascadingLocationFilter({
           <select
             value={division || 'All Bangladesh'}
             onChange={(e) => handleDivisionChange(e.target.value)}
-            className={`w-full ${selectBg} text-xs font-semibold border ${accentBorder} rounded-xl px-3 py-2.5 focus:outline-none transition-all appearance-none cursor-pointer shadow-xs`}
+            className={`w-full ${selectBg} text-xs font-semibold border ${accentBorder} rounded-xl pl-3 pr-8 py-2.5 focus:outline-none transition-all appearance-none cursor-pointer shadow-xs`}
           >
             <option value="All Bangladesh">All Bangladesh</option>
             {DIVISIONS.map((div) => (
@@ -106,17 +106,18 @@ export default function CascadingLocationFilter({
 
       {/* 2. SECONDARY LEVEL: DISTRICT (Opens only when a specific Division is selected) */}
       {!divisionOnly && division && division !== 'All Bangladesh' && (
-        <div className={`transition-all duration-300 animate-in fade-in slide-in-from-top-1 ${layout === 'inline' ? 'flex-1 min-w-[140px]' : ''}`}>
+        <div className={`transition-all duration-300 animate-in fade-in slide-in-from-top-1 ${layout === 'inline' ? 'flex-1 min-w-[160px]' : ''}`}>
           {showLabels && (
-            <label className={`block text-[11px] font-bold mb-1 ${accentLabel}`}>
-              District in {division}
+            <label className={`block text-[11px] font-bold mb-1 flex items-center gap-1.5 ${isDark ? 'text-slate-300' : 'text-slate-700'} whitespace-nowrap`}>
+              <MapPin className={`w-3.5 h-3.5 ${accentLabel} shrink-0`} />
+              <span>District in {division}</span>
             </label>
           )}
           <div className="relative">
             <select
               value={district || 'All Districts'}
               onChange={(e) => handleDistrictChange(e.target.value)}
-              className={`w-full ${selectBg} text-xs font-semibold border ${accentBorder} rounded-xl px-3 py-2.5 focus:outline-none transition-all appearance-none cursor-pointer shadow-xs`}
+              className={`w-full ${selectBg} text-xs font-semibold border ${accentBorder} rounded-xl pl-3 pr-8 py-2.5 focus:outline-none transition-all appearance-none cursor-pointer shadow-xs`}
             >
               <option value="All Districts">All Districts in {division}</option>
               {currentDistricts.map((dist) => (
@@ -134,17 +135,18 @@ export default function CascadingLocationFilter({
 
       {/* 3. TERTIARY LEVEL: AREA / THANA (Opens only when a specific District is selected) */}
       {!divisionOnly && division && division !== 'All Bangladesh' && district && district !== 'All Districts' && (
-        <div className={`transition-all duration-300 animate-in fade-in slide-in-from-top-1 ${layout === 'inline' ? 'flex-1 min-w-[140px]' : ''}`}>
+        <div className={`transition-all duration-300 animate-in fade-in slide-in-from-top-1 ${layout === 'inline' ? 'flex-1 min-w-[160px]' : ''}`}>
           {showLabels && (
-            <label className={`block text-[11px] font-bold mb-1 ${accentLabel}`}>
-              Area / Thana in {district}
+            <label className={`block text-[11px] font-bold mb-1 flex items-center gap-1.5 ${isDark ? 'text-slate-300' : 'text-slate-700'} whitespace-nowrap`}>
+              <MapPin className={`w-3.5 h-3.5 ${accentLabel} shrink-0`} />
+              <span>Area / Thana in {district}</span>
             </label>
           )}
           <div className="relative">
             <select
               value={area || 'All Areas'}
               onChange={(e) => handleAreaChange(e.target.value)}
-              className={`w-full ${selectBg} text-xs font-semibold border ${accentBorder} rounded-xl px-3 py-2.5 focus:outline-none transition-all appearance-none cursor-pointer shadow-xs`}
+              className={`w-full ${selectBg} text-xs font-semibold border ${accentBorder} rounded-xl pl-3 pr-8 py-2.5 focus:outline-none transition-all appearance-none cursor-pointer shadow-xs`}
             >
               <option value="All Areas">All Areas in {district}</option>
               {currentThanas.map((th) => (

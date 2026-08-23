@@ -38,7 +38,7 @@ class LocationSerializer(serializers.ModelSerializer):
     class Meta:
         model = Location
         fields = (
-            'id', 'location_type', 'name', 'branch', 'slug',
+            'id', 'location_type', 'ownership_type', 'name', 'branch', 'slug',
             'address_line', 'area', 'district', 'division',
             'phone', 'email', 'logo', 'image', 'description', 'tagline', 'badge',
             'rating', 'reviews_count', 'open_timing', 'is_verified', 'is_active', 'created_at'

@@ -132,6 +132,10 @@ export default function HospitalsPage({ initialCategory = '', initialKeyword = '
     return 'all';
   });
 
+  const [ownershipType, setOwnershipType] = useState(() => {
+    return getParam('ownership', 'all');
+  });
+
   const [searchKeyword, setSearchKeyword] = useState(() => {
     const urlQ = getParam('q', '');
     if (urlQ) return urlQ;
@@ -201,6 +205,7 @@ export default function HospitalsPage({ initialCategory = '', initialKeyword = '
         district: district !== 'All Districts' ? district : undefined,
         area: area !== 'All Areas' ? area : undefined,
         category: selectedCategory !== 'all' && selectedCategory !== 'All Categories' ? selectedCategory : undefined,
+        ownership_type: ownershipType !== 'all' ? ownershipType : undefined,
         search: searchKeyword.trim() || undefined,
         page: page,
         page_size: pageSize
@@ -230,13 +235,14 @@ export default function HospitalsPage({ initialCategory = '', initialKeyword = '
     }, delay);
 
     return () => { isMounted = false; clearTimeout(timer); };
-  }, [division, district, area, selectedCategory, searchKeyword, page]);
+  }, [division, district, area, selectedCategory, ownershipType, searchKeyword, page]);
 
   // Handle URL deserialization once or when searchParams actually change from outside
   useEffect(() => {
     if (lastParamsRef.current === searchParams.toString()) return;
     
     const urlCat = searchParams.get('cat');
+    const urlOwn = searchParams.get('ownership');
     const urlDiv = searchParams.get('division');
     const urlDist = searchParams.get('district');
     const urlLoc = searchParams.get('loc');
@@ -318,6 +324,7 @@ export default function HospitalsPage({ initialCategory = '', initialKeyword = '
     if (division && division !== 'All Bangladesh') params.set('division', division);
     if (district && district !== 'All Districts') params.set('district', district);
     if (area && area !== 'All Areas') params.set('area', area);
+    if (ownershipType && ownershipType !== 'all') params.set('ownership', ownershipType);
     if (searchKeyword.trim()) params.set('q', searchKeyword.trim());
     if (page > 1) params.set('page', String(page));
     if (sortOrder !== 'asc') params.set('sort', sortOrder);
@@ -327,7 +334,7 @@ export default function HospitalsPage({ initialCategory = '', initialKeyword = '
       lastParamsRef.current = next;
       setSearchParams(params, { replace: true });
     }
-  }, [selectedCategory, division, district, area, searchKeyword, page, sortOrder, setSearchParams]);
+  }, [selectedCategory, division, district, area, ownershipType, searchKeyword, page, sortOrder, setSearchParams]);
 
   // Alphabetical sorting
   const sortedHospitals = useMemo(() => {
@@ -347,7 +354,7 @@ export default function HospitalsPage({ initialCategory = '', initialKeyword = '
       return;
     }
     setPage(1);
-  }, [selectedCategory, division, district, area, searchKeyword]);
+  }, [selectedCategory, ownershipType, division, district, area, searchKeyword]);
 
   return (
     <div className="min-h-screen bg-slate-50 pb-20">
@@ -393,10 +400,11 @@ export default function HospitalsPage({ initialCategory = '', initialKeyword = '
                 <Filter className="w-4 h-4 text-emerald-400" />
                 <span>Hospital Search & Filter</span>
               </div>
-              {(selectedCategory !== 'all' || division !== 'All Bangladesh' || district !== 'All Districts' || area !== 'All Areas' || searchKeyword) && (
+              {(ownershipType !== 'all' || selectedCategory !== 'all' || division !== 'All Bangladesh' || district !== 'All Districts' || area !== 'All Areas' || searchKeyword) && (
                 <button
                   onClick={() => {
                     setSelectedCategory('all');
+                    setOwnershipType('all');
                     setDivision('All Bangladesh');
                     setDistrict('All Districts');
                     setArea('All Areas');
@@ -409,47 +417,81 @@ export default function HospitalsPage({ initialCategory = '', initialKeyword = '
               )}
             </div>
 
-            <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-3">
+            <div className="flex flex-wrap items-start gap-3">
               
-              {/* Category Filter */}
-              <div>
-                <label className="block text-[11px] font-bold text-slate-400 mb-1">Hospital Category</label>
-                <select
-                  value={activeCategoryValue}
-                  onChange={(e) => {
-                    setSelectedCategory(e.target.value);
-                    setSearchKeyword('');
-                  }}
-                  className="w-full bg-slate-900 border border-slate-700 rounded-xl px-3 py-2.5 text-xs text-white focus:outline-none focus:border-emerald-500 font-bold cursor-pointer"
-                >
-                  <option value="all">All Hospital Categories</option>
-                  {hospitalCategories.map(cat => (
-                    <option key={cat.id} value={cat.id}>{cat.name}</option>
-                  ))}
-                </select>
+              {/* 1. Category Filter */}
+              <div className="flex-1 min-w-[160px]">
+                <label className="block text-[11px] font-bold text-slate-300 mb-1 flex items-center gap-1.5 whitespace-nowrap">
+                  <Building2 className="w-3.5 h-3.5 text-emerald-400 shrink-0" />
+                  <span>Hospital Category</span>
+                </label>
+                <div className="relative">
+                  <select
+                    value={activeCategoryValue}
+                    onChange={(e) => {
+                      setSelectedCategory(e.target.value);
+                      setSearchKeyword('');
+                    }}
+                    className="w-full bg-slate-900 border border-slate-700 rounded-xl pl-3 pr-8 py-2.5 text-xs text-white focus:outline-none focus:border-emerald-500 font-semibold appearance-none cursor-pointer shadow-xs"
+                  >
+                    <option value="all">All Hospital Categories</option>
+                    {hospitalCategories.map(cat => (
+                      <option key={cat.id} value={cat.id}>{cat.name}</option>
+                    ))}
+                  </select>
+                  <div className="pointer-events-none absolute inset-y-0 right-0 flex items-center px-3 text-slate-400">
+                    <ChevronRight className="w-4 h-4 rotate-90" />
+                  </div>
+                </div>
               </div>
 
-              {/* Cascading Location Filter (Division -> District -> Thana) */}
-              <div className="sm:col-span-2 lg:col-span-1">
-                <CascadingLocationFilter
-                  division={division}
-                  district={district}
-                  area={area}
-                  onChange={({ division: d, district: dist, area: a }) => {
-                    setDivision(d);
-                    setDistrict(dist);
-                    setArea(a);
-                  }}
-                  theme="dark"
-                  accent="emerald"
-                  layout="inline"
-                  showLabels={true}
-                />
+              {/* 2. Cascading Location Filter (Division -> District -> Thana) */}
+              <CascadingLocationFilter
+                division={division}
+                district={district}
+                area={area}
+                onChange={({ division: d, district: dist, area: a }) => {
+                  setDivision(d);
+                  setDistrict(dist);
+                  setArea(a);
+                }}
+                theme="dark"
+                accent="emerald"
+                layout="inline"
+                showLabels={true}
+              />
+
+              {/* 3. Ownership Type Filter */}
+              <div className="flex-1 min-w-[140px]">
+                <label className="block text-[11px] font-bold text-slate-300 mb-1 flex items-center gap-1.5 whitespace-nowrap">
+                  <Building2 className="w-3.5 h-3.5 text-emerald-400 shrink-0" />
+                  <span>Ownership</span>
+                </label>
+                <div className="relative">
+                  <select
+                    value={ownershipType}
+                    onChange={(e) => {
+                      setOwnershipType(e.target.value);
+                      setSearchKeyword('');
+                    }}
+                    className="w-full bg-slate-900 border border-slate-700 rounded-xl pl-3 pr-8 py-2.5 text-xs text-white focus:outline-none focus:border-emerald-500 font-semibold appearance-none cursor-pointer shadow-xs"
+                  >
+                    <option value="all">Any Ownership</option>
+                    <option value="private">Private</option>
+                    <option value="government">Government</option>
+                  </select>
+                  <div className="pointer-events-none absolute inset-y-0 right-0 flex items-center px-3 text-slate-400">
+                    <ChevronRight className="w-4 h-4 rotate-90" />
+                  </div>
+                </div>
               </div>
 
-              {/* Search Keyword */}
-              <div className="relative">
-                <label className="block text-[11px] font-bold text-slate-400 mb-1">Search</label>
+              {/* 4. Search Keyword */}
+              <div className="flex-1 min-w-[180px]">
+                <label className="block text-[11px] font-bold text-slate-300 mb-1 flex items-center gap-1.5 whitespace-nowrap">
+                  <Search className="w-3.5 h-3.5 text-emerald-400 shrink-0" />
+                  <span>Search</span>
+                </label>
                 <div className="relative">
                   <Search className="w-4 h-4 text-slate-400 absolute left-3 top-1/2 -translate-y-1/2" />
                   <input
@@ -457,7 +499,7 @@ export default function HospitalsPage({ initialCategory = '', initialKeyword = '
                     placeholder="Search hospital name..."
                     value={searchKeyword}
                     onChange={(e) => setSearchKeyword(e.target.value)}
-                    className="w-full bg-slate-900 border border-slate-700 rounded-xl pl-9 pr-3 py-2.5 text-xs text-white placeholder-slate-400 focus:outline-none focus:border-emerald-500 font-medium"
+                    className="w-full bg-slate-900 border border-slate-700 rounded-xl pl-9 pr-3 py-2.5 text-xs text-white placeholder-slate-400 focus:outline-none focus:border-emerald-500 font-medium shadow-xs"
                   />
                 </div>
               </div>
@@ -465,9 +507,16 @@ export default function HospitalsPage({ initialCategory = '', initialKeyword = '
             </div>
 
             {/* ACTIVE FILTER PILLS */}
-            {(selectedCategory !== 'all' || division !== 'All Bangladesh' || district !== 'All Districts' || area !== 'All Areas' || searchKeyword) && (
+            {(ownershipType !== 'all' || selectedCategory !== 'all' || division !== 'All Bangladesh' || district !== 'All Districts' || area !== 'All Areas' || searchKeyword) && (
               <div className="flex flex-wrap items-center gap-2 pt-2 border-t border-slate-700/60 text-xs">
                 <span className="text-slate-400 font-bold">Active Filters:</span>
+
+                {ownershipType !== 'all' && (
+                  <span className="inline-flex items-center gap-1.5 px-3 py-1 rounded-full bg-emerald-500/20 text-emerald-300 border border-emerald-500/40 font-bold">
+                    <span>Ownership: {ownershipType.charAt(0).toUpperCase() + ownershipType.slice(1)}</span>
+                    <button onClick={() => setOwnershipType('all')} className="hover:text-white cursor-pointer"><X className="w-3 h-3" /></button>
+                  </span>
+                )}
 
                 {selectedCategory !== 'all' && (
                   <span className="inline-flex items-center gap-1.5 px-3 py-1 rounded-full bg-emerald-500/20 text-emerald-300 border border-emerald-500/40 font-bold">

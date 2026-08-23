@@ -34,6 +34,7 @@ export default function DiagnosticModal() {
     isCustomBranch: false,
     customBranch: '',
     category_id: '',
+    ownership_type: 'private',
     test_category_ids: [],
     service_ids: [],
     address: 'House 16, Road 2, Dhanmondi / Panthapath',
@@ -67,7 +68,7 @@ export default function DiagnosticModal() {
         });
       }
 
-      const initialDistrict = editingDiagnostic.district || editingDiagnostic.city || 'Dhaka';
+      const initialDistrict = editingDiagnostic.district || 'Dhaka';
       const initialDivision = editingDiagnostic.division || findDivisionForDistrict(initialDistrict) || 'Dhaka';
       const initialArea = editingDiagnostic.area || editingDiagnostic.branch || 'Panthapath';
 
@@ -81,6 +82,7 @@ export default function DiagnosticModal() {
         isCustomBranch: false,
         customBranch: '',
         category_id: catId,
+        ownership_type: editingDiagnostic.ownership_type || editingDiagnostic.location_details?.ownership_type || 'private',
         test_category_ids: existingTestCatIds,
         service_ids: srvIds,
         address: editingDiagnostic.address || editingDiagnostic.address_line || '',
@@ -107,6 +109,7 @@ export default function DiagnosticModal() {
         isCustomBranch: false,
         customBranch: '',
         category_id: '',
+    ownership_type: 'private',
         test_category_ids: [],
         service_ids: (diagnosticServices || []).slice(0, 3).map(s => s.id),
         address: '',
@@ -141,6 +144,7 @@ export default function DiagnosticModal() {
         address_line: diagnosticForm.address,
         address: diagnosticForm.address,
         category_id: diagnosticForm.category_id || null,
+        ownership_type: diagnosticForm.ownership_type,
         test_category_ids: diagnosticForm.test_category_ids || [],
         service_ids: diagnosticForm.service_ids,
         phone: diagnosticForm.phone,
@@ -208,9 +212,23 @@ export default function DiagnosticModal() {
         <form onSubmit={handleSaveDiagnostic} className="space-y-4 text-xs">
           <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
             
+            {/* OWNERSHIP TYPE */}
+            <div>
+              <label className="block text-slate-300 font-semibold mb-1">Ownership Type *</label>
+              <select
+                required
+                value={diagnosticForm.ownership_type}
+                onChange={e => setDiagnosticForm({ ...diagnosticForm, ownership_type: e.target.value })}
+                className="w-full bg-slate-950 border border-slate-800 rounded-xl px-3 py-2 text-white font-bold"
+              >
+                <option value="private">Private</option>
+                <option value="government">Government</option>
+                              </select>
+            </div>
+
             {/* DIAGNOSTIC CENTER CATEGORY */}
-            <div className="md:col-span-2">
-              <label className="block text-slate-300 font-semibold mb-1">Diagnostic Center Category *</label>
+            <div>
+              <label className="block text-slate-300 font-semibold mb-1">Diagnostic Center Category</label>
               <select
                 value={diagnosticForm.category_id}
                 onChange={e => setDiagnosticForm({ ...diagnosticForm, category_id: e.target.value })}

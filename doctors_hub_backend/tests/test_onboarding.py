@@ -32,7 +32,8 @@ class TestOnboardingRegistration:
         data = response.json()
         assert data["status"] == "success"
         assert "access" in data
-        assert "refresh" in data
+        assert "refresh" not in data
+        assert "refresh_token" in response.cookies
 
         # Verify User
         user = User.objects.get(phone_number="01755112233")

@@ -115,10 +115,10 @@ export default function DoctorSearchPage({
       setDistrict('All Districts');
     }
 
-    if (urlArea !== null) setArea(urlArea || 'All Areas');
-    if (urlQ !== null) setKeyword(urlQ || '');
-    if (urlPage) setCurrentPage(Math.max(1, parseInt(urlPage, 10) || 1));
-    if (urlSort) setSortOrder(urlSort === 'desc' ? 'desc' : 'asc');
+    setArea(urlArea || 'All Areas');
+    setKeyword(urlQ || '');
+    setCurrentPage(urlPage ? Math.max(1, parseInt(urlPage, 10) || 1) : 1);
+    setSortOrder(urlSort === 'desc' ? 'desc' : 'asc');
   }, [searchParams]);
 
   // Sync URL when filter states change
@@ -215,7 +215,7 @@ export default function DoctorSearchPage({
           : [{
               id: `virtual-${doc.id}`,
               facility_name: doc.hospital_name || doc.chamber_name || 'Specialist Doctor Chamber',
-              city: doc.city || 'Dhaka',
+              district: doc.district || 'Dhaka',
               fee: doc.fee || 1000,
               schedules: []
             }];
@@ -226,7 +226,7 @@ export default function DoctorSearchPage({
           const nameParts = String(facilityName).split(' - ');
           const baseName = nameParts[0] || 'Medical Center Chamber';
           const branchName = nameParts.slice(1).join(' - ') || aff.hospital_branch || aff.diagnostic_center_branch || (aff.location_details && aff.location_details.branch) || '';
-          const city = aff.city || (aff.location_details && aff.location_details.city) || (aff.location_details && aff.location_details.district) || 'Dhaka';
+          const district = aff.district || (aff.location_details && aff.location_details.district) || 'Dhaka';
           const affArea = (aff.location_details && aff.location_details.area) || '';
           const affDistrict = (aff.location_details && aff.location_details.district) || '';
           const affDivision = (aff.location_details && aff.location_details.division) || '';
@@ -236,7 +236,7 @@ export default function DoctorSearchPage({
             const divLow = division.toLowerCase();
             const matchesDiv = affDivision.toLowerCase().includes(divLow) ||
               affDistrict.toLowerCase().includes(divLow) ||
-              city.toLowerCase().includes(divLow);
+              district.toLowerCase().includes(divLow);
             if (!matchesDiv) return;
           }
 
@@ -244,7 +244,7 @@ export default function DoctorSearchPage({
           if (district && district !== 'All Districts') {
             const distLow = district.toLowerCase();
             const matchesDist = affDistrict.toLowerCase().includes(distLow) ||
-              city.toLowerCase().includes(distLow);
+              district.toLowerCase().includes(distLow);
             if (!matchesDist) return;
           }
 
@@ -278,7 +278,7 @@ export default function DoctorSearchPage({
               id: facilityId,
               name: baseName,
               branch: branchName,
-              city,
+              district,
               location: branchName ? `${baseName} - ${branchName}` : baseName,
               verified: true,
               rating: 4.9,
@@ -292,7 +292,7 @@ export default function DoctorSearchPage({
             facilityId,
             facilityName,
             branchName,
-            city,
+            district,
             fee: affFee,
             schedules: filteredSchedules,
             visitDays: filteredSchedules && filteredSchedules.length > 0 
@@ -384,13 +384,16 @@ export default function DoctorSearchPage({
                     setSpecialty(e.target.value);
                     setCurrentPage(1);
                   }}
-                  className="w-full bg-slate-900 text-white text-xs font-semibold border border-slate-700 rounded-xl px-3 py-2.5 focus:outline-none focus:border-emerald-500 cursor-pointer"
+                  className="w-full bg-slate-900 text-white text-xs font-semibold border border-slate-700 rounded-xl pl-3 pr-8 py-2.5 focus:outline-none focus:border-emerald-500 appearance-none cursor-pointer"
                 >
                   <option value="">All Specialties</option>
                   {specialties.map((s) => (
                     <option key={s.id || s.name} value={s.name}>{s.name}</option>
                   ))}
                 </select>
+                <div className="pointer-events-none absolute inset-y-0 right-0 flex items-center px-3 text-slate-400">
+                  <ChevronRight className="w-4 h-4 rotate-90" />
+                </div>
               </div>
 
               {/* Cascading Location Filter (Division -> District -> Thana) in Top Bar */}
@@ -559,7 +562,7 @@ export default function DoctorSearchPage({
                         </h2>
                         <p className="text-xs text-slate-400 flex items-center gap-1">
                           <MapPin className="w-3 h-3 text-slate-500" />
-                          {chamber.branch ? `${chamber.branch} (${chamber.city})` : `${chamber.location} (${chamber.city})`}
+                          {chamber.branch ? `${chamber.branch} (${chamber.district})` : `${chamber.location} (${chamber.district})`}
                         </p>
                       </div>
                     </div>

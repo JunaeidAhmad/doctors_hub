@@ -45,6 +45,8 @@ class SearchFacetsResponseSerializer(serializers.Serializer):
 
 class AdminDashboardInitResponseSerializer(serializers.Serializer):
     current_user = UserProfileSerializer()
+    counts = serializers.DictField(child=serializers.IntegerField(), required=False)
+    limit = serializers.IntegerField(required=False)
     hospitals = HospitalSerializer(many=True)
     diagnostic_centers = DiagnosticCenterSerializer(many=True)
     doctors = DoctorSerializer(many=True)
@@ -250,35 +252,75 @@ class AdminInitAPIView(APIView):
         doc_booking_base = DoctorBooking.objects.select_related('affiliation__doctor', 'affiliation__location').order_by('-created_at')
         lab_booking_base = LabBooking.objects.select_related('facility_test__test', 'facility_test__location').order_by('-created_at')
 
+        INIT_LIMIT = 50
+
         if is_super:
-            hospitals_data = HospitalSerializer(hosp_base.all(), many=True, context={'request': request}).data
-            diagnostic_centers_data = DiagnosticCenterSerializer(diag_base.all(), many=True, context={'request': request}).data
-            doctors_data = DoctorSerializer(doc_base.all(), many=True, context={'request': request}).data
-            tests_data = TestSerializer(test_base.all(), many=True, context={'request': request}).data
-            branch_tests_data = FacilityTestSerializer(branch_test_base.all(), many=True, context={'request': request}).data
-            doc_bookings = DoctorBookingSerializer(doc_booking_base.all(), many=True, context={'request': request}).data
-            lab_bookings = LabBookingSerializer(lab_booking_base.all(), many=True, context={'request': request}).data
+            counts = {
+                "hospitals": hosp_base.count(),
+                "diagnostic_centers": diag_base.count(),
+                "doctors": doc_base.count(),
+                "tests": test_base.count(),
+                "branch_tests": branch_test_base.count(),
+                "doctor_bookings": doc_booking_base.count(),
+                "lab_bookings": lab_booking_base.count(),
+            }
+            hospitals_data = HospitalSerializer(hosp_base.all()[:INIT_LIMIT], many=True, context={'request': request}).data
+            diagnostic_centers_data = DiagnosticCenterSerializer(diag_base.all()[:INIT_LIMIT], many=True, context={'request': request}).data
+            doctors_data = DoctorSerializer(doc_base.all()[:INIT_LIMIT], many=True, context={'request': request}).data
+            tests_data = TestSerializer(test_base.all()[:INIT_LIMIT], many=True, context={'request': request}).data
+            branch_tests_data = FacilityTestSerializer(branch_test_base.all()[:INIT_LIMIT], many=True, context={'request': request}).data
+            doc_bookings = DoctorBookingSerializer(doc_booking_base.all()[:INIT_LIMIT], many=True, context={'request': request}).data
+            lab_bookings = LabBookingSerializer(lab_booking_base.all()[:INIT_LIMIT], many=True, context={'request': request}).data
 
         elif is_fac:
             managed_ids = user.managed_location_ids
-            hospitals_data = HospitalSerializer(hosp_base.filter(location__in=managed_ids), many=True, context={'request': request}).data
-            diagnostic_centers_data = DiagnosticCenterSerializer(diag_base.filter(location__in=managed_ids), many=True, context={'request': request}).data
-            doctors_data = DoctorSerializer(doc_base.filter(affiliations__location__in=managed_ids).distinct(), many=True, context={'request': request}).data
-            tests_data = TestSerializer(test_base.all(), many=True, context={'request': request}).data
-            branch_tests_data = FacilityTestSerializer(branch_test_base.filter(location__in=managed_ids), many=True, context={'request': request}).data
-            doc_bookings = DoctorBookingSerializer(doc_booking_base.filter(affiliation__location__in=managed_ids), many=True, context={'request': request}).data
-            lab_bookings = LabBookingSerializer(lab_booking_base.filter(facility_test__location__in=managed_ids), many=True, context={'request': request}).data
+            hosp_scoped = hosp_base.filter(location__in=managed_ids)
+            diag_scoped = diag_base.filter(location__in=managed_ids)
+            doc_scoped = doc_base.filter(affiliations__location__in=managed_ids).distinct()
+            branch_test_scoped = branch_test_base.filter(location__in=managed_ids)
+            doc_booking_scoped = doc_booking_base.filter(affiliation__location__in=managed_ids)
+            lab_booking_scoped = lab_booking_base.filter(facility_test__location__in=managed_ids)
+
+            counts = {
+                "hospitals": hosp_scoped.count(),
+                "diagnostic_centers": diag_scoped.count(),
+                "doctors": doc_scoped.count(),
+                "tests": test_base.count(),
+                "branch_tests": branch_test_scoped.count(),
+                "doctor_bookings": doc_booking_scoped.count(),
+                "lab_bookings": lab_booking_scoped.count(),
+            }
+
+            hospitals_data = HospitalSerializer(hosp_scoped[:INIT_LIMIT], many=True, context={'request': request}).data
+            diagnostic_centers_data = DiagnosticCenterSerializer(diag_scoped[:INIT_LIMIT], many=True, context={'request': request}).data
+            doctors_data = DoctorSerializer(doc_scoped[:INIT_LIMIT], many=True, context={'request': request}).data
+            tests_data = TestSerializer(test_base.all()[:INIT_LIMIT], many=True, context={'request': request}).data
+            branch_tests_data = FacilityTestSerializer(branch_test_scoped[:INIT_LIMIT], many=True, context={'request': request}).data
+            doc_bookings = DoctorBookingSerializer(doc_booking_scoped[:INIT_LIMIT], many=True, context={'request': request}).data
+            lab_bookings = LabBookingSerializer(lab_booking_scoped[:INIT_LIMIT], many=True, context={'request': request}).data
 
         elif is_doc:
+            doc_scoped = doc_base.filter(user=user)
+            doc_booking_scoped = doc_booking_base.filter(affiliation__doctor__user=user)
+            counts = {
+                "hospitals": 0,
+                "diagnostic_centers": 0,
+                "doctors": doc_scoped.count(),
+                "tests": 0,
+                "branch_tests": 0,
+                "doctor_bookings": doc_booking_scoped.count(),
+                "lab_bookings": 0,
+            }
             hospitals_data = []
             diagnostic_centers_data = []
-            doctors_data = DoctorSerializer(doc_base.filter(user=user), many=True, context={'request': request}).data
+            doctors_data = DoctorSerializer(doc_scoped[:INIT_LIMIT], many=True, context={'request': request}).data
             tests_data = []
             branch_tests_data = []
-            doc_bookings = DoctorBookingSerializer(doc_booking_base.filter(affiliation__doctor__user=user), many=True, context={'request': request}).data
+            doc_bookings = DoctorBookingSerializer(doc_booking_scoped[:INIT_LIMIT], many=True, context={'request': request}).data
             lab_bookings = []
 
         else:
+            counts = {}
             hospitals_data = []
             diagnostic_centers_data = []
             doctors_data = []
@@ -289,6 +331,8 @@ class AdminInitAPIView(APIView):
 
         return Response({
             "current_user": UserProfileSerializer(user, context={'request': request}).data,
+            "counts": counts,
+            "limit": INIT_LIMIT,
             "hospitals": hospitals_data,
             "diagnostic_centers": diagnostic_centers_data,
             "doctors": doctors_data,

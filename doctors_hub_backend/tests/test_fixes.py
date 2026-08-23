@@ -252,26 +252,131 @@ def test_facility_service_orchestration():
 
 
 @pytest.mark.django_db
-def test_auth_refresh_and_logout_endpoints():
+def test_login_cookie_contract():
     user = User.objects.create_user(phone_number="01911111111", password="testpassword123")
     client = APIClient()
 
-    # Login
     login_res = client.post("/api/auth/login/", {"phone_number": "01911111111", "password": "testpassword123"})
     assert login_res.status_code == 200
     assert "access" in login_res.data
-    assert "refresh" in login_res.data
+    assert "refresh" not in login_res.data
     assert "refresh_token" in login_res.cookies
+    cookie = login_res.cookies["refresh_token"]
+    assert cookie["httponly"] is True
 
-    refresh_token = login_res.data["refresh"]
 
-    # Refresh via body
-    refresh_res = client.post("/api/auth/refresh/", {"refresh": refresh_token})
+@pytest.mark.django_db
+def test_refresh_from_cookie_and_body():
+    user = User.objects.create_user(phone_number="01911111111", password="testpassword123")
+    client = APIClient()
+
+    # Login to get cookie
+    login_res = client.post("/api/auth/login/", {"phone_number": "01911111111", "password": "testpassword123"})
+    assert login_res.status_code == 200
+    refresh_token = login_res.cookies["refresh_token"].value
+
+    # Refresh via cookie
+    refresh_client = APIClient()
+    refresh_client.cookies["refresh_token"] = refresh_token
+    refresh_res = refresh_client.post("/api/auth/refresh/", {})
     assert refresh_res.status_code == 200
     assert "access" in refresh_res.data
 
-    # Logout
+    # Refresh via body fallback
+    body_client = APIClient()
+    body_res = body_client.post("/api/auth/refresh/", {"refresh": refresh_token})
+    assert body_res.status_code == 200
+    assert "access" in body_res.data
+
+    # Refresh with no token -> 400
+    fail_client = APIClient()
+    fail_res = fail_client.post("/api/auth/refresh/", {})
+    assert fail_res.status_code == 400
+
+
+@pytest.mark.django_db
+def test_logout_deletes_cookie():
+    user = User.objects.create_user(phone_number="01911111111", password="testpassword123")
+    client = APIClient()
+    client.post("/api/auth/login/", {"phone_number": "01911111111", "password": "testpassword123"})
+
     logout_res = client.post("/api/auth/logout/")
     assert logout_res.status_code == 200
+    assert logout_res.cookies["refresh_token"].value == ""
+
+
+@pytest.mark.django_db
+def test_diagnostic_center_filter_location_no_field_error():
+    from facilities.models import DiagnosticCenter
+    loc = Location.objects.create(
+        name="Popular Dhanmondi",
+        location_type="diagnostic_center",
+        district="Dhaka",
+        division="Dhaka",
+        area="Dhanmondi",
+        address_line="Road 2"
+    )
+    DiagnosticCenter.objects.create(location=loc)
+
+    client = APIClient()
+    # Query with location filter string - must return 200 OK without FieldError on city
+    res = client.get("/api/diagnostic-centers/?location=Dhaka")
+    assert res.status_code == 200
+
+
+@pytest.mark.django_db
+def test_dashboard_init_bounding_and_counts():
+    from facilities.models import Hospital
+
+    super_admin = User.objects.create_superuser(phone_number="01800000001", password="supersecretpassword")
+    client = APIClient()
+    client.force_authenticate(user=super_admin)
+
+    # Seed 60 hospitals
+    for i in range(60):
+        loc = Location.objects.create(
+            name=f"Hospital {i}",
+            location_type="hospital",
+            district="Dhaka",
+            division="Dhaka",
+            address_line=f"Road {i}"
+        )
+        Hospital.objects.create(location=loc)
+
+    res = client.get("/api/admin/dashboard-init/")
+    assert res.status_code == 200
+    data = res.data
+
+    # Bounded to 50
+    assert len(data["hospitals"]) == 50
+    assert data["limit"] == 50
+    assert data["counts"]["hospitals"] == 60
+
+
+@pytest.mark.django_db
+def test_verification_invalidates_cache():
+    from django.core.cache import cache
+
+    super_admin = User.objects.create_superuser(phone_number="01800000002", password="supersecretpassword")
+    client = APIClient()
+    client.force_authenticate(user=super_admin)
+
+    loc = Location.objects.create(
+        name="Pending Hospital",
+        location_type="hospital",
+        district="Dhaka",
+        division="Dhaka",
+        address_line="Road 10",
+        is_verified=False
+    )
+
+    # Set dummy cache
+    cache.set('search_metadata_global', {"some": "data"}, 300)
+    assert cache.get('search_metadata_global') is not None
+
+    # Approve facility
+    res = client.post(f"/api/admin/verifications/facility/{loc.id}/", {"action": "approve"})
+    assert res.status_code == 200
+    assert cache.get('search_metadata_global') is None
 
 

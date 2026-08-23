@@ -10,10 +10,11 @@ def _extract_or_create_location(location_data, default_type):
         'name': location_data.get('name', 'Facility'),
         'branch': location_data.get('branch', ''),
         'location_type': location_data.get('location_type', default_type),
+        'ownership_type': location_data.get('ownership_type', 'private'),
         'address_line': location_data.get('address_line', location_data.get('address', '')),
         'area': location_data.get('area', ''),
-        'district': location_data.get('district', location_data.get('city', 'Dhaka')),
-        'division': location_data.get('division', location_data.get('city', 'Dhaka')),
+        'district': location_data.get('district', 'Dhaka'),
+        'division': location_data.get('division', 'Dhaka'),
         'phone': location_data.get('phone', ''),
         'email': location_data.get('email', ''),
         'description': location_data.get('description', ''),
@@ -30,7 +31,7 @@ def _extract_or_create_location(location_data, default_type):
 def _update_location_fields(location, location_data):
     if not location or not location_data:
         return
-    for field in ['name', 'branch', 'address_line', 'area', 'district', 'division', 'phone', 'email', 'description', 'tagline', 'badge', 'open_timing']:
+    for field in ['name', 'branch', 'address_line', 'area', 'district', 'division', 'phone', 'email', 'description', 'tagline', 'badge', 'open_timing', 'ownership_type']:
         if field in location_data:
             setattr(location, field, location_data[field])
     if 'address' in location_data and 'address_line' not in location_data:

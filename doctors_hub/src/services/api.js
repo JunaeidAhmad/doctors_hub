@@ -1,6 +1,39 @@
 const BASE_URL = import.meta.env.VITE_API_BASE_URL || 'http://localhost:8000/api';
 
-async function fetchWithTimeout(url, options = {}, timeoutMs = 60000) {
+let refreshPromise = null;
+
+export function clearSession() {
+  localStorage.removeItem('access_token');
+  localStorage.removeItem('user');
+}
+
+export async function refreshAccessToken() {
+  if (refreshPromise) return refreshPromise;
+
+  refreshPromise = (async () => {
+    try {
+      const res = await fetch(`${BASE_URL}/auth/refresh/`, {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        credentials: 'include',
+        body: JSON.stringify({}),
+      });
+      if (!res.ok) return null;
+      const data = await res.json();
+      if (!data.access) return null;
+      localStorage.setItem('access_token', data.access);
+      return data.access;
+    } catch {
+      return null;
+    } finally {
+      refreshPromise = null;
+    }
+  })();
+
+  return refreshPromise;
+}
+
+async function rawFetchWithTimeout(url, options = {}, timeoutMs = 60000) {
   if (!timeoutMs || typeof timeoutMs !== 'number' || timeoutMs <= 0) {
     return fetch(url, options);
   }
@@ -24,6 +57,27 @@ async function fetchWithTimeout(url, options = {}, timeoutMs = 60000) {
     }
     throw err;
   }
+}
+
+async function fetchWithTimeout(url, options = {}, timeoutMs = 60000, _isRetry = false) {
+  const response = await rawFetchWithTimeout(url, options, timeoutMs);
+
+  const isAuthCall = url.includes('/auth/');
+  if (response.status !== 401 || _isRetry || isAuthCall) {
+    return response;
+  }
+
+  const newToken = await refreshAccessToken();
+  if (!newToken) {
+    clearSession();
+    return response;
+  }
+
+  const retryOptions = {
+    ...options,
+    headers: { ...(options.headers || {}), Authorization: `Bearer ${newToken}` },
+  };
+  return rawFetchWithTimeout(url, retryOptions, timeoutMs, true);
 }
 
 export function ensureArray(val, fallback = []) {
@@ -149,9 +203,7 @@ async function fetchWithDeduplicationAndCache(cacheKey, fetchFn, ttlMs = 300000)
 async function handleResponse(response) {
   if (!response.ok) {
     if (response.status === 401) {
-      localStorage.removeItem('access_token');
-      localStorage.removeItem('refresh_token');
-      localStorage.removeItem('user');
+      clearSession();
     }
     if (response.status === 429) {
       console.warn("API Rate limited (HTTP 429) - serving fallback or cached data.");
@@ -258,42 +310,57 @@ export const api = {
 
   // Auth
   async login(phone_number, password) {
-    localStorage.removeItem('access_token');
-    localStorage.removeItem('refresh_token');
-    localStorage.removeItem('user');
+    clearSession();
     const res = await fetchWithTimeout(`${BASE_URL}/auth/login/`, {
       method: 'POST',
       headers: { 'Content-Type': 'application/json' },
+      credentials: 'include',
       body: JSON.stringify({ phone_number, password }),
     });
     const data = await handleResponse(res);
     if (data.access) {
       localStorage.setItem('access_token', data.access);
-      localStorage.setItem('refresh_token', data.refresh);
-      localStorage.setItem('user', JSON.stringify(data.user));
+      if (data.user) {
+        localStorage.setItem('user', JSON.stringify(data.user));
+      }
     }
     return data;
   },
 
   async register(phone_number, password, first_name = '', last_name = '') {
+    clearSession();
     const res = await fetchWithTimeout(`${BASE_URL}/auth/register/`, {
       method: 'POST',
       headers: getHeaders(),
+      credentials: 'include',
       body: JSON.stringify({ phone_number, password, first_name, last_name }),
     });
     const data = await handleResponse(res);
     if (data.access) {
       localStorage.setItem('access_token', data.access);
-      localStorage.setItem('refresh_token', data.refresh);
-      localStorage.setItem('user', JSON.stringify(data.user));
+      if (data.user) {
+        localStorage.setItem('user', JSON.stringify(data.user));
+      }
     }
     return data;
   },
 
-  logout() {
-    localStorage.removeItem('access_token');
-    localStorage.removeItem('refresh_token');
-    localStorage.removeItem('user');
+  async logout() {
+    try {
+      await fetch(`${BASE_URL}/auth/logout/`, {
+        method: 'POST',
+        headers: getHeaders(),
+        credentials: 'include',
+      });
+    } catch {
+      /* clear locally regardless */
+    }
+    clearSession();
+  },
+
+  setSession(access, user) {
+    if (access) localStorage.setItem('access_token', access);
+    if (user) localStorage.setItem('user', JSON.stringify(user));
   },
 
   getCurrentUser() {
@@ -545,14 +612,15 @@ export const api = {
   },
 
   // Diagnostic Centers
-  async getDiagnosticCenters({ location = '', division = '', district = '', area = '', category = '', spec = '', owner = '', testcat = '', search = '', page = 1, page_size = 10 } = {}) {
-    const key = `diag_${location}_${division}_${district}_${area}_${category}_${spec}_${owner}_${testcat}_${search}_${page}_${page_size}`;
+  async getDiagnosticCenters({ location = '', division = '', district = '', area = '', ownership_type = '', category = '', spec = '', owner = '', testcat = '', search = '', page = 1, page_size = 10 } = {}) {
+    const key = `diag_${location}_${division}_${district}_${area}_${ownership_type}_${category}_${spec}_${owner}_${testcat}_${search}_${page}_${page_size}`;
     return fetchWithDeduplicationAndCache(key, async () => {
       const url = new URL(`${BASE_URL}/diagnostic-centers/`);
       if (location && location !== 'All Bangladesh') url.searchParams.append('location', location);
       if (division && division !== 'All Bangladesh') url.searchParams.append('division', division);
       if (district && district !== 'All Districts') url.searchParams.append('district', district);
       if (area && area !== 'All Areas') url.searchParams.append('area', area);
+      if (ownership_type && ownership_type !== 'all') url.searchParams.append('ownership_type', ownership_type);
       if (category) url.searchParams.append('category', category);
       if (spec) url.searchParams.append('spec', spec);
       if (owner) url.searchParams.append('owner', owner);
@@ -728,14 +796,15 @@ export const api = {
   },
 
   // Hospitals
-  async getHospitals({ location = '', division = '', district = '', area = '', category = '', search = '', page = 1, page_size = 10 } = {}) {
-    const key = `hosp_${location}_${division}_${district}_${area}_${category}_${search}_${page}_${page_size}`;
+  async getHospitals({ location = '', division = '', district = '', area = '', ownership_type = '', category = '', search = '', page = 1, page_size = 10 } = {}) {
+    const key = `hosp_${location}_${division}_${district}_${area}_${ownership_type}_${category}_${search}_${page}_${page_size}`;
     return fetchWithDeduplicationAndCache(key, async () => {
       const url = new URL(`${BASE_URL}/hospitals/`);
       if (location && location !== 'All Bangladesh') url.searchParams.append('location', location);
       if (division && division !== 'All Bangladesh') url.searchParams.append('division', division);
       if (district && district !== 'All Districts') url.searchParams.append('district', district);
       if (area && area !== 'All Areas') url.searchParams.append('area', area);
+      if (ownership_type && ownership_type !== 'all') url.searchParams.append('ownership_type', ownership_type);
       if (category) url.searchParams.append('category', category);
       if (search) url.searchParams.append('search', search);
       if (page) url.searchParams.append('page', page);
@@ -998,11 +1067,12 @@ export const api = {
     const res = await fetchWithTimeout(`${BASE_URL}/auth/register/facility/`, {
       method: 'POST',
       headers: { 'Content-Type': 'application/json' },
+      credentials: 'include',
       body: JSON.stringify(data),
     });
     const json = await handleResponse(res);
     if (json?.access) {
-      this.setSession(json.access, json.refresh, json.user);
+      this.setSession(json.access, json.user);
     }
     return json;
   },
@@ -1011,11 +1081,12 @@ export const api = {
     const res = await fetchWithTimeout(`${BASE_URL}/auth/register/doctor/`, {
       method: 'POST',
       headers: { 'Content-Type': 'application/json' },
+      credentials: 'include',
       body: JSON.stringify(data),
     });
     const json = await handleResponse(res);
     if (json?.access) {
-      this.setSession(json.access, json.refresh, json.user);
+      this.setSession(json.access, json.user);
     }
     return json;
   },

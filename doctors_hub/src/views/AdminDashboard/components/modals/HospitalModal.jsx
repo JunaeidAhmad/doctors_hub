@@ -32,6 +32,7 @@ export default function HospitalModal() {
     isCustomBranch: false,
     customBranch: '',
     category_id: '',
+    ownership_type: 'private',
     service_ids: [],
     address: 'House 48, Road 9/A, Dhanmondi',
     phone: '+880 9610-010615',
@@ -54,7 +55,7 @@ export default function HospitalModal() {
         ? editingHospital.services.map(s => typeof s === 'object' ? s.id : s) 
         : [];
 
-      const initialDistrict = editingHospital.district || editingHospital.city || 'Dhaka';
+      const initialDistrict = editingHospital.district || 'Dhaka';
       const initialDivision = editingHospital.division || findDivisionForDistrict(initialDistrict) || 'Dhaka';
       const initialArea = editingHospital.area || editingHospital.branch || 'Dhanmondi';
 
@@ -68,6 +69,7 @@ export default function HospitalModal() {
         isCustomBranch: false,
         customBranch: '',
         category_id: catId,
+        ownership_type: editingHospital.ownership_type || editingHospital.location_details?.ownership_type || 'private',
         service_ids: srvIds,
         address: editingHospital.address || editingHospital.address_line || '',
         phone: editingHospital.phone || '',
@@ -94,6 +96,7 @@ export default function HospitalModal() {
         isCustomBranch: false,
         customBranch: '',
         category_id: (hospitalCategories || [])[0]?.id || '',
+        ownership_type: 'private',
         service_ids: (hospitalServices || []).slice(0, 3).map(s => s.id),
         address: '',
         phone: '',
@@ -128,6 +131,7 @@ export default function HospitalModal() {
         address_line: hospitalForm.address,
         address: hospitalForm.address,
         category_id: hospitalForm.category_id,
+        ownership_type: hospitalForm.ownership_type,
         service_ids: hospitalForm.service_ids,
         phone: hospitalForm.phone,
         email: hospitalForm.email,
@@ -185,6 +189,19 @@ export default function HospitalModal() {
 
         <form onSubmit={handleSaveHospital} className="space-y-4 text-xs">
           
+          <div>
+            <label className="block text-slate-300 font-semibold mb-1">Ownership Type *</label>
+            <select
+              required
+              value={hospitalForm.ownership_type}
+              onChange={e => setHospitalForm({ ...hospitalForm, ownership_type: e.target.value })}
+              className="w-full bg-slate-950 border border-slate-800 rounded-xl px-3 py-2.5 text-white font-bold"
+            >
+              <option value="private">Private</option>
+              <option value="government">Government</option>
+                          </select>
+          </div>
+
           <div>
             <label className="block text-slate-300 font-semibold mb-1">Hospital Category *</label>
             <select

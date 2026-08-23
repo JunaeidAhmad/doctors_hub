@@ -65,6 +65,7 @@ class HospitalFilter(django_filters.FilterSet):
     area = django_filters.CharFilter(field_name='location__area', lookup_expr='iexact')
     district = django_filters.CharFilter(field_name='location__district', lookup_expr='iexact')
     division = django_filters.CharFilter(field_name='location__division', lookup_expr='iexact')
+    ownership_type = django_filters.CharFilter(field_name='location__ownership_type', lookup_expr='iexact')
     category = django_filters.CharFilter(method='filter_category')
     categories = django_filters.CharFilter(method='filter_category')
     location = django_filters.CharFilter(method='filter_location')
@@ -72,7 +73,7 @@ class HospitalFilter(django_filters.FilterSet):
     class Meta:
         model = Hospital
         fields = [
-            'location', 'area', 'district', 'division',
+            'location', 'area', 'district', 'division', 'ownership_type',
             'category', 'categories', 'has_diagnostic_center'
         ]
 
@@ -139,6 +140,7 @@ class DiagnosticCenterFilter(django_filters.FilterSet):
     area = django_filters.CharFilter(field_name='location__area', lookup_expr='iexact')
     district = django_filters.CharFilter(field_name='location__district', lookup_expr='iexact')
     division = django_filters.CharFilter(field_name='location__division', lookup_expr='iexact')
+    ownership_type = django_filters.CharFilter(field_name='location__ownership_type', lookup_expr='iexact')
     category = django_filters.CharFilter(method='filter_category')
     categories = django_filters.CharFilter(method='filter_category')
     spec = django_filters.CharFilter(method='filter_category')
@@ -149,7 +151,7 @@ class DiagnosticCenterFilter(django_filters.FilterSet):
     class Meta:
         model = DiagnosticCenter
         fields = [
-            'location', 'area', 'district', 'division',
+            'location', 'area', 'district', 'division', 'ownership_type',
             'category', 'categories', 'spec', 'owner', 'testcat'
         ]
 
@@ -198,7 +200,6 @@ class DiagnosticCenterFilter(django_filters.FilterSet):
             return queryset
         from django.db import models
         return queryset.filter(
-            models.Q(location__city__iexact=value) |
             models.Q(location__district__iexact=value) |
             models.Q(location__division__iexact=value) |
             models.Q(location__area__iexact=value)

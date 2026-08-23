@@ -48,7 +48,7 @@ export default function HospitalsTab() {
             </thead>
             <tbody className="divide-y divide-slate-800/60">
               {(hospitals || [])
-                .filter(h => `${h?.name || ''} ${h?.branch || ''} ${h?.area || ''} ${h?.district || h?.city || ''} ${h?.division || ''}`.toLowerCase().includes((searchTerm || '').toLowerCase()))
+                .filter(h => `${h?.name || ''} ${h?.branch || ''} ${h?.area || ''} ${h?.district || ''} ${h?.division || ''}`.toLowerCase().includes((searchTerm || '').toLowerCase()))
                 .map(h => (
                   <tr key={h.id} className="hover:bg-slate-800/40 transition">
                     <td className="py-4 px-4 font-bold text-white">
@@ -75,7 +75,7 @@ export default function HospitalsTab() {
                     <td className="py-4 px-4">
                       <div className="text-slate-200">{h.address || h.address_line}</div>
                       <div className="text-slate-400 font-bold">
-                        {h.area ? `${h.area}, ` : ''}{h.district || h.city || 'Dhaka'}{h.division ? ` (${h.division})` : ''}
+                        {h.area ? `${h.area}, ` : ''}{h.district || 'Dhaka'}{h.division ? ` (${h.division})` : ''}
                       </div>
                     </td>
 
