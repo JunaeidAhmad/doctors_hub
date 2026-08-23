@@ -1,9 +1,11 @@
-import React, { useState } from 'react';
+import React, { useState, useEffect } from 'react';
 import { Search, Plus, Edit, Trash2, Stethoscope } from 'lucide-react';
 import { useAdminContext } from '../context/AdminContext';
 import DoctorModal from './modals/DoctorModal';
 import DoctorProfileEditor from './doctor/DoctorProfileEditor';
 import AffiliateDoctorDrawer from './facility/AffiliateDoctorDrawer';
+import AdminPagination from './AdminPagination';
+import { api, ensureArray } from '../../../services/api';
 
 export default function DoctorsTab() {
   const {
@@ -15,14 +17,20 @@ export default function DoctorsTab() {
     storedUser,
     hospitals = [],
     diagnosticCenters = [],
-    doctors,
+    doctors: contextDoctors,
     searchTerm,
     setSearchTerm,
+    refreshTrigger,
     handleOpenDoctorModal,
     handleDeleteDoctor
   } = useAdminContext();
 
   const [showAffiliateDrawer, setShowAffiliateDrawer] = useState(false);
+  const [page, setPage] = useState(1);
+  const [totalPages, setTotalPages] = useState(1);
+  const [tabDoctors, setTabDoctors] = useState(contextDoctors || []);
+  const [isInitialLoad, setIsInitialLoad] = useState(true);
+  const [isFetching, setIsFetching] = useState(false);
 
   const managedLoc = storedUser?.managed_locations?.[0];
   const myFacility = isDiagnosticAdmin 
@@ -30,6 +38,46 @@ export default function DoctorsTab() {
     : (hospitals[0] || managedLoc || diagnosticCenters[0]);
   const myFacilityId = myFacility?.id || managedLoc?.id;
   const myFacilityName = myFacility?.name || managedLoc?.name;
+
+  // Sync back to page 1 if search changes
+  useEffect(() => {
+    setPage(1);
+  }, [searchTerm]);
+
+  // Fetch paginated data
+  useEffect(() => {
+    if (isDoctor) return; // Doctor profile editor doesn't need this table list
+
+    let isMounted = true;
+    const fetchDoctors = async () => {
+      setIsFetching(true);
+      try {
+        const data = await api.getDoctors({ search: searchTerm, page, page_size: 20 });
+        if (isMounted) {
+          if (data && typeof data === 'object' && 'results' in data) {
+             setTabDoctors(ensureArray(data.results));
+             const count = data.count || 0;
+             setTotalPages(Math.max(1, Math.ceil(count / 20)));
+          } else {
+             const arr = ensureArray(data);
+             setTabDoctors(arr);
+             setTotalPages(Math.max(1, Math.ceil(arr.length / 20)));
+          }
+        }
+      } catch (error) {
+        console.error("Error fetching doctors for tab:", error);
+      } finally {
+        if (isMounted) {
+          setIsFetching(false);
+          setIsInitialLoad(false);
+        }
+      }
+    };
+
+    const delay = searchTerm ? 300 : 0;
+    const timer = setTimeout(fetchDoctors, delay);
+    return () => { isMounted = false; clearTimeout(timer); };
+  }, [searchTerm, page, isDoctor, refreshTrigger]);
 
   // If logged in as Doctor, show dedicated single doctor profile editor
   if (isDoctor) {
@@ -67,22 +115,44 @@ export default function DoctorsTab() {
           )}
         </div>
 
-        <div className="overflow-x-auto">
+        <div className="overflow-x-auto relative">
+          {/* Slim progress indicator for page changes */}
+          {isFetching && !isInitialLoad && (
+            <div className="absolute top-0 left-0 right-0 h-0.5 bg-slate-800 overflow-hidden z-10">
+              <div className="h-full bg-teal-500 w-full animate-pulse"></div>
+            </div>
+          )}
+
           <table className="w-full text-left text-xs text-slate-300">
             <thead className="bg-slate-950 text-slate-400 text-[11px] uppercase tracking-wider border-b border-slate-800">
               <tr>
-                <th className="py-3.5 px-4">Doctor Name</th>
-                <th className="py-3.5 px-4">Qualification & Experience</th>
-                <th className="py-3.5 px-4">Specialties</th>
-                <th className="py-3.5 px-4">Affiliations & Chambers</th>
-                <th className="py-3.5 px-4 text-right">Actions</th>
+                <th className="py-3.5 px-4 w-[25%]">Doctor Name</th>
+                <th className="py-3.5 px-4 w-[20%]">Qualification & Experience</th>
+                <th className="py-3.5 px-4 w-[25%]">Specialties</th>
+                <th className="py-3.5 px-4 w-[20%]">Affiliations & Chambers</th>
+                <th className="py-3.5 px-4 w-[10%] text-right">Actions</th>
               </tr>
             </thead>
-            <tbody className="divide-y divide-slate-800/60">
-              {(doctors || [])
-                .filter(d => `${d?.name || ''} ${d?.qualification || ''} ${d?.experience || ''}`.toLowerCase().includes((searchTerm || '').toLowerCase()))
-                .map(d => (
-                  <tr key={d.id} className="hover:bg-slate-800/40 transition">
+            <tbody className="divide-y divide-slate-800/60 relative">
+              {isInitialLoad ? (
+                Array.from({ length: 5 }).map((_, i) => (
+                  <tr key={`skel-doc-${i}`} className="animate-pulse">
+                    <td className="py-4 px-4"><div className="h-4 bg-slate-800 rounded w-3/4"></div></td>
+                    <td className="py-4 px-4"><div className="h-4 bg-slate-800 rounded w-3/4 mb-2"></div><div className="h-3 bg-slate-800 rounded w-1/2"></div></td>
+                    <td className="py-4 px-4"><div className="flex gap-1"><div className="h-4 bg-slate-800 rounded w-1/3"></div><div className="h-4 bg-slate-800 rounded w-1/3"></div></div></td>
+                    <td className="py-4 px-4"><div className="h-4 bg-slate-800 rounded w-full"></div></td>
+                    <td className="py-4 px-4 text-right"><div className="h-6 bg-slate-800 rounded w-16 ml-auto"></div></td>
+                  </tr>
+                ))
+              ) : tabDoctors.length === 0 ? (
+                <tr>
+                  <td colSpan="5" className="py-8 text-center text-slate-500">
+                    No doctors found matching your search.
+                  </td>
+                </tr>
+              ) : (
+                tabDoctors.map(d => (
+                  <tr key={d.id} className={`hover:bg-slate-800/40 transition ${isFetching ? 'opacity-60' : 'opacity-100'}`}>
                     <td className="py-4 px-4 font-bold text-white">
                       <div className="text-sm text-teal-400 flex items-center gap-1.5">
                         <Stethoscope className="w-4 h-4 text-teal-400" />
@@ -123,16 +193,23 @@ export default function DoctorsTab() {
                         <Edit className="w-4 h-4" />
                       </button>
                       {!isFacilityAdmin && (
-                        <button onClick={() => handleDeleteDoctor(d.id, d.name)} className="p-2 bg-rose-500/20 text-rose-400 rounded-lg hover:bg-rose-500/30 cursor-pointer">
+                        <button onClick={async () => {
+                          await handleDeleteDoctor(d.id, d.name);
+                          setTabDoctors(prev => prev.filter(x => x.id !== d.id));
+                        }} className="p-2 bg-rose-500/20 text-rose-400 rounded-lg hover:bg-rose-500/30 cursor-pointer">
                           <Trash2 className="w-4 h-4" />
                         </button>
                       )}
                     </td>
                   </tr>
-                ))}
+                ))
+              )}
             </tbody>
           </table>
         </div>
+        {!isInitialLoad && (
+          <AdminPagination page={page} totalPages={totalPages} onPageChange={setPage} />
+        )}
       </div>
 
       <DoctorModal />

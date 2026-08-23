@@ -16,6 +16,7 @@ export function AdminProvider({ children, currentUser, onLogout }) {
   const [error, setError] = useState('');
   const [successMsg, setSuccessMsg] = useState('');
   const [searchTerm, setSearchTerm] = useState('');
+  const [refreshTrigger, setRefreshTrigger] = useState(0);
   const isFetchingRef = useRef(false);
 
   // Main Data States
@@ -185,6 +186,7 @@ export function AdminProvider({ children, currentUser, onLogout }) {
     } finally {
       setLoading(false);
       isFetchingRef.current = false;
+      setRefreshTrigger(prev => prev + 1);
     }
   };
 
@@ -454,7 +456,7 @@ export function AdminProvider({ children, currentUser, onLogout }) {
     loading, setLoading,
     error, setError,
     successMsg, setSuccessMsg, showNotification,
-    searchTerm, setSearchTerm,
+    searchTerm, setSearchTerm, refreshTrigger,
     
     // Entity data & setters
     hospitals, setHospitals,

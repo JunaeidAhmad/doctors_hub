@@ -62,7 +62,8 @@ async function rawFetchWithTimeout(url, options = {}, timeoutMs = 60000) {
 async function fetchWithTimeout(url, options = {}, timeoutMs = 60000, _isRetry = false) {
   const response = await rawFetchWithTimeout(url, options, timeoutMs);
 
-  const isAuthCall = url.includes('/auth/');
+  const urlString = typeof url === 'string' ? url : url.toString();
+  const isAuthCall = urlString.includes('/auth/');
   if (response.status !== 401 || _isRetry || isAuthCall) {
     return response;
   }
@@ -235,7 +236,7 @@ async function handleResponse(response) {
 /**
  * Helper to flatten location_details into the main object for frontend compatibility
  */
-function flattenFacility(data) {
+export function flattenFacility(data) {
   if (Array.isArray(data)) {
     return data.map(flattenFacility);
   }
@@ -266,6 +267,8 @@ function flattenFacility(data) {
       ...data,
       ...loc,
       ...addr,
+      name: loc.name || data.name || data.facility_name || data.center_name || '',
+      branch: loc.branch || data.branch || '',
       address_line: addressLine,
       address: addressLine,
       city,
@@ -275,7 +278,8 @@ function flattenFacility(data) {
       category: data.category || catList[0] || null,
       categories: catList,
       category_name: data.category?.name || catList[0]?.name || data.category_name || '',
-      id: data.location_id || loc.id || data.id,
+      location_id: data.location_id || loc.id,
+      id: data.id || data.location_id || loc.id,
     };
   }
   return data;
@@ -305,7 +309,16 @@ export const api = {
     const res = await fetchWithTimeout(`${BASE_URL}/admin/dashboard-init/`, {
       headers: getHeaders(),
     });
-    return handleResponse(res);
+    const data = await handleResponse(res);
+    if (data && typeof data === 'object') {
+      if (Array.isArray(data.hospitals)) {
+        data.hospitals = data.hospitals.map(flattenFacility);
+      }
+      if (Array.isArray(data.diagnostic_centers)) {
+        data.diagnostic_centers = data.diagnostic_centers.map(flattenFacility);
+      }
+    }
+    return data;
   },
 
   // Auth
@@ -673,13 +686,21 @@ export const api = {
   },
 
   // Facility Tests (prices per location)
-  async getDiagnosticCenterTests({ center = '', hospital = '', test = '', branch = '' } = {}) {
-    const url = new URL(`${BASE_URL}/facility-tests/`);
-    const locationId = center || branch || hospital;
-    if (locationId) url.searchParams.append('location', locationId);
-    if (test) url.searchParams.append('test', test);
-    const res = await fetchWithTimeout(url, { headers: getHeaders() });
-    return flattenFacility(await handleResponse(res));
+  async getDiagnosticCenterTests({ location = '', center = '', hospital = '', test = '', branch = '', search = '', category = '', page = 1, page_size = 20 } = {}) {
+    const locId = location || center || branch || hospital;
+    const key = `ft_v2_${locId}_${test}_${search}_${category}_${page}_${page_size}`;
+    return fetchWithDeduplicationAndCache(key, async () => {
+      const base = BASE_URL.startsWith('http') ? BASE_URL : (typeof window !== 'undefined' ? `${window.location.origin}${BASE_URL}` : `http://localhost:8000${BASE_URL}`);
+      const url = new URL(`${base}/facility-tests/`);
+      if (locId) url.searchParams.append('location', locId);
+      if (test) url.searchParams.append('test', test);
+      if (search) url.searchParams.append('search', search);
+      if (category && category !== 'all' && category !== 'All Test Categories') url.searchParams.append('category', category);
+      if (page) url.searchParams.append('page', page);
+      if (page_size) url.searchParams.append('page_size', page_size);
+      const res = await fetchWithTimeout(url, { headers: getHeaders() });
+      return flattenFacility(await handleResponse(res));
+    }, 60000);
   },
   async createDiagnosticCenterTest(data) {
     // Map frontend fields to backend serializer fields

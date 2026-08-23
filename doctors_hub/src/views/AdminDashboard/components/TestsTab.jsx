@@ -1,20 +1,28 @@
-import React from 'react';
+import React, { useState, useEffect } from 'react';
 import { Search, Plus, Edit, Trash2, TestTube } from 'lucide-react';
 import { useAdminContext } from '../context/AdminContext';
-import { api } from '../../../services/api';
+import { api, ensureArray } from '../../../services/api';
 import TestModal from './modals/TestModal';
+import AdminPagination from './AdminPagination';
 
 export default function TestsTab() {
   const {
-    tests,
+    tests: contextTests,
     setTests,
     testCategories,
     searchTerm,
     setSearchTerm,
+    refreshTrigger,
     setShowTestModal,
     setEditingTest,
     showNotification
   } = useAdminContext();
+
+  const [page, setPage] = useState(1);
+  const [totalPages, setTotalPages] = useState(1);
+  const [tabTests, setTabTests] = useState(contextTests || []);
+  const [isInitialLoad, setIsInitialLoad] = useState(true);
+  const [isFetching, setIsFetching] = useState(false);
 
   const handleOpenTestModal = (t = null) => {
     setEditingTest(t);
@@ -25,12 +33,52 @@ export default function TestsTab() {
     if (!window.confirm(`Delete Base Test "${name}"?`)) return;
     try {
       await api.deleteTest(id).catch(() => null);
+      setTabTests(prev => prev.filter(t => String(t.id) !== String(id)));
       setTests(prev => prev.filter(t => String(t.id) !== String(id)));
       showNotification(`Test "${name}" deleted.`);
     } catch (err) {
       alert(`Error deleting test: ${err.message}`);
     }
   };
+
+  // Sync back to page 1 if search changes
+  useEffect(() => {
+    setPage(1);
+  }, [searchTerm]);
+
+  // Fetch paginated data
+  useEffect(() => {
+    let isMounted = true;
+    const fetchTests = async () => {
+      setIsFetching(true);
+      try {
+        const data = await api.getTests({ search: searchTerm, page, page_size: 20 });
+        if (isMounted) {
+          if (data && typeof data === 'object' && 'results' in data) {
+             setTabTests(ensureArray(data.results));
+             const count = data.count || 0;
+             setTotalPages(Math.max(1, Math.ceil(count / 20)));
+          } else {
+             const arr = ensureArray(data);
+             setTabTests(arr);
+             setTotalPages(Math.max(1, Math.ceil(arr.length / 20)));
+          }
+        }
+      } catch (error) {
+        console.error("Error fetching tests for tab:", error);
+      } finally {
+        if (isMounted) {
+          setIsFetching(false);
+          setIsInitialLoad(false);
+        }
+      }
+    };
+
+    const delay = searchTerm ? 300 : 0;
+    const timer = setTimeout(fetchTests, delay);
+    return () => { isMounted = false; clearTimeout(timer); };
+  }, [searchTerm, page, refreshTrigger]);
+
 
   return (
     <>
@@ -48,31 +96,50 @@ export default function TestsTab() {
           </div>
           <button
             onClick={() => handleOpenTestModal()}
-            className="flex items-center gap-2 px-4 py-2.5 bg-amber-600 hover:bg-amber-500 text-white font-bold text-xs rounded-xl transition shadow-lg shadow-amber-600/20"
+            className="flex items-center gap-2 px-4 py-2.5 bg-amber-600 hover:bg-amber-500 text-white font-bold text-xs rounded-xl transition shadow-lg shadow-amber-600/20 cursor-pointer"
           >
             <Plus className="w-4 h-4" /> Add New Diagnostic Test
           </button>
         </div>
 
-        <div className="overflow-x-auto">
+        <div className="overflow-x-auto relative">
+          {/* Slim progress indicator for page changes */}
+          {isFetching && !isInitialLoad && (
+            <div className="absolute top-0 left-0 right-0 h-0.5 bg-slate-800 overflow-hidden z-10">
+              <div className="h-full bg-amber-500 w-full animate-pulse"></div>
+            </div>
+          )}
+
           <table className="w-full text-left text-xs text-slate-300">
             <thead className="bg-slate-950 text-slate-400 text-[11px] uppercase tracking-wider border-b border-slate-800">
               <tr>
-                <th className="py-3.5 px-4">Test Name</th>
-                <th className="py-3.5 px-4">Category</th>
-                <th className="py-3.5 px-4">Fasting Required</th>
-                <th className="py-3.5 px-4">Description</th>
-                <th className="py-3.5 px-4 text-right">Actions</th>
+                <th className="py-3.5 px-4 w-[25%]">Test Name</th>
+                <th className="py-3.5 px-4 w-[20%]">Category</th>
+                <th className="py-3.5 px-4 w-[15%]">Fasting Required</th>
+                <th className="py-3.5 px-4 w-[25%]">Description</th>
+                <th className="py-3.5 px-4 w-[15%] text-right">Actions</th>
               </tr>
             </thead>
-            <tbody className="divide-y divide-slate-800/60">
-              {(tests || [])
-                .filter(t => {
-                  const catStr = typeof t?.category === 'object' && t?.category ? (t.category.name || '') : (t?.category_name || t?.category || '');
-                  return `${t?.name || ''} ${catStr}`.toLowerCase().includes((searchTerm || '').toLowerCase());
-                })
-                .map(t => (
-                  <tr key={t.id} className="hover:bg-slate-800/40 transition">
+            <tbody className="divide-y divide-slate-800/60 relative">
+              {isInitialLoad ? (
+                Array.from({ length: 5 }).map((_, i) => (
+                  <tr key={`skel-test-${i}`} className="animate-pulse">
+                    <td className="py-4 px-4"><div className="h-4 bg-slate-800 rounded w-3/4 mb-2"></div><div className="h-3 bg-slate-800 rounded w-1/2"></div></td>
+                    <td className="py-4 px-4"><div className="h-4 bg-slate-800 rounded w-1/2"></div></td>
+                    <td className="py-4 px-4"><div className="h-4 bg-slate-800 rounded w-1/3"></div></td>
+                    <td className="py-4 px-4"><div className="h-4 bg-slate-800 rounded w-full mb-1"></div><div className="h-4 bg-slate-800 rounded w-5/6"></div></td>
+                    <td className="py-4 px-4 text-right"><div className="h-6 bg-slate-800 rounded w-16 ml-auto"></div></td>
+                  </tr>
+                ))
+              ) : tabTests.length === 0 ? (
+                <tr>
+                  <td colSpan="5" className="py-8 text-center text-slate-500">
+                    No tests found matching your search.
+                  </td>
+                </tr>
+              ) : (
+                tabTests.map(t => (
+                  <tr key={t.id} className={`hover:bg-slate-800/40 transition ${isFetching ? 'opacity-60' : 'opacity-100'}`}>
                     <td className="py-4 px-4 font-bold text-white">
                       <div className="text-sm text-amber-400 flex items-center gap-1.5">
                         <TestTube className="w-4 h-4 text-amber-400" />
@@ -93,18 +160,22 @@ export default function TestsTab() {
                       {t.description || 'Standard diagnostic lab investigation'}
                     </td>
                     <td className="py-4 px-4 text-right space-x-2 whitespace-nowrap">
-                      <button onClick={() => handleOpenTestModal(t)} className="p-2 bg-slate-800 text-slate-300 rounded-lg hover:bg-slate-700">
+                      <button onClick={() => handleOpenTestModal(t)} className="p-2 bg-slate-800 text-slate-300 rounded-lg hover:bg-slate-700 cursor-pointer">
                         <Edit className="w-4 h-4" />
                       </button>
-                      <button onClick={() => handleDeleteTest(t.id, t.name)} className="p-2 bg-rose-500/20 text-rose-400 rounded-lg hover:bg-rose-500/30">
+                      <button onClick={() => handleDeleteTest(t.id, t.name)} className="p-2 bg-rose-500/20 text-rose-400 rounded-lg hover:bg-rose-500/30 cursor-pointer">
                         <Trash2 className="w-4 h-4" />
                       </button>
                     </td>
                   </tr>
-                ))}
+                ))
+              )}
             </tbody>
           </table>
         </div>
+        {!isInitialLoad && (
+          <AdminPagination page={page} totalPages={totalPages} onPageChange={setPage} />
+        )}
       </div>
 
       <TestModal />
