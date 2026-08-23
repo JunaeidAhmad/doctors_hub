@@ -188,9 +188,9 @@ export default function AddTestsToDiagnosticsTab() {
             category: testObj.category || testObj.category_id || '',
             category_name: testObj.category_name || testObj.category || '',
             test_details: testObj,
-            original_price: testObj.originalPrice || testObj.original_price || 700,
-            discount: '20% OFF',
-            price: testObj.price || 560
+            price: testObj.price || testObj.price || 700,
+            discount_percent: '20% OFF',
+            calculated_price: testObj.calculated_price || 560
           };
           newBranchTests.unshift(entry);
 
@@ -198,9 +198,9 @@ export default function AddTestsToDiagnosticsTab() {
             center: !isHosp ? facilityId : null,
             hospital: isHosp ? facilityId : null,
             test: testId,
-            price: testObj.price || 560,
-            original_price: testObj.originalPrice || testObj.original_price || 700,
-            discount: '20% OFF',
+            calculated_price: testObj.calculated_price || 560,
+            price: testObj.price || testObj.price || 700,
+            discount_percent: '20% OFF',
             is_available: true
           });
         }
@@ -210,7 +210,7 @@ export default function AddTestsToDiagnosticsTab() {
       try {
         const prices = {};
         for (const testObj of associatedTests) {
-          prices[testObj.id] = testObj.price || 560;
+          prices[testObj.id] = { price: testObj.price || 700, discount_percent: 20 };
         }
 
         if (!isHosp) {
@@ -537,7 +537,7 @@ export default function AddTestsToDiagnosticsTab() {
                 (associatedTests || [])
                   .filter(t => `${t?.name || ''} ${t?.category_name || t?.category || ''}`.toLowerCase().includes((searchTerm || '').toLowerCase()))
                   .map(t => {
-                    const price = t.price || 560;
+                    const calculated_price = t.calculated_price || 560;
                     return (
                     <tr key={t.id} className="hover:bg-slate-800/40 transition">
                       <td className="py-3 px-4 font-bold text-white">
@@ -557,15 +557,15 @@ export default function AddTestsToDiagnosticsTab() {
                         )}
                       </td>
                       <td className="py-3 px-4 line-through text-slate-500 font-mono">
-                        ৳{t.originalPrice || 700}
+                        ৳{t.price || 700}
                       </td>
                       <td className="py-3 px-4">
                         <input
                           type="number"
                           className="w-20 bg-slate-950 border border-emerald-500/50 rounded px-2 py-1 text-emerald-400 font-black font-mono text-xs"
-                          value={price}
+                          value={calculated_price}
                           onChange={e => {
-                            t.price = e.target.value;
+                            t.calculated_price = e.target.value;
                             // Trigger re-render by doing a shallow copy of tests? Just mutating is fine here since it's a bulk form
                           }}
                         />

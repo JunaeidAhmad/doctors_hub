@@ -18,7 +18,7 @@ export default function LabBookingModal({ test, onClose, onConfirmLabBooking }) 
 
   // Extract test details and pricing robustly across flat & wrapped object structures
   const testDetails = test.test || test.test_details || test;
-  const branchTest = test.branchTest || (test.price !== undefined ? test : {});
+  const branchTest = test.branchTest || (test.calculated_price !== undefined ? test : {});
   const branch = test.branch || test.location || {};
 
   const testName =
@@ -30,16 +30,16 @@ export default function LabBookingModal({ test, onClose, onConfirmLabBooking }) 
 
   const testPrice =
     branchTest?.discounted_price ??
-    branchTest?.price ??
+    branchTest?.calculated_price ??
     test?.discounted_price ??
-    test?.price ??
-    testDetails?.price ??
+    test?.calculated_price ??
+    testDetails?.calculated_price ??
     0;
 
-  const originalPrice =
-    branchTest?.original_price ??
-    test?.original_price ??
-    testDetails?.original_price ??
+  const price =
+    branchTest?.price ??
+    test?.price ??
+    testDetails?.price ??
     null;
 
   const categoryName =
@@ -136,7 +136,7 @@ export default function LabBookingModal({ test, onClose, onConfirmLabBooking }) 
         patientAge,
         gender,
         address: isHomeTest ? address.trim() : 'Diagnostic Center Visit',
-        price: testPrice,
+        calculated_price: testPrice,
         isHomeTest,
         centerName,
         bookingRef: `LABBD-${res?.id || Math.floor(100000 + Math.random() * 900000)}`
@@ -151,7 +151,7 @@ export default function LabBookingModal({ test, onClose, onConfirmLabBooking }) 
         patientAge,
         gender,
         address: isHomeTest ? address.trim() : 'Diagnostic Center Visit',
-        price: testPrice,
+        calculated_price: testPrice,
         isHomeTest,
         centerName,
         bookingRef: `LABBD-${Math.floor(100000 + Math.random() * 900000)}`
@@ -197,9 +197,9 @@ export default function LabBookingModal({ test, onClose, onConfirmLabBooking }) 
             <span className="text-sm">{testName}</span>
             <div className="text-right">
               <span className="text-teal-700 font-extrabold text-sm">৳{testPrice}</span>
-              {originalPrice && (
+              {price && (
                 <span className="text-slate-400 text-xs line-through ml-1.5 font-normal">
-                  ৳{originalPrice}
+                  ৳{price}
                 </span>
               )}
             </div>
@@ -226,7 +226,7 @@ export default function LabBookingModal({ test, onClose, onConfirmLabBooking }) 
             ) : (
               <span className="inline-flex items-center gap-1 text-[10px] font-bold text-slate-700 bg-slate-200/80 px-2 py-0.5 rounded-md border border-slate-300">
                 <Building2 className="w-3 h-3 text-slate-600" />
-                <span>Diagnostic Center Visit (In-Lab Serial)</span>
+                <span>Visit Diagnostic Center</span>
               </span>
             )}
           </div>

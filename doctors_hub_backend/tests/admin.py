@@ -15,6 +15,6 @@ class TestAdmin(admin.ModelAdmin):
 
 @admin.register(FacilityTest)
 class FacilityTestAdmin(admin.ModelAdmin):
-    list_display = ('id', 'location', 'test', 'price', 'discounted_price', 'is_available', 'home_sample_collection')
+    list_display = ('id', 'location', 'test', 'price', 'discount_percent', 'calculated_price', 'is_available', 'home_sample_collection')
     list_filter = ('location', 'test__category', 'is_available', 'home_sample_collection')
     search_fields = ('location__name', 'test__name')

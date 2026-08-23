@@ -152,13 +152,13 @@ export default function BranchTestsTab() {
                         {bt?.test_details?.sample_type || 'N/A'}
                       </td>
                       <td className="py-4 px-4 line-through text-slate-500">
-                        {bt.original_price != null ? `৳${bt.original_price}` : '-'}
+                        {bt.price != null ? `৳${bt.price}` : '-'}
                       </td>
                       <td className="py-4 px-4 text-rose-400 font-bold">
-                        {bt.discount || '-'}
+                        {bt.discount_percent || '-'}
                       </td>
                       <td className="py-4 px-4 text-emerald-400 font-black text-sm">
-                        ৳{bt.price || bt.discounted_price || 0}
+                        ৳{bt.calculated_price || bt.discounted_price || 0}
                       </td>
                       <td className="py-4 px-4 text-slate-400">
                         {bt.report_time || (bt?.test_details?.report_time_hours ? `${bt.test_details.report_time_hours} hours` : 'N/A')}

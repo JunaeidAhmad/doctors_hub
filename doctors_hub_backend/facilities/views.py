@@ -3,7 +3,7 @@ from django_filters.rest_framework import DjangoFilterBackend
 import django_filters
 from drf_spectacular.utils import extend_schema
 from core.mixins import SlugOrPkLookupMixin
-from core.permissions import ScopedFacilityOrReadOnly, IsSuperAdminOrReadOnly
+from core.permissions import ScopedFacilityOrReadOnly, IsSuperAdminOrReadOnly, check_location_write_permission
 from core.scoping import RoleScopedQuerysetMixin
 from .models import (
     Location, HospitalCategory, HospitalService, Hospital,
@@ -113,16 +113,11 @@ class HospitalViewSet(SlugOrPkLookupMixin, RoleScopedQuerysetMixin, viewsets.Mod
         return self.get_scoped_queryset(qs)
 
     def perform_create(self, serializer):
-        user = self.request.user
-        if not user or not user.is_authenticated:
-            raise exceptions.NotAuthenticated()
-
-        if not getattr(user, "is_super_admin", False):
-            loc = serializer.validated_data.get("location")
-            loc_id = loc.id if loc else None
-            if not loc_id or loc_id not in user.managed_location_ids:
-                raise exceptions.PermissionDenied("You do not have permission to create a hospital for this location.")
-
+        check_location_write_permission(
+            self.request.user,
+            location=serializer.validated_data.get("location"),
+            error_message="You do not have permission to create a hospital for this location."
+        )
         serializer.save()
 
 
@@ -237,16 +232,11 @@ class DiagnosticCenterViewSet(SlugOrPkLookupMixin, RoleScopedQuerysetMixin, view
         return self.get_scoped_queryset(qs)
 
     def perform_create(self, serializer):
-        user = self.request.user
-        if not user or not user.is_authenticated:
-            raise exceptions.NotAuthenticated()
-
-        if not getattr(user, "is_super_admin", False):
-            loc = serializer.validated_data.get("location")
-            loc_id = loc.id if loc else None
-            if not loc_id or loc_id not in user.managed_location_ids:
-                raise exceptions.PermissionDenied("You do not have permission to create a diagnostic center for this location.")
-
+        check_location_write_permission(
+            self.request.user,
+            location=serializer.validated_data.get("location"),
+            error_message="You do not have permission to create a diagnostic center for this location."
+        )
         serializer.save()
 
 
@@ -262,18 +252,10 @@ class ChamberViewSet(RoleScopedQuerysetMixin, viewsets.ModelViewSet):
         return self.get_scoped_queryset(Chamber.objects.all().select_related('location', 'doctor').order_by('location__name'))
 
     def perform_create(self, serializer):
-        user = self.request.user
-        if not user or not user.is_authenticated:
-            raise exceptions.NotAuthenticated()
-
-        if not getattr(user, "is_super_admin", False):
-            loc = serializer.validated_data.get("location")
-            doc = serializer.validated_data.get("doctor")
-            loc_id = loc.id if loc else None
-            is_loc_managed = loc_id and loc_id in user.managed_location_ids
-            is_doc_owned = doc and getattr(user, "doctor_profile", None) and doc.id == user.doctor_profile.id
-
-            if not (is_loc_managed or is_doc_owned):
-                raise exceptions.PermissionDenied("You do not have permission to create a chamber at this location or for this doctor.")
-
+        check_location_write_permission(
+            self.request.user,
+            location=serializer.validated_data.get("location"),
+            doctor=serializer.validated_data.get("doctor"),
+            error_message="You do not have permission to create a chamber at this location or for this doctor."
+        )
         serializer.save()

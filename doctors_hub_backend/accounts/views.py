@@ -122,6 +122,13 @@ class PlatformAdminCreateResponseSerializer(serializers.Serializer):
     user = UserSerializer()
 
 
+from django.conf import settings
+
+
+class RefreshResponseSerializer(serializers.Serializer):
+    access = serializers.CharField()
+
+
 class LoginAPIView(APIView):
     throttle_classes = [ScopedRateThrottle]
     throttle_scope = "login"
@@ -142,11 +149,54 @@ class LoginAPIView(APIView):
         serializer.is_valid(raise_exception=True)
         user = serializer.validated_data
         refresh = RefreshToken.for_user(user)
-        return Response({
+        response = Response({
             "user": UserSerializer(user).data,
             "refresh": str(refresh),
             "access": str(refresh.access_token),
         }, status=status.HTTP_200_OK)
+        response.set_cookie(
+            key="refresh_token",
+            value=str(refresh),
+            httponly=True,
+            samesite="Lax",
+            secure=not getattr(settings, 'DEBUG', True),
+            max_age=7 * 24 * 60 * 60,
+        )
+        return response
+
+
+class CookieTokenRefreshAPIView(APIView):
+    permission_classes = (permissions.AllowAny,)
+
+    @extend_schema(
+        tags=["Authentication & Profile"],
+        summary="Refresh JWT access token",
+        description="Exchanges a valid refresh token (from body or httpOnly cookie) for a new access token.",
+        responses={200: RefreshResponseSerializer}
+    )
+    def post(self, request, *args, **kwargs):
+        refresh_token = request.data.get("refresh") or request.COOKIES.get("refresh_token")
+        if not refresh_token:
+            return Response({"detail": "Refresh token is required."}, status=status.HTTP_400_BAD_REQUEST)
+        try:
+            refresh = RefreshToken(refresh_token)
+            return Response({"access": str(refresh.access_token)}, status=status.HTTP_200_OK)
+        except Exception:
+            return Response({"detail": "Invalid or expired refresh token."}, status=status.HTTP_401_UNAUTHORIZED)
+
+
+class LogoutAPIView(APIView):
+    permission_classes = (permissions.AllowAny,)
+
+    @extend_schema(
+        tags=["Authentication & Profile"],
+        summary="User logout",
+        description="Clears authentication cookies and logs out the user.",
+    )
+    def post(self, request, *args, **kwargs):
+        response = Response({"detail": "Successfully logged out."}, status=status.HTTP_200_OK)
+        response.delete_cookie("refresh_token")
+        return response
 
 
 @extend_schema(

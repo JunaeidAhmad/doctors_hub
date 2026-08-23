@@ -65,7 +65,7 @@ def test_doctor_affiliations_list_no_n_plus_one():
 
 @pytest.mark.django_db
 def test_doctor_bookings_list_no_n_plus_one():
-    user = User.objects.create_user(phone_number="01711111111", password="password", is_staff=True)
+    user = User.objects.create_superuser(phone_number="01711111111", password="password")
     spec = DoctorSpecialty.objects.create(name="Dermatology")
     loc = Location.objects.create(name="Skin Care Hospital", location_type="hospital", address_line="Banani", district="Dhaka", division="Dhaka")
     doc = Doctor.objects.create(name="Dr. Skin", qualification="MD", experience="8 yrs")
@@ -92,7 +92,7 @@ def test_doctor_bookings_list_no_n_plus_one():
 
 @pytest.mark.django_db
 def test_lab_bookings_list_no_n_plus_one():
-    user = User.objects.create_user(phone_number="01722222222", password="password", is_staff=True)
+    user = User.objects.create_superuser(phone_number="01722222222", password="password")
     cat = TestCategory.objects.create(name="Biochemistry")
     test_obj = Test.objects.create(name="Lipid Profile", category=cat)
     loc = Location.objects.create(name="Central Diagnostic", location_type="diagnostic_center", address_line="Dhanmondi", district="Dhaka", division="Dhaka")

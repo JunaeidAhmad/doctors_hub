@@ -1,6 +1,8 @@
 from django.urls import path
 from .views import (
     LoginAPIView,
+    CookieTokenRefreshAPIView,
+    LogoutAPIView,
     UserProfileAPIView,
     FacilityRegisterAPIView,
     DoctorRegisterAPIView,
@@ -15,6 +17,8 @@ from .views import (
 urlpatterns = [
     # Authentication & Profile
     path('auth/login/', LoginAPIView.as_view(), name='login'),
+    path('auth/refresh/', CookieTokenRefreshAPIView.as_view(), name='token-refresh'),
+    path('auth/logout/', LogoutAPIView.as_view(), name='logout'),
     path('auth/me/', UserProfileAPIView.as_view(), name='user-profile'),
 
     # Self-Registration (Public)

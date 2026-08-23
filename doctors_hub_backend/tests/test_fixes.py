@@ -178,3 +178,100 @@ def test_api_routes_work_without_aliases():
         res = client.get(endpoint)
         assert res.status_code == 404, f"Legacy alias {endpoint} unexpectedly returned {res.status_code}"
 
+
+@pytest.mark.django_db
+def test_is_super_admin_separation_from_staff():
+    staff_user = User.objects.create_user(phone_number="01811111111", password="password", is_staff=True)
+    assert staff_user.is_staff is True
+    assert staff_user.is_super_admin is False
+
+    superuser = User.objects.create_superuser(phone_number="01822222222", password="password")
+    assert superuser.is_super_admin is True
+
+
+@pytest.mark.django_db
+def test_facility_test_discount_and_calculated_price():
+    from decimal import Decimal
+    from tests.models import TestCategory, Test, FacilityTest
+    cat = TestCategory.objects.create(name="Radiology")
+    test_obj = Test.objects.create(name="X-Ray Chest", category=cat)
+    loc = Location.objects.create(name="Medi Diagnostic", location_type="diagnostic_center", address_line="Gulshan", district="Dhaka", division="Dhaka")
+
+    ft = FacilityTest.objects.create(
+        location=loc, test=test_obj, price=Decimal("1000.00"), discount_percent=Decimal("15.00")
+    )
+    assert ft.calculated_price == Decimal("850.00")
+    assert ft.discounted_price == Decimal("850.00")
+
+    serializer = test_serializers.FacilityTestSerializer(ft)
+    assert Decimal(str(serializer.data["calculated_price"])) == Decimal("850.00")
+    assert Decimal(str(serializer.data["discount_percent"])) == Decimal("15.00")
+
+
+@pytest.mark.django_db
+def test_slug_collision_resolution():
+    doc1 = Doctor.objects.create(name="Dr. Same Name", qualification="MBBS", experience="3 yrs")
+    doc2 = Doctor.objects.create(name="Dr. Same Name", qualification="MBBS", experience="5 yrs")
+
+    assert doc1.slug == "dr-same-name"
+    assert doc2.slug.startswith("dr-same-name-")
+    assert doc1.slug != doc2.slug
+
+    loc1 = Location.objects.create(name="Same Hospital", location_type="hospital", address_line="Line 1", district="Dhaka", division="Dhaka")
+    loc2 = Location.objects.create(name="Same Hospital", location_type="hospital", address_line="Line 2", district="Dhaka", division="Dhaka")
+
+    assert loc1.slug == "same-hospital"
+    assert loc2.slug.startswith("same-hospital-")
+    assert loc1.slug != loc2.slug
+
+
+@pytest.mark.django_db
+def test_facility_service_orchestration():
+    from services.facilities import create_hospital, update_hospital
+    from facilities.models import Hospital
+    from tests.models import TestCategory, Test, FacilityTest
+
+    cat = TestCategory.objects.create(name="Microbiology")
+    test_obj = Test.objects.create(name="Culture & Sensitivity", category=cat)
+
+    location_data = {
+        "name": "Service Hospital",
+        "district": "Dhaka",
+        "division": "Dhaka",
+        "address_line": "Uttara",
+    }
+    hospital = create_hospital(
+        validated_data={"has_diagnostic_center": True},
+        location_data=location_data,
+        test_cat_ids=[str(cat.id)],
+        prices={str(test_obj.id): 650.00}
+    )
+    assert hospital.pk is not None
+    assert hospital.location.name == "Service Hospital"
+    assert FacilityTest.objects.filter(location=hospital.location, test=test_obj).exists()
+
+
+@pytest.mark.django_db
+def test_auth_refresh_and_logout_endpoints():
+    user = User.objects.create_user(phone_number="01911111111", password="testpassword123")
+    client = APIClient()
+
+    # Login
+    login_res = client.post("/api/auth/login/", {"phone_number": "01911111111", "password": "testpassword123"})
+    assert login_res.status_code == 200
+    assert "access" in login_res.data
+    assert "refresh" in login_res.data
+    assert "refresh_token" in login_res.cookies
+
+    refresh_token = login_res.data["refresh"]
+
+    # Refresh via body
+    refresh_res = client.post("/api/auth/refresh/", {"refresh": refresh_token})
+    assert refresh_res.status_code == 200
+    assert "access" in refresh_res.data
+
+    # Logout
+    logout_res = client.post("/api/auth/logout/")
+    assert logout_res.status_code == 200
+
+

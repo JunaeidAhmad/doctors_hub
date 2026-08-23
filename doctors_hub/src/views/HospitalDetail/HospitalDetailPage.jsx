@@ -504,9 +504,9 @@ export default function HospitalDetailPage({ hospitalId, onBookDoctorSlot, onBoo
 
                           <div className="pt-3 border-t border-slate-100 flex items-center justify-between">
                             <div>
-                              <span className="text-lg font-black text-emerald-600">{bt.price} BDT</span>
-                              {bt.original_price && (
-                                <span className="text-xs text-slate-400 line-through ml-2">{bt.original_price} BDT</span>
+                              <span className="text-lg font-black text-emerald-600">{bt.calculated_price} BDT</span>
+                              {bt.price && (
+                                <span className="text-xs text-slate-400 line-through ml-2">{bt.price} BDT</span>
                               )}
                             </div>
 

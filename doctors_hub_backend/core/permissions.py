@@ -170,3 +170,36 @@ class PublicCreateAdminManage(permissions.BasePermission):
 
 # Legacy alias for backward compatibility during phased cutover
 IsAdminUserOrReadOnly = IsSuperAdminOrReadOnly
+
+
+def check_location_write_permission(user, location=None, doctor=None, error_message="You do not have permission to perform this action."):
+    from rest_framework import exceptions
+    if not user or not user.is_authenticated:
+        raise exceptions.NotAuthenticated()
+    if getattr(user, "is_super_admin", False):
+        return True
+
+    loc_id = location.id if hasattr(location, 'id') else location
+    is_loc_managed = False
+    if loc_id and hasattr(user, 'managed_location_ids'):
+        try:
+            loc_uuid = uuid.UUID(str(loc_id))
+            managed_uuids = [uuid.UUID(str(x)) for x in user.managed_location_ids]
+            is_loc_managed = loc_uuid in managed_uuids
+        except (ValueError, TypeError):
+            pass
+
+    is_doc_owned = False
+    doc_id = doctor.id if hasattr(doctor, 'id') else doctor
+    doctor_profile = getattr(user, "doctor_profile", None)
+    if doc_id and doctor_profile:
+        try:
+            is_doc_owned = uuid.UUID(str(doc_id)) == uuid.UUID(str(doctor_profile.id))
+        except (ValueError, TypeError):
+            pass
+
+    if is_loc_managed or is_doc_owned:
+        return True
+
+    raise exceptions.PermissionDenied(error_message)
+

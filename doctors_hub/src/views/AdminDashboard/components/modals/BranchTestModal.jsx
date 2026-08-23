@@ -26,9 +26,9 @@ export default function BranchTestModal() {
     center: '',
     hospital: '',
     test: '',
-    original_price: '700',
-    discount: '25% OFF',
-    price: '525',
+    price: '700',
+    discount_percent: '25% OFF',
+    calculated_price: '525',
     report_time: '',
     is_available: true,
     home_sample_collection: false
@@ -43,9 +43,9 @@ export default function BranchTestModal() {
         center: !isHosp ? (editingBranchTest.location_id || editingBranchTest.location) : '',
         hospital: isHosp ? (editingBranchTest.location_id || editingBranchTest.location) : '',
         test: editingBranchTest.test_id || editingBranchTest.test || '',
-        original_price: editingBranchTest.original_price ? editingBranchTest.original_price.toString() : (editingBranchTest.price ? editingBranchTest.price.toString() : ''),
-        discount: editingBranchTest.discount || '',
-        price: editingBranchTest.price ? editingBranchTest.price.toString() : (editingBranchTest.discounted_price ? editingBranchTest.discounted_price.toString() : ''),
+        price: editingBranchTest.price ? editingBranchTest.price.toString() : (editingBranchTest.calculated_price ? editingBranchTest.calculated_price.toString() : ''),
+        discount_percent: editingBranchTest.discount_percent || '',
+        calculated_price: editingBranchTest.calculated_price ? editingBranchTest.calculated_price.toString() : (editingBranchTest.discounted_price ? editingBranchTest.discounted_price.toString() : ''),
         report_time: editingBranchTest.report_time || (editingBranchTest.test_details?.report_time_hours ? `${editingBranchTest.test_details.report_time_hours} hours` : ''),
         is_available: editingBranchTest.is_available ?? true,
         home_sample_collection: editingBranchTest.home_sample_collection ?? false
@@ -59,9 +59,9 @@ export default function BranchTestModal() {
         center: isDiagPrefill ? branchTestPrefill.id : ((diagnosticCenters || [])[0]?.id || ''),
         hospital: isHospPrefill ? branchTestPrefill.id : ((hospitals || [])[0]?.id || ''),
         test: (tests || [])[0]?.id || '',
-        original_price: '700',
-        discount: '25% OFF',
-        price: '525',
+        price: '700',
+        discount_percent: '25% OFF',
+        calculated_price: '525',
         report_time: '',
         is_available: true,
         home_sample_collection: false
@@ -85,9 +85,9 @@ export default function BranchTestModal() {
     try {
       if (isEditing) {
         const payload = {
-          price: parseFloat(branchTestForm.price) || 0,
-          original_price: branchTestForm.original_price ? parseFloat(branchTestForm.original_price) : null,
-          discount: branchTestForm.discount,
+          calculated_price: parseFloat(branchTestForm.calculated_price) || 0,
+          price: branchTestForm.price ? parseFloat(branchTestForm.price) : null,
+          discount_percent: branchTestForm.discount_percent,
           report_time: branchTestForm.report_time,
           is_available: branchTestForm.is_available,
           home_sample_collection: branchTestForm.home_sample_collection
@@ -100,9 +100,9 @@ export default function BranchTestModal() {
           test: branchTestForm.test,
           center: !isHosp ? (branchTestForm.center || null) : null,
           hospital: isHosp ? (branchTestForm.hospital || null) : null,
-          price: parseFloat(branchTestForm.price) || 0,
-          original_price: branchTestForm.original_price ? parseFloat(branchTestForm.original_price) : null,
-          discount: branchTestForm.discount,
+          calculated_price: parseFloat(branchTestForm.calculated_price) || 0,
+          price: branchTestForm.price ? parseFloat(branchTestForm.price) : null,
+          discount_percent: branchTestForm.discount_percent,
           report_time: branchTestForm.report_time,
           is_available: branchTestForm.is_available,
           home_sample_collection: branchTestForm.home_sample_collection
@@ -261,11 +261,11 @@ export default function BranchTestModal() {
             <input
               type="number"
               required
-              value={branchTestForm.original_price}
+              value={branchTestForm.price}
               onChange={e => {
                 const newOrig = e.target.value;
-                const calcPrice = calculateFinalPrice(newOrig, branchTestForm.discount);
-                setBranchTestForm({ ...branchTestForm, original_price: newOrig, price: calcPrice });
+                const calcPrice = calculateFinalPrice(newOrig, branchTestForm.discount_percent);
+                setBranchTestForm({ ...branchTestForm, price: newOrig, calculated_price: calcPrice });
               }}
               className="w-full bg-slate-950 border border-slate-800 rounded-xl px-3 py-2 text-white font-mono"
             />
@@ -275,11 +275,11 @@ export default function BranchTestModal() {
             <input
               type="text"
               placeholder="e.g. 25% OFF"
-              value={branchTestForm.discount}
+              value={branchTestForm.discount_percent}
               onChange={e => {
                 const newDist = e.target.value;
-                const calcPrice = calculateFinalPrice(branchTestForm.original_price, newDist);
-                setBranchTestForm({ ...branchTestForm, discount: newDist, price: calcPrice });
+                const calcPrice = calculateFinalPrice(branchTestForm.price, newDist);
+                setBranchTestForm({ ...branchTestForm, discount_percent: newDist, calculated_price: calcPrice });
               }}
               className="w-full bg-slate-950 border border-slate-800 rounded-xl px-3 py-2 text-white"
             />
@@ -291,8 +291,8 @@ export default function BranchTestModal() {
           <input
             type="number"
             required
-            value={branchTestForm.price}
-            onChange={e => setBranchTestForm({ ...branchTestForm, price: e.target.value })}
+            value={branchTestForm.calculated_price}
+            onChange={e => setBranchTestForm({ ...branchTestForm, calculated_price: e.target.value })}
             className="w-full bg-slate-950 border border-emerald-500/50 rounded-xl px-3 py-2 text-emerald-300 font-bold font-mono"
           />
         </div>

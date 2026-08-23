@@ -12,9 +12,9 @@ class Location(models.Model):
     id = models.UUIDField(primary_key=True, default=uuid.uuid4, editable=False)
     location_type = models.CharField(max_length=30, choices=LocationType.choices)
     address_line = models.CharField(max_length=300)
-    area = models.CharField(max_length=100, blank=True) #thana
-    district = models.CharField(max_length=100)
-    division = models.CharField(max_length=100)
+    area = models.CharField(max_length=100, blank=True, db_index=True) #thana
+    district = models.CharField(max_length=100, db_index=True)
+    division = models.CharField(max_length=100, db_index=True)
     name = models.CharField(max_length=250)
     branch = models.CharField(max_length=200, blank=True)
     slug = models.SlugField(max_length=280, unique=True, blank=True)
@@ -28,19 +28,26 @@ class Location(models.Model):
     rating = models.FloatField(default=0.0)
     reviews_count = models.IntegerField(default=0)
     open_timing = models.CharField(max_length=100, blank=True)
-    is_verified = models.BooleanField(default=False)
-    is_active = models.BooleanField(default=True)
+    is_verified = models.BooleanField(default=False, db_index=True)
+    is_active = models.BooleanField(default=True, db_index=True)
     created_at = models.DateTimeField(auto_now_add=True)
     updated_at = models.DateTimeField(auto_now=True)
 
     class Meta:
-        indexes = [models.Index(fields=["location_type"])]
+        indexes = [
+            models.Index(fields=["location_type"]),
+            models.Index(fields=["district", "division"]),
+        ]
         ordering = ["-created_at"]
 
     def save(self, *args, **kwargs):
         if not self.slug:
             b = f"-{self.branch}" if self.branch else ""
-            self.slug = slugify(f"{self.name}{b}")
+            base_slug = slugify(f"{self.name}{b}")
+            slug = base_slug
+            if Location.objects.filter(slug=slug).exclude(pk=self.pk).exists():
+                slug = f"{base_slug}-{uuid.uuid4().hex[:6]}"
+            self.slug = slug
         super().save(*args, **kwargs)
 
     @property

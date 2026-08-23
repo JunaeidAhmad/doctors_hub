@@ -7,11 +7,10 @@ def attach_tests_to_location(
     location: Location,
     test_category_ids: list[str] = None,
     test_ids: list[str] = None,
-    test_prices: dict # Expected format: {"test_uuid": {"price": 500, "original_price": 600}}
+    test_prices: dict # Expected format: {"test_uuid": {"price": 500, "discount_percent": 10}}
 ):
     if location.location_type == Location.LocationType.CHAMBER:
         raise ValidationError("Chambers cannot offer lab tests.")
-
 
     tests_to_attach = set()
 
@@ -40,10 +39,11 @@ def attach_tests_to_location(
         if not price_data or 'price' not in price_data:
             raise ValidationError(f"Missing required price for test: {test.name} (ID: {test.id})")
             
+        discount_percent = price_data.get('discount_percent', 0.0)
         if test.id in existing:
             ft = existing[test.id]
             ft.price = price_data['price']
-            ft.original_price = price_data.get('original_price')
+            ft.discount_percent = discount_percent
             to_update.append(ft)
         else:
             to_create.append(
@@ -51,7 +51,7 @@ def attach_tests_to_location(
                     location=location,
                     test=test,
                     price=price_data['price'],
-                    original_price=price_data.get('original_price')
+                    discount_percent=discount_percent
                 )
             )
 
@@ -59,4 +59,4 @@ def attach_tests_to_location(
     if to_create:
         FacilityTest.objects.bulk_create(to_create)
     if to_update:
-        FacilityTest.objects.bulk_update(to_update, ['price', 'original_price'])
+        FacilityTest.objects.bulk_update(to_update, ['price', 'discount_percent'])

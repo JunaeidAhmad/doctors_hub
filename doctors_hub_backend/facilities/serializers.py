@@ -71,88 +71,39 @@ class HospitalSerializer(serializers.ModelSerializer):
         )
 
     def create(self, validated_data):
+        from services.facilities import create_hospital
         test_cat_ids = validated_data.pop('test_category_ids', None)
         services = validated_data.pop('services', [])
-        if 'location' not in validated_data and hasattr(self, 'initial_data'):
-            loc_data = {
-                'name': self.initial_data.get('name', 'Hospital'),
-                'branch': self.initial_data.get('branch', ''),
-                'location_type': Location.LocationType.HOSPITAL,
-                'address_line': self.initial_data.get('address_line', self.initial_data.get('address', '')),
-                'area': self.initial_data.get('area', ''),
-                'district': self.initial_data.get('district', self.initial_data.get('city', 'Dhaka')),
-                'division': self.initial_data.get('division', self.initial_data.get('city', 'Dhaka')),
-                'phone': self.initial_data.get('phone', ''),
-                'email': self.initial_data.get('email', ''),
-                'description': self.initial_data.get('description', ''),
-                'tagline': self.initial_data.get('tagline', ''),
-                'badge': self.initial_data.get('badge', ''),
-                'rating': float(self.initial_data.get('rating', 0.0)) if self.initial_data.get('rating') else 0.0,
-                'reviews_count': int(self.initial_data.get('reviews_count', 0)) if self.initial_data.get('reviews_count') else 0,
-                'open_timing': self.initial_data.get('open_timing', ''),
-                'is_verified': bool(self.initial_data.get('is_verified', False)),
-            }
-            validated_data['location'] = Location.objects.create(**loc_data)
-
-        hospital = super().create(validated_data)
-        if services:
-            hospital.services.set(services)
-        if test_cat_ids:
-            from tests.models import Test, FacilityTest
-            tests = Test.objects.filter(category_id__in=test_cat_ids)
-            prices = {}
-            if hasattr(self, 'initial_data'):
-                prices = self.initial_data.get('prices', {})
-            for test in tests:
-                price = prices.get(str(test.id), 500.00)
-                FacilityTest.objects.get_or_create(
-                    location=hospital.location,
-                    test=test,
-                    defaults={'price': price, 'is_available': True}
-                )
-        return hospital
+        initial_data = getattr(self, 'initial_data', {})
+        prices = initial_data.get('prices', {}) if isinstance(initial_data, dict) else {}
+        return create_hospital(
+            validated_data=validated_data,
+            location_data=initial_data if 'location' not in validated_data and isinstance(initial_data, dict) else None,
+            services=services,
+            test_cat_ids=test_cat_ids,
+            prices=prices,
+        )
 
     def update(self, instance, validated_data):
+        from services.facilities import update_hospital
         test_cat_ids = validated_data.pop('test_category_ids', None)
-        if hasattr(self, 'initial_data') and instance.location:
-            loc = instance.location
-            for field in ['name', 'branch', 'address_line', 'area', 'district', 'division', 'phone', 'email', 'description', 'tagline', 'badge', 'open_timing']:
-                if field in self.initial_data:
-                    setattr(loc, field, self.initial_data[field])
-            if 'address' in self.initial_data and 'address_line' not in self.initial_data:
-                loc.address_line = self.initial_data['address']
-            if 'rating' in self.initial_data:
-                loc.rating = float(self.initial_data['rating'])
-            if 'reviews_count' in self.initial_data:
-                loc.reviews_count = int(self.initial_data['reviews_count'])
-            if 'is_verified' in self.initial_data:
-                loc.is_verified = bool(self.initial_data['is_verified'])
-            loc.save()
-
-        instance = super().update(instance, validated_data)
-        
-        if test_cat_ids:
-            from tests.models import Test, FacilityTest
-            tests = Test.objects.filter(category_id__in=test_cat_ids)
-            prices = {}
-            if hasattr(self, 'initial_data'):
-                prices = self.initial_data.get('prices', {})
-            for test in tests:
-                price = prices.get(str(test.id), 500.00)
-                FacilityTest.objects.get_or_create(
-                    location=instance.location,
-                    test=test,
-                    defaults={'price': price, 'is_available': True}
-                )
-        return instance
+        initial_data = getattr(self, 'initial_data', {})
+        prices = initial_data.get('prices', {}) if isinstance(initial_data, dict) else {}
+        return update_hospital(
+            instance,
+            validated_data=validated_data,
+            location_data=initial_data if isinstance(initial_data, dict) else None,
+            test_cat_ids=test_cat_ids,
+            prices=prices,
+        )
 
 
 class DiagnosticCenterOfferedTestSummarySerializer(serializers.Serializer):
     id = serializers.UUIDField()
     price = serializers.DecimalField(max_digits=10, decimal_places=2)
     discounted_price = serializers.DecimalField(max_digits=10, decimal_places=2, allow_null=True, required=False)
-    original_price = serializers.DecimalField(max_digits=10, decimal_places=2, allow_null=True, required=False)
-    discount = serializers.IntegerField(required=False)
+    calculated_price = serializers.DecimalField(max_digits=10, decimal_places=2, allow_null=True, required=False)
+    discount_percent = serializers.DecimalField(max_digits=5, decimal_places=2, allow_null=True, required=False)
     report_time = serializers.CharField(allow_blank=True, required=False)
     is_available = serializers.BooleanField(default=True)
     home_sample_collection = serializers.BooleanField(default=False)
@@ -194,81 +145,31 @@ class DiagnosticCenterSerializer(serializers.ModelSerializer):
         return FacilityTestSerializer(fts, many=True).data
 
     def create(self, validated_data):
+        from services.facilities import create_diagnostic_center
         test_cat_ids = validated_data.pop('test_category_ids', None)
         services = validated_data.pop('services', [])
-        if 'location' not in validated_data and hasattr(self, 'initial_data'):
-            loc_data = {
-                'name': self.initial_data.get('name', 'Diagnostic Center'),
-                'branch': self.initial_data.get('branch', ''),
-                'location_type': Location.LocationType.DIAGNOSTIC_CENTER,
-                'address_line': self.initial_data.get('address_line', self.initial_data.get('address', '')),
-                'area': self.initial_data.get('area', ''),
-                'district': self.initial_data.get('district', self.initial_data.get('city', 'Dhaka')),
-                'division': self.initial_data.get('division', self.initial_data.get('city', 'Dhaka')),
-                'phone': self.initial_data.get('phone', ''),
-                'email': self.initial_data.get('email', ''),
-                'description': self.initial_data.get('description', ''),
-                'tagline': self.initial_data.get('tagline', ''),
-                'badge': self.initial_data.get('badge', ''),
-                'rating': float(self.initial_data.get('rating', 0.0)) if self.initial_data.get('rating') else 0.0,
-                'reviews_count': int(self.initial_data.get('reviews_count', 0)) if self.initial_data.get('reviews_count') else 0,
-                'open_timing': self.initial_data.get('open_timing', ''),
-                'is_verified': bool(self.initial_data.get('is_verified', False)),
-            }
-            validated_data['location'] = Location.objects.create(**loc_data)
-
-        diagnostic = super().create(validated_data)
-        if services:
-            diagnostic.services.set(services)
-        if test_cat_ids:
-            from tests.models import Test, FacilityTest
-            tests = Test.objects.filter(category_id__in=test_cat_ids)
-            prices = {}
-            if hasattr(self, 'initial_data'):
-                prices = self.initial_data.get('prices', {})
-            for test in tests:
-                price = prices.get(str(test.id), 500.00)
-                FacilityTest.objects.get_or_create(
-                    location=diagnostic.location,
-                    test=test,
-                    defaults={'price': price, 'is_available': True}
-                )
-        return diagnostic
+        initial_data = getattr(self, 'initial_data', {})
+        prices = initial_data.get('prices', {}) if isinstance(initial_data, dict) else {}
+        return create_diagnostic_center(
+            validated_data=validated_data,
+            location_data=initial_data if 'location' not in validated_data and isinstance(initial_data, dict) else None,
+            services=services,
+            test_cat_ids=test_cat_ids,
+            prices=prices,
+        )
 
     def update(self, instance, validated_data):
+        from services.facilities import update_diagnostic_center
         test_cat_ids = validated_data.pop('test_category_ids', None)
-        if hasattr(self, 'initial_data') and instance.location:
-            loc = instance.location
-            for field in ['name', 'branch', 'address_line', 'area', 'district', 'division', 'phone', 'email', 'description', 'tagline', 'badge', 'open_timing']:
-                if field in self.initial_data:
-                    setattr(loc, field, self.initial_data[field])
-            if 'address' in self.initial_data and 'address_line' not in self.initial_data:
-                loc.address_line = self.initial_data['address']
-            if 'rating' in self.initial_data:
-                loc.rating = float(self.initial_data['rating'])
-            if 'reviews_count' in self.initial_data:
-                loc.reviews_count = int(self.initial_data['reviews_count'])
-            if 'is_verified' in self.initial_data:
-                loc.is_verified = bool(self.initial_data['is_verified'])
-            loc.save()
-
-
-        instance = super().update(instance, validated_data)
-        
-        if test_cat_ids:
-            from tests.models import Test, FacilityTest
-            tests = Test.objects.filter(category_id__in=test_cat_ids)
-            prices = {}
-            if hasattr(self, 'initial_data'):
-                prices = self.initial_data.get('prices', {})
-            for test in tests:
-                price = prices.get(str(test.id), 500.00)
-                FacilityTest.objects.get_or_create(
-                    location=instance.location,
-                    test=test,
-                    defaults={'price': price, 'is_available': True}
-                )
-        return instance
+        initial_data = getattr(self, 'initial_data', {})
+        prices = initial_data.get('prices', {}) if isinstance(initial_data, dict) else {}
+        return update_diagnostic_center(
+            instance,
+            validated_data=validated_data,
+            location_data=initial_data if isinstance(initial_data, dict) else None,
+            test_cat_ids=test_cat_ids,
+            prices=prices,
+        )
 
 
 class ChamberSerializer(serializers.ModelSerializer):

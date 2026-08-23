@@ -36,11 +36,15 @@ class Doctor(models.Model):
     qualification = models.TextField()
     experience = models.CharField(max_length=50)
     description = models.TextField(blank=True)
-    is_verified = models.BooleanField(default=False)
+    is_verified = models.BooleanField(default=False, db_index=True)
 
     def save(self, *args, **kwargs):
         if not self.slug:
-            self.slug = slugify(self.name)
+            base_slug = slugify(self.name)
+            slug = base_slug
+            if Doctor.objects.filter(slug=slug).exclude(pk=self.pk).exists():
+                slug = f"{base_slug}-{uuid.uuid4().hex[:6]}"
+            self.slug = slug
         super().save(*args, **kwargs)
 
     def __str__(self):

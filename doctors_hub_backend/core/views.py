@@ -60,6 +60,9 @@ class AdminDashboardInitResponseSerializer(serializers.Serializer):
     test_categories = TestCategorySerializer(many=True)
 
 
+from django.core.cache import cache
+
+
 class SearchMetadataAPIView(APIView):
     permission_classes = (permissions.AllowAny,)
 
@@ -70,17 +73,23 @@ class SearchMetadataAPIView(APIView):
         responses={200: SearchMetadataResponseSerializer}
     )
     def get(self, request, *args, **kwargs):
+        cached_data = cache.get('search_metadata_global')
+        if cached_data is not None:
+            return Response(cached_data)
+
         specialties = DoctorSpecialty.objects.annotate(doctor_count=Count('doctors', distinct=True)).order_by('name')
         test_categories = TestCategory.objects.annotate(test_count=Count('tests', distinct=True)).order_by('name')
         hospital_categories = HospitalCategory.objects.annotate(hospital_count=Count('hospitals', distinct=True)).order_by('name')
         diagnostic_center_categories = DiagnosticCenterCategory.objects.annotate(center_count=Count('centers', distinct=True)).order_by('name')
 
-        return Response({
+        response_data = {
             'specialties': DoctorSpecialtySerializer(specialties, many=True, context={'request': request}).data,
             'test_categories': TestCategorySerializer(test_categories, many=True, context={'request': request}).data,
             'hospital_categories': HospitalCategorySerializer(hospital_categories, many=True, context={'request': request}).data,
             'diagnostic_center_categories': DiagnosticCenterCategorySerializer(diagnostic_center_categories, many=True, context={'request': request}).data,
-        })
+        }
+        cache.set('search_metadata_global', response_data, timeout=300)
+        return Response(response_data)
 
 
 class SearchFacetsAPIView(APIView):
@@ -107,6 +116,11 @@ class SearchFacetsAPIView(APIView):
         loc_filter = request.query_params.get('location') or request.query_params.get('loc')
         area_filter = request.query_params.get('area')
         search_query = request.query_params.get('search') or request.query_params.get('q')
+
+        cache_key = f"search_facets:{loc_filter or ''}:{area_filter or ''}:{search_query or ''}"
+        cached_data = cache.get(cache_key)
+        if cached_data is not None:
+            return Response(cached_data, status=status.HTTP_200_OK)
 
         # Filtered base doctor queryset
         doc_qs = Doctor.objects.all()
@@ -178,7 +192,7 @@ class SearchFacetsAPIView(APIView):
         districts = list(Location.objects.values_list('district', flat=True).distinct().order_by('district'))
         divisions = list(Location.objects.values_list('division', flat=True).distinct().order_by('division'))
 
-        return Response({
+        response_data = {
             'total_doctors': doc_qs.distinct().count(),
             'total_hospitals': hosp_qs.distinct().count(),
             'total_diagnostic_centers': diag_qs.distinct().count(),
@@ -188,7 +202,10 @@ class SearchFacetsAPIView(APIView):
             'test_categories': TestCategorySerializer(test_categories, many=True, context={'request': request}).data,
             'districts': [d for d in districts if d],
             'divisions': [d for d in divisions if d],
-        }, status=status.HTTP_200_OK)
+        }
+        cache.set(cache_key, response_data, timeout=60)
+
+        return Response(response_data, status=status.HTTP_200_OK)
 
 
 class AdminInitAPIView(APIView):
