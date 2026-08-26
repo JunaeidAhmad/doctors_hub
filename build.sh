@@ -17,3 +17,6 @@ python manage.py collectstatic --no-input
 # Apply database migrations
 python manage.py migrate
 
+# Synchronize permission catalog & roles
+python manage.py sync_permissions
+

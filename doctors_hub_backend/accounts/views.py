@@ -9,14 +9,14 @@ from rest_framework_simplejwt.tokens import RefreshToken
 from django.core.cache import cache
 from drf_spectacular.utils import extend_schema, OpenApiParameter, OpenApiTypes
 
-from .models import User, Role
+from .models import User, Role, UserRole
 from .serializers import UserSerializer, UserProfileSerializer, LoginSerializer
 from .serializers_onboarding import (
     FacilityRegistrationSerializer,
     DoctorRegistrationSerializer,
     StaffCreateSerializer
 )
-from facilities.models import Location, FacilityMembership
+from facilities.models import Location
 from doctors.models import Doctor
 from core.permissions import IsSuperAdmin
 
@@ -315,8 +315,8 @@ class FacilityStaffListCreateAPIView(APIView):
             return True
         try:
             loc_uuid = uuid.UUID(str(location_id))
-            return FacilityMembership.objects.filter(
-                user=user, location_id=loc_uuid, role=FacilityMembership.MemberRole.ADMIN
+            return user.user_roles.filter(
+                facility_id=loc_uuid, role__scope_type=Role.ScopeType.FACILITY
             ).exists()
         except (ValueError, TypeError):
             return False
@@ -337,23 +337,33 @@ class FacilityStaffListCreateAPIView(APIView):
         if not self._check_facility_admin_permission(request.user, location_id):
             return Response({"detail": "You do not have permission to manage staff for this facility."}, status=status.HTTP_403_FORBIDDEN)
 
-        memberships = FacilityMembership.objects.filter(
-            location_id=location_id, role=FacilityMembership.MemberRole.STAFF
-        ).select_related("user")
+        user_roles = UserRole.objects.filter(
+            facility_id=location_id
+        ).select_related("user", "role")
 
-        staff_data = [
-            {
-                "user_id": str(m.user.id),
-                "membership_id": str(m.id),
-                "phone_number": m.user.phone_number,
-                "first_name": m.user.first_name,
-                "last_name": m.user.last_name,
-                "role": m.role,
-                "is_active": m.user.is_active,
-                "created_at": m.created_at
-            }
-            for m in memberships
-        ]
+        users_map = {}
+        for ur in user_roles:
+            uid = str(ur.user.id)
+            if uid not in users_map:
+                users_map[uid] = {
+                    "user_id": uid,
+                    "membership_id": str(ur.id), # keeping one membership_id for backward compatibility with delete
+                    "phone_number": ur.user.phone_number,
+                    "first_name": ur.user.first_name,
+                    "last_name": ur.user.last_name,
+                    "roles": [],
+                    "is_active": ur.user.is_active,
+                    "created_at": ur.user.date_joined
+                }
+            if ur.role:
+                users_map[uid]["roles"].append(ur.role.name)
+
+        staff_data = []
+        for uid, data in users_map.items():
+            data["role"] = ", ".join(data["roles"]) if data["roles"] else "Staff"
+            del data["roles"]
+            staff_data.append(data)
+            
         return Response(staff_data, status=status.HTTP_200_OK)
 
     @extend_schema(
@@ -382,39 +392,54 @@ class FacilityStaffListCreateAPIView(APIView):
         password = serializer.validated_data["password"]
         first_name = serializer.validated_data["first_name"]
         last_name = serializer.validated_data.get("last_name", "")
+        role_ids = serializer.validated_data.get("role_ids", [])
+
+        roles = []
+        if role_ids:
+            roles = list(Role.objects.filter(id__in=role_ids))
+        if not roles:
+            default_role = Role.objects.filter(name="Staff", scope_type=Role.ScopeType.FACILITY).first()
+            if not default_role:
+                default_role = Role.objects.filter(scope_type=Role.ScopeType.FACILITY).first()
+            if default_role:
+                roles = [default_role]
 
         user = User.objects.filter(phone_number=phone).first()
         if user:
-            if FacilityMembership.objects.filter(user=user, location=location).exists():
+            if UserRole.objects.filter(user=user, facility=location).exists():
                 return Response({"detail": "This staff member is already assigned to this facility."}, status=status.HTTP_400_BAD_REQUEST)
         else:
             user = User.objects.create(
                 phone_number=phone,
                 first_name=first_name,
                 last_name=last_name,
-                role=Role.STAFF,
                 is_verified=True,
                 is_active=True
             )
             user.set_password(password)
             user.save()
 
-        membership = FacilityMembership.objects.create(
-            user=user,
-            location=location,
-            role=FacilityMembership.MemberRole.STAFF
-        )
+        user_roles = []
+        for role in roles:
+            ur = UserRole.objects.create(
+                user=user,
+                facility=location,
+                role=role
+            )
+            user_roles.append(ur)
+
+        role_names = [r.name for r in roles] if roles else ["Staff"]
 
         return Response({
             "status": "success",
             "message": f"Staff member {first_name} added to {location.name}.",
             "staff": {
                 "user_id": str(user.id),
-                "membership_id": str(membership.id),
+                "membership_id": str(user_roles[0].id) if user_roles else "",
                 "phone_number": user.phone_number,
                 "first_name": user.first_name,
                 "last_name": user.last_name,
-                "role": membership.role
+                "role": ", ".join(role_names)
             }
         }, status=status.HTTP_201_CREATED)
 
@@ -437,13 +462,13 @@ class FacilityStaffDeleteAPIView(APIView):
         }
     )
     def delete(self, request, location_id, user_id):
-        if not (request.user.is_super_admin or FacilityMembership.objects.filter(
-            user=request.user, location_id=location_id, role=FacilityMembership.MemberRole.ADMIN
+        if not (request.user.is_super_admin or request.user.user_roles.filter(
+            facility_id=location_id, role__scope_type=Role.ScopeType.FACILITY
         ).exists()):
             return Response({"detail": "You do not have permission to remove staff from this facility."}, status=status.HTTP_403_FORBIDDEN)
 
-        deleted_count, _ = FacilityMembership.objects.filter(
-            location_id=location_id, user_id=user_id, role=FacilityMembership.MemberRole.STAFF
+        deleted_count, _ = UserRole.objects.filter(
+            facility_id=location_id, user_id=user_id
         ).delete()
 
         if deleted_count == 0:
@@ -537,7 +562,7 @@ class VerificationApproveRejectAPIView(APIView):
             if action == "approve":
                 loc.is_verified = True
                 loc.save()
-                User.objects.filter(facility_memberships__location=loc).update(is_verified=True)
+                User.objects.filter(user_roles__facility=loc).update(is_verified=True)
                 cache.delete('search_metadata_global')
                 return Response({"status": "success", "message": f"{loc.name} has been verified and is now live."})
             elif action == "reject":
@@ -581,7 +606,7 @@ class PlatformAdminListCreateAPIView(APIView):
         }
     )
     def get(self, request):
-        super_admins = User.objects.filter(role=Role.SUPER_ADMIN)
+        super_admins = User.objects.filter(is_superuser=True)
         data = [
             {
                 "id": str(u.id),
@@ -622,14 +647,17 @@ class PlatformAdminListCreateAPIView(APIView):
         except DjangoValidationError as e:
             return Response({"detail": e.message}, status=status.HTTP_400_BAD_REQUEST)
 
+        admin_role = Role.objects.filter(name="Super Admin", scope_type=Role.ScopeType.GLOBAL, is_system=True).first()
+
         if User.objects.filter(phone_number=phone).exists():
             u = User.objects.get(phone_number=phone)
-            u.role = Role.SUPER_ADMIN
             u.is_staff = True
             u.is_superuser = True
             u.is_verified = True
             u.set_password(pwd)
             u.save()
+            if admin_role:
+                UserRole.objects.get_or_create(user=u, role=admin_role)
             msg = f"Existing user {phone} promoted to Platform Super Admin."
         else:
             u = User.objects.create_superuser(
@@ -638,6 +666,8 @@ class PlatformAdminListCreateAPIView(APIView):
                 first_name=first_name,
                 last_name=last_name
             )
+            if admin_role:
+                UserRole.objects.get_or_create(user=u, role=admin_role)
             msg = f"New Platform Super Admin {phone} created successfully."
 
         return Response({

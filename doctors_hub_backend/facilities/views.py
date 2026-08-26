@@ -7,9 +7,9 @@ from core.permissions import ScopedFacilityOrReadOnly, IsSuperAdminOrReadOnly, c
 from core.scoping import RoleScopedQuerysetMixin
 from .models import (
     Location, HospitalCategory, HospitalService, Hospital,
-    DiagnosticCenterCategory, DiagnosticService, DiagnosticCenter, Chamber,
-    FacilityMembership
+    DiagnosticCenterCategory, DiagnosticService, DiagnosticCenter, Chamber
 )
+from accounts.models import Role, UserRole
 from .serializers import (
     LocationSerializer, HospitalCategorySerializer, HospitalServiceSerializer,
     HospitalSerializer, DiagnosticCenterCategorySerializer, DiagnosticServiceSerializer,
@@ -36,12 +36,14 @@ class LocationViewSet(RoleScopedQuerysetMixin, viewsets.ModelViewSet):
             serializer.save()
         elif getattr(user, "is_facility_admin", False):
             location = serializer.save()
-            # Auto-grant facility admin membership to the creator
-            FacilityMembership.objects.get_or_create(
-                user=user,
-                location=location,
-                defaults={"role": FacilityMembership.MemberRole.ADMIN}
-            )
+            # Auto-grant facility admin role to the creator if available
+            fac_admin_role = Role.objects.filter(name="Facility Admin", scope_type=Role.ScopeType.FACILITY).first()
+            if fac_admin_role:
+                UserRole.objects.get_or_create(
+                    user=user,
+                    role=fac_admin_role,
+                    facility=location
+                )
         else:
             raise exceptions.PermissionDenied("Only administrators can create new facility locations.")
 

@@ -4,6 +4,7 @@ import { useAdminContext } from '../context/AdminContext';
 import DiagnosticModal from './modals/DiagnosticModal';
 import AdminPagination from './AdminPagination';
 import { api, ensureArray } from '../../../services/api';
+import { useDebounce } from '../../../hooks/useDebounce';
 
 export default function DiagnosticsTab() {
   const {
@@ -13,7 +14,9 @@ export default function DiagnosticsTab() {
     refreshTrigger,
     handleOpenDiagnosticModal,
     handleDeleteDiagnostic,
-    handleOpenBranchTestModal
+    handleOpenBranchTestModal,
+    handleNavigateToAddTests,
+    setActiveTab
   } = useAdminContext();
 
   const [page, setPage] = useState(1);
@@ -22,18 +25,20 @@ export default function DiagnosticsTab() {
   const [isInitialLoad, setIsInitialLoad] = useState(true);
   const [isFetching, setIsFetching] = useState(false);
 
+  const debouncedSearchTerm = useDebounce(searchTerm, 300);
+
   // Sync back to page 1 if search changes
   useEffect(() => {
     setPage(1);
-  }, [searchTerm]);
+  }, [debouncedSearchTerm]);
 
-  // Fetch paginated data
+  // Fetch paginated data (instant on page/refreshTrigger, debounced on search input)
   useEffect(() => {
     let isMounted = true;
     const fetchDiagnostics = async () => {
       setIsFetching(true);
       try {
-        const data = await api.getDiagnosticCenters({ search: searchTerm, page, page_size: 20 });
+        const data = await api.getDiagnosticCenters({ search: debouncedSearchTerm, page, page_size: 20 });
         if (isMounted) {
           if (data && typeof data === 'object' && 'results' in data) {
              setTabDiagnostics(ensureArray(data.results));
@@ -55,10 +60,9 @@ export default function DiagnosticsTab() {
       }
     };
 
-    const delay = searchTerm ? 300 : 0;
-    const timer = setTimeout(fetchDiagnostics, delay);
-    return () => { isMounted = false; clearTimeout(timer); };
-  }, [searchTerm, page, refreshTrigger]);
+    fetchDiagnostics();
+    return () => { isMounted = false; };
+  }, [debouncedSearchTerm, page, refreshTrigger]);
 
 
   return (
@@ -164,8 +168,14 @@ export default function DiagnosticsTab() {
 
                       <td className="py-4 px-4 text-right space-x-2 whitespace-nowrap">
                         <button
-                          onClick={() => handleOpenBranchTestModal && handleOpenBranchTestModal(null, 'diagnostic', dcId)}
-                          title="Add Test Offering to this Diagnostic Center"
+                          onClick={() => {
+                            if (handleNavigateToAddTests) {
+                              handleNavigateToAddTests('diagnostic_center', dcId, dc);
+                            } else if (setActiveTab) {
+                              setActiveTab('add-tests-to-diagnostics');
+                            }
+                          }}
+                          title="Add Tests to Facility"
                           className="px-2.5 py-1.5 bg-cyan-500/20 text-cyan-300 rounded-lg hover:bg-cyan-500/30 inline-flex items-center gap-1 text-[11px] font-bold border border-cyan-500/30 transition cursor-pointer"
                         >
                           <FlaskConical className="w-3.5 h-3.5" /> + Test

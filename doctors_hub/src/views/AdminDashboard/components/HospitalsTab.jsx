@@ -4,6 +4,7 @@ import { useAdminContext } from '../context/AdminContext';
 import HospitalModal from './modals/HospitalModal';
 import AdminPagination from './AdminPagination';
 import { api, ensureArray } from '../../../services/api';
+import { useDebounce } from '../../../hooks/useDebounce';
 
 export default function HospitalsTab() {
   const {
@@ -13,7 +14,9 @@ export default function HospitalsTab() {
     refreshTrigger,
     handleOpenHospitalModal,
     handleDeleteHospital,
-    handleOpenBranchTestModal
+    handleOpenBranchTestModal,
+    handleNavigateToAddTests,
+    setActiveTab
   } = useAdminContext();
 
   const [page, setPage] = useState(1);
@@ -22,18 +25,20 @@ export default function HospitalsTab() {
   const [isInitialLoad, setIsInitialLoad] = useState(true);
   const [isFetching, setIsFetching] = useState(false);
 
+  const debouncedSearchTerm = useDebounce(searchTerm, 300);
+
   // Sync back to page 1 if search changes
   useEffect(() => {
     setPage(1);
-  }, [searchTerm]);
+  }, [debouncedSearchTerm]);
 
-  // Fetch paginated data
+  // Fetch paginated data (instant on page/refreshTrigger, debounced on search input)
   useEffect(() => {
     let isMounted = true;
     const fetchHospitals = async () => {
       setIsFetching(true);
       try {
-        const data = await api.getHospitals({ search: searchTerm, page, page_size: 20 });
+        const data = await api.getHospitals({ search: debouncedSearchTerm, page, page_size: 20 });
         if (isMounted) {
           if (data && typeof data === 'object' && 'results' in data) {
              setTabHospitals(ensureArray(data.results));
@@ -55,10 +60,9 @@ export default function HospitalsTab() {
       }
     };
 
-    const delay = searchTerm ? 300 : 0;
-    const timer = setTimeout(fetchHospitals, delay);
-    return () => { isMounted = false; clearTimeout(timer); };
-  }, [searchTerm, page, refreshTrigger]);
+    fetchHospitals();
+    return () => { isMounted = false; };
+  }, [debouncedSearchTerm, page, refreshTrigger]);
 
   return (
     <>
@@ -163,8 +167,14 @@ export default function HospitalsTab() {
 
                       <td className="py-4 px-4 text-right space-x-2 whitespace-nowrap">
                         <button
-                          onClick={() => handleOpenBranchTestModal && handleOpenBranchTestModal(null, 'hospital', hId)}
-                          title="Add Diagnostic Test to this Hospital's Internal Lab"
+                          onClick={() => {
+                            if (handleNavigateToAddTests) {
+                              handleNavigateToAddTests('hospital', hId, h);
+                            } else if (setActiveTab) {
+                              setActiveTab('add-tests-to-diagnostics');
+                            }
+                          }}
+                          title="Add Tests to Facility"
                           className="px-2.5 py-1.5 bg-emerald-500/20 text-emerald-300 rounded-lg hover:bg-emerald-500/30 inline-flex items-center gap-1 text-[11px] font-bold border border-emerald-500/30 transition cursor-pointer"
                         >
                           <Building2 className="w-3.5 h-3.5" /> + Test

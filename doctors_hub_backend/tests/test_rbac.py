@@ -2,14 +2,14 @@ import pytest
 from rest_framework.test import APIClient
 from rest_framework import status
 
-from accounts.models import User, Role
-from facilities.models import Location, FacilityMembership
+from accounts.models import User, Role, UserRole
+from facilities.models import Location
 from doctors.models import Doctor, DoctorAffiliation, AffiliationSchedule
 from tests.models import TestCategory, Test, FacilityTest
 from bookings.models import DoctorBooking, LabBooking
 
 from .factories import (
-    UserFactory, LocationFactory, FacilityMembershipFactory,
+    UserFactory, LocationFactory,
     DoctorFactory, DoctorAffiliationFactory, AffiliationScheduleFactory,
     TestCategoryFactory, TestFactory, FacilityTestFactory
 )
@@ -47,7 +47,8 @@ def doctor_user():
 @pytest.fixture
 def managed_location(facility_admin_user):
     loc = LocationFactory(name="Admin's Managed Hospital")
-    FacilityMembershipFactory(user=facility_admin_user, location=loc, role=FacilityMembership.MemberRole.ADMIN)
+    role, _ = Role.objects.get_or_create(name="Facility Admin", defaults={"scope_type": Role.ScopeType.FACILITY, "is_system": True})
+    UserRole.objects.filter(user=facility_admin_user).update(facility=loc)
     return loc
 
 
@@ -333,7 +334,7 @@ def test_auth_me_returns_role_and_scope(api_client, facility_admin_user, managed
     api_client.force_authenticate(user=facility_admin_user)
     res_fac = api_client.get("/api/auth/me/")
     assert res_fac.status_code == status.HTTP_200_OK
-    assert res_fac.data["role"] == Role.FACILITY_ADMIN
+    assert res_fac.data["role"] == "facility_admin"
     assert len(res_fac.data["managed_locations"]) == 1
     assert res_fac.data["managed_locations"][0]["id"] == str(managed_location.id)
 
@@ -341,5 +342,44 @@ def test_auth_me_returns_role_and_scope(api_client, facility_admin_user, managed
     api_client.force_authenticate(user=doctor_user)
     res_doc = api_client.get("/api/auth/me/")
     assert res_doc.status_code == status.HTTP_200_OK
-    assert res_doc.data["role"] == Role.DOCTOR
+    assert res_doc.data["role"] == "doctor"
     assert res_doc.data["doctor_id"] == str(doctor_profile.id)
+
+
+@pytest.mark.django_db
+def test_user_role_assignment_and_search(api_client, super_admin_user, managed_location):
+    api_client.force_authenticate(user=super_admin_user)
+
+    target_user = UserFactory(phone_number="01712345678", first_name="Rahim", last_name="Khan")
+    role, _ = Role.objects.get_or_create(
+        name="Custom Manager",
+        defaults={"scope_type": Role.ScopeType.FACILITY, "is_system": False}
+    )
+
+    # 1. Search user
+    search_res = api_client.get("/api/user-roles/search-users/?q=0171234")
+    assert search_res.status_code == status.HTTP_200_OK
+    results = search_res.data
+    assert any(u["phone_number"] == "01712345678" for u in results)
+
+    # 2. Assign role by phone number and facility
+    assign_res = api_client.post("/api/user-roles/", {
+        "phone_number": "01712345678",
+        "role": str(role.id),
+        "facility": str(managed_location.id)
+    }, format="json")
+    assert assign_res.status_code == status.HTTP_201_CREATED
+    assignment_id = assign_res.data["id"]
+    assert assign_res.data["user_details"]["phone_number"] == "01712345678"
+    assert assign_res.data["role_details"]["name"] == "Custom Manager"
+    assert assign_res.data["facility_details"]["name"] == managed_location.name
+
+    # 3. Search user roles
+    list_res = api_client.get("/api/user-roles/?search=Rahim")
+    assert list_res.status_code == status.HTTP_200_OK
+    assert any(a["id"] == assignment_id for a in list_res.data)
+
+    # 4. Revoke assignment
+    del_res = api_client.delete(f"/api/user-roles/{assignment_id}/")
+    assert del_res.status_code == status.HTTP_204_NO_CONTENT
+    assert not UserRole.objects.filter(id=assignment_id).exists()

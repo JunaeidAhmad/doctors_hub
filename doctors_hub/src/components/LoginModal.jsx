@@ -2,21 +2,20 @@ import React, { useState } from 'react';
 import { X, Phone, ArrowRight, ShieldCheck, Lock, User } from 'lucide-react';
 import { api } from '../services/api';
 
-export default function LoginModal({ onClose, onLoginSuccess, onOpenAdmin }) {
+export default function LoginModal({ onClose, onLoginSuccess, onOpenAdmin, showToast }) {
   const [isRegister, setIsRegister] = useState(false);
   const [phone, setPhone] = useState('');
   const [password, setPassword] = useState('');
   const [firstName, setFirstName] = useState('');
-  const [error, setError] = useState('');
   const [loading, setLoading] = useState(false);
 
   const handleSubmit = async (e) => {
     e.preventDefault();
     if (!phone || !password) {
-      setError('Please enter phone number and password');
+      if (showToast) showToast('Please enter phone number and password', 'error');
       return;
     }
-    setError('');
+    if (showToast) showToast('', 'error');
     setLoading(true);
 
     try {
@@ -32,12 +31,12 @@ export default function LoginModal({ onClose, onLoginSuccess, onOpenAdmin }) {
         } catch (err) {
           setLoading(false);
           setIsRegister(true);
-          setError('No user account found with these credentials. Please fill in your name and register to create an account.');
+          if (showToast) showToast('No user account found with these credentials. Please fill in your name and register to create an account.', 'error');
         }
       }
     } catch (err) {
       setLoading(false);
-      setError(err.message || 'Authentication failed');
+      if (showToast) showToast(err.message || 'Authentication failed');
     }
   };
 
@@ -68,11 +67,6 @@ export default function LoginModal({ onClose, onLoginSuccess, onOpenAdmin }) {
 
         {/* Form Body */}
         <div className="p-6">
-          {error && (
-            <div className="mb-4 bg-amber-50 border border-amber-200 text-amber-800 text-xs p-3 rounded-xl font-medium">
-              {error}
-            </div>
-          )}
 
           <form onSubmit={handleSubmit} className="space-y-4">
             {isRegister && (
@@ -144,7 +138,7 @@ export default function LoginModal({ onClose, onLoginSuccess, onOpenAdmin }) {
               type="button"
               onClick={() => {
                 setIsRegister(!isRegister);
-                setError('');
+                if (showToast) showToast('', 'error');
               }}
               className="text-emerald-600 hover:underline font-bold cursor-pointer"
             >

@@ -11,10 +11,9 @@ const DAYS_OF_WEEK = [
   'Wednesday', 'Thursday', 'Friday'
 ];
 
-
-
 export default function DoctorModal() {
   const {
+    isSuperAdmin,
     showDoctorModal,
     setShowDoctorModal,
     editingDoctor,
@@ -260,6 +259,48 @@ export default function DoctorModal() {
       return;
     }
 
+    // Check schedule validity and overlaps across all chambers
+    const allSchedules = [];
+    for (const aff of affiliations) {
+      const loc = allLocations.find(l => String(l.id) === String(aff.location_id))?.name || 'Chamber';
+      for (const sched of (aff.schedules || [])) {
+        const start = sched.start_time || '17:00';
+        const end = sched.end_time || '21:00';
+        const startMin = parseInt(start.split(':')[0] || '0', 10) * 60 + parseInt(start.split(':')[1] || '0', 10);
+        const endMin = parseInt(end.split(':')[0] || '0', 10) * 60 + parseInt(end.split(':')[1] || '0', 10);
+
+        if (startMin >= endMin) {
+          setErrorMsg(`Invalid visiting hours (${start} - ${end}) at ${loc}: End time must be after start time.`);
+          return;
+        }
+
+        allSchedules.push({
+          day: sched.day_of_week || 'Saturday',
+          startMin,
+          endMin,
+          startStr: start,
+          endStr: end,
+          loc
+        });
+      }
+    }
+
+    // Check for pairwise schedule conflict
+    for (let i = 0; i < allSchedules.length; i++) {
+      for (let j = i + 1; j < allSchedules.length; j++) {
+        const s1 = allSchedules[i];
+        const s2 = allSchedules[j];
+        if (s1.day === s2.day) {
+          if (s1.startMin < s2.endMin && s1.endMin > s2.startMin) {
+            setErrorMsg(
+              `Schedule conflict on ${s1.day}: Slot (${s1.startStr} - ${s1.endStr}) at ${s1.loc} overlaps with slot (${s2.startStr} - ${s2.endStr}) at ${s2.loc}.`
+            );
+            return;
+          }
+        }
+      }
+    }
+
     setSaving(true);
     setErrorMsg('');
 
@@ -273,15 +314,23 @@ export default function DoctorModal() {
       };
 
       let doctorId = editingDoctor?.id;
-      if (editingDoctor) {
-        await api.updateDoctor(editingDoctor.id, docPayload);
+      
+      // ONLY SUPER ADMIN CAN EDIT THE DOCTOR PROFILE DIRECTLY
+      if (isSuperAdmin) {
+        if (editingDoctor) {
+          await api.updateDoctor(editingDoctor.id, docPayload);
+        } else {
+          const createdDoc = await api.createDoctor(docPayload);
+          doctorId = createdDoc?.id;
+        }
       } else {
-        const createdDoc = await api.createDoctor(docPayload);
-        doctorId = createdDoc?.id;
+        if (!doctorId) {
+          throw new Error('You do not have permission to create a new doctor profile.');
+        }
       }
 
       if (!doctorId) {
-        throw new Error('Failed to save doctor details.');
+        throw new Error('Failed to identify doctor ID.');
       }
 
       // 1. Delete removed affiliations
@@ -436,6 +485,7 @@ export default function DoctorModal() {
                   required
                   placeholder="e.g. Prof. Dr. M. A. Karim"
                   value={name}
+                  disabled={!isSuperAdmin}
                   onChange={e => setName(e.target.value)}
                   className="w-full bg-slate-900 border border-slate-800 rounded-xl px-3 py-2 text-white font-semibold focus:outline-none focus:border-teal-500 transition"
                 />
@@ -447,6 +497,7 @@ export default function DoctorModal() {
                   type="text"
                   placeholder="e.g. A-12345"
                   value={bmdcNumber}
+                  disabled={!isSuperAdmin}
                   onChange={e => setBmdcNumber(e.target.value)}
                   className="w-full bg-slate-900 border border-slate-800 rounded-xl px-3 py-2 text-white focus:outline-none focus:border-teal-500 transition"
                 />
@@ -461,6 +512,7 @@ export default function DoctorModal() {
                   required
                   placeholder="e.g. MBBS, FCPS (Cardiology), FACC"
                   value={qualification}
+                  disabled={!isSuperAdmin}
                   onChange={e => setQualification(e.target.value)}
                   className="w-full bg-slate-900 border border-slate-800 rounded-xl px-3 py-2 text-white focus:outline-none focus:border-teal-500 transition"
                 />
@@ -473,6 +525,7 @@ export default function DoctorModal() {
                   required
                   placeholder="e.g. 15+ Yrs Exp."
                   value={experience}
+                  disabled={!isSuperAdmin}
                   onChange={e => setExperience(e.target.value)}
                   className="w-full bg-slate-900 border border-slate-800 rounded-xl px-3 py-2 text-white focus:outline-none focus:border-teal-500 transition"
                 />
@@ -494,7 +547,8 @@ export default function DoctorModal() {
                   <button
                     key={spec.id}
                     type="button"
-                    onClick={() => toggleSpecialty(spec.id)}
+                    onClick={() => isSuperAdmin && toggleSpecialty(spec.id)}
+                    disabled={!isSuperAdmin}
                     className={`px-3 py-1.5 rounded-xl border text-xs font-bold transition flex items-center gap-1.5 cursor-pointer ${
                       isSelected 
                         ? 'bg-teal-500/20 text-teal-300 border-teal-500/60 shadow-sm shadow-teal-500/10' 

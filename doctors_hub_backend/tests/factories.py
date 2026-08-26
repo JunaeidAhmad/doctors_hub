@@ -1,6 +1,6 @@
 import factory
-from accounts.models import User, Role
-from facilities.models import Location, Hospital, DiagnosticCenter, FacilityMembership
+from accounts.models import User, Role, UserRole, Permission
+from facilities.models import Location, Hospital, DiagnosticCenter
 from doctors.models import Doctor, DoctorSpecialty, DoctorAffiliation, AffiliationSchedule
 from tests.models import TestCategory, Test, FacilityTest
 from bookings.models import DoctorBooking, LabBooking
@@ -14,37 +14,69 @@ class UserFactory(factory.django.DjangoModelFactory):
     phone_number = factory.Sequence(lambda n: f"01710{n:06d}")
     first_name = factory.Faker("first_name")
     last_name = factory.Faker("last_name")
-    role = ""
     is_active = True
     is_staff = False
     is_superuser = False
 
     @classmethod
     def create_super_admin(cls, **kwargs):
-        return cls.create(
-            role=Role.SUPER_ADMIN,
+        user = cls.create(
             is_staff=True,
             is_superuser=True,
             **kwargs
         )
+        role, _ = Role.objects.get_or_create(
+            name="Super Admin",
+            defaults={"scope_type": Role.ScopeType.GLOBAL, "is_system": True}
+        )
+        UserRole.objects.get_or_create(user=user, role=role)
+        return user
 
     @classmethod
-    def create_facility_admin(cls, **kwargs):
-        return cls.create(
-            role=Role.FACILITY_ADMIN,
+    def create_facility_admin(cls, location=None, **kwargs):
+        user = cls.create(
             is_staff=False,
             is_superuser=False,
             **kwargs
         )
+        role, _ = Role.objects.get_or_create(
+            name="Facility Admin",
+            defaults={"scope_type": Role.ScopeType.FACILITY, "is_system": True}
+        )
+        UserRole.objects.get_or_create(user=user, role=role, facility=location)
+        return user
 
     @classmethod
     def create_doctor_user(cls, **kwargs):
-        return cls.create(
-            role=Role.DOCTOR,
+        user = cls.create(
             is_staff=False,
             is_superuser=False,
             **kwargs
         )
+        role, _ = Role.objects.get_or_create(
+            name="Doctor",
+            defaults={"scope_type": Role.ScopeType.SELF, "is_system": True}
+        )
+        UserRole.objects.get_or_create(user=user, role=role)
+        return user
+
+
+class RoleFactory(factory.django.DjangoModelFactory):
+    class Meta:
+        model = Role
+
+    name = factory.Sequence(lambda n: f"Role {n}")
+    scope_type = Role.ScopeType.GLOBAL
+    is_active = True
+    is_system = False
+
+
+class UserRoleFactory(factory.django.DjangoModelFactory):
+    class Meta:
+        model = UserRole
+
+    user = factory.SubFactory(UserFactory)
+    role = factory.SubFactory(RoleFactory)
 
 
 class LocationFactory(factory.django.DjangoModelFactory):
@@ -60,15 +92,6 @@ class LocationFactory(factory.django.DjangoModelFactory):
     division = "Dhaka"
     is_active = True
     is_verified = True
-
-
-class FacilityMembershipFactory(factory.django.DjangoModelFactory):
-    class Meta:
-        model = FacilityMembership
-
-    user = factory.SubFactory(UserFactory)
-    location = factory.SubFactory(LocationFactory)
-    role = FacilityMembership.MemberRole.ADMIN
 
 
 class DoctorSpecialtyFactory(factory.django.DjangoModelFactory):

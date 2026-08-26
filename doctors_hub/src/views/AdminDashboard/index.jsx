@@ -19,8 +19,9 @@ import AddTestsToDiagnosticsTab from './components/AddTestsToDiagnosticsTab';
 import DoctorAffiliationsManager from './components/doctor/DoctorAffiliationsManager';
 import DoctorScheduleManager from './components/doctor/DoctorScheduleManager';
 import StaffTab from './components/StaffTab';
+import RolesTab from './components/RolesTab';
 import VerificationQueueTab from './components/VerificationQueueTab';
-import PlatformAdminsTab from './components/PlatformAdminsTab';
+import AssignRolesTab from './components/AssignRolesTab';
 import FacilityProfile from './components/facility/FacilityProfile';
 
 function AdminDashboardContent({ onNavigate, onAdminLoggedIn }) {
@@ -164,20 +165,6 @@ function AdminDashboardContent({ onNavigate, onAdminLoggedIn }) {
 
         {/* ACTIVE TAB VIEWS */}
         <div className="flex-1 space-y-6 min-w-0">
-          {/* Notifications */}
-          {successMsg && (
-            <div className="bg-emerald-500/20 border border-emerald-500/40 text-emerald-300 p-4 rounded-2xl text-xs font-bold flex items-center gap-2 animate-fadeIn">
-              <CheckCircle className="w-4 h-4 text-emerald-400 shrink-0" />
-              <span>{successMsg}</span>
-            </div>
-          )}
-
-          {error && (
-            <div className="bg-rose-500/20 border border-rose-500/40 text-rose-300 p-4 rounded-2xl text-xs font-bold flex items-center gap-2 animate-fadeIn">
-              <AlertCircle className="w-4 h-4 text-rose-400 shrink-0" />
-              <span>{error}</span>
-            </div>
-          )}
 
           {/* MOBILE NAV (optional but keeping simple for now) */}
           <div className="md:hidden overflow-x-auto pb-2">
@@ -186,8 +173,9 @@ function AdminDashboardContent({ onNavigate, onAdminLoggedIn }) {
 
           {activeTab === 'overview' && <OverviewTab />}
           {activeTab === 'verification-queue' && <VerificationQueueTab />}
-          {activeTab === 'platform-admins' && <PlatformAdminsTab />}
+          {(activeTab === 'assign-roles' || activeTab === 'platform-admins') && <AssignRolesTab />}
           {activeTab === 'staff' && <StaffTab />}
+          {activeTab === 'roles' && <RolesTab />}
           {activeTab === 'hospitals' && (isSuperAdmin ? <HospitalsTab /> : <FacilityProfile kind="hospital" />)}
           {activeTab === 'diagnostics' && (isSuperAdmin ? <DiagnosticsTab /> : <FacilityProfile kind="diagnostic" />)}
           {activeTab === 'add-tests-to-diagnostics' && <AddTestsToDiagnosticsTab />}
@@ -206,9 +194,9 @@ function AdminDashboardContent({ onNavigate, onAdminLoggedIn }) {
   );
 }
 
-export default function AdminDashboard({ currentUser, onNavigate, onAdminLoggedIn, onLogout }) {
+export default function AdminDashboard({ currentUser, onNavigate, onAdminLoggedIn, onLogout, showToast }) {
   return (
-    <AdminProvider currentUser={currentUser} onLogout={onLogout}>
+    <AdminProvider currentUser={currentUser} onLogout={onLogout} showToast={showToast}>
       <AdminDashboardContent onNavigate={onNavigate} onAdminLoggedIn={onAdminLoggedIn} />
     </AdminProvider>
   );

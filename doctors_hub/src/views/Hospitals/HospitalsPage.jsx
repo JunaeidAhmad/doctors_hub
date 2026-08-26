@@ -6,6 +6,7 @@ import {
   ArrowDownAZ, ArrowUpAZ, X
 } from 'lucide-react';
 import { api, ensureArray, isPageReload, getIsInitialLoad } from '../../services/api';
+import { useDebounce } from '../../hooks/useDebounce';
 import { DIVISIONS, findDivisionForDistrict } from '../../data/constants';
 import Pagination from '../../components/Pagination';
 import CascadingLocationFilter from '../../components/CascadingLocationFilter';
@@ -101,6 +102,7 @@ export default function HospitalsPage({ initialCategory = '', initialKeyword = '
   const [page, setPage] = useState(() => Math.max(1, parseInt(getParam('page', '1'), 10) || 1));
   const [sortOrder, setSortOrder] = useState(() => (getParam('sort', 'asc') === 'desc' ? 'desc' : 'asc'));
   const pageSize = 9;
+  const lastParamsRef = useRef(searchParams.toString());
   
   // Filter states
   const [division, setDivision] = useState(() => {
@@ -144,6 +146,7 @@ export default function HospitalsPage({ initialCategory = '', initialKeyword = '
     if (initialKeyword) return initialKeyword;
     return '';
   });
+  const debouncedSearchKeyword = useDebounce(searchKeyword, 350);
 
   const [totalHospitalPages, setTotalHospitalPages] = useState(1);
 
@@ -194,52 +197,50 @@ export default function HospitalsPage({ initialCategory = '', initialKeyword = '
     return () => { isMounted = false; };
   }, [division, district, area]);
 
-  // Fetch filtered Hospitals from backend
+  // Fetch filtered Hospitals from backend (instant on filters/buttons, debounced on search text)
   useEffect(() => {
     let isMounted = true;
-    const delay = searchKeyword.trim() ? 350 : 0;
-    const timer = setTimeout(() => {
-      setIsSyncing(true);
-      const params = {
-        division: division !== 'All Bangladesh' ? division : undefined,
-        district: district !== 'All Districts' ? district : undefined,
-        area: area !== 'All Areas' ? area : undefined,
-        category: selectedCategory !== 'all' && selectedCategory !== 'All Categories' ? selectedCategory : undefined,
-        ownership_type: ownershipType !== 'all' ? ownershipType : undefined,
-        search: searchKeyword.trim() || undefined,
-        page: page,
-        page_size: pageSize
-      };
+    setIsSyncing(true);
+    const params = {
+      division: division !== 'All Bangladesh' ? division : undefined,
+      district: district !== 'All Districts' ? district : undefined,
+      area: area !== 'All Areas' ? area : undefined,
+      category: selectedCategory !== 'all' && selectedCategory !== 'All Categories' ? selectedCategory : undefined,
+      ownership_type: ownershipType !== 'all' ? ownershipType : undefined,
+      search: debouncedSearchKeyword.trim() || undefined,
+      page: page,
+      page_size: pageSize
+    };
 
-      api.getHospitals(params).then((hData) => {
-        if (isMounted) {
-          let hList = [];
-          let hCount = 0;
+    api.getHospitals(params).then((hData) => {
+      if (isMounted) {
+        let hList = [];
+        let hCount = 0;
 
-          if (hData) {
-            hList = ensureArray(hData);
-            hCount = (typeof hData === 'object' && hData.count) ? hData.count : hList.length;
-          }
-
-          setHospitals(hList);
-          setTotalHospitalPages(Math.max(1, Math.ceil(hCount / pageSize)));
+        if (hData) {
+          hList = ensureArray(hData);
+          hCount = (typeof hData === 'object' && hData.count) ? hData.count : hList.length;
         }
-      }).catch(() => {
-        if (isMounted) {
-          setHospitals([]);
-          setTotalHospitalPages(1);
-        }
-      }).finally(() => {
-        if (isMounted) setIsSyncing(false);
-      });
-    }, delay);
 
-    return () => { isMounted = false; clearTimeout(timer); };
-  }, [division, district, area, selectedCategory, ownershipType, searchKeyword, page]);
+        setHospitals(hList);
+        setTotalHospitalPages(Math.max(1, Math.ceil(hCount / pageSize)));
+      }
+    }).catch(() => {
+      if (isMounted) {
+        setHospitals([]);
+        setTotalHospitalPages(1);
+      }
+    }).finally(() => {
+      if (isMounted) setIsSyncing(false);
+    });
+
+    return () => { isMounted = false; };
+  }, [division, district, area, selectedCategory, ownershipType, debouncedSearchKeyword, page]);
 
   // Handle URL deserialization once or when searchParams actually change from outside
   useEffect(() => {
     if (lastParamsRef.current === searchParams.toString()) return;
+    lastParamsRef.current = searchParams.toString();
     
     const urlCat = searchParams.get('cat');
     const urlOwn = searchParams.get('ownership');
@@ -248,9 +249,11 @@ export default function HospitalsPage({ initialCategory = '', initialKeyword = '
     const urlLoc = searchParams.get('loc');
     const urlArea = searchParams.get('area');
     const urlQ = searchParams.get('q');
+    const urlPage = searchParams.get('page');
     const urlSort = searchParams.get('sort');
     
-    if (urlCat !== null) setSelectedCategory(urlCat || 'all');
+    setSelectedCategory(urlCat || 'all');
+    setOwnershipType(urlOwn || 'all');
     
     if (urlDiv) {
       setDivision(urlDiv);
@@ -273,11 +276,10 @@ export default function HospitalsPage({ initialCategory = '', initialKeyword = '
       setDistrict('All Districts');
     }
 
-    if (urlArea !== null) setArea(urlArea || 'All Areas');
-    if (urlQ !== null) setSearchKeyword(urlQ || '');
-    if (urlSort !== null) setSortOrder(urlSort || 'asc');
-    
-    lastParamsRef.current = searchParams.toString();
+    setArea(urlArea || 'All Areas');
+    setSearchKeyword(urlQ || '');
+    setPage(urlPage ? Math.max(1, parseInt(urlPage, 10) || 1) : 1);
+    if (urlSort !== null) setSortOrder(urlSort === 'desc' ? 'desc' : 'asc');
   }, [searchParams]);
 
   // Combine hospitals list to display
@@ -317,7 +319,25 @@ export default function HospitalsPage({ initialCategory = '', initialKeyword = '
 
   const filteredHospitals = allHospitalsList;
 
-  const lastParamsRef = useRef(searchParams.toString());
+  const handleResetFilters = () => {
+    setSelectedCategory('all');
+    setOwnershipType('all');
+    setDivision('All Bangladesh');
+    setDistrict('All Districts');
+    setArea('All Areas');
+    setSearchKeyword('');
+    setPage(1);
+  };
+
+  const hasActiveFilters = Boolean(
+    (selectedCategory && selectedCategory !== 'all') ||
+    (ownershipType && ownershipType !== 'all') ||
+    (division && division !== 'All Bangladesh') ||
+    (district && district !== 'All Districts') ||
+    (area && area !== 'All Areas') ||
+    (searchKeyword && searchKeyword.trim())
+  );
+
   useEffect(() => {
     const params = new URLSearchParams();
     if (selectedCategory && selectedCategory !== 'all') params.set('cat', selectedCategory);
@@ -400,16 +420,10 @@ export default function HospitalsPage({ initialCategory = '', initialKeyword = '
                 <Filter className="w-4 h-4 text-emerald-400" />
                 <span>Hospital Search & Filter</span>
               </div>
-              {(ownershipType !== 'all' || selectedCategory !== 'all' || division !== 'All Bangladesh' || district !== 'All Districts' || area !== 'All Areas' || searchKeyword) && (
+              {hasActiveFilters && (
                 <button
-                  onClick={() => {
-                    setSelectedCategory('all');
-                    setOwnershipType('all');
-                    setDivision('All Bangladesh');
-                    setDistrict('All Districts');
-                    setArea('All Areas');
-                    setSearchKeyword('');
-                  }}
+                  type="button"
+                  onClick={handleResetFilters}
                   className="text-emerald-400 hover:underline font-bold cursor-pointer"
                 >
                   Reset All Filters
@@ -572,9 +586,16 @@ export default function HospitalsPage({ initialCategory = '', initialKeyword = '
           <div className="bg-white rounded-2xl p-12 text-center border border-slate-200 max-w-lg mx-auto">
             <Building2 className="w-12 h-12 text-slate-300 mx-auto mb-3" />
             <h3 className="text-lg font-bold text-slate-800">No Hospitals Found</h3>
-            <p className="text-xs text-slate-500 mt-1">
+            <p className="text-xs text-slate-500 mt-1 mb-4">
               Try resetting your search query, location, or hospital category filter.
             </p>
+            <button
+              type="button"
+              onClick={handleResetFilters}
+              className="px-5 py-2.5 bg-emerald-600 hover:bg-emerald-700 text-white font-bold text-xs rounded-xl transition-all shadow-sm cursor-pointer"
+            >
+              Reset All Filters
+            </button>
           </div>
         ) : (
           <>

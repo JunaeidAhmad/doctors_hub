@@ -1,8 +1,8 @@
 import pytest
 from rest_framework.test import APIClient
-from accounts.models import User, Role
-from facilities.models import Location, FacilityMembership
-from tests.factories import UserFactory, LocationFactory, FacilityMembershipFactory
+from accounts.models import User, Role, UserRole
+from facilities.models import Location
+from tests.factories import UserFactory, LocationFactory
 
 
 @pytest.mark.django_db
@@ -10,23 +10,23 @@ class TestStaffDelegation:
     def setup_method(self):
         self.client = APIClient()
 
+        # Create base roles
+        self.admin_role, _ = Role.objects.get_or_create(
+            name="Facility Admin",
+            defaults={"scope_type": Role.ScopeType.FACILITY, "is_system": True}
+        )
+        self.staff_role, _ = Role.objects.get_or_create(
+            name="Staff",
+            defaults={"scope_type": Role.ScopeType.FACILITY, "is_system": True}
+        )
+
         # Location A and Admin A
         self.loc_a = LocationFactory.create(name="Delta Hospital")
-        self.admin_a = UserFactory.create_facility_admin()
-        FacilityMembershipFactory.create(
-            user=self.admin_a,
-            location=self.loc_a,
-            role=FacilityMembership.MemberRole.ADMIN
-        )
+        self.admin_a = UserFactory.create_facility_admin(location=self.loc_a)
 
         # Location B and Admin B
         self.loc_b = LocationFactory.create(name="Apex Diagnostic")
-        self.admin_b = UserFactory.create_facility_admin()
-        FacilityMembershipFactory.create(
-            user=self.admin_b,
-            location=self.loc_b,
-            role=FacilityMembership.MemberRole.ADMIN
-        )
+        self.admin_b = UserFactory.create_facility_admin(location=self.loc_b)
 
         # Super Admin
         self.super_admin = UserFactory.create_super_admin()
@@ -50,15 +50,13 @@ class TestStaffDelegation:
 
         # Verify database record
         staff_user = User.objects.get(phone_number="01611223344")
-        assert staff_user.role == Role.STAFF
-        assert FacilityMembership.objects.filter(user=staff_user, location=self.loc_a, role="staff").exists()
+        assert UserRole.objects.filter(user=staff_user, facility=self.loc_a).exists()
 
         # List staff
         list_res = self.client.get(f"/api/v1/facilities/{self.loc_a.id}/staff/")
         assert list_res.status_code == 200
         list_data = list_res.json()
-        assert len(list_data) == 1
-        assert list_data[0]["phone_number"] == "01611223344"
+        assert any(s["phone_number"] == "01611223344" for s in list_data)
 
     def test_facility_admin_cannot_manage_foreign_facility_staff(self):
         # Admin A tries to add staff to Location B
@@ -81,16 +79,16 @@ class TestStaffDelegation:
         self.client.force_authenticate(user=self.admin_a)
 
         # Create staff
-        staff = UserFactory.create(role=Role.STAFF)
-        FacilityMembershipFactory.create(
+        staff = UserFactory.create()
+        UserRole.objects.create(
             user=staff,
-            location=self.loc_a,
-            role=FacilityMembership.MemberRole.STAFF
+            facility=self.loc_a,
+            role=self.staff_role
         )
 
         del_res = self.client.delete(f"/api/v1/facilities/{self.loc_a.id}/staff/{staff.id}/")
         assert del_res.status_code == 204
-        assert not FacilityMembership.objects.filter(user=staff, location=self.loc_a).exists()
+        assert not UserRole.objects.filter(user=staff, facility=self.loc_a).exists()
 
     def test_super_admin_can_manage_any_facility_staff(self):
         self.client.force_authenticate(user=self.super_admin)

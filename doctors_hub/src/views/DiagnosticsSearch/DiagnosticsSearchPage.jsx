@@ -7,6 +7,7 @@ import {
 } from 'lucide-react';
 import { DIVISIONS, findDivisionForDistrict } from '../../data/constants';
 import { api, ensureArray, isPageReload, getIsInitialLoad } from '../../services/api';
+import { useDebounce } from '../../hooks/useDebounce';
 import Pagination from '../../components/Pagination';
 import CascadingLocationFilter from "../../components/CascadingLocationFilter";
 
@@ -580,14 +581,19 @@ export default function DiagnosticsSearchPage({
     if (urlQ) return urlQ;
     return '';
   });
+  const debouncedSearchKeyword = useDebounce(searchKeyword, 350);
 
   const [currentPage, setCurrentPage] = useState(1);
   const pageSize = 10;
   const [totalPages, setTotalPages] = useState(1);
+  const lastParamsRef = useRef(searchParams.toString());
 
   // Sync state when URL searchParams or props change
   useEffect(() => {
     if (isRefresh) return;
+    if (lastParamsRef.current === searchParams.toString()) return;
+    lastParamsRef.current = searchParams.toString();
+
     const urlTestCat = searchParams.get('testcat');
     const urlCat = searchParams.get('cat') || searchParams.get('spec') || searchParams.get('owner');
     const urlDiv = searchParams.get('division');
@@ -597,26 +603,9 @@ export default function DiagnosticsSearchPage({
     const urlQ = searchParams.get('q');
     const urlOwn = searchParams.get('ownership');
 
-    if (urlTestCat !== null) {
-      setSelectedTestCategory(urlTestCat || 'all');
-    } else if (initialTest && initialTest !== 'diagnostics' && initialTest !== 'diagnostics-search') {
-      setSelectedTestCategory(initialTest);
-    } else {
-      setSelectedTestCategory('all');
-    }
-    
-    if (urlCat !== null) {
-      setSelectedCenterCategory(urlCat || 'all');
-    } else {
-      setSelectedCenterCategory('all');
-    setOwnershipType('all');
-    }
-
-    if (urlOwn !== null) {
-      setOwnershipType(urlOwn || 'all');
-    } else {
-      setOwnershipType('all');
-    }
+    setSelectedTestCategory(urlTestCat || 'all');
+    setSelectedCenterCategory(urlCat || 'all');
+    setOwnershipType(urlOwn || 'all');
 
     if (urlDiv) {
       setDivision(urlDiv);
@@ -641,7 +630,7 @@ export default function DiagnosticsSearchPage({
 
     setArea(urlArea || 'All Areas');
     setSearchKeyword(urlQ || '');
-  }, [searchParams, initialTest, isRefresh]);
+  }, [searchParams, isRefresh]);
 
 
   // Fetch reference metadata and real-time facets
@@ -795,52 +784,50 @@ const resolveTestCategoryName = (val, testCats = []) => {
     return 'All Bangladesh';
   }, [division, district, area]);
 
-  // Fetch filtered Diagnostic Centers from backend
+  // Fetch filtered Diagnostic Centers from backend (instant on filters/buttons, debounced on search text)
   useEffect(() => {
     let isMounted = true;
 
-    const delay = searchKeyword.trim() ? 350 : 0;
-    const timer = setTimeout(() => {
-      api.getDiagnosticCenters({
-        division: division !== 'All Bangladesh' ? division : undefined,
-        district: district !== 'All Districts' ? district : undefined,
-        area: area !== 'All Areas' ? area : undefined,
-        testcat: selectedTestCategory !== 'all' ? selectedTestCategory : undefined,
-        ownership_type: ownershipType !== 'all' ? ownershipType : undefined,
-        search: searchKeyword.trim() || undefined,
-        page: currentPage,
-        page_size: pageSize
-      })
-        .then((data) => {
-          if (isMounted) {
-            const list = ensureArray(data, []);
-            if (list.length > 0) {
-              setDiagnosticCenters(list);
-              if (data && typeof data === 'object' && data.count) {
-                setTotalPages(Math.ceil(data.count / pageSize));
-              } else {
-                setTotalPages(1);
-              }
+    api.getDiagnosticCenters({
+      division: division !== 'All Bangladesh' ? division : undefined,
+      district: district !== 'All Districts' ? district : undefined,
+      area: area !== 'All Areas' ? area : undefined,
+      testcat: selectedTestCategory !== 'all' ? selectedTestCategory : undefined,
+      ownership_type: ownershipType !== 'all' ? ownershipType : undefined,
+      search: debouncedSearchKeyword.trim() || undefined,
+      page: currentPage,
+      page_size: pageSize
+    })
+      .then((data) => {
+        if (isMounted) {
+          const list = ensureArray(data, []);
+          if (list.length > 0) {
+            setDiagnosticCenters(list);
+            if (data && typeof data === 'object' && data.count) {
+              setTotalPages(Math.ceil(data.count / pageSize));
             } else {
-              // If backend returned empty or is offline, use rich fallback
-              setDiagnosticCenters(FALLBACK_DIAGNOSTIC_CENTERS);
               setTotalPages(1);
             }
-          }
-        })
-        .catch(() => {
-          if (isMounted) {
+          } else {
+            // If backend returned empty or is offline, use rich fallback
             setDiagnosticCenters(FALLBACK_DIAGNOSTIC_CENTERS);
             setTotalPages(1);
           }
-        });
-    }, delay);
+        }
+      })
+      .catch(() => {
+        if (isMounted) {
+          setDiagnosticCenters(FALLBACK_DIAGNOSTIC_CENTERS);
+          setTotalPages(1);
+        }
+      });
 
-    return () => { isMounted = false; clearTimeout(timer); };
-  }, [division, district, area, selectedTestCategory, ownershipType, searchKeyword, currentPage]);
+    return () => { isMounted = false; };
+  }, [division, district, area, selectedTestCategory, ownershipType, debouncedSearchKeyword, currentPage]);
 
   const handleResetFilters = () => {
     setSelectedTestCategory('all');
+    setSelectedCenterCategory('all');
     setDivision('All Bangladesh');
     setDistrict('All Districts');
     setArea('All Areas');
@@ -861,10 +848,11 @@ const resolveTestCategoryName = (val, testCats = []) => {
     if (searchKeyword.trim()) params.set('q', searchKeyword.trim());
 
     const next = params.toString();
-    if (next !== searchParams.toString()) {
+    if (next !== lastParamsRef.current) {
+      lastParamsRef.current = next;
       setSearchParams(params, { replace: true });
     }
-  }, [division, district, area, selectedTestCategory, selectedCenterCategory, searchKeyword, searchParams, setSearchParams]);
+  }, [division, district, area, selectedTestCategory, selectedCenterCategory, ownershipType, searchKeyword, setSearchParams]);
 
   // Filter centers and compute matching tests
   const filteredCentersWithTests = useMemo(() => {
@@ -1013,7 +1001,7 @@ const resolveTestCategoryName = (val, testCats = []) => {
                 <Filter className="w-4 h-4 text-emerald-400" />
                 <span>Diagnostic Center & Test Search Filters</span>
               </div>
-              {(ownershipType !== 'all' || selectedTestCategory !== 'all' || division !== 'All Bangladesh' || district !== 'All Districts' || area !== 'All Areas' || searchKeyword) && (
+              {((ownershipType && ownershipType !== 'all') || (selectedTestCategory && selectedTestCategory !== 'all') || (selectedCenterCategory && selectedCenterCategory !== 'all') || (division && division !== 'All Bangladesh') || (district && district !== 'All Districts') || (area && area !== 'All Areas') || (searchKeyword && searchKeyword.trim())) && (
                 <button
                   type="button"
                   onClick={handleResetFilters}

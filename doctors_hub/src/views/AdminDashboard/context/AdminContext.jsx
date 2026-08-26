@@ -10,14 +10,22 @@ function ensureArray(val, fallback = []) {
 
 const AdminContext = createContext(null);
 
-export function AdminProvider({ children, currentUser, onLogout }) {
+export function AdminProvider({ children, currentUser, onLogout, showToast }) {
   const [activeTab, setActiveTab] = useState('overview'); 
   const [loading, setLoading] = useState(true);
-  const [error, setError] = useState('');
-  const [successMsg, setSuccessMsg] = useState('');
   const [searchTerm, setSearchTerm] = useState('');
   const [refreshTrigger, setRefreshTrigger] = useState(0);
   const isFetchingRef = useRef(false);
+
+  // We wrap showToast to mimic the old state setters so we don't have to refactor everything
+  const setSuccessMsg = (msg) => {
+    if (msg && showToast) showToast(msg, 'success');
+  };
+  const setError = (msg) => {
+    if (msg && showToast) showToast(msg, 'error');
+  };
+  const error = ''; // stub for components destructuring error
+  const successMsg = ''; // stub for components destructuring successMsg
 
   // Main Data States
   const [hospitals, setHospitals] = useState([]);
@@ -55,6 +63,7 @@ export function AdminProvider({ children, currentUser, onLogout }) {
   const [showBranchTestModal, setShowBranchTestModal] = useState(false);
   const [editingBranchTest, setEditingBranchTest] = useState(null);
   const [branchTestPrefill, setBranchTestPrefill] = useState({ type: null, id: null });
+  const [addTestsFacilityPrefill, setAddTestsFacilityPrefill] = useState({ type: 'diagnostic_center', id: null });
 
   // Category & Service Modal States
   const [showDoctorSpecModal, setShowDoctorSpecModal] = useState(false);
@@ -83,13 +92,28 @@ export function AdminProvider({ children, currentUser, onLogout }) {
   const [activeUser, setActiveUser] = useState(() => currentUser !== undefined ? currentUser : api.getCurrentUser());
 
   const storedUser = activeUser;
-  const role = storedUser?.role || (storedUser?.is_superuser ? 'super_admin' : '');
-  const isSuperAdmin = Boolean(storedUser) && (role === 'super_admin' || Boolean(storedUser?.is_superuser));
-  const isFacilityAdmin = Boolean(storedUser) && role === 'facility_admin';
+  const isSuperAdmin = Boolean(storedUser) && Boolean(
+    storedUser?.is_superuser || 
+    storedUser?.is_super_admin || 
+    storedUser?.role === 'super_admin'
+  );
+  const isFacilityAdmin = Boolean(storedUser) && Boolean(
+    storedUser?.is_facility_admin || 
+    storedUser?.role === 'facility_admin' || 
+    (Array.isArray(storedUser?.managed_locations) && storedUser.managed_locations.length > 0)
+  );
   const isHospitalAdmin = isFacilityAdmin && storedUser?.managed_locations?.some(loc => loc.location_type === 'hospital');
   const isDiagnosticAdmin = isFacilityAdmin && storedUser?.managed_locations?.some(loc => loc.location_type === 'diagnostic_center');
-  const isDoctor = Boolean(storedUser) && role === 'doctor';
-  const isStaffRole = Boolean(storedUser) && role === 'staff';
+  const isDoctor = Boolean(storedUser) && Boolean(
+    storedUser?.is_doctor || 
+    storedUser?.role === 'doctor' || 
+    storedUser?.doctor_id
+  );
+  const isStaffRole = Boolean(storedUser) && Boolean(
+    storedUser?.role === 'staff' || 
+    (Array.isArray(storedUser?.roles) && storedUser.roles.includes('Staff')) ||
+    storedUser?.is_staff
+  );
   const isStaff = Boolean(
     storedUser && (
       isSuperAdmin || 
@@ -99,6 +123,11 @@ export function AdminProvider({ children, currentUser, onLogout }) {
       storedUser?.is_staff
     )
   );
+  const role = isSuperAdmin ? 'super_admin' : 
+               isHospitalAdmin ? 'hospital_admin' : 
+               isDiagnosticAdmin ? 'diagnostic_admin' : 
+               isDoctor ? 'doctor' : 
+               isStaffRole ? 'staff' : (storedUser?.role || '');
 
   const handleLogout = async () => {
     await api.logout();
@@ -128,6 +157,7 @@ export function AdminProvider({ children, currentUser, onLogout }) {
     setShowHospServiceModal(false);
     setShowDiagServiceModal(false);
     setShowTestCatModal(false);
+    setAddTestsFacilityPrefill({ type: 'diagnostic_center', id: null });
     setActiveTab('overview');
     setError('');
     setSuccessMsg('');
@@ -232,8 +262,7 @@ export function AdminProvider({ children, currentUser, onLogout }) {
   };
 
   const showNotification = (msg) => {
-    setSuccessMsg(msg);
-    setTimeout(() => setSuccessMsg(''), 4000);
+    if (showToast) showToast(msg, 'success');
   };
 
   // Helper opener actions
@@ -260,6 +289,24 @@ export function AdminProvider({ children, currentUser, onLogout }) {
     setEditingBranchTest(bt);
     setBranchTestPrefill({ type: prefillType, id: prefillId });
     setShowBranchTestModal(true);
+  };
+
+  const handleNavigateToAddTests = (facilityType = 'diagnostic_center', facilityId = null, facilityObj = null) => {
+    if (facilityType === 'diagnostic_center' && facilityObj && facilityId) {
+      setDiagnosticCenters(prev => {
+        const list = Array.isArray(prev) ? prev : [];
+        const exists = list.some(dc => String(dc.id || dc.location_details?.id) === String(facilityId));
+        return exists ? list : [facilityObj, ...list];
+      });
+    } else if (facilityType === 'hospital' && facilityObj && facilityId) {
+      setHospitals(prev => {
+        const list = Array.isArray(prev) ? prev : [];
+        const exists = list.some(h => String(h.id || h.location_details?.id) === String(facilityId));
+        return exists ? list : [facilityObj, ...list];
+      });
+    }
+    setAddTestsFacilityPrefill({ type: facilityType, id: facilityId ? String(facilityId) : null });
+    setActiveTab('add-tests-to-diagnostics');
   };
 
   const handleOpenDoctorSpecModal = (s = null) => {
@@ -313,7 +360,7 @@ export function AdminProvider({ children, currentUser, onLogout }) {
       showNotification(`Hospital "${name}" removed.`);
       loadInitialData();
     } catch (err) {
-      alert(`Error deleting hospital: ${err.message}`);
+      if (showToast) showToast(`Error deleting hospital: ${err.message}`, 'error');
     }
   };
 
@@ -324,7 +371,7 @@ export function AdminProvider({ children, currentUser, onLogout }) {
       showNotification(`Diagnostic Center "${name}" removed.`);
       loadInitialData();
     } catch (err) {
-      alert(`Error deleting center: ${err.message}`);
+      if (showToast) showToast(`Error deleting center: ${err.message}`, 'error');
     }
   };
 
@@ -335,7 +382,7 @@ export function AdminProvider({ children, currentUser, onLogout }) {
       showNotification(`Dr. ${name} removed.`);
       loadInitialData();
     } catch (err) {
-      alert(`Failed to delete doctor: ${err.message}`);
+      if (showToast) showToast(`Failed to delete doctor: ${err.message}`, 'error');
     }
   };
 
@@ -346,7 +393,7 @@ export function AdminProvider({ children, currentUser, onLogout }) {
       setTests(prev => prev.filter(t => String(t.id) !== String(id)));
       showNotification(`Test "${name}" deleted.`);
     } catch (err) {
-      alert(`Error deleting test: ${err.message}`);
+      if (showToast) showToast(`Error deleting test: ${err.message}`, 'error');
     }
   };
 
@@ -357,7 +404,7 @@ export function AdminProvider({ children, currentUser, onLogout }) {
       setTestCategories(prev => prev.filter(tc => String(tc.id) !== String(id)));
       showNotification(`Test Category "${name}" deleted.`);
     } catch (err) {
-      alert(`Error deleting category: ${err.message}`);
+      if (showToast) showToast(`Error deleting category: ${err.message}`, 'error');
     }
   };
 
@@ -368,7 +415,7 @@ export function AdminProvider({ children, currentUser, onLogout }) {
       showNotification("Test offering removed.");
       setBranchTests(prev => prev.filter(bt => String(bt.id) !== String(id)));
     } catch (err) {
-      alert(`Failed to remove: ${err.message}`);
+      if (showToast) showToast(`Failed to remove: ${err.message}`, 'error');
     }
   };
 
@@ -379,7 +426,7 @@ export function AdminProvider({ children, currentUser, onLogout }) {
       setDoctorSpecialties(prev => prev.filter(s => String(s.id) !== String(id)));
       showNotification(`Doctor Specialty "${name}" deleted.`);
     } catch (err) {
-      alert(`Error deleting specialty: ${err.message}`);
+      if (showToast) showToast(`Error deleting specialty: ${err.message}`, 'error');
     }
   };
 
@@ -390,7 +437,7 @@ export function AdminProvider({ children, currentUser, onLogout }) {
       setHospitalCategories(prev => prev.filter(c => String(c.id) !== String(id)));
       showNotification(`Hospital Category "${name}" deleted.`);
     } catch (err) {
-      alert(`Error deleting category: ${err.message}`);
+      if (showToast) showToast(`Error deleting category: ${err.message}`, 'error');
     }
   };
 
@@ -401,7 +448,7 @@ export function AdminProvider({ children, currentUser, onLogout }) {
       setDiagnosticCategories(prev => prev.filter(c => String(c.id) !== String(id)));
       showNotification(`Diagnostic Category "${name}" deleted.`);
     } catch (err) {
-      alert(`Error deleting category: ${err.message}`);
+      if (showToast) showToast(`Error deleting category: ${err.message}`, 'error');
     }
   };
 
@@ -412,7 +459,7 @@ export function AdminProvider({ children, currentUser, onLogout }) {
       setHospitalServices(prev => prev.filter(s => String(s.id) !== String(id)));
       showNotification(`Hospital Service "${name}" deleted.`);
     } catch (err) {
-      alert(`Error deleting service: ${err.message}`);
+      if (showToast) showToast(`Error deleting service: ${err.message}`, 'error');
     }
   };
 
@@ -423,7 +470,7 @@ export function AdminProvider({ children, currentUser, onLogout }) {
       setDiagnosticServices(prev => prev.filter(s => String(s.id) !== String(id)));
       showNotification(`Diagnostic Service "${name}" deleted.`);
     } catch (err) {
-      alert(`Error deleting service: ${err.message}`);
+      if (showToast) showToast(`Error deleting service: ${err.message}`, 'error');
     }
   };
 
@@ -479,6 +526,7 @@ export function AdminProvider({ children, currentUser, onLogout }) {
     showDoctorModal, setShowDoctorModal, editingDoctor, setEditingDoctor, handleOpenDoctorModal,
     showTestModal, setShowTestModal, editingTest, setEditingTest, handleOpenTestModal,
     showBranchTestModal, setShowBranchTestModal, editingBranchTest, setEditingBranchTest, branchTestPrefill, handleOpenBranchTestModal,
+    addTestsFacilityPrefill, setAddTestsFacilityPrefill, handleNavigateToAddTests,
 
     // Category Modal states & openers
     showDoctorSpecModal, setShowDoctorSpecModal, editingDoctorSpec, setEditingDoctorSpec, handleOpenDoctorSpecModal,

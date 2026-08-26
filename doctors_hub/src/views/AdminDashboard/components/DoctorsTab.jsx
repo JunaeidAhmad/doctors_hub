@@ -6,6 +6,7 @@ import DoctorProfileEditor from './doctor/DoctorProfileEditor';
 import AffiliateDoctorDrawer from './facility/AffiliateDoctorDrawer';
 import AdminPagination from './AdminPagination';
 import { api, ensureArray } from '../../../services/api';
+import { useDebounce } from '../../../hooks/useDebounce';
 
 export default function DoctorsTab() {
   const {
@@ -32,6 +33,8 @@ export default function DoctorsTab() {
   const [isInitialLoad, setIsInitialLoad] = useState(true);
   const [isFetching, setIsFetching] = useState(false);
 
+  const debouncedSearchTerm = useDebounce(searchTerm, 300);
+
   const managedLoc = storedUser?.managed_locations?.[0];
   const myFacility = isDiagnosticAdmin 
     ? (diagnosticCenters[0] || managedLoc || hospitals[0]) 
@@ -42,9 +45,9 @@ export default function DoctorsTab() {
   // Sync back to page 1 if search changes
   useEffect(() => {
     setPage(1);
-  }, [searchTerm]);
+  }, [debouncedSearchTerm]);
 
-  // Fetch paginated data
+  // Fetch paginated data (instant on page/refreshTrigger, debounced on typing)
   useEffect(() => {
     if (isDoctor) return; // Doctor profile editor doesn't need this table list
 
@@ -52,7 +55,7 @@ export default function DoctorsTab() {
     const fetchDoctors = async () => {
       setIsFetching(true);
       try {
-        const data = await api.getDoctors({ search: searchTerm, page, page_size: 20 });
+        const data = await api.getDoctors({ search: debouncedSearchTerm, page, page_size: 20 });
         if (isMounted) {
           if (data && typeof data === 'object' && 'results' in data) {
              setTabDoctors(ensureArray(data.results));
@@ -74,10 +77,9 @@ export default function DoctorsTab() {
       }
     };
 
-    const delay = searchTerm ? 300 : 0;
-    const timer = setTimeout(fetchDoctors, delay);
-    return () => { isMounted = false; clearTimeout(timer); };
-  }, [searchTerm, page, isDoctor, refreshTrigger]);
+    fetchDoctors();
+    return () => { isMounted = false; };
+  }, [debouncedSearchTerm, page, isDoctor, refreshTrigger]);
 
   // If logged in as Doctor, show dedicated single doctor profile editor
   if (isDoctor) {

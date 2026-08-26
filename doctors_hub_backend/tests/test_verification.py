@@ -78,6 +78,6 @@ class TestVerificationQueue:
         assert res.status_code == 201
 
         new_admin = User.objects.get(phone_number="01799001122")
-        assert new_admin.role == Role.SUPER_ADMIN
+        assert new_admin.is_super_admin is True
         assert new_admin.is_superuser is True
         assert new_admin.is_staff is True

@@ -2,7 +2,7 @@ import React, { useState } from 'react';
 import { X, Calendar, Clock, User, Phone, CheckCircle2, Building2, Stethoscope, ShieldCheck, ArrowRight, RefreshCw } from 'lucide-react';
 import { api } from '../services/api';
 
-export default function BookingModal({ chamber, doctor, onClose, onConfirmBooking }) {
+export default function BookingModal({ chamber, doctor, onClose, onConfirmBooking, showToast }) {
   const [step, setStep] = useState('details'); // 'details' | 'otp'
   const [selectedDate, setSelectedDate] = useState('2026-07-26');
   const [selectedSlot, setSelectedSlot] = useState(doctor?.slots?.[0] || '05:15 PM');
@@ -12,29 +12,28 @@ export default function BookingModal({ chamber, doctor, onClose, onConfirmBookin
   const [patientAge, setPatientAge] = useState('');
   const [gender, setGender] = useState('Male');
   const [isSubmitting, setIsSubmitting] = useState(false);
-  const [error, setError] = useState('');
 
   if (!chamber || !doctor) return null;
 
   const handleSendOtp = (e) => {
     e.preventDefault();
     if (!patientName || !patientPhone) {
-      setError('Please provide patient name and phone number');
+      if (showToast) showToast('Please provide patient name and phone number', 'error');
       return;
     }
-    setError('');
+    if (showToast) showToast('', 'error');
     setStep('otp');
   };
 
   const handleVerifyOtpAndBook = async (e) => {
     e.preventDefault();
     if (otpInput.trim() !== '123' && otpInput.trim() !== '') {
-      setError('Invalid OTP code. Please enter 123 for testing.');
+      if (showToast) showToast('Invalid OTP code. Please enter 123 for testing.', 'error');
       return;
     }
 
     setIsSubmitting(true);
-    setError('');
+    if (showToast) showToast('', 'error');
 
     try {
       let user = api.getCurrentUser();
@@ -134,12 +133,6 @@ export default function BookingModal({ chamber, doctor, onClose, onConfirmBookin
         {step === 'details' ? (
           /* STEP 1: Details & Serial Date */
           <form onSubmit={handleSendOtp} className="p-5 space-y-4 max-h-[75vh] overflow-y-auto">
-            {error && (
-              <div className="bg-rose-50 border border-rose-200 text-rose-700 text-xs p-3 rounded-xl">
-                {error}
-              </div>
-            )}
-
             {/* Date Picker & Time Slot Picker */}
             <div>
               <label className="block text-xs font-bold text-slate-700 mb-1.5 flex items-center gap-1">
@@ -257,12 +250,6 @@ export default function BookingModal({ chamber, doctor, onClose, onConfirmBookin
         ) : (
           /* STEP 2: OTP Verification */
           <form onSubmit={handleVerifyOtpAndBook} className="p-6 space-y-4">
-            {error && (
-              <div className="bg-rose-50 border border-rose-200 text-rose-700 text-xs p-3 rounded-xl font-medium">
-                {error}
-              </div>
-            )}
-
             <div className="text-center py-2">
               <div className="w-12 h-12 rounded-full bg-emerald-100 text-emerald-600 flex items-center justify-center mx-auto mb-3">
                 <Phone className="w-6 h-6 animate-pulse" />

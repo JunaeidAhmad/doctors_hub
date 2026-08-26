@@ -4,12 +4,12 @@ import {
   AlertCircle, RefreshCw, X, UserCheck, Shield
 } from 'lucide-react';
 import { api, ensureArray } from '../../../services/api';
+import { useAdminContext } from '../context/AdminContext';
 
 export default function PlatformAdminsTab() {
+  const { setSuccessMsg, setError } = useAdminContext();
   const [admins, setAdmins] = useState([]);
   const [loading, setLoading] = useState(false);
-  const [err, setErr] = useState('');
-  const [success, setSuccess] = useState('');
 
   // Invite Modal
   const [isModalOpen, setIsModalOpen] = useState(false);
@@ -23,12 +23,11 @@ export default function PlatformAdminsTab() {
 
   const loadAdmins = async () => {
     setLoading(true);
-    setErr('');
     try {
       const data = await api.getPlatformAdmins();
       setAdmins(ensureArray(data));
     } catch (e) {
-      setErr(e.message || 'Failed to load platform admins');
+      if (setError) setError(e.message || 'Failed to load platform admins');
     } finally {
       setLoading(false);
     }
@@ -41,17 +40,15 @@ export default function PlatformAdminsTab() {
   const handleAddAdmin = async (e) => {
     e.preventDefault();
     setAddingLoading(true);
-    setErr('');
-    setSuccess('');
 
     try {
       const res = await api.createPlatformAdmin(form);
-      setSuccess(res?.message || `Super Admin ${form.phone_number} provisioned successfully.`);
+      if (setSuccessMsg) setSuccessMsg(res?.message || `Super Admin ${form.phone_number} provisioned successfully.`);
       setIsModalOpen(false);
       setForm({ phone_number: '', password: '', first_name: '', last_name: '' });
       loadAdmins();
     } catch (e) {
-      setErr(e.message || 'Failed to create Super Admin');
+      if (setError) setError(e.message || 'Failed to create Super Admin');
     } finally {
       setAddingLoading(false);
     }
@@ -83,21 +80,6 @@ export default function PlatformAdminsTab() {
           <span>Add Platform Admin</span>
         </button>
       </div>
-
-      {/* Feedback Alerts */}
-      {err && (
-        <div className="p-3.5 rounded-2xl bg-rose-500/20 border border-rose-500/40 text-rose-300 text-xs flex items-center gap-2.5">
-          <AlertCircle className="w-4 h-4 text-rose-400 shrink-0" />
-          <span>{err}</span>
-        </div>
-      )}
-
-      {success && (
-        <div className="p-3.5 rounded-2xl bg-emerald-500/20 border border-emerald-500/40 text-emerald-300 text-xs flex items-center gap-2.5">
-          <CheckCircle2 className="w-4 h-4 text-emerald-400 shrink-0" />
-          <span>{success}</span>
-        </div>
-      )}
 
       {/* Admin Table */}
       <div className="bg-slate-900 border border-slate-800 rounded-3xl overflow-hidden shadow-xl">

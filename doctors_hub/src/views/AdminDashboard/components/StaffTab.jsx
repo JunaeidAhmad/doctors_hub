@@ -7,7 +7,7 @@ import { api, ensureArray } from '../../../services/api';
 import { useAdminContext } from '../context/AdminContext';
 
 export default function StaffTab() {
-  const { isSuperAdmin, isFacilityAdmin, hospitals, diagnosticCenters, activeUser } = useAdminContext();
+  const { isSuperAdmin, isFacilityAdmin, hospitals, diagnosticCenters, activeUser, setSuccessMsg, setError } = useAdminContext();
   
   // Available facilities to manage
   const managedFacilities = [
@@ -17,9 +17,8 @@ export default function StaffTab() {
 
   const [selectedFacilityId, setSelectedFacilityId] = useState(managedFacilities[0]?.id || '');
   const [staffList, setStaffList] = useState([]);
+  const [rolesList, setRolesList] = useState([]);
   const [loading, setLoading] = useState(false);
-  const [err, setErr] = useState('');
-  const [success, setSuccess] = useState('');
 
   // Add Staff Modal
   const [isAddModalOpen, setIsAddModalOpen] = useState(false);
@@ -28,7 +27,7 @@ export default function StaffTab() {
     last_name: '',
     phone_number: '',
     password: '',
-    role_title: 'Receptionist'
+    role_ids: []
   });
   const [addingLoading, setAddingLoading] = useState(false);
 
@@ -46,14 +45,28 @@ export default function StaffTab() {
 
   const loadStaff = async (facId) => {
     setLoading(true);
-    setErr('');
     try {
       const data = await api.getFacilityStaff(facId);
       setStaffList(ensureArray(data));
     } catch (e) {
-      setErr(e.message || 'Failed to load staff members');
+      if (setError) setError(e.message || 'Failed to load staff members');
     } finally {
       setLoading(false);
+    }
+  };
+
+  const handleOpenAddModal = async () => {
+    setIsAddModalOpen(true);
+    try {
+      const allRoles = await api.getRoles();
+      // Only show facility-scoped roles
+      const facilityRoles = ensureArray(allRoles).filter(r => r.scope_type === 'facility');
+      setRolesList(facilityRoles);
+      if (facilityRoles.length > 0) {
+        setAddForm(prev => ({ ...prev, role_ids: [facilityRoles[0].id] }));
+      }
+    } catch (e) {
+      console.error('Failed to load roles', e);
     }
   };
 
@@ -61,17 +74,15 @@ export default function StaffTab() {
     e.preventDefault();
     if (!selectedFacilityId) return;
     setAddingLoading(true);
-    setErr('');
-    setSuccess('');
 
     try {
       await api.addFacilityStaff(selectedFacilityId, addForm);
-      setSuccess(`Staff member ${addForm.first_name} added successfully.`);
+      if (setSuccessMsg) setSuccessMsg(`Staff member ${addForm.first_name} added successfully.`);
       setIsAddModalOpen(false);
-      setAddForm({ first_name: '', last_name: '', phone_number: '', password: '', role_title: 'Receptionist' });
+      setAddForm({ first_name: '', last_name: '', phone_number: '', password: '', role_ids: [] });
       loadStaff(selectedFacilityId);
     } catch (e) {
-      setErr(e.message || 'Failed to add staff member');
+      if (setError) setError(e.message || 'Failed to add staff member');
     } finally {
       setAddingLoading(false);
     }
@@ -79,14 +90,12 @@ export default function StaffTab() {
 
   const handleDeleteStaff = async (userId, staffName) => {
     if (!window.confirm(`Are you sure you want to remove staff member "${staffName}"?`)) return;
-    setErr('');
-    setSuccess('');
     try {
       await api.deleteFacilityStaff(selectedFacilityId, userId);
-      setSuccess(`Removed ${staffName} from facility staff.`);
+      if (setSuccessMsg) setSuccessMsg(`Removed ${staffName} from facility staff.`);
       loadStaff(selectedFacilityId);
     } catch (e) {
-      setErr(e.message || 'Failed to remove staff member');
+      if (setError) setError(e.message || 'Failed to remove staff member');
     }
   };
 
@@ -122,7 +131,7 @@ export default function StaffTab() {
 
           <button
             type="button"
-            onClick={() => setIsAddModalOpen(true)}
+            onClick={handleOpenAddModal}
             className="bg-gradient-to-r from-teal-600 to-emerald-600 hover:from-teal-500 hover:to-emerald-500 text-white font-bold px-4 py-2.5 rounded-xl shadow-lg shadow-teal-600/20 text-xs flex items-center gap-2 transition cursor-pointer"
           >
             <UserPlus className="w-4 h-4" />
@@ -130,21 +139,6 @@ export default function StaffTab() {
           </button>
         </div>
       </div>
-
-      {/* Feedback Alerts */}
-      {err && (
-        <div className="p-3.5 rounded-2xl bg-rose-500/20 border border-rose-500/40 text-rose-300 text-xs flex items-center gap-2.5">
-          <AlertCircle className="w-4 h-4 text-rose-400 shrink-0" />
-          <span>{err}</span>
-        </div>
-      )}
-
-      {success && (
-        <div className="p-3.5 rounded-2xl bg-emerald-500/20 border border-emerald-500/40 text-emerald-300 text-xs flex items-center gap-2.5">
-          <CheckCircle2 className="w-4 h-4 text-emerald-400 shrink-0" />
-          <span>{success}</span>
-        </div>
-      )}
 
       {/* Staff Table */}
       <div className="bg-slate-900 border border-slate-800 rounded-3xl overflow-hidden shadow-xl">
@@ -177,7 +171,7 @@ export default function StaffTab() {
             </p>
             <button
               type="button"
-              onClick={() => setIsAddModalOpen(true)}
+              onClick={handleOpenAddModal}
               className="mt-2 bg-teal-500/10 hover:bg-teal-500/20 text-teal-300 border border-teal-500/30 px-3.5 py-2 rounded-xl text-xs font-bold transition cursor-pointer"
             >
               + Add First Staff Member
@@ -305,6 +299,48 @@ export default function StaffTab() {
                   onChange={e => setAddForm({ ...addForm, password: e.target.value })}
                   className="w-full bg-slate-950 border border-slate-800 rounded-xl px-3 py-2.5 text-white focus:outline-none focus:border-teal-500"
                 />
+              </div>
+
+              <div>
+                <label className="block text-slate-300 font-semibold mb-2 flex items-center gap-1">
+                  <ShieldCheck className="w-3.5 h-3.5 text-teal-400" />
+                  <span>Assign Roles *</span>
+                </label>
+                <div className="space-y-2 max-h-32 overflow-y-auto bg-slate-950/50 p-3 rounded-xl border border-slate-800">
+                  {rolesList.length === 0 ? (
+                    <div className="text-slate-500 text-xs text-center py-2">No roles available</div>
+                  ) : (
+                    rolesList.map(r => (
+                      <label key={r.id} className="flex items-center gap-2 cursor-pointer group">
+                        <div className="relative flex items-center justify-center">
+                          <input
+                            type="checkbox"
+                            checked={(addForm.role_ids || []).includes(r.id)}
+                            onChange={(e) => {
+                              const checked = e.target.checked;
+                              setAddForm(prev => {
+                                const currentIds = prev.role_ids || [];
+                                return {
+                                  ...prev,
+                                  role_ids: checked 
+                                    ? [...currentIds, r.id] 
+                                    : currentIds.filter(id => id !== r.id)
+                                };
+                              });
+                            }}
+                            className="peer appearance-none w-4 h-4 border border-slate-700 rounded bg-slate-900 checked:bg-teal-500 checked:border-teal-500 cursor-pointer transition-all"
+                          />
+                          <div className="absolute opacity-0 peer-checked:opacity-100 pointer-events-none text-white">
+                            <svg className="w-3 h-3" viewBox="0 0 20 20" fill="currentColor">
+                              <path fillRule="evenodd" d="M16.707 5.293a1 1 0 010 1.414l-8 8a1 1 0 01-1.414 0l-4-4a1 1 0 011.414-1.414L8 12.586l7.293-7.293a1 1 0 011.414 0z" clipRule="evenodd" />
+                            </svg>
+                          </div>
+                        </div>
+                        <span className="text-xs text-slate-300 group-hover:text-white transition-colors">{r.name}</span>
+                      </label>
+                    ))
+                  )}
+                </div>
               </div>
 
               <div className="pt-2 flex items-center justify-end gap-2">

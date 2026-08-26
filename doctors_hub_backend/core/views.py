@@ -241,7 +241,7 @@ class AdminInitAPIView(APIView):
         diagnostic_categories = DiagnosticCenterCategorySerializer(DiagnosticCenterCategory.objects.all().order_by('name'), many=True, context={'request': request}).data
         hospital_services = HospitalServiceSerializer(HospitalService.objects.all().order_by('name'), many=True, context={'request': request}).data
         diagnostic_services = DiagnosticServiceSerializer(DiagnosticService.objects.all().order_by('name'), many=True, context={'request': request}).data
-        test_categories = TestCategorySerializer(TestCategory.objects.all().order_by('name'), many=True, context={'request': request}).data
+        test_categories = TestCategorySerializer(TestCategory.objects.annotate(test_count=Count('tests', distinct=True)).order_by('name'), many=True, context={'request': request}).data
 
         # Scoped Domain Data
         hosp_base = Hospital.objects.select_related('location', 'category').prefetch_related('services')
@@ -267,7 +267,7 @@ class AdminInitAPIView(APIView):
             hospitals_data = HospitalSerializer(hosp_base.all()[:INIT_LIMIT], many=True, context={'request': request}).data
             diagnostic_centers_data = DiagnosticCenterSerializer(diag_base.all()[:INIT_LIMIT], many=True, context={'request': request}).data
             doctors_data = DoctorSerializer(doc_base.all()[:INIT_LIMIT], many=True, context={'request': request}).data
-            tests_data = TestSerializer(test_base.all()[:INIT_LIMIT], many=True, context={'request': request}).data
+            tests_data = TestSerializer(test_base.all(), many=True, context={'request': request}).data
             branch_tests_data = FacilityTestSerializer(branch_test_base.all()[:INIT_LIMIT], many=True, context={'request': request}).data
             doc_bookings = DoctorBookingSerializer(doc_booking_base.all()[:INIT_LIMIT], many=True, context={'request': request}).data
             lab_bookings = LabBookingSerializer(lab_booking_base.all()[:INIT_LIMIT], many=True, context={'request': request}).data
@@ -294,7 +294,7 @@ class AdminInitAPIView(APIView):
             hospitals_data = HospitalSerializer(hosp_scoped[:INIT_LIMIT], many=True, context={'request': request}).data
             diagnostic_centers_data = DiagnosticCenterSerializer(diag_scoped[:INIT_LIMIT], many=True, context={'request': request}).data
             doctors_data = DoctorSerializer(doc_scoped[:INIT_LIMIT], many=True, context={'request': request}).data
-            tests_data = TestSerializer(test_base.all()[:INIT_LIMIT], many=True, context={'request': request}).data
+            tests_data = TestSerializer(test_base.all(), many=True, context={'request': request}).data
             branch_tests_data = FacilityTestSerializer(branch_test_scoped[:INIT_LIMIT], many=True, context={'request': request}).data
             doc_bookings = DoctorBookingSerializer(doc_booking_scoped[:INIT_LIMIT], many=True, context={'request': request}).data
             lab_bookings = LabBookingSerializer(lab_booking_scoped[:INIT_LIMIT], many=True, context={'request': request}).data

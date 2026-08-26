@@ -4,6 +4,7 @@ import { useAdminContext } from '../context/AdminContext';
 import BranchTestModal from './modals/BranchTestModal';
 import AdminPagination from './AdminPagination';
 import { api, ensureArray } from '../../../services/api';
+import { useDebounce } from '../../../hooks/useDebounce';
 
 export default function BranchTestsTab() {
   const {
@@ -24,18 +25,20 @@ export default function BranchTestsTab() {
   const [isInitialLoad, setIsInitialLoad] = useState(true);
   const [isFetching, setIsFetching] = useState(false);
 
+  const debouncedSearchTerm = useDebounce(searchTerm, 300);
+
   // Sync back to page 1 if search or category changes
   useEffect(() => {
     setPage(1);
-  }, [searchTerm, selectedCategory]);
+  }, [debouncedSearchTerm, selectedCategory]);
 
-  // Fetch paginated data
+  // Fetch paginated data (instant on category/page/refreshTrigger, debounced on search text)
   useEffect(() => {
     let isMounted = true;
     const fetchBranchTests = async () => {
       setIsFetching(true);
       try {
-        const data = await api.getDiagnosticCenterTests({ search: searchTerm, category: selectedCategory, page, page_size: 20 });
+        const data = await api.getDiagnosticCenterTests({ search: debouncedSearchTerm, category: selectedCategory, page, page_size: 20 });
         if (isMounted) {
           if (data && typeof data === 'object' && 'results' in data) {
              setTabBranchTests(ensureArray(data.results));
@@ -60,10 +63,9 @@ export default function BranchTestsTab() {
       }
     };
 
-    const delay = searchTerm ? 300 : 0;
-    const timer = setTimeout(fetchBranchTests, delay);
-    return () => { isMounted = false; clearTimeout(timer); };
-  }, [searchTerm, selectedCategory, page, refreshTrigger]);
+    fetchBranchTests();
+    return () => { isMounted = false; };
+  }, [debouncedSearchTerm, selectedCategory, page, refreshTrigger]);
 
   // Extract valid category options
   const categoryOptions = useMemo(() => {

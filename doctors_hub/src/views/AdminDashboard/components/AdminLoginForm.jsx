@@ -94,7 +94,11 @@ export default function AdminLoginForm({ onAdminLoggedIn }) {
       const hasAccess = Boolean(
         user?.is_staff ||
         user?.is_superuser ||
+        user?.is_super_admin ||
+        user?.is_facility_admin ||
+        user?.is_doctor ||
         allowedRoles.includes(user?.role) ||
+        (Array.isArray(user?.managed_locations) && user.managed_locations.length > 0) ||
         user?.phone_number === '01700000000' ||
         user?.phone === '01700000000'
       );

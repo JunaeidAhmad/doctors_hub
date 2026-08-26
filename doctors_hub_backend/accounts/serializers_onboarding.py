@@ -2,8 +2,8 @@ import uuid
 from django.db import transaction
 from django.core.exceptions import ValidationError as DjangoValidationError
 from rest_framework import serializers
-from accounts.models import User, Role
-from facilities.models import Location, Hospital, DiagnosticCenter, HospitalCategory, DiagnosticCenterCategory, FacilityMembership
+from accounts.models import User, Role, UserRole
+from facilities.models import Location, Hospital, DiagnosticCenter, HospitalCategory, DiagnosticCenterCategory
 from doctors.models import Doctor, DoctorSpecialty
 from core.validators import bangladesh_phone_validator
 
@@ -58,7 +58,6 @@ class FacilityRegistrationSerializer(serializers.Serializer):
             phone_number=phone,
             first_name=first_name,
             last_name=last_name,
-            role=Role.FACILITY_ADMIN,
             is_verified=False,
             is_active=True
         )
@@ -100,11 +99,15 @@ class FacilityRegistrationSerializer(serializers.Serializer):
                     cat_obj = DiagnosticCenterCategory.objects.filter(slug=category_id).first()
             DiagnosticCenter.objects.create(location=location, category=cat_obj)
 
-        # 4. Create FacilityMembership
-        FacilityMembership.objects.create(
+        # 4. Create UserRole for Facility Admin
+        fac_admin_role, _ = Role.objects.get_or_create(
+            name="Facility Admin",
+            defaults={"scope_type": Role.ScopeType.FACILITY, "is_system": True}
+        )
+        UserRole.objects.create(
             user=user,
-            location=location,
-            role=FacilityMembership.MemberRole.ADMIN
+            role=fac_admin_role,
+            facility=location
         )
 
         return {
@@ -146,22 +149,22 @@ class DoctorRegistrationSerializer(serializers.Serializer):
     @transaction.atomic
     def create(self, validated_data):
         phone = validated_data["phone_number"]
-        password = validated_data["password"]
+        pwd = validated_data["password"]
         name = validated_data["name"]
         bmdc = validated_data["bmdc_number"]
         qualification = validated_data["qualification"]
-        experience = validated_data.get("experience", "5+ years") or "5+ years"
+        experience = validated_data.get("experience", "5+ years")
         specialty_ids = validated_data.get("specialty_ids", [])
+        email = validated_data.get("email", "")
 
         # 1. Create User
         user = User.objects.create(
             phone_number=phone,
             first_name=name,
-            role=Role.DOCTOR,
             is_verified=False,
             is_active=True
         )
-        user.set_password(password)
+        user.set_password(pwd)
         user.save()
 
         # 2. Create Doctor
@@ -177,15 +180,22 @@ class DoctorRegistrationSerializer(serializers.Serializer):
         # 3. Associate Specialties
         if specialty_ids:
             specs = []
-            for s_id in specialty_ids:
-                try:
-                    s = DoctorSpecialty.objects.filter(id=s_id).first()
-                except (ValueError, TypeError):
-                    s = DoctorSpecialty.objects.filter(slug=s_id).first() or DoctorSpecialty.objects.filter(name=s_id).first()
+            for sid in specialty_ids:
+                s = DoctorSpecialty.objects.filter(id=sid).first() if len(sid) == 36 else DoctorSpecialty.objects.filter(slug=sid).first()
                 if s:
                     specs.append(s)
             if specs:
                 doctor.specialties.set(specs)
+
+        # 4. Create UserRole for Doctor
+        doc_role, _ = Role.objects.get_or_create(
+            name="Doctor",
+            defaults={"scope_type": Role.ScopeType.SELF, "is_system": True}
+        )
+        UserRole.objects.create(
+            user=user,
+            role=doc_role
+        )
 
         return {
             "user": user,
@@ -198,7 +208,7 @@ class StaffCreateSerializer(serializers.Serializer):
     password = serializers.CharField(write_only=True, min_length=6)
     first_name = serializers.CharField(max_length=50)
     last_name = serializers.CharField(max_length=50, required=False, allow_blank=True, default="")
-    role_title = serializers.CharField(max_length=50, required=False, default="Staff")
+    role_ids = serializers.ListField(child=serializers.UUIDField(), required=False, allow_empty=True, default=list)
 
     def validate_phone_number(self, value):
         phone = value.strip()

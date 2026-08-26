@@ -4,6 +4,7 @@ import { useAdminContext } from '../context/AdminContext';
 import { api, ensureArray } from '../../../services/api';
 import TestModal from './modals/TestModal';
 import AdminPagination from './AdminPagination';
+import { useDebounce } from '../../../hooks/useDebounce';
 
 export default function TestsTab() {
   const {
@@ -23,6 +24,8 @@ export default function TestsTab() {
   const [tabTests, setTabTests] = useState(contextTests || []);
   const [isInitialLoad, setIsInitialLoad] = useState(true);
   const [isFetching, setIsFetching] = useState(false);
+
+  const debouncedSearchTerm = useDebounce(searchTerm, 300);
 
   const handleOpenTestModal = (t = null) => {
     setEditingTest(t);
@@ -44,15 +47,15 @@ export default function TestsTab() {
   // Sync back to page 1 if search changes
   useEffect(() => {
     setPage(1);
-  }, [searchTerm]);
+  }, [debouncedSearchTerm]);
 
-  // Fetch paginated data
+  // Fetch paginated data (instant on page/refreshTrigger, debounced on search text)
   useEffect(() => {
     let isMounted = true;
     const fetchTests = async () => {
       setIsFetching(true);
       try {
-        const data = await api.getTests({ search: searchTerm, page, page_size: 20 });
+        const data = await api.getTests({ search: debouncedSearchTerm, page, page_size: 20 });
         if (isMounted) {
           if (data && typeof data === 'object' && 'results' in data) {
              setTabTests(ensureArray(data.results));
@@ -74,10 +77,9 @@ export default function TestsTab() {
       }
     };
 
-    const delay = searchTerm ? 300 : 0;
-    const timer = setTimeout(fetchTests, delay);
-    return () => { isMounted = false; clearTimeout(timer); };
-  }, [searchTerm, page, refreshTrigger]);
+    fetchTests();
+    return () => { isMounted = false; };
+  }, [debouncedSearchTerm, page, refreshTrigger]);
 
 
   return (

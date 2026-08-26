@@ -1,7 +1,7 @@
 import pytest
 from rest_framework.test import APIClient
-from accounts.models import User, Role
-from facilities.models import Location, FacilityMembership, DiagnosticCenter
+from accounts.models import User, Role, UserRole
+from facilities.models import Location, DiagnosticCenter
 from doctors.models import Doctor, DoctorSpecialty
 from tests.factories import DoctorSpecialtyFactory
 
@@ -37,7 +37,7 @@ class TestOnboardingRegistration:
 
         # Verify User
         user = User.objects.get(phone_number="01755112233")
-        assert user.role == Role.FACILITY_ADMIN
+        assert user.is_facility_admin is True
         assert user.is_verified is False
         assert user.is_active is True
         assert user.check_password("securepassword123")
@@ -51,9 +51,8 @@ class TestOnboardingRegistration:
         assert location.is_verified is False
         assert DiagnosticCenter.objects.filter(location=location).exists()
 
-        # Verify Membership
-        membership = FacilityMembership.objects.get(user=user, location=location)
-        assert membership.role == FacilityMembership.MemberRole.ADMIN
+        # Verify Role Assignment
+        assert UserRole.objects.filter(user=user, facility=location, role__name="Facility Admin").exists()
 
     def test_doctor_registration_creates_user_and_doctor_with_bmdc(self):
         spec = DoctorSpecialtyFactory(name="Cardiology")
@@ -76,7 +75,7 @@ class TestOnboardingRegistration:
 
         # Verify User
         user = User.objects.get(phone_number="01855112233")
-        assert user.role == Role.DOCTOR
+        assert user.is_doctor_role is True
         assert user.is_verified is False
 
         # Verify Doctor

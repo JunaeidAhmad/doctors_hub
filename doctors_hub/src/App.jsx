@@ -80,10 +80,15 @@ export default function App() {
   const [bookingLabState, setBookingLabState] = useState(null);
   const [loginModalOpen, setLoginModalOpen] = useState(false);
   const [userSettingsModalOpen, setUserSettingsModalOpen] = useState(false);
-  const [toastMessage, setToastMessage] = useState('');
+  const [toasts, setToasts] = useState([]);
 
-  const showToast = (msg) => {
-    setToastMessage(msg);
+  const showToast = (msg, type = 'success') => {
+    const id = Date.now() + Math.random();
+    setToasts((prev) => [...prev, { id, message: msg, type }]);
+  };
+
+  const removeToast = (id) => {
+    setToasts((prev) => prev.filter((toast) => toast.id !== id));
   };
 
   const handleLogout = async () => {
@@ -101,7 +106,11 @@ export default function App() {
       loggedInUser && (
         loggedInUser.is_staff ||
         loggedInUser.is_superuser ||
+        loggedInUser.is_super_admin ||
+        loggedInUser.is_facility_admin ||
+        loggedInUser.is_doctor ||
         ['super_admin', 'facility_admin', 'doctor', 'staff'].includes(loggedInUser.role) ||
+        (Array.isArray(loggedInUser.managed_locations) && loggedInUser.managed_locations.length > 0) ||
         loggedInUser.phone_number === '01700000000' ||
         loggedInUser.phone_number === '0178787878'
       )
@@ -273,6 +282,7 @@ export default function App() {
             onNavigate={handleNavClick}
             onAdminLoggedIn={(loggedInUser) => setUser(loggedInUser)}
             onLogout={handleLogout}
+            showToast={showToast}
           />
         )}
 
@@ -365,6 +375,7 @@ export default function App() {
           doctor={bookingDoctorState.doctor}
           onClose={() => setBookingDoctorState(null)}
           onConfirmBooking={handleConfirmBooking}
+          showToast={showToast}
         />
       )}
 
@@ -373,6 +384,7 @@ export default function App() {
           test={bookingLabState}
           onClose={() => setBookingLabState(null)}
           onConfirmLabBooking={handleConfirmLabBooking}
+          showToast={showToast}
         />
       )}
 
@@ -384,6 +396,7 @@ export default function App() {
             setLoginModalOpen(false);
             handleNavClick('admin');
           }}
+          showToast={showToast}
         />
       )}
 
@@ -396,11 +409,17 @@ export default function App() {
         />
       )}
 
-      {/* TOAST NOTIFICATION */}
-      <ToastNotification
-        message={toastMessage}
-        onClose={() => setToastMessage('')}
-      />
+      {/* TOAST NOTIFICATIONS */}
+      <div className="fixed bottom-6 right-6 z-50 flex flex-col gap-3 pointer-events-none">
+        {toasts.map((toast) => (
+          <ToastNotification
+            key={toast.id}
+            message={toast.message}
+            type={toast.type}
+            onClose={() => removeToast(toast.id)}
+          />
+        ))}
+      </div>
 
     </div>
   );

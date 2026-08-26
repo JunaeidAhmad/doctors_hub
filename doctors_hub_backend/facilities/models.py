@@ -64,24 +64,6 @@ class Location(models.Model):
         return f"{self.name}{branch_str} - {self.location_type}"
 
 
-class FacilityMembership(models.Model):
-    class MemberRole(models.TextChoices):
-        ADMIN = "admin", "Facility Admin"
-        STAFF = "staff", "Facility Staff"
-
-    id = models.UUIDField(primary_key=True, default=uuid.uuid4, editable=False)
-    user = models.ForeignKey("accounts.User", on_delete=models.CASCADE, related_name="facility_memberships")
-    location = models.ForeignKey(Location, on_delete=models.CASCADE, related_name="memberships")
-    role = models.CharField(max_length=20, choices=MemberRole.choices, default=MemberRole.ADMIN)
-    created_at = models.DateTimeField(auto_now_add=True)
-
-    class Meta:
-        constraints = [
-            models.UniqueConstraint(fields=["user", "location"], name="unique_membership")
-        ]
-
-    def __str__(self):
-        return f"{self.user.phone_number} - {self.location.name} ({self.role})"
 
 
 class HospitalCategory(models.Model):

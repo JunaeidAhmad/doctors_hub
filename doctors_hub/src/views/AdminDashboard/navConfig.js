@@ -1,6 +1,6 @@
 import { 
   LayoutDashboard, ShieldCheck, Building2, FlaskConical, Stethoscope, 
-  TestTube, Calculator, Calendar, Users, List, Activity, Settings
+  TestTube, Calculator, Calendar, Users, List, Activity, Settings, UserCheck
 } from 'lucide-react';
 
 export const navConfig = {
@@ -54,7 +54,8 @@ export const navConfig = {
     {
       group: 'ACCESS CONTROL',
       items: [
-        { id: 'platform-admins', label: 'Platform Admins', icon: Settings },
+        { id: 'roles', label: 'Roles & Permissions', icon: ShieldCheck },
+        { id: 'assign-roles', label: 'Assign Roles', icon: UserCheck },
         { id: 'staff', label: 'Team & Staff', icon: Users }
       ]
     }
@@ -90,6 +91,7 @@ export const navConfig = {
     {
       group: 'ACCESS CONTROL',
       items: [
+        { id: 'roles', label: 'Roles & Permissions', icon: ShieldCheck },
         { id: 'staff', label: 'Team & Staff', icon: Users }
       ]
     }
@@ -125,6 +127,7 @@ export const navConfig = {
     {
       group: 'ACCESS CONTROL',
       items: [
+        { id: 'roles', label: 'Roles & Permissions', icon: ShieldCheck },
         { id: 'staff', label: 'Team & Staff', icon: Users }
       ]
     }

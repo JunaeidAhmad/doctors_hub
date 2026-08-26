@@ -1,8 +1,9 @@
 import React, { useState, useMemo, useEffect, useRef } from 'react';
 import { useSearchParams } from 'react-router-dom';
-import { Stethoscope, MapPin, Filter, ArrowLeft, Building2, Calendar, Clock, ArrowRight, ArrowDownAZ, ArrowUpAZ } from 'lucide-react';
+import { Stethoscope, MapPin, Filter, ArrowLeft, Building2, Calendar, Clock, ArrowRight, ArrowDownAZ, ArrowUpAZ, ChevronRight } from 'lucide-react';
 import { DIVISIONS, findDivisionForDistrict } from '../../data/constants';
 import { api, ensureArray } from '../../services/api';
+import { useDebounce } from '../../hooks/useDebounce';
 import Pagination from '../../components/Pagination';
 import CascadingLocationFilter from '../../components/CascadingLocationFilter';
 
@@ -60,6 +61,7 @@ export default function DoctorSearchPage({
   const [keyword, setKeyword] = useState(() => {
     return getParam('q', initialKeyword);
   });
+  const debouncedKeyword = useDebounce(keyword, 350);
   const [maxFee, setMaxFee] = useState(3000);
   const [selectedDay, setSelectedDay] = useState('All');
 
@@ -78,6 +80,27 @@ export default function DoctorSearchPage({
   const [doctors, setDoctors] = useState([]);
   const [selectedSlots, setSelectedSlots] = useState({});
   const [isLoading, setIsLoading] = useState(false);
+
+  const handleResetFilters = () => {
+    setSpecialty('');
+    setDivision('All Bangladesh');
+    setDistrict('All Districts');
+    setArea('All Areas');
+    setKeyword('');
+    setSelectedDay('All');
+    setMaxFee(3000);
+    setCurrentPage(1);
+  };
+
+  const hasActiveFilters = Boolean(
+    specialty ||
+    (division && division !== 'All Bangladesh') ||
+    (district && district !== 'All Districts') ||
+    (area && area !== 'All Areas') ||
+    (keyword && keyword.trim()) ||
+    selectedDay !== 'All' ||
+    maxFee < 3000
+  );
 
   // Sync state when URL searchParams change externally (back/forward navigation)
   useEffect(() => {
@@ -159,51 +182,48 @@ export default function DoctorSearchPage({
     return () => { isMounted = false; };
   }, []);
 
-  // Debounced server-side search/filter for doctors
+  // Server-side search/filter for doctors (instant on filters/buttons, debounced on keyword)
   useEffect(() => {
     let isMounted = true;
-    const delay = keyword.trim() ? 350 : 0;
-    const timer = setTimeout(() => {
-      setIsLoading(true);
-      api.getDoctors({
-        specialty: specialty || undefined,
-        division: division !== 'All Bangladesh' ? division : undefined,
-        district: district !== 'All Districts' ? district : undefined,
-        area: area !== 'All Areas' ? area : undefined,
-        search: keyword.trim() || undefined,
-        fee_max: maxFee < 3000 ? maxFee : undefined,
-        day: selectedDay !== 'All' ? selectedDay : undefined,
-        page: currentPage,
-        page_size: pageSize
+    setIsLoading(true);
+
+    api.getDoctors({
+      specialty: specialty || undefined,
+      division: division !== 'All Bangladesh' ? division : undefined,
+      district: district !== 'All Districts' ? district : undefined,
+      area: area !== 'All Areas' ? area : undefined,
+      search: debouncedKeyword.trim() || undefined,
+      fee_max: maxFee < 3000 ? maxFee : undefined,
+      day: selectedDay !== 'All' ? selectedDay : undefined,
+      page: currentPage,
+      page_size: pageSize
+    })
+      .then((data) => {
+        if (isMounted) {
+          let docList = [];
+          let totalCount = 0;
+          if (data) {
+            docList = ensureArray(data);
+            totalCount = (typeof data === 'object' && data.count) ? data.count : docList.length;
+          }
+          setDoctors(docList);
+          setTotalPages(Math.max(1, Math.ceil(totalCount / pageSize)));
+        }
       })
-        .then((data) => {
-          if (isMounted) {
-            let docList = [];
-            let totalCount = 0;
-            if (data) {
-              docList = ensureArray(data);
-              totalCount = (typeof data === 'object' && data.count) ? data.count : docList.length;
-            }
-            setDoctors(docList);
-            setTotalPages(Math.max(1, Math.ceil(totalCount / pageSize)));
-          }
-        })
-        .catch(() => {
-          if (isMounted) {
-            setDoctors([]);
-            setTotalPages(1);
-          }
-        })
-        .finally(() => {
-          if (isMounted) setIsLoading(false);
-        });
-    }, delay);
+      .catch(() => {
+        if (isMounted) {
+          setDoctors([]);
+          setTotalPages(1);
+        }
+      })
+      .finally(() => {
+        if (isMounted) setIsLoading(false);
+      });
 
     return () => {
       isMounted = false;
-      clearTimeout(timer);
     };
-  }, [specialty, division, district, area, keyword, maxFee, selectedDay, currentPage]);
+  }, [specialty, division, district, area, debouncedKeyword, maxFee, selectedDay, currentPage]);
 
   // Combine doctor affiliations with chambers for display
   const doctorChambersList = useMemo(() => {
@@ -425,6 +445,16 @@ export default function DoctorSearchPage({
                   className="w-full bg-slate-900 text-white text-xs border border-slate-700 rounded-xl px-3 py-2.5 placeholder-slate-500 focus:outline-none focus:border-emerald-500 font-medium"
                 />
               </div>
+
+              {hasActiveFilters && (
+                <button
+                  type="button"
+                  onClick={handleResetFilters}
+                  className="px-3 py-2.5 bg-slate-700/80 hover:bg-slate-700 text-emerald-400 hover:text-emerald-300 font-bold text-xs rounded-xl transition-colors cursor-pointer shrink-0"
+                >
+                  Reset
+                </button>
+              )}
             </div>
           </div>
         </div>
@@ -444,21 +474,13 @@ export default function DoctorSearchPage({
                   <Filter className="w-4 h-4 text-emerald-600" />
                   Refine Search
                 </h3>
-                {(specialty || division !== 'All Bangladesh' || district !== 'All Districts' || area !== 'All Areas' || keyword || selectedDay !== 'All' || maxFee < 3000) && (
+                {hasActiveFilters && (
                   <button
-                    onClick={() => {
-                      setSpecialty('');
-                      setDivision('All Bangladesh');
-                      setDistrict('All Districts');
-                      setArea('All Areas');
-                      setKeyword('');
-                      setSelectedDay('All');
-                      setMaxFee(3000);
-                      setCurrentPage(1);
-                    }}
+                    type="button"
+                    onClick={handleResetFilters}
                     className="text-[11px] font-semibold text-rose-500 hover:underline cursor-pointer"
                   >
-                    Reset
+                    Reset All Filters
                   </button>
                 )}
               </div>
@@ -519,9 +541,16 @@ export default function DoctorSearchPage({
               <div className="bg-white p-12 rounded-2xl border border-slate-200 text-center space-y-3">
                 <Stethoscope className="w-12 h-12 text-slate-300 mx-auto" />
                 <h3 className="text-lg font-bold text-slate-800">No Doctors Found</h3>
-                <p className="text-xs text-slate-500 max-w-md mx-auto">
+                <p className="text-xs text-slate-500 max-w-md mx-auto mb-4">
                   We couldn't find Specialist Doctors matching your selected criteria. Try adjusting your specialty or location filters.
                 </p>
+                <button
+                  type="button"
+                  onClick={handleResetFilters}
+                  className="px-5 py-2.5 bg-emerald-600 hover:bg-emerald-700 text-white font-bold text-xs rounded-xl transition-all shadow-sm cursor-pointer"
+                >
+                  Reset All Filters
+                </button>
               </div>
             ) : (
               <>

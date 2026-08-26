@@ -78,5 +78,32 @@ class AffiliationSchedule(models.Model):
     start_time = models.TimeField()
     end_time = models.TimeField()
 
+    def clean(self):
+        from django.core.exceptions import ValidationError
+        if self.start_time and self.end_time and self.start_time >= self.end_time:
+            raise ValidationError({"end_time": "End time must be after start time."})
+
+        aff = getattr(self, 'affiliation', None)
+        if aff and self.day_of_week and self.start_time and self.end_time:
+            doctor_id = aff.doctor_id
+            conflict_qs = AffiliationSchedule.objects.filter(
+                affiliation__doctor_id=doctor_id,
+                day_of_week=self.day_of_week,
+                start_time__lt=self.end_time,
+                end_time__gt=self.start_time
+            )
+            if self.pk:
+                conflict_qs = conflict_qs.exclude(pk=self.pk)
+            if conflict_qs.exists():
+                conflict = conflict_qs.select_related('affiliation__location').first()
+                loc_name = conflict.affiliation.location.name if (conflict.affiliation and conflict.affiliation.location) else "another location"
+                raise ValidationError(
+                    f"Schedule conflict on {self.day_of_week}: Overlaps with existing slot ({conflict.start_time.strftime('%H:%M')} - {conflict.end_time.strftime('%H:%M')}) at {loc_name}."
+                )
+
+    def save(self, *args, **kwargs):
+        self.clean()
+        super().save(*args, **kwargs)
+
     def __str__(self):
         return f"{self.affiliation.doctor.name} - {self.day_of_week} ({self.start_time}-{self.end_time})"

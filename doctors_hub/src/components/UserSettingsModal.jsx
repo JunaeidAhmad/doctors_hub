@@ -7,13 +7,9 @@ export default function UserSettingsModal({ currentUser, onClose, onUserUpdated,
   const [lastName, setLastName] = useState(currentUser?.last_name || '');
   const [phone, setPhone] = useState(currentUser?.phone_number || '');
   const [loading, setLoading] = useState(false);
-  const [error, setError] = useState('');
-  const [successMsg, setSuccessMsg] = useState('');
 
   const handleSubmit = async (e) => {
     e.preventDefault();
-    setError('');
-    setSuccessMsg('');
     setLoading(true);
 
     try {
@@ -23,7 +19,7 @@ export default function UserSettingsModal({ currentUser, onClose, onUserUpdated,
         phone_number: phone,
       });
       setLoading(false);
-      setSuccessMsg('Profile updated successfully!');
+      if (showToast) showToast('Profile updated successfully!');
       if (onUserUpdated) onUserUpdated(updated);
       if (showToast) showToast('User settings saved!');
       setTimeout(() => {
@@ -31,7 +27,7 @@ export default function UserSettingsModal({ currentUser, onClose, onUserUpdated,
       }, 1000);
     } catch (err) {
       setLoading(false);
-      setError(err.message || 'Failed to update profile details');
+      if (showToast) showToast(err.message || 'Failed to update profile details', 'error');
     }
   };
 
@@ -77,19 +73,7 @@ export default function UserSettingsModal({ currentUser, onClose, onUserUpdated,
 
         {/* Body */}
         <div className="p-6">
-          {error && (
-            <div className="mb-4 bg-rose-50 border border-rose-200 text-rose-700 text-xs p-3 rounded-xl font-medium flex items-center gap-2">
-              <AlertCircle className="w-4 h-4 shrink-0" />
-              <span>{error}</span>
-            </div>
-          )}
 
-          {successMsg && (
-            <div className="mb-4 bg-emerald-50 border border-emerald-200 text-emerald-700 text-xs p-3 rounded-xl font-medium flex items-center gap-2">
-              <CheckCircle2 className="w-4 h-4 shrink-0" />
-              <span>{successMsg}</span>
-            </div>
-          )}
 
           <form onSubmit={handleSubmit} className="space-y-4">
             <div>

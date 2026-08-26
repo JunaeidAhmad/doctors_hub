@@ -22,15 +22,31 @@ export default function AddTestsToDiagnosticsTab() {
     isSuperAdmin,
     isFacilityAdmin,
     isHospitalAdmin,
-    isDiagnosticAdmin
+    isDiagnosticAdmin,
+    addTestsFacilityPrefill,
+    setAddTestsFacilityPrefill
   } = useAdminContext();
 
   const lockedFacility = isSuperAdmin ? null : (hospitals[0] || diagnosticCenters[0]);
-  const defaultType = !isSuperAdmin ? (hospitals[0] ? 'hospital' : 'diagnostic_center') : 'diagnostic_center';
+  const defaultType = !isSuperAdmin 
+    ? (hospitals[0] ? 'hospital' : 'diagnostic_center') 
+    : (addTestsFacilityPrefill?.type || 'diagnostic_center');
 
   const [facilityType, setFacilityType] = useState(defaultType); // 'diagnostic_center' | 'hospital'
-  const [selectedCenterId, setSelectedCenterId] = useState(diagnosticCenters[0]?.id || '');
-  const [selectedHospitalId, setSelectedHospitalId] = useState(hospitals[0]?.id || '');
+  const [selectedCenterId, setSelectedCenterId] = useState(() => {
+    if (addTestsFacilityPrefill?.type === 'diagnostic_center' && addTestsFacilityPrefill?.id) {
+      return String(addTestsFacilityPrefill.id);
+    }
+    const firstId = diagnosticCenters[0]?.id || diagnosticCenters[0]?.location_details?.id;
+    return firstId ? String(firstId) : '';
+  });
+  const [selectedHospitalId, setSelectedHospitalId] = useState(() => {
+    if (addTestsFacilityPrefill?.type === 'hospital' && addTestsFacilityPrefill?.id) {
+      return String(addTestsFacilityPrefill.id);
+    }
+    const firstId = hospitals[0]?.id || hospitals[0]?.location_details?.id;
+    return firstId ? String(firstId) : '';
+  });
   const [selectedCatIds, setSelectedCatIds] = useState([]);
   const [searchTerm, setSearchTerm] = useState('');
   const [isSaving, setIsSaving] = useState(false);
@@ -44,28 +60,56 @@ export default function AddTestsToDiagnosticsTab() {
       const isHosp = Boolean(hospitals[0]);
       setFacilityType(isHosp ? 'hospital' : 'diagnostic_center');
       if (isHosp) {
-        setSelectedHospitalId(lockedFacility.id);
+        setSelectedHospitalId(String(lockedFacility.id || lockedFacility.location_details?.id));
       } else {
-        setSelectedCenterId(lockedFacility.id);
+        setSelectedCenterId(String(lockedFacility.id || lockedFacility.location_details?.id));
       }
     }
   }, [isSuperAdmin, lockedFacility, hospitals, diagnosticCenters]);
 
+  // Sync prefill from context when navigating from Diagnostics or Hospitals tab
+  useEffect(() => {
+    if (isSuperAdmin && addTestsFacilityPrefill?.id) {
+      if (addTestsFacilityPrefill.type === 'hospital') {
+        setFacilityType('hospital');
+        setSelectedHospitalId(String(addTestsFacilityPrefill.id));
+      } else {
+        setFacilityType('diagnostic_center');
+        setSelectedCenterId(String(addTestsFacilityPrefill.id));
+      }
+    }
+  }, [isSuperAdmin, addTestsFacilityPrefill]);
+
+  // Fallback to first available facility if selectedCenterId is empty
+  useEffect(() => {
+    if (!selectedCenterId && diagnosticCenters.length > 0 && facilityType === 'diagnostic_center') {
+      const firstId = diagnosticCenters[0].id || diagnosticCenters[0].location_details?.id;
+      if (firstId) setSelectedCenterId(String(firstId));
+    }
+  }, [selectedCenterId, diagnosticCenters, facilityType]);
+
+  useEffect(() => {
+    if (!selectedHospitalId && hospitals.length > 0 && facilityType === 'hospital') {
+      const firstId = hospitals[0].id || hospitals[0].location_details?.id;
+      if (firstId) setSelectedHospitalId(String(firstId));
+    }
+  }, [selectedHospitalId, hospitals, facilityType]);
+
   // When facility selection or type changes, pre-populate existing category associations
   useEffect(() => {
     if (facilityType === 'diagnostic_center') {
-      const center = diagnosticCenters.find(dc => String(dc.id) === String(selectedCenterId));
-      if (center && Array.isArray(center.test_category_ids)) {
+      const center = diagnosticCenters.find(dc => String(dc.id || dc.location_details?.id) === String(selectedCenterId));
+      if (center && Array.isArray(center.test_category_ids) && center.test_category_ids.length > 0) {
         setSelectedCatIds(center.test_category_ids.map(id => id.toString()));
       } else {
         // Find categories of tests already in branchTests for this center
         const existingBranchTestIds = branchTests
-          .filter(bt => String(bt.center?.id || bt.center) === String(selectedCenterId))
+          .filter(bt => String(bt.center?.id || bt.center || bt.location_id || bt.location || bt.location_details?.id) === String(selectedCenterId))
           .map(bt => bt.test?.id || bt.test);
         
         const existingCatIds = new Set();
         tests.forEach(t => {
-          if (existingBranchTestIds.includes(t.id) || existingBranchTestIds.includes(t.id?.toString())) {
+          if (existingBranchTestIds.includes(t.id) || existingBranchTestIds.includes(String(t.id))) {
             const catId = t.category || t.category_id;
             if (catId) existingCatIds.add(catId.toString());
           }
@@ -73,17 +117,17 @@ export default function AddTestsToDiagnosticsTab() {
         setSelectedCatIds(Array.from(existingCatIds));
       }
     } else {
-      const hospital = hospitals.find(h => String(h.id) === String(selectedHospitalId));
-      if (hospital && Array.isArray(hospital.test_category_ids)) {
+      const hospital = hospitals.find(h => String(h.id || h.location_details?.id) === String(selectedHospitalId));
+      if (hospital && Array.isArray(hospital.test_category_ids) && hospital.test_category_ids.length > 0) {
         setSelectedCatIds(hospital.test_category_ids.map(id => id.toString()));
       } else {
         const existingBranchTestIds = branchTests
-          .filter(bt => String(bt.hospital?.id || bt.hospital) === String(selectedHospitalId))
+          .filter(bt => String(bt.hospital?.id || bt.hospital || bt.location_id || bt.location || bt.location_details?.id) === String(selectedHospitalId))
           .map(bt => bt.test?.id || bt.test);
         
         const existingCatIds = new Set();
         tests.forEach(t => {
-          if (existingBranchTestIds.includes(t.id) || existingBranchTestIds.includes(t.id?.toString())) {
+          if (existingBranchTestIds.includes(t.id) || existingBranchTestIds.includes(String(t.id))) {
             const catId = t.category || t.category_id;
             if (catId) existingCatIds.add(catId.toString());
           }
@@ -93,9 +137,40 @@ export default function AddTestsToDiagnosticsTab() {
     }
   }, [facilityType, selectedCenterId, selectedHospitalId, diagnosticCenters, hospitals, branchTests, tests]);
 
+  // Fetch tests for this specific facility to ensure category pre-population is up-to-date
+  useEffect(() => {
+    let isMounted = true;
+    const targetId = facilityType === 'diagnostic_center' ? selectedCenterId : selectedHospitalId;
+    if (targetId) {
+      api.getDiagnosticCenterTests({ location: targetId })
+        .then(res => {
+          if (!isMounted) return;
+          const list = Array.isArray(res) ? res : (res?.results || []);
+          if (list.length > 0) {
+            const testIds = list.map(bt => bt.test?.id || bt.test || bt.test_id);
+            const foundCatIds = new Set();
+            tests.forEach(t => {
+              if (testIds.includes(t.id) || testIds.includes(String(t.id))) {
+                const cId = t.category || t.category_id;
+                if (cId) foundCatIds.add(String(cId));
+              }
+            });
+            if (foundCatIds.size > 0) {
+              setSelectedCatIds(prev => {
+                const combined = new Set([...prev, ...Array.from(foundCatIds)]);
+                return Array.from(combined);
+              });
+            }
+          }
+        })
+        .catch(err => console.warn('Could not prefetch facility tests:', err));
+    }
+    return () => { isMounted = false; };
+  }, [facilityType, selectedCenterId, selectedHospitalId, tests]);
+
   const currentFacility = facilityType === 'diagnostic_center'
-    ? diagnosticCenters.find(dc => String(dc.id) === String(selectedCenterId))
-    : hospitals.find(h => String(h.id) === String(selectedHospitalId));
+    ? diagnosticCenters.find(dc => String(dc.id || dc.location_details?.id) === String(selectedCenterId))
+    : hospitals.find(h => String(h.id || h.location_details?.id) === String(selectedHospitalId));
 
   const validTestCategories = testCategories.filter(c => c.id !== 'all');
 
@@ -313,7 +388,8 @@ export default function AddTestsToDiagnosticsTab() {
                 type="button"
                 onClick={() => {
                   setFacilityType('diagnostic_center');
-                  if (diagnosticCenters[0]) setSelectedCenterId(diagnosticCenters[0].id);
+                  const firstId = diagnosticCenters[0]?.id || diagnosticCenters[0]?.location_details?.id;
+                  if (firstId) setSelectedCenterId(String(firstId));
                 }}
                 className={`py-2 px-3 rounded-lg text-xs font-bold flex items-center justify-center gap-1.5 transition ${
                   facilityType === 'diagnostic_center'
@@ -327,7 +403,8 @@ export default function AddTestsToDiagnosticsTab() {
                 type="button"
                 onClick={() => {
                   setFacilityType('hospital');
-                  if (hospitals[0]) setSelectedHospitalId(hospitals[0].id);
+                  const firstId = hospitals[0]?.id || hospitals[0]?.location_details?.id;
+                  if (firstId) setSelectedHospitalId(String(firstId));
                 }}
                 className={`py-2 px-3 rounded-lg text-xs font-bold flex items-center justify-center gap-1.5 transition ${
                   facilityType === 'hospital'
@@ -351,11 +428,17 @@ export default function AddTestsToDiagnosticsTab() {
                 onChange={e => setSelectedCenterId(e.target.value)}
                 className="w-full bg-slate-950 border border-cyan-500/50 rounded-xl px-4 py-2.5 text-xs text-white font-bold focus:outline-none focus:border-cyan-400"
               >
-                {diagnosticCenters.map(dc => (
-                  <option key={dc.id} value={dc.id}>
-                    {dc.name} ({dc.branch || 'Main Branch'}) — {dc.district || 'Dhaka'}
-                  </option>
-                ))}
+                {diagnosticCenters.map(dc => {
+                  const dcId = dc.id || dc.location_details?.id;
+                  const dcName = dc.name || dc.location_details?.name || 'Diagnostic Center';
+                  const dcBranch = dc.branch || dc.location_details?.branch || 'Main Branch';
+                  const dcDistrict = dc.district || dc.location_details?.district || 'Dhaka';
+                  return (
+                    <option key={dcId} value={dcId}>
+                      {dcName} ({dcBranch}) — {dcDistrict}
+                    </option>
+                  );
+                })}
               </select>
             ) : (
               <select
@@ -363,11 +446,17 @@ export default function AddTestsToDiagnosticsTab() {
                 onChange={e => setSelectedHospitalId(e.target.value)}
                 className="w-full bg-slate-950 border border-emerald-500/50 rounded-xl px-4 py-2.5 text-xs text-white font-bold focus:outline-none focus:border-emerald-400"
               >
-                {hospitals.map(h => (
-                  <option key={h.id} value={h.id}>
-                    {h.name} ({h.branch || 'Main Branch'}) — {h.district || 'Dhaka'}
-                  </option>
-                ))}
+                {hospitals.map(h => {
+                  const hId = h.id || h.location_details?.id;
+                  const hName = h.name || h.location_details?.name || 'Hospital';
+                  const hBranch = h.branch || h.location_details?.branch || 'Main Branch';
+                  const hDistrict = h.district || h.location_details?.district || 'Dhaka';
+                  return (
+                    <option key={hId} value={hId}>
+                      {hName} ({hBranch}) — {hDistrict}
+                    </option>
+                  );
+                })}
               </select>
             )}
           </div>
@@ -438,7 +527,9 @@ export default function AddTestsToDiagnosticsTab() {
             const isSelected = selectedCatIds.includes(stringId);
 
             // Count tests under this category
-            const categoryTestsCount = tests.filter(t => (t.category || t.category_id || '').toString() === stringId).length;
+            const categoryTestsCount = cat.test_count !== undefined 
+              ? cat.test_count 
+              : tests.filter(t => (t.category || t.category_id || '').toString() === stringId).length;
 
             return (
               <div

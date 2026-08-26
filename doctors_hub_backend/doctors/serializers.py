@@ -34,6 +34,43 @@ class AffiliationScheduleSerializer(serializers.ModelSerializer):
             mutable_data['affiliation'] = mutable_data['affiliation_id']
         return super().to_internal_value(mutable_data)
 
+    def validate(self, attrs):
+        start_time = attrs.get('start_time') or (self.instance.start_time if self.instance else None)
+        end_time = attrs.get('end_time') or (self.instance.end_time if self.instance else None)
+        day_of_week = attrs.get('day_of_week') or (self.instance.day_of_week if self.instance else None)
+        affiliation = attrs.get('affiliation') or (self.instance.affiliation if self.instance else None)
+
+        if start_time and end_time and start_time >= end_time:
+            raise serializers.ValidationError({
+                "end_time": "End time must be after start time."
+            })
+
+        if affiliation and day_of_week and start_time and end_time:
+            doctor = affiliation.doctor
+            conflict_qs = AffiliationSchedule.objects.filter(
+                affiliation__doctor=doctor,
+                day_of_week=day_of_week,
+                start_time__lt=end_time,
+                end_time__gt=start_time
+            )
+            if self.instance and self.instance.pk:
+                conflict_qs = conflict_qs.exclude(pk=self.instance.pk)
+
+            conflict = conflict_qs.select_related('affiliation__location').first()
+            if conflict:
+                loc_name = (
+                    conflict.affiliation.location.name
+                    if conflict.affiliation and conflict.affiliation.location
+                    else "another location"
+                )
+                start_str = conflict.start_time.strftime('%H:%M')
+                end_str = conflict.end_time.strftime('%H:%M')
+                raise serializers.ValidationError(
+                    f"Schedule conflict on {day_of_week}: Doctor already has a visiting slot ({start_str} - {end_str}) at {loc_name}."
+                )
+
+        return attrs
+
 
 class DoctorAffiliationSerializer(serializers.ModelSerializer):
     facility_name = serializers.CharField(source='location.name', read_only=True, default='')

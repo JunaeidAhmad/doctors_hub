@@ -121,6 +121,41 @@ export default function AffiliateDoctorDrawer({
       return;
     }
 
+    // Check schedule validity and overlaps
+    const allSchedules = [];
+    for (const sched of (schedules || [])) {
+      const start = sched.start_time || '17:00';
+      const end = sched.end_time || '20:00';
+      const startMin = parseInt(start.split(':')[0] || '0', 10) * 60 + parseInt(start.split(':')[1] || '0', 10);
+      const endMin = parseInt(end.split(':')[0] || '0', 10) * 60 + parseInt(end.split(':')[1] || '0', 10);
+
+      if (startMin >= endMin) {
+        setErrorMsg(`Invalid visiting hours (${start} - ${end}): End time must be after start time.`);
+        return;
+      }
+
+      allSchedules.push({
+        day: sched.day_of_week || 'Saturday',
+        startMin,
+        endMin,
+        startStr: start,
+        endStr: end
+      });
+    }
+
+    for (let i = 0; i < allSchedules.length; i++) {
+      for (let j = i + 1; j < allSchedules.length; j++) {
+        const s1 = allSchedules[i];
+        const s2 = allSchedules[j];
+        if (s1.day === s2.day && s1.startMin < s2.endMin && s1.endMin > s2.startMin) {
+          setErrorMsg(
+            `Schedule conflict on ${s1.day}: Slot (${s1.startStr} - ${s1.endStr}) overlaps with slot (${s2.startStr} - ${s2.endStr}).`
+          );
+          return;
+        }
+      }
+    }
+
     setIsSaving(true);
     setErrorMsg('');
 

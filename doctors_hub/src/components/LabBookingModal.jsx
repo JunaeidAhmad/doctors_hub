@@ -2,7 +2,7 @@ import React, { useState } from 'react';
 import { X, Calendar, User, Phone, MapPin, CheckCircle2, TestTube2, ShieldCheck, ArrowRight, Building2, Home } from 'lucide-react';
 import { api } from '../services/api';
 
-export default function LabBookingModal({ test, onClose, onConfirmLabBooking }) {
+export default function LabBookingModal({ test, onClose, onConfirmLabBooking, showToast }) {
   const [step, setStep] = useState('details'); // 'details' | 'otp'
   const [pickupDate, setPickupDate] = useState('2026-07-26');
   const [patientName, setPatientName] = useState('');
@@ -12,7 +12,6 @@ export default function LabBookingModal({ test, onClose, onConfirmLabBooking }) 
   const [otpInput, setOtpInput] = useState('123');
   const [address, setAddress] = useState('');
   const [isSubmitting, setIsSubmitting] = useState(false);
-  const [error, setError] = useState('');
 
   if (!test) return null;
 
@@ -92,26 +91,26 @@ export default function LabBookingModal({ test, onClose, onConfirmLabBooking }) 
   const handleSendOtp = (e) => {
     e.preventDefault();
     if (!patientName.trim() || !patientPhone.trim()) {
-      setError('Please provide patient name and contact phone number');
+      if (showToast) showToast('Please provide patient name and contact phone number', 'error');
       return;
     }
     if (isHomeTest && !address.trim()) {
-      setError('Please provide your home pickup address for sample collection');
+      if (showToast) showToast('Please provide your home pickup address for sample collection', 'error');
       return;
     }
-    setError('');
+    if (showToast) showToast('', 'error');
     setStep('otp');
   };
 
   const handleVerifyOtpAndBook = async (e) => {
     e.preventDefault();
     if (otpInput.trim() !== '123' && otpInput.trim() !== '') {
-      setError('Invalid OTP code. Please enter 123 for testing.');
+      if (showToast) showToast('Invalid OTP code. Please enter 123 for testing.', 'error');
       return;
     }
 
     setIsSubmitting(true);
-    setError('');
+    if (showToast) showToast('', 'error');
 
     try {
       let user = api.getCurrentUser();
@@ -235,11 +234,6 @@ export default function LabBookingModal({ test, onClose, onConfirmLabBooking }) 
         {step === 'details' ? (
           /* STEP 1: Details & (Optional Home Address) */
           <form onSubmit={handleSendOtp} className="p-5 space-y-4 max-h-[75vh] overflow-y-auto">
-            {error && (
-              <div className="bg-rose-50 border border-rose-200 text-rose-700 text-xs p-3 rounded-xl">
-                {error}
-              </div>
-            )}
             
             <div>
               <label className="block text-xs font-bold text-slate-700 mb-1.5 flex items-center gap-1">
@@ -348,11 +342,6 @@ export default function LabBookingModal({ test, onClose, onConfirmLabBooking }) 
         ) : (
           /* STEP 2: OTP Verification */
           <form onSubmit={handleVerifyOtpAndBook} className="p-6 space-y-4">
-            {error && (
-              <div className="bg-rose-50 border border-rose-200 text-rose-700 text-xs p-3 rounded-xl font-medium">
-                {error}
-              </div>
-            )}
 
             <div className="text-center py-2">
               <div className="w-12 h-12 rounded-full bg-teal-100 text-teal-600 flex items-center justify-center mx-auto mb-3">
