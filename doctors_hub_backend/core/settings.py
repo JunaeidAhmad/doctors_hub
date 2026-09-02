@@ -281,3 +281,9 @@ LOGGING = {
         },
     },
 }
+
+# SMS Gateway Configuration (SMS BD - sms.net.bd)
+SMS_API_URL = env('SMS_API_URL', default='https://api.sms.net.bd/sendsms')
+SMS_API_KEY = env('SMS_API_KEY', default='wgVB8RM6vZ4h9W4F3Ba8u241z290PtJ2SYBc6hpY')
+SMS_SENDER_ID = env('SMS_SENDER_ID', default='')
+

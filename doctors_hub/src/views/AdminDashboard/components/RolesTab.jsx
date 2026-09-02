@@ -83,16 +83,16 @@ export default function RolesTab() {
     try {
       if (editingRole) {
         await api.updateRole(editingRole.id, formData);
-        showToast('Role updated successfully');
+        showToast('Role updated successfully!', 'success');
       } else {
         await api.createRole(formData);
-        showToast('Role created successfully');
+        showToast('Role created successfully!', 'success');
       }
       handleCloseForm();
       await loadData();
     } catch (err) {
       console.error(err);
-      showToast('Failed to save role. Check validation errors.', 'error');
+      showToast(err?.message || 'Failed to save role. Check validation errors.', 'error');
     } finally {
       setLoading(false);
     }

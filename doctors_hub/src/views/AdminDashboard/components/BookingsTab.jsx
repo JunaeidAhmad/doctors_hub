@@ -55,7 +55,7 @@ export default function BookingsTab() {
         <table className="w-full text-left text-xs text-slate-300">
           <thead className="bg-slate-950 text-slate-400 text-[11px] uppercase tracking-wider border-b border-slate-800">
             <tr>
-              <th className="py-3.5 px-4">Patient Name</th>
+              <th className="py-3.5 px-4">{isDoctor ? 'Serial / Patient' : 'Patient Name'}</th>
               <th className="py-3.5 px-4">Contact Phone</th>
               <th className="py-3.5 px-4">{isDoctor ? 'Doctor & Facility' : 'Diagnostic Center & Tests'}</th>
               <th className="py-3.5 px-4">{isDoctor ? 'Appointment Date & Slot' : 'Pickup Date & Address'}</th>
@@ -76,13 +76,25 @@ export default function BookingsTab() {
                 .map(b => (
                   <tr key={b.id} className="hover:bg-slate-800/40 transition">
                     <td className="py-4 px-4 font-bold text-white">
-                      <div className="text-sm text-teal-300 flex items-center gap-1.5">
-                        <HeaderIcon className="w-4 h-4 text-teal-400" />
-                        <span>{b.patient_name}</span>
+                      <div className="flex items-center gap-2">
+                        {isDoctor && b.serial_number && (
+                          <span className="bg-emerald-500/20 text-emerald-300 font-extrabold px-2 py-0.5 rounded text-[11px] border border-emerald-500/30">
+                            {b.serial_display || `#${b.serial_number}`}
+                          </span>
+                        )}
+                        <div className="text-sm text-teal-300 flex items-center gap-1.5">
+                          <HeaderIcon className="w-4 h-4 text-teal-400" />
+                          <span>{b.patient_name || (b.patient ? b.patient.name : 'Patient')}</span>
+                        </div>
                       </div>
+                      {b.patient && (b.patient.age || b.patient.gender) && (
+                        <div className="text-[10px] text-slate-400 font-normal pl-6">
+                          {b.patient.age ? `Age: ${b.patient.age}` : ''} {b.patient.gender ? `• ${b.patient.gender}` : ''}
+                        </div>
+                      )}
                     </td>
                     <td className="py-4 px-4 font-mono text-slate-300">
-                      +880 {b.patient_phone}
+                      +880 {b.patient_phone || (b.patient ? b.patient.phone : '')}
                     </td>
                     <td className="py-4 px-4 font-semibold text-slate-200">
                       {isDoctor ? (
@@ -93,7 +105,7 @@ export default function BookingsTab() {
                       ) : (
                         <div>
                           <div>{b.center_name || 'Diagnostic Center'}</div>
-                          <div className="text-[10px] text-slate-400">{b.test_names || 'Lab Test'}</div>
+                          <div className="text-[10px] text-slate-400">{b.test_name || b.test_names || 'Test Booking'}</div>
                         </div>
                       )}
                     </td>

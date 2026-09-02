@@ -4,9 +4,10 @@ import {
   Star, ArrowLeft, UserCheck, Activity, TestTube, ChevronRight, Award, Info, Sparkles, Filter, ArrowRight, Search, AlertCircle, HeartPulse, Eye, FlaskConical
 } from 'lucide-react';
 import { api } from '../../services/api';
+import HospitalServiceBookingModal from '../../components/HospitalServiceBookingModal';
 
 
-export default function HospitalDetailPage({ hospitalId, onBookDoctorSlot, onBookLabTest, onNavigateHome, onNavigateHospitals }) {
+export default function HospitalDetailPage({ hospitalId, onBookDoctorSlot, onBookLabTest, onNavigateHome, onNavigateHospitals, showToast }) {
   const [hospital, setHospital] = useState(null);
   const [loading, setLoading] = useState(true);
   const [activeTab, setActiveTab] = useState('doctors'); // Default tab: 'doctors' (Doctor Chamber) | 'services' | 'diagnostic'
@@ -16,6 +17,7 @@ export default function HospitalDetailPage({ hospitalId, onBookDoctorSlot, onBoo
   const [testCategoryFilter, setTestCategoryFilter] = useState('All');
   const [branchTests, setBranchTests] = useState([]);
   const [selectedSlots, setSelectedSlots] = useState({});
+  const [selectedServiceToBook, setSelectedServiceToBook] = useState(null);
 
   useEffect(() => {
     let isMounted = true;
@@ -414,18 +416,39 @@ export default function HospitalDetailPage({ hospitalId, onBookDoctorSlot, onBoo
 
             <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
               {hospitalServicesList.map((srv, idx) => (
-                <div key={idx} className="bg-white p-6 rounded-2xl border border-slate-200 shadow-xs space-y-3 hover:border-emerald-400 transition-all">
-                  <div className="w-10 h-10 rounded-xl bg-emerald-50 text-emerald-600 flex items-center justify-center font-bold">
-                    <Activity className="w-5 h-5" />
+                <div key={idx} className="bg-white p-6 rounded-2xl border border-slate-200 shadow-xs space-y-3 hover:border-emerald-400 transition-all flex flex-col justify-between">
+                  <div className="space-y-3">
+                    <div className="w-10 h-10 rounded-xl bg-emerald-50 text-emerald-600 flex items-center justify-center font-bold">
+                      <Activity className="w-5 h-5" />
+                    </div>
+
+                    <h3 className="text-base font-bold text-slate-900">{srv.name}</h3>
+
+                    <p className="text-xs text-slate-600 leading-relaxed">{srv.description || 'Specialized clinical hospital service and inpatient unit.'}</p>
+
+                    {srv.diagnostic_services && srv.diagnostic_services.length > 0 && (
+                      <div className="pt-1 flex flex-wrap gap-1">
+                        {srv.diagnostic_services.map((ds, di) => (
+                          <span key={di} className="text-[10px] bg-slate-100 text-slate-700 px-2 py-0.5 rounded border border-slate-200 font-medium">
+                            {ds.name}
+                          </span>
+                        ))}
+                      </div>
+                    )}
                   </div>
 
-                  <h3 className="text-base font-bold text-slate-900">{srv.name}</h3>
-
-                  <p className="text-xs text-slate-600 leading-relaxed">{srv.description}</p>
-
-                  <div className="pt-2 flex items-center gap-1 text-[11px] font-bold text-emerald-700">
-                    <CheckCircle className="w-3.5 h-3.5 text-emerald-600" />
-                    <span>Available at {hospital.name}</span>
+                  <div className="pt-3 border-t border-slate-100 flex items-center justify-between">
+                    <div className="flex items-center gap-1 text-[11px] font-bold text-emerald-700">
+                      <CheckCircle className="w-3.5 h-3.5 text-emerald-600" />
+                      <span>Available</span>
+                    </div>
+                    <button
+                      onClick={() => setSelectedServiceToBook(srv)}
+                      className="px-3.5 py-1.5 bg-emerald-600 hover:bg-emerald-700 text-white rounded-xl font-bold text-xs shadow-xs transition-all flex items-center gap-1.5"
+                    >
+                      <span>Book Service</span>
+                      <ArrowRight className="w-3.5 h-3.5" />
+                    </button>
                   </div>
                 </div>
               ))}
@@ -554,6 +577,15 @@ export default function HospitalDetailPage({ hospitalId, onBookDoctorSlot, onBoo
           </div>
         )}
       </div>
+
+      {selectedServiceToBook && (
+        <HospitalServiceBookingModal
+          hospital={hospital}
+          service={selectedServiceToBook}
+          onClose={() => setSelectedServiceToBook(null)}
+          showToast={showToast}
+        />
+      )}
     </div>
   );
 }

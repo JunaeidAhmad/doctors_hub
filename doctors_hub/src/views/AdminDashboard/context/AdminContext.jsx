@@ -503,6 +503,7 @@ export function AdminProvider({ children, currentUser, onLogout, showToast }) {
     loading, setLoading,
     error, setError,
     successMsg, setSuccessMsg, showNotification,
+    showToast: (msg, type = 'success') => (showToast ? showToast(msg, type) : console.log(`[Toast] ${type}: ${msg}`)),
     searchTerm, setSearchTerm, refreshTrigger,
     
     // Entity data & setters

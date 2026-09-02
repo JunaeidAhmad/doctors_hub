@@ -46,6 +46,8 @@ class Location(models.Model):
         ordering = ["-created_at"]
 
     def save(self, *args, **kwargs):
+        if self.location_type == self.LocationType.CHAMBER and not self.ownership_type:
+            self.ownership_type = self.OwnershipType.PRIVATE
         if not self.slug:
             b = f"-{self.branch}" if self.branch else ""
             base_slug = slugify(f"{self.name}{b}")
@@ -88,6 +90,11 @@ class HospitalService(models.Model):
     name = models.CharField(max_length=150)
     icon = models.CharField(max_length=50, default='Activity')
     description = models.TextField(blank=True)
+    diagnostic_services = models.ManyToManyField(
+        'DiagnosticService',
+        related_name='hospital_services',
+        blank=True
+    )
 
     def __str__(self):
         return self.name
@@ -107,7 +114,6 @@ class DiagnosticCenterCategory(models.Model):
     id = models.UUIDField(primary_key=True, default=uuid.uuid4, editable=False)
     name = models.CharField(max_length=150)
     slug = models.SlugField(max_length=170, unique=True, blank=True)
-    parent = models.ForeignKey('self', null=True, blank=True, related_name='children', on_delete=models.CASCADE)
     icon = models.CharField(max_length=100, blank=True)
     description = models.TextField(blank=True)
 
@@ -143,6 +149,13 @@ class Chamber(models.Model):
     location = models.OneToOneField(Location, primary_key=True, on_delete=models.CASCADE, related_name="chamber_detail")
     doctor = models.ForeignKey("doctors.Doctor", on_delete=models.CASCADE, related_name="chambers")
     assistant_phone = models.CharField(max_length=50, blank=True)
+
+    def save(self, *args, **kwargs):
+        if self.location and self.location.location_type == Location.LocationType.CHAMBER:
+            if self.location.ownership_type != Location.OwnershipType.PRIVATE:
+                self.location.ownership_type = Location.OwnershipType.PRIVATE
+                self.location.save(update_fields=['ownership_type'])
+        super().save(*args, **kwargs)
 
     def __str__(self):
         return f"Chamber: {self.location.name} (Dr. {self.doctor.name})"

@@ -1,81 +1,137 @@
-import React, { useState } from 'react';
-import { X, Calendar, Clock, User, Phone, CheckCircle2, Building2, Stethoscope, ShieldCheck, ArrowRight, RefreshCw } from 'lucide-react';
+import React, { useState, useEffect } from 'react';
+import { X, Calendar, Clock, User, Phone, CheckCircle2, Building2, Stethoscope, ShieldCheck, ArrowRight, RefreshCw, Sparkles } from 'lucide-react';
 import { api } from '../services/api';
 
 export default function BookingModal({ chamber, doctor, onClose, onConfirmBooking, showToast }) {
+  const today = new Date().toISOString().split('T')[0];
+  const maxDate = new Date(Date.now() + 10 * 24 * 60 * 60 * 1000).toISOString().split('T')[0];
+
   const [step, setStep] = useState('details'); // 'details' | 'otp'
-  const [selectedDate, setSelectedDate] = useState('2026-07-26');
+  const [selectedDate, setSelectedDate] = useState(today);
   const [selectedSlot, setSelectedSlot] = useState(doctor?.slots?.[0] || '05:15 PM');
   const [patientName, setPatientName] = useState('');
   const [patientPhone, setPatientPhone] = useState('01787878787');
-  const [otpInput, setOtpInput] = useState('123');
+  const [otpInput, setOtpInput] = useState('');
   const [patientAge, setPatientAge] = useState('');
   const [gender, setGender] = useState('Male');
   const [isSubmitting, setIsSubmitting] = useState(false);
+  const [existingPatientFound, setExistingPatientFound] = useState(false);
+  const [isLookingUp, setIsLookingUp] = useState(false);
 
   if (!chamber || !doctor) return null;
 
-  const handleSendOtp = (e) => {
-    e.preventDefault();
-    if (!patientName || !patientPhone) {
-      if (showToast) showToast('Please provide patient name and phone number', 'error');
-      return;
-    }
-    if (showToast) showToast('', 'error');
-    setStep('otp');
-  };
+  // Auto-fetch patient details when 11-digit phone number is entered
+  useEffect(() => {
+    const cleanPhone = patientPhone.trim();
+    if (cleanPhone.length >= 11) {
+      let isMounted = true;
+      setIsLookingUp(true);
+      const timer = setTimeout(async () => {
+        try {
+          const res = await api.lookupPatient(cleanPhone);
+          if (isMounted && res && res.found && res.patient) {
+            setExistingPatientFound(true);
+            if (res.patient.name && !patientName) setPatientName(res.patient.name);
+            if (res.patient.age && !patientAge) setPatientAge(String(res.patient.age));
+            if (res.patient.gender) {
+              const g = res.patient.gender.toLowerCase();
+              setGender(g === 'female' ? 'Female' : (g === 'other' ? 'Other' : 'Male'));
+            }
+            if (showToast) showToast(`Found existing profile for ${res.patient.name}`, 'info');
+          } else if (isMounted) {
+            setExistingPatientFound(false);
+          }
+        } catch (e) {
+          console.error("Patient lookup error:", e);
+        } finally {
+          if (isMounted) setIsLookingUp(false);
+        }
+      }, 400);
 
-  const handleVerifyOtpAndBook = async (e) => {
+      return () => {
+        isMounted = false;
+        clearTimeout(timer);
+      };
+    } else {
+      setExistingPatientFound(false);
+    }
+  }, [patientPhone]);
+
+  const handleSendOtp = async (e) => {
     e.preventDefault();
-    if (otpInput.trim() !== '123' && otpInput.trim() !== '') {
-      if (showToast) showToast('Invalid OTP code. Please enter 123 for testing.', 'error');
+    if (!patientName.trim() || !patientPhone.trim()) {
+      if (showToast) showToast('Please provide patient name and phone number', 'error');
       return;
     }
 
     setIsSubmitting(true);
-    if (showToast) showToast('', 'error');
-
     try {
-      let user = api.getCurrentUser();
-      if (!user) {
-        const authRes = await api.register(patientPhone, 'patient123', patientName);
-        user = authRes.user;
+      const res = await api.sendOtp(patientPhone.trim(), 'doctor_booking');
+      if (showToast) showToast(`Verification OTP sent to ${patientPhone.trim()}`, 'info');
+      if (res && res.otp) {
+        setOtpInput(res.otp);
+      } else {
+        setOtpInput('123');
+      }
+      setStep('otp');
+    } catch (err) {
+      console.warn("OTP send warning, continuing with dev OTP:", err);
+      setOtpInput('123');
+      setStep('otp');
+    } finally {
+      setIsSubmitting(false);
+    }
+  };
+
+  const handleVerifyOtpAndBook = async (e) => {
+    e.preventDefault();
+    if (!otpInput.trim()) {
+      if (showToast) showToast('Please enter the OTP verification code.', 'error');
+      return;
+    }
+
+    setIsSubmitting(true);
+    try {
+      const affiliationId = chamber.affiliation_id || chamber.id || doctor.affiliation_id || doctor.id;
+      const bookingRes = await api.createDoctorBooking({
+        affiliation_id: affiliationId,
+        affiliation: affiliationId,
+        date: selectedDate,
+        slot: selectedSlot,
+        patient_name: patientName.trim(),
+        patient_phone: patientPhone.trim(),
+        patient_age: patientAge ? parseInt(patientAge) : undefined,
+        gender: gender.toLowerCase(),
+        otp_code: otpInput.trim(),
+      });
+
+      const serialNum = bookingRes?.serial_number || 1;
+      const serialDisplay = bookingRes?.serial_display || `SL-${String(serialNum).padStart(3, '0')}`;
+
+      if (showToast) {
+        showToast(`🎉 Serial #${serialNum} booked for ${patientName} with Dr. ${doctor.name}!`, 'success');
       }
 
-      const bookingRes = await api.createDoctorBooking({
-        doctor: doctor.id,
-        chamber: chamber.id,
-        date: selectedDate,
-        slot: selectedSlot,
-        patient_name: patientName,
-      });
-
-      onConfirmBooking({
-        doctorName: doctor.name,
-        specialty: doctor.specialty?.name || doctor.specialty,
-        chamberName: chamber.name,
-        location: chamber.location,
-        date: selectedDate,
-        slot: selectedSlot,
-        patientName,
-        patientPhone,
-        fee: doctor.fee,
-        tokenId: `DWBD-${bookingRes.id || Math.floor(100000 + Math.random() * 900000)}`
-      });
+      if (onConfirmBooking) {
+        onConfirmBooking({
+          doctorName: doctor.name,
+          specialty: doctor.specialty?.name || doctor.specialty,
+          chamberName: chamber.name,
+          location: chamber.location,
+          date: selectedDate,
+          slot: selectedSlot,
+          patientName,
+          patientPhone,
+          fee: doctor.fee,
+          serialNumber: serialNum,
+          tokenId: serialDisplay
+        });
+      }
+      onClose();
     } catch (err) {
-      console.warn("Backend booking warning, proceeding with client confirmation", err);
-      onConfirmBooking({
-        doctorName: doctor.name,
-        specialty: doctor.specialty?.name || doctor.specialty,
-        chamberName: chamber.name,
-        location: chamber.location,
-        date: selectedDate,
-        slot: selectedSlot,
-        patientName,
-        patientPhone,
-        fee: doctor.fee,
-        tokenId: `DWBD-${Math.floor(100000 + Math.random() * 900000)}`
-      });
+      console.error("Doctor booking error:", err);
+      const errMsg = err?.message || 'Failed to complete booking. Please verify OTP and details.';
+      if (showToast) showToast(errMsg, 'error');
     } finally {
       setIsSubmitting(false);
     }
@@ -142,8 +198,8 @@ export default function BookingModal({ chamber, doctor, onClose, onConfirmBookin
               <input
                 type="date"
                 value={selectedDate}
-                min="2026-07-21"
-                max="2026-08-10"
+                min={today}
+                max={maxDate}
                 onChange={(e) => setSelectedDate(e.target.value)}
                 className="w-full text-xs font-semibold bg-slate-50 border border-slate-300 rounded-xl px-3 py-2.5 focus:outline-none focus:ring-2 focus:ring-emerald-500"
               />
@@ -176,8 +232,34 @@ export default function BookingModal({ chamber, doctor, onClose, onConfirmBookin
 
             {/* Patient Info Fields */}
             <div className="pt-3 border-t border-slate-100 space-y-3">
-              <div className="text-xs font-bold uppercase tracking-wider text-slate-400">
-                Patient Details:
+              <div className="flex items-center justify-between">
+                <span className="text-xs font-bold uppercase tracking-wider text-slate-400">
+                  Patient Details:
+                </span>
+                {existingPatientFound && (
+                  <span className="inline-flex items-center gap-1 text-[11px] font-bold text-emerald-700 bg-emerald-50 px-2 py-0.5 rounded-md border border-emerald-200">
+                    <Sparkles className="w-3 h-3" /> Existing Patient
+                  </span>
+                )}
+              </div>
+
+              <div>
+                <label className="block text-xs font-semibold text-slate-700 mb-1">
+                  Mobile Number *
+                </label>
+                <div className="relative">
+                  <input
+                    type="tel"
+                    required
+                    placeholder="01787878787"
+                    value={patientPhone}
+                    onChange={(e) => setPatientPhone(e.target.value)}
+                    className="w-full text-xs font-medium bg-white border border-slate-300 rounded-xl px-3 py-2.5 focus:outline-none focus:ring-2 focus:ring-emerald-500 font-mono"
+                  />
+                  {isLookingUp && (
+                    <span className="absolute right-3 top-2.5 text-[10px] text-slate-400 animate-pulse">Checking profile...</span>
+                  )}
+                </div>
               </div>
 
               <div>
@@ -197,40 +279,30 @@ export default function BookingModal({ chamber, doctor, onClose, onConfirmBookin
               <div className="grid grid-cols-2 gap-3">
                 <div>
                   <label className="block text-xs font-semibold text-slate-700 mb-1">
-                    Mobile Number *
+                    Age
                   </label>
                   <input
-                    type="tel"
-                    required
-                    placeholder="01787878787"
-                    value={patientPhone}
-                    onChange={(e) => setPatientPhone(e.target.value)}
-                    className="w-full text-xs font-medium bg-white border border-slate-300 rounded-xl px-3 py-2.5 focus:outline-none focus:ring-2 focus:ring-emerald-500 font-mono"
+                    type="number"
+                    placeholder="Age"
+                    value={patientAge}
+                    onChange={(e) => setPatientAge(e.target.value)}
+                    className="w-full text-xs font-medium bg-white border border-slate-300 rounded-xl px-3 py-2.5 focus:outline-none focus:ring-2 focus:ring-emerald-500"
                   />
                 </div>
 
                 <div>
                   <label className="block text-xs font-semibold text-slate-700 mb-1">
-                    Age & Gender
+                    Gender
                   </label>
-                  <div className="flex gap-2">
-                    <input
-                      type="number"
-                      placeholder="Age"
-                      value={patientAge}
-                      onChange={(e) => setPatientAge(e.target.value)}
-                      className="w-16 text-xs font-medium bg-white border border-slate-300 rounded-xl px-2 py-2.5 focus:outline-none focus:ring-2 focus:ring-emerald-500"
-                    />
-                    <select
-                      value={gender}
-                      onChange={(e) => setGender(e.target.value)}
-                      className="flex-1 text-xs font-medium bg-white border border-slate-300 rounded-xl px-2 py-2.5"
-                    >
-                      <option>Male</option>
-                      <option>Female</option>
-                      <option>Other</option>
-                    </select>
-                  </div>
+                  <select
+                    value={gender}
+                    onChange={(e) => setGender(e.target.value)}
+                    className="w-full text-xs font-medium bg-white border border-slate-300 rounded-xl px-3 py-2.5 focus:outline-none focus:ring-2 focus:ring-emerald-500"
+                  >
+                    <option>Male</option>
+                    <option>Female</option>
+                    <option>Other</option>
+                  </select>
                 </div>
               </div>
             </div>
@@ -239,10 +311,17 @@ export default function BookingModal({ chamber, doctor, onClose, onConfirmBookin
             <div className="pt-4 border-t border-slate-200">
               <button
                 type="submit"
+                disabled={isSubmitting}
                 className="w-full py-3 rounded-xl bg-gradient-to-r from-emerald-600 to-teal-600 hover:from-emerald-500 hover:to-teal-500 text-white font-black text-sm uppercase tracking-wider shadow-lg shadow-emerald-600/30 transition-all flex items-center justify-center gap-2"
               >
-                <span>Proceed to OTP Verification</span>
-                <ArrowRight className="w-4 h-4" />
+                {isSubmitting ? (
+                  <span>Sending OTP...</span>
+                ) : (
+                  <>
+                    <span>Proceed to OTP Verification</span>
+                    <ArrowRight className="w-4 h-4" />
+                  </>
+                )}
               </button>
             </div>
 
@@ -256,13 +335,13 @@ export default function BookingModal({ chamber, doctor, onClose, onConfirmBookin
               </div>
               <h4 className="font-bold text-slate-900 text-base">Enter Verification OTP</h4>
               <p className="text-xs text-slate-500 mt-1">
-                SMS sent to <strong>+880 {patientPhone}</strong>
+                Verification code sent to <strong>+880 {patientPhone}</strong>
               </p>
             </div>
 
             <div>
               <label className="block text-xs font-bold text-slate-700 mb-1.5 text-center">
-                3-Digit OTP (Mock OTP: 123):
+                6-Digit Verification OTP:
               </label>
               <input
                 type="text"
@@ -270,8 +349,8 @@ export default function BookingModal({ chamber, doctor, onClose, onConfirmBookin
                 maxLength={6}
                 value={otpInput}
                 onChange={(e) => setOtpInput(e.target.value)}
-                placeholder="123"
-                className="w-full text-center tracking-widest text-lg font-black bg-slate-50 border-2 border-emerald-500 rounded-xl py-3 focus:outline-none focus:ring-2 focus:ring-emerald-500 font-mono text-emerald-800"
+                placeholder="123456"
+                className="w-full text-center tracking-widest text-xl font-black bg-slate-50 border-2 border-emerald-500 rounded-xl py-3 focus:outline-none focus:ring-2 focus:ring-emerald-500 font-mono text-emerald-800"
               />
             </div>
 
@@ -284,7 +363,7 @@ export default function BookingModal({ chamber, doctor, onClose, onConfirmBookin
                 &larr; Change Details
               </button>
               <span className="text-emerald-600 font-semibold flex items-center gap-1">
-                <ShieldCheck className="w-3.5 h-3.5" /> OTP Auto-sent
+                <ShieldCheck className="w-3.5 h-3.5" /> OTP Sent
               </span>
             </div>
 

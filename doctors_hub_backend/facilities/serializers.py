@@ -13,16 +13,25 @@ class HospitalCategorySerializer(serializers.ModelSerializer):
         fields = ('id', 'name', 'slug', 'icon', 'description', 'count', 'hospital_count')
 
 
-class HospitalServiceSerializer(serializers.ModelSerializer):
-    class Meta:
-        model = HospitalService
-        fields = ('id', 'name', 'icon', 'description')
-
-
 class DiagnosticServiceSerializer(serializers.ModelSerializer):
     class Meta:
         model = DiagnosticService
         fields = ('id', 'name', 'icon', 'description')
+
+
+class HospitalServiceSerializer(serializers.ModelSerializer):
+    diagnostic_services = DiagnosticServiceSerializer(many=True, read_only=True)
+    diagnostic_service_ids = serializers.PrimaryKeyRelatedField(
+        queryset=DiagnosticService.objects.all(),
+        many=True,
+        write_only=True,
+        source='diagnostic_services',
+        required=False
+    )
+
+    class Meta:
+        model = HospitalService
+        fields = ('id', 'name', 'icon', 'description', 'diagnostic_services', 'diagnostic_service_ids')
 
 
 class DiagnosticCenterCategorySerializer(serializers.ModelSerializer):
