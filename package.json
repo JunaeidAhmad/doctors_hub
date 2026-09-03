@@ -1,0 +1,9 @@
+{
+  "name": "doctors-hub-monorepo",
+  "private": true,
+  "version": "1.0.0",
+  "scripts": {
+    "dev": "npm --prefix doctors_hub run dev",
+    "build": "cd doctors_hub && npm install && npm run build"
+  }
+}

@@ -1,0 +1,7 @@
+{
+  "buildCommand": "cd doctors_hub && npm install && npm run build",
+  "outputDirectory": "doctors_hub/dist",
+  "rewrites": [
+    { "source": "/(.*)", "destination": "/index.html" }
+  ]
+}
