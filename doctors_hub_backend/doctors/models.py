@@ -36,7 +36,7 @@ class Doctor(models.Model):
     institution = models.CharField(max_length=250, blank=True, default='')
     specialties = models.ManyToManyField(DoctorSpecialty, related_name='doctors')
     qualification = models.TextField()
-    experience = models.CharField(max_length=50, blank=True, default='')
+    experience = models.CharField(max_length=50, null=True, blank=True, default='')
     description = models.TextField(blank=True)
     is_verified = models.BooleanField(default=False, db_index=True)
 
