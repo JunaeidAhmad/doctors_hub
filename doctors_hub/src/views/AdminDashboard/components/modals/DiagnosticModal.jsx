@@ -196,10 +196,10 @@ export default function DiagnosticModal() {
 
   return (
     <div className="fixed inset-0 z-50 bg-slate-950/80 backdrop-blur-md flex items-center justify-center p-4 overflow-y-auto">
-      <div className="bg-slate-900 border border-slate-800 rounded-3xl p-6 max-w-2xl w-full space-y-4 my-8 shadow-2xl">
+      <div className="bg-slate-900 border border-slate-800 rounded-3xl max-w-2xl w-full my-auto shadow-2xl max-h-[90vh] flex flex-col overflow-hidden">
         
         {/* FIXED HEADER */}
-        <div className="flex items-center justify-between border-b border-slate-800 pb-3">
+        <div className="flex items-center justify-between border-b border-slate-800 px-6 py-4 shrink-0">
           <h3 className="text-lg font-bold text-white">
             {editingDiagnostic ? 'Edit Diagnostic Center' : 'Add New Diagnostic Center'}
           </h3>
@@ -209,37 +209,38 @@ export default function DiagnosticModal() {
         </div>
 
         {/* FORM */}
-        <form onSubmit={handleSaveDiagnostic} className="space-y-4 text-xs">
-          <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-            
-            {/* OWNERSHIP TYPE */}
-            <div>
-              <label className="block text-slate-300 font-semibold mb-1">Ownership Type *</label>
-              <select
-                required
-                value={diagnosticForm.ownership_type}
-                onChange={e => setDiagnosticForm({ ...diagnosticForm, ownership_type: e.target.value })}
-                className="w-full bg-slate-950 border border-slate-800 rounded-xl px-3 py-2 text-white font-bold"
-              >
-                <option value="private">Private</option>
-                <option value="government">Government</option>
-                              </select>
-            </div>
+        <form onSubmit={handleSaveDiagnostic} className="flex flex-col min-h-0 flex-1 overflow-hidden">
+          <div className="overflow-y-auto px-6 py-4 space-y-4 text-xs flex-1">
+            <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+              
+              {/* OWNERSHIP TYPE */}
+              <div>
+                <label className="block text-slate-300 font-semibold mb-1">Ownership Type *</label>
+                <select
+                  required
+                  value={diagnosticForm.ownership_type}
+                  onChange={e => setDiagnosticForm({ ...diagnosticForm, ownership_type: e.target.value })}
+                  className="w-full bg-slate-950 border border-slate-800 rounded-xl px-3 py-2 text-white font-bold"
+                >
+                  <option value="private">Private</option>
+                  <option value="government">Government</option>
+                </select>
+              </div>
 
-            {/* DIAGNOSTIC CENTER CATEGORY */}
-            <div>
-              <label className="block text-slate-300 font-semibold mb-1">Diagnostic Center Category</label>
-              <select
-                value={diagnosticForm.category_id}
-                onChange={e => setDiagnosticForm({ ...diagnosticForm, category_id: e.target.value })}
-                className="w-full bg-slate-950 border border-slate-800 rounded-xl px-3 py-2 text-white font-bold"
-              >
-                <option value="">-- None / Select Category --</option>
-                {(diagnosticCategories || []).map(cat => (
-                  <option key={cat.id} value={cat.id}>{cat.name}</option>
-                ))}
-              </select>
-            </div>
+              {/* DIAGNOSTIC CENTER CATEGORY */}
+              <div>
+                <label className="block text-slate-300 font-semibold mb-1">Diagnostic Center Category</label>
+                <select
+                  value={diagnosticForm.category_id}
+                  onChange={e => setDiagnosticForm({ ...diagnosticForm, category_id: e.target.value })}
+                  className="w-full bg-slate-950 border border-slate-800 rounded-xl px-3 py-2 text-white font-bold"
+                >
+                  <option value="">-- None / Select Category --</option>
+                  {(diagnosticCategories || []).map(cat => (
+                    <option key={cat.id} value={cat.id}>{cat.name}</option>
+                  ))}
+                </select>
+              </div>
 
             <div className="md:col-span-2">
               <label className="block text-slate-300 font-semibold mb-1">Center Name *</label>
@@ -482,19 +483,20 @@ export default function DiagnosticModal() {
             </div>
 
           </div>
+        </div>
 
-          {/* FIXED FOOTER */}
-          <div className="flex justify-end gap-3 pt-3 border-t border-slate-800 shrink-0 mt-2">
-            <button type="button" onClick={() => setShowDiagnosticModal(false)} className="px-4 py-2 bg-slate-800 text-slate-300 font-bold rounded-xl text-xs">
-              Cancel
-            </button>
-            <button type="submit" className="px-5 py-2 bg-cyan-600 hover:bg-cyan-500 text-white font-bold rounded-xl shadow-lg text-xs">
-              Save Diagnostic Center
-            </button>
-          </div>
+        {/* FIXED FOOTER */}
+        <div className="flex justify-end gap-3 px-6 py-4 border-t border-slate-800 shrink-0 bg-slate-900/90">
+          <button type="button" onClick={() => setShowDiagnosticModal(false)} className="px-4 py-2 bg-slate-800 hover:bg-slate-700 text-slate-300 font-bold rounded-xl text-xs transition cursor-pointer">
+            Cancel
+          </button>
+          <button type="submit" className="px-5 py-2 bg-cyan-600 hover:bg-cyan-500 text-white font-bold rounded-xl shadow-lg text-xs transition cursor-pointer">
+            Save Diagnostic Center
+          </button>
+        </div>
 
-        </form>
-      </div>
+      </form>
     </div>
-  );
+  </div>
+);
 }

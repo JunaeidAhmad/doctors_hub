@@ -70,7 +70,7 @@ export default function FacilityProfile({ kind = 'hospital' }) {
         phone: loc.phone || facility.phone || '',
         email: loc.email || facility.email || '',
         open_timing: loc.open_timing || facility.open_timing || '24/7 Service',
-        category_id: facility.category?.id || facility.category_id || facility.category || categories[0]?.id || '',
+        category_id: facility.category?.id || facility.category_id || facility.category || '',
         service_ids: (facility.services || []).map(s => (typeof s === 'object' ? s.id : s)),
         logo: loc.logo || facility.logo || '',
         image: loc.image || facility.image || '',
@@ -348,7 +348,7 @@ export default function FacilityProfile({ kind = 'hospital' }) {
                 onChange={e => setFormData({ ...formData, category_id: e.target.value })}
                 className="w-full bg-slate-950 border border-slate-800 rounded-xl px-3.5 py-2.5 text-xs text-white font-semibold focus:outline-none focus:border-teal-500"
               >
-                <option value="">Select Category</option>
+                <option value="">-- None / Select Category --</option>
                 {categories.map(cat => (
                   <option key={cat.id} value={cat.id}>{cat.name}</option>
                 ))}

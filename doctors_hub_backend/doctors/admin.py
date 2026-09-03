@@ -20,8 +20,8 @@ class DoctorSpecialtyAdmin(admin.ModelAdmin):
 
 @admin.register(Doctor)
 class DoctorAdmin(admin.ModelAdmin):
-    list_display = ('id', 'name', 'user', 'qualification', 'experience')
-    search_fields = ('name', 'qualification', 'user__phone_number')
+    list_display = ('id', 'name', 'academic_title', 'institution', 'user', 'qualification', 'experience')
+    search_fields = ('name', 'academic_title', 'institution', 'qualification', 'user__phone_number')
     inlines = [DoctorAffiliationInline]
 
 

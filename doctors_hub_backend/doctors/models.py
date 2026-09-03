@@ -32,9 +32,11 @@ class Doctor(models.Model):
     bmdc_number = models.CharField(max_length=50, unique=True, null=True, blank=True)
     name = models.CharField(max_length=200)
     slug = models.SlugField(max_length=250, unique=True, blank=True)
+    academic_title = models.CharField(max_length=150, blank=True, default='')
+    institution = models.CharField(max_length=250, blank=True, default='')
     specialties = models.ManyToManyField(DoctorSpecialty, related_name='doctors')
     qualification = models.TextField()
-    experience = models.CharField(max_length=50)
+    experience = models.CharField(max_length=50, blank=True, default='')
     description = models.TextField(blank=True)
     is_verified = models.BooleanField(default=False, db_index=True)
 

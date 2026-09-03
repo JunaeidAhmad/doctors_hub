@@ -42,7 +42,6 @@ class EnhancedFeaturesTestCase(TestCase):
         # 2. Services setup
         self.diag_service = DiagnosticService.objects.create(name="Radiology & Imaging")
         self.hosp_service = HospitalService.objects.create(name="Emergency & Trauma")
-        self.hosp_service.diagnostic_services.add(self.diag_service)
         self.hospital.services.add(self.hosp_service)
 
         # 3. Doctor & Schedule setup
@@ -97,9 +96,8 @@ class EnhancedFeaturesTestCase(TestCase):
         self.assertEqual(loc2.ownership_type, Location.OwnershipType.PRIVATE)
 
     def test_m2m_hospitalservice_diagnosticservice(self):
-        """2. Verify M2M relation between HospitalService and DiagnosticService."""
-        self.assertIn(self.diag_service, self.hosp_service.diagnostic_services.all())
-        self.assertIn(self.hosp_service, self.diag_service.hospital_services.all())
+        """2. Verify HospitalService is not linked with DiagnosticService."""
+        self.assertFalse(hasattr(self.hosp_service, 'diagnostic_services'))
 
     def test_diagnostic_category_no_parent(self):
         """4. Verify DiagnosticCenterCategory has no parent_id."""

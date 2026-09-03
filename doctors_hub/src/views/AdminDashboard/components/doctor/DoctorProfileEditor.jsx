@@ -15,6 +15,8 @@ export default function DoctorProfileEditor() {
   const doctor = doctors && doctors.length > 0 ? doctors[0] : null;
 
   const [name, setName] = useState('');
+  const [academicTitle, setAcademicTitle] = useState('');
+  const [institution, setInstitution] = useState('');
   const [bmdcNumber, setBmdcNumber] = useState('');
   const [qualification, setQualification] = useState('');
   const [experience, setExperience] = useState('');
@@ -27,6 +29,8 @@ export default function DoctorProfileEditor() {
   useEffect(() => {
     if (doctor) {
       setName(doctor.name || '');
+      setAcademicTitle(doctor.academic_title || '');
+      setInstitution(doctor.institution || '');
       setBmdcNumber(doctor.bmdc_number || '');
       setQualification(doctor.qualification || '');
       setExperience(doctor.experience || '');
@@ -67,6 +71,8 @@ export default function DoctorProfileEditor() {
     try {
       const payload = {
         name: name.trim(),
+        academic_title: academicTitle.trim(),
+        institution: institution.trim(),
         bmdc_number: bmdcNumber.trim(),
         qualification: qualification.trim(),
         experience: experience.trim(),
@@ -127,7 +133,7 @@ export default function DoctorProfileEditor() {
       {/* Profile Form */}
       <form onSubmit={handleSaveProfile} className="bg-slate-900 border border-slate-800 rounded-3xl p-6 sm:p-8 shadow-2xl space-y-6">
         
-        {/* Full Name & Title */}
+        {/* Full Name & Credentials */}
         <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
           <div>
             <label className="block text-slate-300 text-xs font-bold mb-2 flex items-center gap-1.5">
@@ -147,11 +153,38 @@ export default function DoctorProfileEditor() {
           <div>
             <label className="block text-slate-300 text-xs font-bold mb-2 flex items-center gap-1.5">
               <Award className="w-3.5 h-3.5 text-teal-400" />
+              <span>Academic Title / Seniority</span>
+            </label>
+            <input
+              type="text"
+              value={academicTitle}
+              onChange={(e) => setAcademicTitle(e.target.value)}
+              placeholder="e.g. Professor, Associate Professor, Consultant"
+              className="w-full bg-slate-950 border border-slate-800 rounded-xl px-4 py-3 text-sm text-white focus:outline-none focus:border-teal-500"
+            />
+          </div>
+
+          <div>
+            <label className="block text-slate-300 text-xs font-bold mb-2 flex items-center gap-1.5">
+              <BookOpen className="w-3.5 h-3.5 text-teal-400" />
+              <span>Medical Institution / Hospital</span>
+            </label>
+            <input
+              type="text"
+              value={institution}
+              onChange={(e) => setInstitution(e.target.value)}
+              placeholder="e.g. Dhaka Medical College & Hospital"
+              className="w-full bg-slate-950 border border-slate-800 rounded-xl px-4 py-3 text-sm text-white focus:outline-none focus:border-teal-500"
+            />
+          </div>
+
+          <div>
+            <label className="block text-slate-300 text-xs font-bold mb-2 flex items-center gap-1.5">
+              <Award className="w-3.5 h-3.5 text-teal-400" />
               <span>BMDC Registration Number</span>
             </label>
             <input
               type="text"
-              required
               value={bmdcNumber}
               onChange={(e) => setBmdcNumber(e.target.value)}
               placeholder="A-12345"
@@ -166,10 +199,9 @@ export default function DoctorProfileEditor() {
             </label>
             <input
               type="text"
-              required
               value={experience}
               onChange={(e) => setExperience(e.target.value)}
-              placeholder="32 Years Exp."
+              placeholder="e.g. 15+ Years Exp."
               className="w-full bg-slate-950 border border-slate-800 rounded-xl px-4 py-3 text-sm text-white focus:outline-none focus:border-teal-500"
             />
           </div>

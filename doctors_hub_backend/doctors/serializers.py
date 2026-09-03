@@ -80,6 +80,8 @@ class DoctorAffiliationSerializer(serializers.ModelSerializer):
     schedules = AffiliationScheduleSerializer(many=True, required=False)
 
     doctor_name = serializers.CharField(source='doctor.name', read_only=True, default='')
+    academic_title = serializers.CharField(source='doctor.academic_title', read_only=True, default='')
+    institution = serializers.CharField(source='doctor.institution', read_only=True, default='')
     qualification = serializers.CharField(source='doctor.qualification', read_only=True, default='')
     experience = serializers.CharField(source='doctor.experience', read_only=True, default='')
     specialties = DoctorSpecialtySerializer(source='doctor.specialties', many=True, read_only=True)
@@ -95,7 +97,8 @@ class DoctorAffiliationSerializer(serializers.ModelSerializer):
         model = DoctorAffiliation
         fields = (
             'id', 'doctor', 'location_id', 'location_details', 'fee',
-            'facility_name', 'district', 'division', 'area', 'schedules', 'doctor_name', 'qualification', 'experience', 'specialties'
+            'facility_name', 'district', 'division', 'area', 'schedules',
+            'doctor_name', 'academic_title', 'institution', 'qualification', 'experience', 'specialties'
         )
 
     def to_internal_value(self, data):
@@ -114,7 +117,11 @@ class DoctorSerializer(serializers.ModelSerializer):
 
     class Meta:
         model = Doctor
-        fields = ('id', 'name', 'slug', 'specialties', 'specialty_ids', 'qualification', 'experience', 'description', 'bmdc_number', 'is_verified', 'affiliations')
+        fields = (
+            'id', 'name', 'slug', 'academic_title', 'institution',
+            'specialties', 'specialty_ids', 'qualification', 'experience',
+            'description', 'bmdc_number', 'is_verified', 'affiliations'
+        )
 
     def create(self, validated_data):
         affiliations_data = validated_data.pop('affiliations', None)

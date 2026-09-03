@@ -1,6 +1,6 @@
 import React, { useState, useMemo, useEffect, useRef } from 'react';
 import { useSearchParams } from 'react-router-dom';
-import { Stethoscope, MapPin, Filter, ArrowLeft, Building2, Calendar, Clock, ArrowRight, ArrowDownAZ, ArrowUpAZ, ChevronRight } from 'lucide-react';
+import { Stethoscope, MapPin, Filter, ArrowLeft, Building2, Calendar, Clock, ArrowRight, ArrowDownAZ, ArrowUpAZ, ChevronRight, Award, Sparkles } from 'lucide-react';
 import { DIVISIONS, findDivisionForDistrict } from '../../data/constants';
 import { api, ensureArray } from '../../services/api';
 import { useDebounce } from '../../hooks/useDebounce';
@@ -614,13 +614,35 @@ export default function DoctorSearchPage({
                           
                           {/* Doctor Profile Info */}
                           <div className="space-y-2 flex-1">
-                            <div className="flex items-center gap-2">
-                              <span className="text-xs font-bold text-slate-500">{doc.experience}</span>
-                            </div>
+                            {/* Seniority Badge: Academic Title & Experience */}
+                            {(doc.academic_title || (doc.experience && String(doc.experience).trim())) && (
+                              <div className="flex flex-wrap items-center gap-2 mb-1">
+                                {doc.academic_title && (
+                                  <span className="inline-flex items-center gap-1.5 px-3 py-1 rounded-full text-xs font-black uppercase tracking-wider bg-gradient-to-r from-emerald-600 to-teal-700 text-white shadow-xs">
+                                    <Award className="w-3.5 h-3.5" />
+                                    <span>{doc.academic_title}</span>
+                                  </span>
+                                )}
+                                {doc.experience && String(doc.experience).trim() && (
+                                  <span className="inline-flex items-center gap-1 px-2.5 py-0.5 rounded-full text-xs font-bold bg-emerald-50 text-emerald-800 border border-emerald-200">
+                                    <Sparkles className="w-3 h-3 text-emerald-600" />
+                                    <span>{doc.experience}</span>
+                                  </span>
+                                )}
+                              </div>
+                            )}
 
-                            <h3 className="text-lg font-bold text-slate-900 flex items-center gap-2">
-                              {doc.name}
-                            </h3>
+                            <div>
+                              <h3 className="text-lg font-bold text-slate-900 flex items-center gap-2">
+                                {doc.name}
+                              </h3>
+                              {doc.institution && (
+                                <p className="text-xs font-medium text-slate-500 flex items-center gap-1 mt-0.5">
+                                  <Building2 className="w-3 h-3 text-slate-400 shrink-0" />
+                                  <span>{doc.institution}</span>
+                                </p>
+                              )}
+                            </div>
 
                             <p className="text-xs font-bold text-emerald-700 flex items-center gap-1">
                               <Stethoscope className="w-3.5 h-3.5" />

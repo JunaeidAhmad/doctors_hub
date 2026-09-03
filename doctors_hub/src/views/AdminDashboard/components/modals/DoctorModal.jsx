@@ -25,6 +25,8 @@ export default function DoctorModal() {
   } = useAdminContext();
 
   const [name, setName] = useState('');
+  const [academicTitle, setAcademicTitle] = useState('');
+  const [institution, setInstitution] = useState('');
   const [bmdcNumber, setBmdcNumber] = useState('');
   const [qualification, setQualification] = useState('');
   const [experience, setExperience] = useState('10+ Yrs Exp.');
@@ -68,6 +70,8 @@ export default function DoctorModal() {
     setErrorMsg('');
     if (editingDoctor) {
       setName(editingDoctor.name || '');
+      setAcademicTitle(editingDoctor.academic_title || '');
+      setInstitution(editingDoctor.institution || '');
       setBmdcNumber(editingDoctor.bmdc_number || '');
       setQualification(editingDoctor.qualification || '');
       setExperience(editingDoctor.experience || '10+ Yrs Exp.');
@@ -99,7 +103,7 @@ export default function DoctorModal() {
               fee: String(a.fee != null ? a.fee : '1200'),
               schedules: schedules.length > 0 ? schedules : [
                 {
-                  id: `temp-sched-${Date.now()}-${Math.random()}`,
+                  id: `temp-sched-${Date.now()}`,
                   day_of_week: 'Saturday',
                   start_time: '17:00',
                   end_time: '21:00'
@@ -124,10 +128,7 @@ export default function DoctorModal() {
           ];
 
       setAffiliations(affList);
-
-      // Track initial IDs ONLY for managed affiliations
-      const origAffIds = managedAffiliations.map(a => a.id).filter(Boolean);
-      setInitialAffiliationIds(origAffIds);
+      setInitialAffiliationIds(managedAffiliations.map(a => a.id));
 
       const origSchedMap = {};
       managedAffiliations.forEach(a => {
@@ -138,6 +139,8 @@ export default function DoctorModal() {
       setInitialScheduleIds(origSchedMap);
     } else {
       setName('');
+      setAcademicTitle('');
+      setInstitution('');
       setBmdcNumber('');
       setQualification('MBBS, FCPS (Medicine)');
       setExperience('10+ Yrs Exp.');
@@ -307,6 +310,8 @@ export default function DoctorModal() {
     try {
       const docPayload = {
         name: name.trim(),
+        academic_title: academicTitle.trim(),
+        institution: institution.trim(),
         qualification: qualification.trim(),
         experience: experience.trim(),
         bmdc_number: bmdcNumber.trim() || undefined,
@@ -519,14 +524,39 @@ export default function DoctorModal() {
               </div>
 
               <div>
-                <label className="block text-slate-300 font-semibold mb-1">Experience *</label>
+                <label className="block text-slate-300 font-semibold mb-1">Experience</label>
                 <input
                   type="text"
-                  required
                   placeholder="e.g. 15+ Yrs Exp."
                   value={experience}
                   disabled={!isSuperAdmin}
                   onChange={e => setExperience(e.target.value)}
+                  className="w-full bg-slate-900 border border-slate-800 rounded-xl px-3 py-2 text-white focus:outline-none focus:border-teal-500 transition"
+                />
+              </div>
+            </div>
+
+            <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
+              <div>
+                <label className="block text-slate-300 font-semibold mb-1">Academic Title / Seniority</label>
+                <input
+                  type="text"
+                  placeholder="e.g. Professor, Associate Professor, Consultant"
+                  value={academicTitle}
+                  disabled={!isSuperAdmin}
+                  onChange={e => setAcademicTitle(e.target.value)}
+                  className="w-full bg-slate-900 border border-slate-800 rounded-xl px-3 py-2 text-white focus:outline-none focus:border-teal-500 transition"
+                />
+              </div>
+
+              <div>
+                <label className="block text-slate-300 font-semibold mb-1">Medical Institution / Hospital</label>
+                <input
+                  type="text"
+                  placeholder="e.g. Dhaka Medical College & Hospital"
+                  value={institution}
+                  disabled={!isSuperAdmin}
+                  onChange={e => setInstitution(e.target.value)}
                   className="w-full bg-slate-900 border border-slate-800 rounded-xl px-3 py-2 text-white focus:outline-none focus:border-teal-500 transition"
                 />
               </div>

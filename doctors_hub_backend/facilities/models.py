@@ -90,11 +90,6 @@ class HospitalService(models.Model):
     name = models.CharField(max_length=150)
     icon = models.CharField(max_length=50, default='Activity')
     description = models.TextField(blank=True)
-    diagnostic_services = models.ManyToManyField(
-        'DiagnosticService',
-        related_name='hospital_services',
-        blank=True
-    )
 
     def __str__(self):
         return self.name
