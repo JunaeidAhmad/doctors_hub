@@ -73,7 +73,7 @@ export default function DoctorSearchPage({
   const [sortOrder, setSortOrder] = useState(() => {
     return getParam('sort', 'asc') === 'desc' ? 'desc' : 'asc';
   });
-  const pageSize = 10;
+  const pageSize = 20;
   const [totalPages, setTotalPages] = useState(1);
 
   const [specialties, setSpecialties] = useState([]);
@@ -204,14 +204,23 @@ export default function DoctorSearchPage({
           let totalCount = 0;
           if (data) {
             docList = ensureArray(data);
-            totalCount = (typeof data === 'object' && data.count) ? data.count : docList.length;
+            totalCount = (typeof data === 'object' && typeof data.count === 'number') ? data.count : docList.length;
           }
           setDoctors(docList);
-          setTotalPages(Math.max(1, Math.ceil(totalCount / pageSize)));
+          const effectivePageSize = (data && data.next && docList.length > 0) ? docList.length : pageSize;
+          const calculatedTotalPages = Math.max(1, Math.ceil(totalCount / effectivePageSize));
+          setTotalPages(calculatedTotalPages);
+          if (currentPage > calculatedTotalPages) {
+            setCurrentPage(1);
+          }
         }
       })
       .catch(() => {
         if (isMounted) {
+          if (currentPage > 1) {
+            setCurrentPage(1);
+            return;
+          }
           setDoctors([]);
           setTotalPages(1);
         }

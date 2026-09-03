@@ -60,7 +60,7 @@ export async function getDoctors({
   fee_max = '',
   day = '',
   page = 1,
-  page_size = 10,
+  page_size = 20,
 } = {}) {
   const key = `doc_${specialty}_${location}_${division}_${district}_${area}_${search}_${hospital}_${diagnostic_center}_${fee_max}_${day}_${page}_${page_size}`;
   return fetchWithDeduplicationAndCache(
