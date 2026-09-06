@@ -623,39 +623,36 @@ export default function DoctorSearchPage({
                           
                           {/* Doctor Profile Info */}
                           <div className="space-y-2 flex-1">
-                            {/* Doctor Experience Badge */}
-                            {doc.experience && String(doc.experience).trim() && (
-                              <div className="flex flex-wrap items-center gap-2 mb-1">
-                                <span className="inline-flex items-center gap-1 px-2.5 py-0.5 rounded-full text-xs font-bold bg-emerald-50 text-emerald-800 border border-emerald-200">
-                                  <Sparkles className="w-3 h-3 text-emerald-600" />
-                                  <span>{doc.experience}</span>
-                                </span>
-                              </div>
-                            )}
-
-                            <div>
-                              <h3 className="text-lg font-bold text-slate-900 flex items-center gap-2">
-                                {doc.name}
-                              </h3>
-
-                              {/* Academic Title / Seniority (e.g. Professor & Head of Department) */}
-                              {doc.academic_title && (
-                                <div className="mt-1">
+                            {/* 1. Designation (Academic Title) & Experience */}
+                            {(doc.academic_title || (doc.experience && String(doc.experience).trim())) && (
+                              <div className="flex flex-wrap items-center gap-2">
+                                {doc.academic_title && (
                                   <span className="inline-flex items-center gap-1.5 px-3 py-1 rounded-full text-xs font-black uppercase tracking-wider bg-gradient-to-r from-emerald-600 to-teal-700 text-white shadow-xs">
                                     <Award className="w-3.5 h-3.5" />
                                     <span>{doc.academic_title}</span>
                                   </span>
-                                </div>
-                              )}
+                                )}
+                                {doc.experience && String(doc.experience).trim() && (
+                                  <span className="inline-flex items-center gap-1 px-2.5 py-0.5 rounded-full text-xs font-bold bg-emerald-50 text-emerald-800 border border-emerald-200">
+                                    <Sparkles className="w-3 h-3 text-emerald-600" />
+                                    <span>{doc.experience}</span>
+                                  </span>
+                                )}
+                              </div>
+                            )}
 
-                              {/* Institution Name - rendered directly under the Academic Title (Professor & Head of Department) */}
-                              {doc.institution && (
-                                <p className="text-xs font-medium text-slate-500 flex items-center gap-1 mt-1">
-                                  <Building2 className="w-3 h-3 text-slate-400 shrink-0" />
-                                  <span>{doc.institution}</span>
-                                </p>
-                              )}
-                            </div>
+                            {/* 2. Institute Name */}
+                            {doc.institution && (
+                              <p className="text-xs font-medium text-slate-500 flex items-center gap-1">
+                                <Building2 className="w-3.5 h-3.5 text-slate-400 shrink-0" />
+                                <span>{doc.institution}</span>
+                              </p>
+                            )}
+
+                            {/* 3. Doctor Name */}
+                            <h3 className="text-lg font-bold text-slate-900 flex items-center gap-2 pt-0.5">
+                              {doc.name}
+                            </h3>
 
                             <p className="text-xs font-bold text-emerald-700 flex items-center gap-1">
                               <Stethoscope className="w-3.5 h-3.5" />

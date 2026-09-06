@@ -48,21 +48,24 @@ export default function DoctorOverview() {
             </div>
 
             <div>
-              <h2 className="text-2xl sm:text-3xl font-black text-white flex items-center gap-2">
-                <span>{docName}</span>
-              </h2>
+              {/* 1. Designation */}
               {doctor?.academic_title && (
-                <p className="text-sm font-bold text-teal-300 flex items-center gap-1.5 mt-1">
+                <p className="text-sm font-bold text-teal-300 flex items-center gap-1.5 mb-1">
                   <Award className="w-4 h-4 text-teal-400 shrink-0" />
                   <span>{doctor.academic_title}</span>
                 </p>
               )}
+              {/* 2. Institute Name */}
               {doctor?.institution && (
-                <p className="text-xs font-medium text-slate-300 flex items-center gap-1.5 mt-0.5">
+                <p className="text-xs font-medium text-slate-300 flex items-center gap-1.5 mb-1.5">
                   <Building2 className="w-3.5 h-3.5 text-slate-400 shrink-0" />
                   <span>{doctor.institution}</span>
                 </p>
               )}
+              {/* 3. Doctor Name */}
+              <h2 className="text-2xl sm:text-3xl font-black text-white flex items-center gap-2">
+                <span>{docName}</span>
+              </h2>
               <p className="text-sm text-teal-300 font-semibold mt-1">
                 {docQual}
               </p>

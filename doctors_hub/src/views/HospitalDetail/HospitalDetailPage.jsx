@@ -321,11 +321,20 @@ export default function HospitalDetailPage({ hospitalId, onBookDoctorSlot, onBoo
                   return (
                     <div key={doc.id} className="bg-white p-6 rounded-2xl border border-slate-200 shadow-xs flex flex-col justify-between space-y-4 hover:border-emerald-300 transition-colors">
                       <div className="space-y-2">
-                        {/* Seniority / Experience Tag */}
+                        {/* 1. Designation (Academic Title) & Experience */}
                         <div className="flex flex-wrap items-center justify-between gap-2">
-                          <span className="px-2.5 py-0.5 rounded-full text-[10px] font-extrabold uppercase bg-emerald-100 text-emerald-800">
-                            Specialist Doctor
-                          </span>
+                          <div className="flex flex-wrap items-center gap-1.5">
+                            {doc.academic_title ? (
+                              <span className="px-2.5 py-0.5 rounded-full text-[10px] font-black uppercase tracking-wider bg-gradient-to-r from-emerald-600 to-teal-700 text-white shadow-xs inline-flex items-center gap-1">
+                                <Award className="w-3 h-3" />
+                                <span>{doc.academic_title}</span>
+                              </span>
+                            ) : (
+                              <span className="px-2.5 py-0.5 rounded-full text-[10px] font-extrabold uppercase bg-emerald-100 text-emerald-800">
+                                Specialist Doctor
+                              </span>
+                            )}
+                          </div>
                           {doc.experience && String(doc.experience).trim() && (
                             <span className="inline-flex items-center gap-1 px-2 py-0.5 rounded-full text-[11px] font-bold bg-slate-100 text-slate-700 border border-slate-200">
                               <Sparkles className="w-3 h-3 text-emerald-600" />
@@ -334,27 +343,16 @@ export default function HospitalDetailPage({ hospitalId, onBookDoctorSlot, onBoo
                           )}
                         </div>
 
-                        <div>
-                          <h3 className="text-lg font-bold text-slate-900">{doc.name}</h3>
+                        {/* 2. Institute Name */}
+                        {doc.institution && (
+                          <p className="text-xs font-medium text-slate-500 flex items-center gap-1">
+                            <Building2 className="w-3 h-3 text-slate-400 shrink-0" />
+                            <span>{doc.institution}</span>
+                          </p>
+                        )}
 
-                          {/* Academic Title / Seniority (e.g. Professor & Head of Department) */}
-                          {doc.academic_title && (
-                            <div className="mt-1">
-                              <span className="px-2.5 py-0.5 rounded-full text-[10px] font-black uppercase tracking-wider bg-gradient-to-r from-emerald-600 to-teal-700 text-white shadow-xs inline-flex items-center gap-1">
-                                <Award className="w-3 h-3" />
-                                <span>{doc.academic_title}</span>
-                              </span>
-                            </div>
-                          )}
-
-                          {/* Institution Name - rendered directly under the Academic Title (Professor & Head of Department) */}
-                          {doc.institution && (
-                            <p className="text-xs font-medium text-slate-500 flex items-center gap-1 mt-1">
-                              <Building2 className="w-3 h-3 text-slate-400 shrink-0" />
-                              <span>{doc.institution}</span>
-                            </p>
-                          )}
-                        </div>
+                        {/* 3. Doctor Name */}
+                        <h3 className="text-lg font-bold text-slate-900 pt-0.5">{doc.name}</h3>
 
                         <p className="text-xs font-bold text-emerald-700 flex items-center gap-1">
                           <Stethoscope className="w-3.5 h-3.5" />

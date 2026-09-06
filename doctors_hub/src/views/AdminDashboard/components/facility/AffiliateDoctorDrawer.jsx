@@ -340,7 +340,22 @@ export default function AffiliateDoctorDrawer({
 
             {selectedDoctorObj && (
               <div className="p-3.5 bg-slate-950 border border-teal-500/30 rounded-xl space-y-2 animate-fadeIn">
-                <div className="flex items-center justify-between">
+                {/* 1. Designation */}
+                {selectedDoctorObj.academic_title && (
+                  <p className="text-xs font-bold text-teal-300 flex items-center gap-1">
+                    <Award className="w-3.5 h-3.5 text-teal-400 shrink-0" />
+                    <span>{selectedDoctorObj.academic_title}</span>
+                  </p>
+                )}
+                {/* 2. Institute Name */}
+                {selectedDoctorObj.institution && (
+                  <p className="text-[11px] text-slate-400 flex items-center gap-1">
+                    <Building2 className="w-3 h-3 text-slate-500 shrink-0" />
+                    <span>{selectedDoctorObj.institution}</span>
+                  </p>
+                )}
+                {/* 3. Doctor Name */}
+                <div className="flex items-center justify-between pt-0.5">
                   <span className="font-bold text-white text-sm">{selectedDoctorObj.name}</span>
                   {selectedDoctorObj.experience && (
                     <span className="text-[10px] bg-slate-800 text-teal-400 px-2 py-0.5 rounded-full font-semibold">
@@ -348,18 +363,7 @@ export default function AffiliateDoctorDrawer({
                     </span>
                   )}
                 </div>
-                {selectedDoctorObj.academic_title && (
-                  <p className="text-xs font-bold text-teal-300 flex items-center gap-1">
-                    <Award className="w-3.5 h-3.5 text-teal-400 shrink-0" />
-                    <span>{selectedDoctorObj.academic_title}</span>
-                  </p>
-                )}
-                {selectedDoctorObj.institution && (
-                  <p className="text-[11px] text-slate-400 flex items-center gap-1">
-                    <Building2 className="w-3 h-3 text-slate-500 shrink-0" />
-                    <span>{selectedDoctorObj.institution}</span>
-                  </p>
-                )}
+                {/* 4. Rest of info */}
                 <p className="text-slate-400 text-[11px]">{selectedDoctorObj.qualification}</p>
                 {selectedDoctorObj.bmdc_number && (
                   <p className="text-slate-500 text-[10px] font-mono">BMDC: {selectedDoctorObj.bmdc_number}</p>

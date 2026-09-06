@@ -156,21 +156,24 @@ export default function DoctorsTab() {
                 tabDoctors.map(d => (
                   <tr key={d.id} className={`hover:bg-slate-800/40 transition ${isFetching ? 'opacity-60' : 'opacity-100'}`}>
                     <td className="py-4 px-4 font-bold text-white">
-                      <div className="text-sm text-teal-400 flex items-center gap-1.5">
-                        <Stethoscope className="w-4 h-4 text-teal-400" />
-                        <span>{d.name}</span>
-                      </div>
+                      {/* 1. Designation */}
                       {d.academic_title && (
-                        <div className="text-xs text-teal-300/90 font-semibold mt-0.5">
+                        <div className="text-xs text-teal-300/90 font-semibold mb-0.5">
                           {d.academic_title}
                         </div>
                       )}
+                      {/* 2. Institute Name */}
                       {d.institution && (
-                        <div className="text-[11px] text-slate-400 flex items-center gap-1 mt-0.5">
+                        <div className="text-[11px] text-slate-400 flex items-center gap-1 mb-1">
                           <Building2 className="w-3 h-3 text-slate-500 shrink-0" />
                           <span>{d.institution}</span>
                         </div>
                       )}
+                      {/* 3. Doctor Name */}
+                      <div className="text-sm text-teal-400 flex items-center gap-1.5">
+                        <Stethoscope className="w-4 h-4 text-teal-400" />
+                        <span>{d.name}</span>
+                      </div>
                     </td>
                     <td className="py-4 px-4">
                       <div className="text-slate-200 font-semibold">{d.qualification}</div>

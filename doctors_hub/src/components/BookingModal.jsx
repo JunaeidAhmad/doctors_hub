@@ -166,22 +166,34 @@ export default function BookingModal({ chamber, doctor, onClose, onConfirmBookin
 
         {/* Doctor & Chamber Summary Header Strip */}
         <div className="bg-slate-50 p-4 border-b border-slate-200 text-xs space-y-1">
-          <div className="flex items-center justify-between font-bold text-slate-900">
-            <span>{doctor.name} ({typeof doctor.specialty === 'object' ? doctor.specialty?.name : doctor.specialty})</span>
-            <span className="text-emerald-700 font-extrabold text-sm">Doctor Fee: ৳{doctor.fee}</span>
-          </div>
+          {/* 1. Designation */}
           {doctor.academic_title && (
-            <p className="text-xs font-bold text-emerald-800 flex items-center gap-1">
-              <Award className="w-3 h-3 text-emerald-600 shrink-0" />
-              <span>{doctor.academic_title}</span>
-            </p>
+            <div className="flex items-center justify-between">
+              <span className="px-2 py-0.5 rounded-full text-[10px] font-black uppercase tracking-wider bg-gradient-to-r from-emerald-600 to-teal-700 text-white shadow-xs inline-flex items-center gap-1">
+                <Award className="w-3 h-3" />
+                <span>{doctor.academic_title}</span>
+              </span>
+              <span className="text-emerald-700 font-extrabold text-sm">Doctor Fee: ৳{doctor.fee}</span>
+            </div>
           )}
+
+          {/* 2. Institute Name */}
           {doctor.institution && (
             <p className="text-slate-500 text-[11px] font-medium flex items-center gap-1">
               <Building2 className="w-3 h-3 text-slate-400 shrink-0" />
               <span>{doctor.institution}</span>
             </p>
           )}
+
+          {/* 3. Doctor Name */}
+          <div className="flex items-center justify-between font-bold text-slate-900 pt-0.5">
+            <span>{doctor.name} ({typeof doctor.specialty === 'object' ? doctor.specialty?.name : doctor.specialty})</span>
+            {!doctor.academic_title && (
+              <span className="text-emerald-700 font-extrabold text-sm">Doctor Fee: ৳{doctor.fee}</span>
+            )}
+          </div>
+
+          {/* 4. Rest of info */}
           <p className="text-slate-500 text-[11px] font-medium">{doctor.qualification}</p>
           <div className="flex items-center gap-1 text-slate-600 pt-1">
             <Building2 className="w-3.5 h-3.5 text-emerald-600" />
