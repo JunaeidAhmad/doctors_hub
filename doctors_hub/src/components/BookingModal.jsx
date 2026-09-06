@@ -1,5 +1,5 @@
 import React, { useState, useEffect } from 'react';
-import { X, Calendar, Clock, User, Phone, CheckCircle2, Building2, Stethoscope, ShieldCheck, ArrowRight, RefreshCw, Sparkles } from 'lucide-react';
+import { X, Calendar, Clock, User, Phone, CheckCircle2, Building2, Stethoscope, ShieldCheck, ArrowRight, RefreshCw, Sparkles, Award } from 'lucide-react';
 import { api } from '../services/api';
 
 export default function BookingModal({ chamber, doctor, onClose, onConfirmBooking, showToast }) {
@@ -170,6 +170,18 @@ export default function BookingModal({ chamber, doctor, onClose, onConfirmBookin
             <span>{doctor.name} ({typeof doctor.specialty === 'object' ? doctor.specialty?.name : doctor.specialty})</span>
             <span className="text-emerald-700 font-extrabold text-sm">Doctor Fee: ৳{doctor.fee}</span>
           </div>
+          {doctor.academic_title && (
+            <p className="text-xs font-bold text-emerald-800 flex items-center gap-1">
+              <Award className="w-3 h-3 text-emerald-600 shrink-0" />
+              <span>{doctor.academic_title}</span>
+            </p>
+          )}
+          {doctor.institution && (
+            <p className="text-slate-500 text-[11px] font-medium flex items-center gap-1">
+              <Building2 className="w-3 h-3 text-slate-400 shrink-0" />
+              <span>{doctor.institution}</span>
+            </p>
+          )}
           <p className="text-slate-500 text-[11px] font-medium">{doctor.qualification}</p>
           <div className="flex items-center gap-1 text-slate-600 pt-1">
             <Building2 className="w-3.5 h-3.5 text-emerald-600" />

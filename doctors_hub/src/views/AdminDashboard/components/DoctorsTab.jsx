@@ -1,5 +1,5 @@
 import React, { useState, useEffect } from 'react';
-import { Search, Plus, Edit, Trash2, Stethoscope } from 'lucide-react';
+import { Search, Plus, Edit, Trash2, Stethoscope, Building2 } from 'lucide-react';
 import { useAdminContext } from '../context/AdminContext';
 import DoctorModal from './modals/DoctorModal';
 import DoctorProfileEditor from './doctor/DoctorProfileEditor';
@@ -160,6 +160,17 @@ export default function DoctorsTab() {
                         <Stethoscope className="w-4 h-4 text-teal-400" />
                         <span>{d.name}</span>
                       </div>
+                      {d.academic_title && (
+                        <div className="text-xs text-teal-300/90 font-semibold mt-0.5">
+                          {d.academic_title}
+                        </div>
+                      )}
+                      {d.institution && (
+                        <div className="text-[11px] text-slate-400 flex items-center gap-1 mt-0.5">
+                          <Building2 className="w-3 h-3 text-slate-500 shrink-0" />
+                          <span>{d.institution}</span>
+                        </div>
+                      )}
                     </td>
                     <td className="py-4 px-4">
                       <div className="text-slate-200 font-semibold">{d.qualification}</div>

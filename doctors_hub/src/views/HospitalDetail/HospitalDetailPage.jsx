@@ -96,6 +96,8 @@ export default function HospitalDetailPage({ hospitalId, onBookDoctorSlot, onBoo
         return {
           id: docObj.id || aff.doctor || aff.id,
           name: aff.doctor_name || docObj.name || aff.name || 'Specialist Doctor',
+          academic_title: aff.academic_title || docObj.academic_title || '',
+          institution: aff.institution || docObj.institution || '',
           qualification: aff.qualification || docObj.qualification || 'MBBS, Specialist',
           experience: aff.experience || docObj.experience || '10+ Years Exp',
           specialties: (aff.specialties && aff.specialties.length > 0) ? aff.specialties : (docObj.specialties || [{ name: aff.specialty || 'General Specialist' }]),
@@ -319,20 +321,11 @@ export default function HospitalDetailPage({ hospitalId, onBookDoctorSlot, onBoo
                   return (
                     <div key={doc.id} className="bg-white p-6 rounded-2xl border border-slate-200 shadow-xs flex flex-col justify-between space-y-4 hover:border-emerald-300 transition-colors">
                       <div className="space-y-2">
-                        {/* Seniority Badge: Academic Title & Experience */}
+                        {/* Seniority / Experience Tag */}
                         <div className="flex flex-wrap items-center justify-between gap-2">
-                          <div className="flex flex-wrap items-center gap-1.5">
-                            {doc.academic_title ? (
-                              <span className="px-2.5 py-0.5 rounded-full text-[10px] font-black uppercase tracking-wider bg-gradient-to-r from-emerald-600 to-teal-700 text-white shadow-xs flex items-center gap-1">
-                                <Award className="w-3 h-3" />
-                                <span>{doc.academic_title}</span>
-                              </span>
-                            ) : (
-                              <span className="px-2.5 py-0.5 rounded-full text-[10px] font-extrabold uppercase bg-emerald-100 text-emerald-800">
-                                Specialist Doctor
-                              </span>
-                            )}
-                          </div>
+                          <span className="px-2.5 py-0.5 rounded-full text-[10px] font-extrabold uppercase bg-emerald-100 text-emerald-800">
+                            Specialist Doctor
+                          </span>
                           {doc.experience && String(doc.experience).trim() && (
                             <span className="inline-flex items-center gap-1 px-2 py-0.5 rounded-full text-[11px] font-bold bg-slate-100 text-slate-700 border border-slate-200">
                               <Sparkles className="w-3 h-3 text-emerald-600" />
@@ -343,8 +336,20 @@ export default function HospitalDetailPage({ hospitalId, onBookDoctorSlot, onBoo
 
                         <div>
                           <h3 className="text-lg font-bold text-slate-900">{doc.name}</h3>
+
+                          {/* Academic Title / Seniority (e.g. Professor & Head of Department) */}
+                          {doc.academic_title && (
+                            <div className="mt-1">
+                              <span className="px-2.5 py-0.5 rounded-full text-[10px] font-black uppercase tracking-wider bg-gradient-to-r from-emerald-600 to-teal-700 text-white shadow-xs inline-flex items-center gap-1">
+                                <Award className="w-3 h-3" />
+                                <span>{doc.academic_title}</span>
+                              </span>
+                            </div>
+                          )}
+
+                          {/* Institution Name - rendered directly under the Academic Title (Professor & Head of Department) */}
                           {doc.institution && (
-                            <p className="text-xs font-medium text-slate-500 flex items-center gap-1 mt-0.5">
+                            <p className="text-xs font-medium text-slate-500 flex items-center gap-1 mt-1">
                               <Building2 className="w-3 h-3 text-slate-400 shrink-0" />
                               <span>{doc.institution}</span>
                             </p>

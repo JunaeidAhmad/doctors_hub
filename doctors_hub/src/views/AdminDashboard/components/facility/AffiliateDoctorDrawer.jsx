@@ -1,7 +1,8 @@
 import React, { useState } from 'react';
 import { 
   Stethoscope, UserPlus, Link2, Clock, CheckCircle2, 
-  AlertCircle, RefreshCw, X, DollarSign, Calendar, Plus, Trash2
+  AlertCircle, RefreshCw, X, DollarSign, Calendar, Plus, Trash2,
+  Award, Building2
 } from 'lucide-react';
 import { useAdminContext } from '../../context/AdminContext';
 import { api } from '../../../../services/api';
@@ -33,6 +34,8 @@ export default function AffiliateDoctorDrawer({
     name: '',
     qualification: '',
     experience: '',
+    academic_title: '',
+    institution: '',
     bmdc_number: '',
     description: '',
     specialty_ids: []
@@ -91,6 +94,8 @@ export default function AffiliateDoctorDrawer({
       name: '',
       qualification: '',
       experience: '',
+      academic_title: '',
+      institution: '',
       bmdc_number: '',
       description: '',
       specialty_ids: doctorSpecialties[0] ? [doctorSpecialties[0].id] : []
@@ -178,6 +183,8 @@ export default function AffiliateDoctorDrawer({
           name: newDoctor.name.trim(),
           qualification: newDoctor.qualification.trim(),
           experience: newDoctor.experience.trim(),
+          academic_title: (newDoctor.academic_title || '').trim(),
+          institution: (newDoctor.institution || '').trim(),
           bmdc_number: newDoctor.bmdc_number.trim(),
           description: newDoctor.description.trim(),
           specialty_ids: newDoctor.specialty_ids
@@ -341,6 +348,18 @@ export default function AffiliateDoctorDrawer({
                     </span>
                   )}
                 </div>
+                {selectedDoctorObj.academic_title && (
+                  <p className="text-xs font-bold text-teal-300 flex items-center gap-1">
+                    <Award className="w-3.5 h-3.5 text-teal-400 shrink-0" />
+                    <span>{selectedDoctorObj.academic_title}</span>
+                  </p>
+                )}
+                {selectedDoctorObj.institution && (
+                  <p className="text-[11px] text-slate-400 flex items-center gap-1">
+                    <Building2 className="w-3 h-3 text-slate-500 shrink-0" />
+                    <span>{selectedDoctorObj.institution}</span>
+                  </p>
+                )}
                 <p className="text-slate-400 text-[11px]">{selectedDoctorObj.qualification}</p>
                 {selectedDoctorObj.bmdc_number && (
                   <p className="text-slate-500 text-[10px] font-mono">BMDC: {selectedDoctorObj.bmdc_number}</p>
@@ -373,6 +392,21 @@ export default function AffiliateDoctorDrawer({
                 value={newDoctor.experience}
                 onChange={val => setNewDoctor({ ...newDoctor, experience: val })}
                 placeholder="e.g. 15+ Yrs Exp."
+              />
+            </div>
+
+            <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
+              <EditableField
+                label="Academic Title / Seniority"
+                value={newDoctor.academic_title}
+                onChange={val => setNewDoctor({ ...newDoctor, academic_title: val })}
+                placeholder="e.g. Professor & Head of Department"
+              />
+              <EditableField
+                label="Medical Institution / Hospital"
+                value={newDoctor.institution}
+                onChange={val => setNewDoctor({ ...newDoctor, institution: val })}
+                placeholder="e.g. Dhaka Medical College & Hospital"
               />
             </div>
 
