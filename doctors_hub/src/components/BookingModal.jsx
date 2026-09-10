@@ -1,5 +1,5 @@
 import React, { useState, useEffect } from 'react';
-import { X, Calendar, Clock, User, Phone, CheckCircle2, Building2, Stethoscope, ShieldCheck, ArrowRight, RefreshCw, Sparkles, Award } from 'lucide-react';
+import { X, Calendar, Clock, Phone, CheckCircle2, Building2, Stethoscope, ShieldCheck, ArrowRight, Sparkles, Award } from 'lucide-react';
 import { api } from '../services/api';
 
 export default function BookingModal({ chamber, doctor, onClose, onConfirmBooking, showToast }) {
@@ -17,8 +17,6 @@ export default function BookingModal({ chamber, doctor, onClose, onConfirmBookin
   const [isSubmitting, setIsSubmitting] = useState(false);
   const [existingPatientFound, setExistingPatientFound] = useState(false);
   const [isLookingUp, setIsLookingUp] = useState(false);
-
-  if (!chamber || !doctor) return null;
 
   // Auto-fetch patient details when 11-digit phone number is entered
   useEffect(() => {
@@ -115,14 +113,14 @@ export default function BookingModal({ chamber, doctor, onClose, onConfirmBookin
       if (onConfirmBooking) {
         onConfirmBooking({
           doctorName: doctor.name,
-          specialty: doctor.specialty?.name || doctor.specialty,
-          chamberName: chamber.name,
-          location: chamber.location,
+          specialty: typeof doctor.specialty === 'object' ? doctor.specialty?.name : doctor.specialty,
+          chamberName: chamber.facility_name || chamber.facilityName || chamber.name || doctor.hospital_name || 'Specialist Chamber',
+          location: chamber.address || chamber.district || chamber.location || 'Dhaka, Bangladesh',
           date: selectedDate,
           slot: selectedSlot,
           patientName,
           patientPhone,
-          fee: doctor.fee,
+          fee: chamber.fee || doctor.fee || 1200,
           serialNumber: serialNum,
           tokenId: serialDisplay
         });
@@ -136,6 +134,8 @@ export default function BookingModal({ chamber, doctor, onClose, onConfirmBookin
       setIsSubmitting(false);
     }
   };
+
+  if (!chamber || !doctor) return null;
 
   return (
     <div className="fixed inset-0 z-50 flex items-center justify-center p-4 bg-slate-900/75 backdrop-blur-sm animate-fadeIn">
@@ -164,40 +164,56 @@ export default function BookingModal({ chamber, doctor, onClose, onConfirmBookin
           </button>
         </div>
 
-        {/* Doctor & Chamber Summary Header Strip */}
-        <div className="bg-slate-50 p-4 border-b border-slate-200 text-xs space-y-1">
-          {/* 1. Designation */}
-          {doctor.academic_title && (
-            <div className="flex items-center justify-between">
-              <span className="px-2 py-0.5 rounded-full text-[10px] font-black uppercase tracking-wider bg-gradient-to-r from-emerald-600 to-teal-700 text-white shadow-xs inline-flex items-center gap-1">
-                <Award className="w-3 h-3" />
-                <span>{doctor.academic_title}</span>
-              </span>
-              <span className="text-emerald-700 font-extrabold text-sm">Doctor Fee: ৳{doctor.fee}</span>
-            </div>
-          )}
-
-          {/* 2. Institute Name */}
-          {doctor.institution && (
-            <p className="text-slate-500 text-[11px] font-medium flex items-center gap-1">
-              <Building2 className="w-3 h-3 text-slate-400 shrink-0" />
-              <span>{doctor.institution}</span>
-            </p>
-          )}
-
-          {/* 3. Doctor Name */}
-          <div className="flex items-center justify-between font-bold text-slate-900 pt-0.5">
-            <span>{doctor.name} ({typeof doctor.specialty === 'object' ? doctor.specialty?.name : doctor.specialty})</span>
-            {!doctor.academic_title && (
-              <span className="text-emerald-700 font-extrabold text-sm">Doctor Fee: ৳{doctor.fee}</span>
-            )}
+        {/* Doctor & Selected Chamber Summary Header Strip */}
+        <div className="bg-slate-50 p-4 border-b border-slate-200 text-xs space-y-2">
+          {/* 1. Designation & Fee */}
+          <div className="flex items-center justify-between">
+            <span className="px-2 py-0.5 rounded-full text-[10px] font-bold uppercase tracking-wider bg-primary/10 text-primary inline-flex items-center gap-1">
+              <Award className="w-3 h-3" />
+              <span>{doctor.academic_title || doctor.designation || 'Specialist Doctor'}</span>
+            </span>
+            <span className="text-primary font-extrabold text-sm">
+              Fee: ৳{Number(chamber?.fee || doctor?.fee || 1200).toLocaleString()}
+            </span>
           </div>
 
-          {/* 4. Rest of info */}
-          <p className="text-slate-500 text-[11px] font-medium">{doctor.qualification}</p>
-          <div className="flex items-center gap-1 text-slate-600 pt-1">
-            <Building2 className="w-3.5 h-3.5 text-emerald-600" />
-            <span className="font-semibold text-slate-800">{chamber.name}</span> • {chamber.location}
+          {/* 2. Doctor Name & Qualification */}
+          <div>
+            <h4 className="font-bold text-slate-900 text-sm">
+              {doctor.name.startsWith('Dr.') ? doctor.name : `Dr. ${doctor.name}`}
+              <span className="text-slate-500 font-normal ml-1.5 text-xs">
+                ({typeof doctor.specialty === 'object' ? doctor.specialty?.name : (doctor.specialty || 'General Practitioner')})
+              </span>
+            </h4>
+            <p className="text-slate-500 text-[11px] font-medium mt-0.5">{doctor.qualification || 'MBBS, FCPS, MD'}</p>
+          </div>
+
+          {/* 3. Selected Chamber Information Card */}
+          <div className="mt-2 p-2.5 rounded-xl bg-surface-container-lowest border border-primary/20 shadow-2xs">
+            <div className="flex items-start justify-between gap-2">
+              <div className="flex items-start gap-1.5 min-w-0">
+                <Building2 className="w-4 h-4 text-primary shrink-0 mt-0.5" />
+                <div className="min-w-0">
+                  <div className="font-bold text-slate-900 text-xs truncate">
+                    {chamber.facility_name || chamber.facilityName || chamber.name || doctor.hospital_name || 'Specialist Chamber'}
+                  </div>
+                  <div className="text-[11px] text-slate-500 truncate mt-0.5">
+                    {chamber.address || chamber.district || chamber.location || 'Dhaka, Bangladesh'}
+                  </div>
+                </div>
+              </div>
+              <span className="text-[10px] font-bold text-primary bg-primary/10 px-1.5 py-0.5 rounded shrink-0">
+                Selected Chamber
+              </span>
+            </div>
+            {(chamber.visitSchedule || (chamber.schedules && chamber.schedules.length > 0)) && (
+              <div className="mt-1.5 pt-1.5 border-t border-slate-100 flex items-center gap-1 text-[11px] text-slate-600">
+                <Clock className="w-3 h-3 text-slate-400 shrink-0" />
+                <span className="truncate">
+                  {chamber.visitSchedule || `${chamber.schedules.map(s => s.day_of_week.slice(0, 3)).join(', ')} (${chamber.schedules[0].start_time?.slice(0, 5)} - ${chamber.schedules[0].end_time?.slice(0, 5)})`}
+                </span>
+              </div>
+            )}
           </div>
         </div>
 

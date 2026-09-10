@@ -99,7 +99,7 @@ export async function deleteBranchTest(id) {
 // Test Categories
 export async function getTestCategories() {
   return fetchWithDeduplicationAndCache('test_categories', async () => {
-    const res = await fetchWithTimeout(`${BASE_URL}/test-categories/`, {
+    const res = await fetchWithTimeout(`${BASE_URL}/test-categories/?page_size=100`, {
       headers: getHeaders(),
     });
     return handleResponse(res);

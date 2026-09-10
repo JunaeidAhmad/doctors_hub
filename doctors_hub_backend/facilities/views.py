@@ -222,7 +222,13 @@ class DiagnosticCenterViewSet(SlugOrPkLookupMixin, RoleScopedQuerysetMixin, view
     slug_field = 'location__slug'
     filter_backends = [DjangoFilterBackend, filters.SearchFilter]
     filterset_class = DiagnosticCenterFilter
-    search_fields = ['location__name', 'location__branch', 'location__address_line', 'location__area', 'location__district', 'location__division']
+    search_fields = [
+        'location__name', 'location__branch', 'location__address_line',
+        'location__area', 'location__district', 'location__division',
+        'location__offered_tests__test__name',
+        'location__offered_tests__test__code',
+        'location__offered_tests__test__category__name',
+    ]
     scope_location_field = "location_id__in"
 
     def get_queryset(self):

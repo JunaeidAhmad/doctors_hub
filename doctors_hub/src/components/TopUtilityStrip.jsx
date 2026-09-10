@@ -34,14 +34,26 @@ export default function TopUtilityStrip({ selectedLocation, setSelectedLocation,
           </a>
         </div>
 
-        {/* Right side: Verified Portal Tag & Partner Portal Link */}
-        <div className="flex items-center gap-4">
+        {/* Right side: Verified Portal Tag & Location/Language controls */}
+        <div className="flex items-center gap-3 sm:gap-4">
           <div className="hidden lg:flex items-center gap-1 text-emerald-400 font-medium">
             <ShieldCheck className="w-3.5 h-3.5" />
             <span>DGHS & BMDC Reg. Platform</span>
           </div>
 
+          <span className="text-slate-700 hidden sm:inline">•</span>
 
+          <div className="flex items-center gap-1 text-slate-300">
+            <span className="material-symbols-outlined text-[14px] text-emerald-400">location_on</span>
+            <span className="font-medium text-slate-100">{selectedLocation || 'Dhaka'}</span>
+          </div>
+
+          <span className="text-slate-700 hidden sm:inline">•</span>
+
+          <div className="flex items-center gap-1 text-slate-400 hover:text-white cursor-pointer transition-colors">
+            <span className="material-symbols-outlined text-[14px]">language</span>
+            <span className="font-medium">বাংলা</span>
+          </div>
         </div>
       </div>
     </div>

@@ -30,6 +30,8 @@ export default function DoctorModal() {
   const [bmdcNumber, setBmdcNumber] = useState('');
   const [qualification, setQualification] = useState('');
   const [experience, setExperience] = useState('10+ Yrs Exp.');
+  const [about, setAbout] = useState('');
+  const [clinicalServices, setClinicalServices] = useState('');
   const [selectedSpecialties, setSelectedSpecialties] = useState([]);
   const [affiliations, setAffiliations] = useState([]);
   
@@ -75,6 +77,8 @@ export default function DoctorModal() {
       setBmdcNumber(editingDoctor.bmdc_number || '');
       setQualification(editingDoctor.qualification || '');
       setExperience(editingDoctor.experience || '10+ Yrs Exp.');
+      setAbout(editingDoctor.about || editingDoctor.description || '');
+      setClinicalServices(editingDoctor.clinical_services || '');
 
       const specIds = Array.isArray(editingDoctor.specialties) 
         ? editingDoctor.specialties.map(s => typeof s === 'object' && s !== null ? (s.id || s) : s)
@@ -144,6 +148,8 @@ export default function DoctorModal() {
       setBmdcNumber('');
       setQualification('MBBS, FCPS (Medicine)');
       setExperience('10+ Yrs Exp.');
+      setAbout('');
+      setClinicalServices('');
       setSelectedSpecialties((doctorSpecialties || [])[0] ? [doctorSpecialties[0].id] : []);
       setAffiliations([
         {
@@ -314,6 +320,8 @@ export default function DoctorModal() {
         institution: institution.trim(),
         qualification: qualification.trim(),
         experience: experience.trim(),
+        about: about.trim(),
+        clinical_services: clinicalServices.trim(),
         bmdc_number: bmdcNumber.trim() || undefined,
         specialty_ids: selectedSpecialties
       };
@@ -559,6 +567,33 @@ export default function DoctorModal() {
                   onChange={e => setInstitution(e.target.value)}
                   className="w-full bg-slate-900 border border-slate-800 rounded-xl px-3 py-2 text-white focus:outline-none focus:border-teal-500 transition"
                 />
+              </div>
+            </div>
+
+            <div className="space-y-4 pt-2 border-t border-slate-800/40">
+              <div>
+                <label className="block text-slate-300 font-semibold mb-1">About Doctor (Biography)</label>
+                <textarea
+                  rows={3}
+                  placeholder="Professional biography, clinical leadership, specializations, and patient care philosophy..."
+                  value={about}
+                  disabled={!isSuperAdmin}
+                  onChange={e => setAbout(e.target.value)}
+                  className="w-full bg-slate-900 border border-slate-800 rounded-xl px-3 py-2 text-white focus:outline-none focus:border-teal-500 transition resize-y"
+                />
+              </div>
+
+              <div>
+                <label className="block text-slate-300 font-semibold mb-1">Clinical Services Offered</label>
+                <textarea
+                  rows={2}
+                  placeholder="e.g. Coronary Angiography (CAG), Angioplasty (PTCA), Pacemaker Implantation, Hypertension Management, Echocardiography"
+                  value={clinicalServices}
+                  disabled={!isSuperAdmin}
+                  onChange={e => setClinicalServices(e.target.value)}
+                  className="w-full bg-slate-900 border border-slate-800 rounded-xl px-3 py-2 text-white focus:outline-none focus:border-teal-500 transition resize-y"
+                />
+                <p className="text-[11px] text-slate-500 mt-1">Separate distinct clinical procedures or services by comma or new lines.</p>
               </div>
             </div>
           </div>

@@ -1,1364 +1,829 @@
 import React, { useState, useMemo, useEffect, useRef } from 'react';
-import { useSearchParams, useLocation } from 'react-router-dom';
-import { 
-  FlaskConical, Clock, ArrowLeft, Filter, Search, Building2, ShieldCheck, 
-  MapPin, CheckCircle, Home, FileText, ChevronRight, ChevronDown, Tag, Stethoscope,
-  Heart, Brain, Dna, Activity, Droplet, Sparkles, X, ChevronUp
-} from 'lucide-react';
-import { DIVISIONS, findDivisionForDistrict } from '../../data/constants';
+import { useSearchParams } from 'react-router-dom';
 import { api, ensureArray, isPageReload, getIsInitialLoad } from '../../services/api';
 import { useDebounce } from '../../hooks/useDebounce';
 import Pagination from '../../components/Pagination';
-import CascadingLocationFilter from "../../components/CascadingLocationFilter";
 
-// Fallback Test Categories
-const FALLBACK_TEST_CATEGORIES = [
-  { id: 'cardiac-tests', name: 'Cardiac Tests', slug: 'cardiac-tests', icon: 'Heart', description: 'ECG, 2D Echo, Doppler Echo, TMT, Holter & cardiac profiling', count: 9 },
-  { id: 'hematology', name: 'Hematology & Blood', slug: 'hematology', icon: 'Droplet', description: 'CBC, ESR, Blood Grouping, PBF & routine blood pathology', count: 12 },
-  { id: 'biochemistry', name: 'Biochemistry & LFT/KFT', slug: 'biochemistry', icon: 'Activity', description: 'Lipid Profile, Liver Function, Kidney Function, HbA1c & Sugar', count: 14 },
-  { id: 'radiology-imaging', name: 'Radiology & X-Ray', slug: 'radiology-imaging', icon: 'FileText', description: 'Digital X-Ray, Chest X-Ray, Bone Densitometry & DEXA scans', count: 8 },
-  { id: 'ultrasound-usg', name: 'Ultrasound / USG', slug: 'ultrasound-usg', icon: 'Sparkles', description: '4D Pregnancy USG, Whole Abdomen, Pelvic & Doppler Ultrasound', count: 7 },
-  { id: 'ct-scan', name: 'CT Scan Body Imaging', slug: 'ct-scan', icon: 'Brain', description: 'High-speed Multi-Slice CT Brain, Chest, Abdomen & HRCT Scans', count: 6 },
-  { id: 'mri', name: 'MRI Diagnostics', slug: 'mri', icon: 'Brain', description: '1.5T & 3.0T High-Field Brain, Spine & Musculoskeletal MRI', count: 6 },
-  { id: 'neuro-tests', name: 'Neuro Diagnostics', slug: 'neuro-tests', icon: 'Brain', description: 'EEG, EMG, NCS, VEP & comprehensive neurological testing', count: 7 },
-  { id: 'genetic-molecular', name: 'Genetic & Molecular', slug: 'genetic-molecular', icon: 'Dna', description: 'PCR tests, DNA sequencing, HPV & advanced molecular diagnostics', count: 6 },
-  { id: 'endoscopy-colonoscopy', name: 'Endoscopy & Colonoscopy', slug: 'endoscopy-colonoscopy', icon: 'Stethoscope', description: 'Upper GI Endoscopy, Colonoscopy, Biopsy & Histopathology', count: 7 },
-  { id: 'serology', name: 'Serology & Immunity', slug: 'serology', icon: 'ShieldCheck', description: 'Dengue NS1, Hepatitis B/C, HIV, Widal & infectious viral panels', count: 9 },
-  { id: 'microbiology', name: 'Microbiology & Culture', slug: 'microbiology', icon: 'FlaskConical', description: 'Urine R/M/E, Stool R/E, Blood Culture & Antibiotic Sensitivity', count: 6 },
+// Subcomponents
+import DiagnosticsBreadcrumbs from './components/DiagnosticsBreadcrumbs';
+import DiagnosticsHeroSearch from './components/DiagnosticsHeroSearch';
+import DiagnosticsFilterSidebar from './components/DiagnosticsFilterSidebar';
+import DiagnosticsResultsHeader from './components/DiagnosticsResultsHeader';
+import DiagnosticTestCard from './components/DiagnosticTestCard';
+import DiagnosticsPromoBanner from './components/DiagnosticsPromoBanner';
+import DiagnosticsEmptyState from './components/DiagnosticsEmptyState';
+
+// Standard fallback categories matching Stitch design
+const STITCH_TEST_CATEGORIES = [
+  { id: 'all', name: 'All Test Types', slug: 'all' },
+  { id: 'pathology-blood', name: 'Pathology & Blood', slug: 'pathology-blood' },
+  { id: 'radiology-mri', name: 'Radiology & MRI', slug: 'radiology-mri' },
+  { id: 'cardiology-ecg', name: 'Cardiology / ECG', slug: 'cardiology-ecg' },
+  { id: 'biochemistry', name: 'Biochemistry', slug: 'biochemistry' },
+  { id: 'ultrasonography', name: 'Ultrasonography', slug: 'ultrasonography' },
+  { id: 'histopathology', name: 'Histopathology', slug: 'histopathology' },
 ];
 
-// Fallback Diagnostic Center Categories
-const FALLBACK_CENTER_CATEGORIES = [
-  { id: 'multi-specialty-general-diagnostic-center', name: 'Multi-Specialty / General Lab', slug: 'multi-specialty-general-diagnostic-center', count: 52 },
-  { id: 'pathology-lab-focused', name: 'Pathology Lab Focused', slug: 'pathology-lab-focused', count: 45 },
-  { id: 'imaging-focused-radiology-ct-mri-', name: 'Imaging Hub (X-Ray, CT, MRI)', slug: 'imaging-focused-radiology-ct-mri-', count: 38 },
-  { id: 'cardiac-diagnostics-focused', name: 'Cardiac Diagnostics Focused', slug: 'cardiac-diagnostics-focused', count: 28 },
-  { id: 'neuro-diagnostics-focused', name: 'Neuro Diagnostics Focused', slug: 'neuro-diagnostics-focused', count: 20 },
-  { id: 'genetic-molecular-testing-focused', name: 'Genetic & Molecular Testing', slug: 'genetic-molecular-testing-focused', count: 18 },
-  { id: 'government-diagnostic-center', name: 'Government Diagnostic Center', slug: 'government-diagnostic-center', count: 15 },
-  { id: 'private-independent-', name: 'Private / Independent Chain', slug: 'private-independent-', count: 35 },
-];
-
-// Fallback Verified Diagnostic Centers with Comprehensive Tests for all test categories
-const FALLBACK_DIAGNOSTIC_CENTERS = [
+// Curated Stitch Featured Tests with multi-center offerings
+const STITCH_FEATURED_TESTS = [
   {
-    id: 'center-popular-panthapath',
-    name: 'Popular Diagnostic Centre',
-    ownership_type: 'private',
-    branch: 'Panthapath Branch',
-    address: 'House 16, Road 2, Dhanmondi / Panthapath, Dhaka',
-    district: 'Dhaka',
-    open_timing: '07:00 AM - 11:00 PM',
-    is_verified: true,
-    category: { name: 'Multi-Specialty / General Diagnostic Center' },
-    categories: ['Multi-Specialty', 'Cardiac Diagnostics Focused', 'Pathology Lab Focused'],
-    offered_tests: [
+    id: 'test-cbc-esr',
+    name: 'Complete Blood Count (CBC) with ESR',
+    category_name: 'Pathology',
+    category_slug: 'pathology-blood',
+    description: 'Automated 5-part differential blood count and erythrocyte sedimentation rate',
+    report_time_hours: 4,
+    fasting_required: false,
+    sample_type: 'Whole Blood (EDTA)',
+    preparation_instructions: 'No special preparation needed. Fasting not required.',
+    price: 400,
+    offerings: [
       {
-        id: 'pop-t1',
-        test_details: { id: 'test-61', name: 'ECG (12-Lead Resting)', category_name: 'Cardiac Tests', category_slug: 'cardiac-tests', description: 'Complete 12-lead resting electrocardiogram with cardiologist interpretation' },
-        calculated_price: 600,
-        price: 800,
-        report_time: '1 Hour',
-        home_sample_collection: false,
-      },
-      {
-        id: 'pop-t2',
-        test_details: { id: 'test-62', name: '2D Echocardiography with Color Doppler', category_name: 'Cardiac Tests', category_slug: 'cardiac-tests', description: 'Advanced color Doppler ultrasound assessment of heart chambers and valves' },
-        calculated_price: 3200,
-        price: 3800,
-        report_time: '2 Hours',
-        home_sample_collection: false,
-      },
-      {
-        id: 'pop-t3',
-        test_details: { id: 'test-65', name: 'TMT (Treadmill Stress Test / ETT)', category_name: 'Cardiac Tests', category_slug: 'cardiac-tests', description: 'Exercise cardiac stress test for ischemic heart disease and angina diagnosis' },
-        calculated_price: 3500,
-        price: 4200,
-        report_time: '3 Hours',
-        home_sample_collection: false,
-      },
-      {
-        id: 'pop-t4',
-        test_details: { id: 'test-66', name: '24-Hour Holter ECG Monitoring', category_name: 'Cardiac Tests', category_slug: 'cardiac-tests', description: 'Continuous 24-hour ambulatory cardiac rhythm monitoring for arrhythmia' },
-        calculated_price: 4500,
-        price: 5200,
-        report_time: '24 Hours',
-        home_sample_collection: false,
-      },
-      {
-        id: 'pop-t5',
-        test_details: { id: 'test-67', name: 'Cardiac CT / Calcium Scoring', category_name: 'Cardiac Tests', category_slug: 'cardiac-tests', description: 'Non-invasive 128-slice CT coronary calcium scoring for plaque evaluation' },
-        calculated_price: 8500,
-        price: 9800,
-        report_time: '6 Hours',
-        home_sample_collection: false,
-      },
-      {
-        id: 'pop-t6',
-        test_details: { id: 'test-1', name: 'Complete Blood Count (CBC with ESR)', category_name: 'Hematology', category_slug: 'hematology', description: 'Automated 5-part differential blood count and hemoglobin test' },
-        calculated_price: 500,
-        price: 650,
-        report_time: '4 Hours',
-        home_sample_collection: true,
-      },
-      {
-        id: 'pop-t7',
-        test_details: { id: 'test-2', name: 'Lipid Profile (Cholesterol, HDL, LDL, Triglycerides)', category_name: 'Biochemistry', category_slug: 'biochemistry', description: 'Complete fasting blood lipid profile for cardiovascular risk assessment' },
-        calculated_price: 1200,
-        price: 1500,
-        report_time: '5 Hours',
-        home_sample_collection: true,
-      },
-      {
-        id: 'pop-t8',
-        test_details: { id: 'test-3', name: '1.5T MRI Brain with Contrast', category_name: 'MRI', category_slug: 'mri', description: 'High-resolution magnetic resonance imaging of brain parenchyma and vessels' },
-        calculated_price: 7500,
-        price: 9000,
-        report_time: '12 Hours',
-        home_sample_collection: false,
-      },
-      {
-        id: 'pop-t9',
-        test_details: { id: 'test-ct1', name: 'CT Scan Whole Abdomen & Pelvis (128-Slice)', category_name: 'CT Scan Body Imaging', category_slug: 'ct-scan', description: 'High-speed multi-slice computed tomography with IV contrast' },
-        calculated_price: 8000,
-        price: 9500,
-        report_time: '6 Hours',
-        home_sample_collection: false,
-      },
-      {
-        id: 'pop-t10',
-        test_details: { id: 'test-usg1', name: '4D Pregnancy Anomaly Ultrasound Scan', category_name: 'Ultrasound / USG', category_slug: 'ultrasound-usg', description: 'High-definition 4D obstetric ultrasound anomaly screening with Doppler' },
-        calculated_price: 2800,
-        price: 3400,
-        report_time: '1 Hour',
-        home_sample_collection: false,
-      },
-      {
-        id: 'pop-t11',
-        test_details: { id: 'test-endo1', name: 'Video Upper GI Endoscopy with Biopsy', category_name: 'Endoscopy & Colonoscopy', category_slug: 'endoscopy-colonoscopy', description: 'High-definition endoscopic visualization of esophagus, stomach and duodenum' },
-        calculated_price: 4200,
-        price: 5000,
-        report_time: '2 Hours',
-        home_sample_collection: false,
-      },
-      {
-        id: 'pop-t12',
-        test_details: { id: 'test-gen1', name: 'RT-PCR Viral Panel & Quantitative DNA Screening', category_name: 'Genetic & Molecular', category_slug: 'genetic-molecular', description: 'High-sensitivity real-time PCR genetic assay' },
-        calculated_price: 3800,
-        price: 4500,
-        report_time: '24 Hours',
-        home_sample_collection: true,
-      },
-      {
-        id: 'pop-t13',
-        test_details: { id: 'test-sero1', name: 'Dengue NS1 Antigen & Antibody Duo (IgG/IgM)', category_name: 'Serology & Immunity', category_slug: 'serology', description: 'Rapid automated ELISA confirmation for acute dengue fever' },
-        calculated_price: 1100,
-        price: 1400,
-        report_time: '2 Hours',
-        home_sample_collection: true,
-      },
-      {
-        id: 'pop-t14',
-        test_details: { id: 'test-micro1', name: 'Urine Routine & Microscopic Examination (R/M/E)', category_name: 'Microbiology & Culture', category_slug: 'microbiology', description: 'Full physical, chemical and automated microscopic examination of urine' },
-        calculated_price: 300,
+        id: 'cbc-pop',
+        facility_name: 'Popular Diagnostic Centre',
+        location_details: { name: 'Popular Diagnostic Centre', branch: 'Dhanmondi Main', district: 'Dhaka', division: 'Dhaka', ownership_type: 'private' },
         price: 400,
-        report_time: '2 Hours',
+        calculated_price: 400,
+        report_time: 'Same day (4 hrs)',
         home_sample_collection: true,
+        home_sample_note: '+৳100 Pickup',
       },
-    ]
+      {
+        id: 'cbc-ibn',
+        facility_name: 'Ibn Sina Diagnostic',
+        location_details: { name: 'Ibn Sina Diagnostic', branch: 'Dhanmondi Branch', district: 'Dhaka', division: 'Dhaka', ownership_type: 'private' },
+        price: 380,
+        calculated_price: 380,
+        report_time: 'Same day (4 hrs)',
+        home_sample_collection: true,
+        home_sample_note: 'Available',
+      },
+      {
+        id: 'cbc-lab',
+        facility_name: 'LabAid Diagnostic',
+        location_details: { name: 'LabAid Diagnostic', branch: 'Gulshan Branch', district: 'Dhaka', division: 'Dhaka', ownership_type: 'hospital_affiliated' },
+        price: 450,
+        calculated_price: 450,
+        report_time: '5-6 hours',
+        home_sample_collection: true,
+        home_sample_note: '+৳120 Pickup',
+      },
+    ],
   },
   {
-    id: 'center-ibn-sina-dhanmondi',
-    name: 'Ibn Sina Diagnostic & Consultation Center',
-    branch: 'Dhanmondi Branch',
-    address: 'House 48, Road 9/A, Dhanmondi, Dhaka',
-    district: 'Dhaka',
-    open_timing: '07:30 AM - 10:30 PM',
-    is_verified: true,
-    category: { name: 'Cardiac Diagnostics Focused' },
-    categories: ['Cardiac Diagnostics Focused', 'Multi-Specialty', 'Corporate Chain'],
-    offered_tests: [
+    id: 'test-mri-brain',
+    name: 'MRI of Brain (Plain & Contrast - 1.5T / 3.0T)',
+    category_name: 'Radiology & Imaging',
+    category_slug: 'radiology-mri',
+    description: 'High-resolution neuro-cranial magnetic resonance imaging with gadolinium contrast',
+    report_time_hours: 24,
+    fasting_required: false,
+    sample_type: 'Diagnostic Scan',
+    preparation_instructions: 'Remove all metallic objects. Preparation guide included.',
+    price: 7500,
+    offerings: [
       {
-        id: 'ibn-t1',
-        test_details: { id: 'test-61', name: 'ECG (Resting 12-Lead)', category_name: 'Cardiac Tests', category_slug: 'cardiac-tests', description: 'Standard electrocardiogram recording heart rate and electrical conduction' },
-        calculated_price: 550,
-        price: 700,
-        report_time: '1 Hour',
-        home_sample_collection: false,
-      },
-      {
-        id: 'ibn-t2',
-        test_details: { id: 'test-62', name: '2D Echo & Color Doppler', category_name: 'Cardiac Tests', category_slug: 'cardiac-tests', description: 'Transthoracic echocardiogram with ejection fraction assessment' },
-        calculated_price: 3000,
-        price: 3600,
-        report_time: '2 Hours',
-        home_sample_collection: false,
-      },
-      {
-        id: 'ibn-t3',
-        test_details: { id: 'test-64', name: 'Stress Echocardiography (Dobutamine)', category_name: 'Cardiac Tests', category_slug: 'cardiac-tests', description: 'Pharmacological stress echocardiogram for myocardial viability' },
-        calculated_price: 4800,
-        price: 5500,
-        report_time: '4 Hours',
-        home_sample_collection: false,
-      },
-      {
-        id: 'ibn-t4',
-        test_details: { id: 'test-68', name: 'Ambulatory Blood Pressure Monitoring (ABPM 24-hr)', category_name: 'Cardiac Tests', category_slug: 'cardiac-tests', description: '24-hour continuous automated blood pressure monitoring for hypertension' },
-        calculated_price: 2800,
-        price: 3400,
-        report_time: '24 Hours',
-        home_sample_collection: false,
-      },
-      {
-        id: 'ibn-t5',
-        test_details: { id: 'test-69', name: 'Serum Troponin-I (High Sensitivity)', category_name: 'Cardiac Tests', category_slug: 'cardiac-tests', description: 'Rapid quantitative cardiac biomarker for acute coronary syndrome and heart attack' },
-        calculated_price: 1600,
-        price: 2000,
-        report_time: '2 Hours',
-        home_sample_collection: true,
-      },
-      {
-        id: 'ibn-t6',
-        test_details: { id: 'test-4', name: 'Digital Chest X-Ray (P/A View)', category_name: 'Radiology & Imaging', category_slug: 'radiology-imaging', description: 'High-definition digital radiography of chest, lungs & heart outline' },
-        calculated_price: 700,
-        price: 900,
-        report_time: '2 Hours',
-        home_sample_collection: false,
-      },
-      {
-        id: 'ibn-t7',
-        test_details: { id: 'test-usg2', name: 'USG of Whole Abdomen with Pelvic Organs', category_name: 'Ultrasound / USG', category_slug: 'ultrasound-usg', description: 'Complete abdominal ultrasonography by consultant sonologist' },
-        calculated_price: 1800,
-        price: 2200,
-        report_time: '1 Hour',
-        home_sample_collection: false,
-      },
-      {
-        id: 'ibn-t8',
-        test_details: { id: 'test-sero2', name: 'Viral Hepatitis Profile (HBsAg, Anti-HCV, Anti-HIV)', category_name: 'Serology & Immunity', category_slug: 'serology', description: 'Chemiluminescence immunoassay for infectious viral blood markers' },
-        calculated_price: 2200,
-        price: 2800,
-        report_time: '4 Hours',
-        home_sample_collection: true,
-      },
-    ]
-  },
-  {
-    id: 'center-labaid-diagnostic-gulshan',
-    name: 'Labaid Diagnostic & Cardiac Centre',
-    branch: 'Gulshan Branch',
-    address: 'House 13/A, Road 35, Gulshan-2, Dhaka',
-    district: 'Dhaka',
-    open_timing: '24 Hours Open',
-    is_verified: true,
-    category: { name: 'Cardiac Diagnostics Focused' },
-    categories: ['Cardiac Diagnostics Focused', 'Hospital-Affiliated Lab', 'Multi-Specialty'],
-    offered_tests: [
-      {
-        id: 'lab-t1',
-        test_details: { id: 'test-61', name: 'Digital 12-Channel ECG', category_name: 'Cardiac Tests', category_slug: 'cardiac-tests', description: 'Computerized 12-channel electrocardiography with instant digital reporting' },
-        calculated_price: 650,
-        price: 850,
-        report_time: '30 Mins',
-        home_sample_collection: false,
-      },
-      {
-        id: 'lab-t2',
-        test_details: { id: 'test-62', name: 'Trans-Thoracic 4D Echocardiography', category_name: 'Cardiac Tests', category_slug: 'cardiac-tests', description: 'State-of-the-art 4D ultrasound echocardiogram by consultant cardiologists' },
-        calculated_price: 3600,
-        price: 4400,
-        report_time: '2 Hours',
-        home_sample_collection: false,
-      },
-      {
-        id: 'lab-t3',
-        test_details: { id: 'test-65', name: 'Exercise Tolerance Test (ETT / TMT)', category_name: 'Cardiac Tests', category_slug: 'cardiac-tests', description: 'Full computer-guided treadmill exercise ECG evaluation' },
-        calculated_price: 3800,
-        price: 4500,
-        report_time: '3 Hours',
-        home_sample_collection: false,
-      },
-      {
-        id: 'lab-t4',
-        test_details: { id: 'test-66', name: '7-Day Extended Holter Monitor', category_name: 'Cardiac Tests', category_slug: 'cardiac-tests', description: 'Extended multi-day ambulatory ECG patch monitoring for transient arrhythmias' },
-        calculated_price: 7000,
+        id: 'mri-sq',
+        facility_name: 'Square Hospital Lab',
+        location_details: { name: 'Square Hospital Lab', branch: 'Panthapath Central', district: 'Dhaka', division: 'Dhaka', ownership_type: 'hospital_affiliated' },
         price: 8500,
-        report_time: '48 Hours',
+        calculated_price: 8500,
+        report_time: 'Tomorrow, 10:30 AM',
         home_sample_collection: false,
+        home_sample_note: 'Center Visit Only',
       },
       {
-        id: 'lab-t5',
-        test_details: { id: 'test-67', name: 'CT Coronary Angiography (512-Slice)', category_name: 'Cardiac Tests', category_slug: 'cardiac-tests', description: 'Ultra high-definition non-invasive CT coronary artery angiography' },
-        calculated_price: 16500,
-        price: 19000,
-        report_time: '8 Hours',
+        id: 'mri-pop',
+        facility_name: 'Popular Diagnostic (Dhanmondi)',
+        location_details: { name: 'Popular Diagnostic (Dhanmondi)', branch: 'Dhanmondi', district: 'Dhaka', division: 'Dhaka', ownership_type: 'private' },
+        price: 7500,
+        calculated_price: 7500,
+        report_time: 'Today, 06:00 PM',
         home_sample_collection: false,
+        home_sample_note: 'Center Visit Only',
       },
       {
-        id: 'lab-t6',
-        test_details: { id: 'test-5', name: 'Comprehensive Lipid & Cardiac Risk Profile', category_name: 'Biochemistry', category_slug: 'biochemistry', description: 'Lipid panel, hs-CRP, Homocysteine & HbA1c combined cardiovascular profile' },
-        calculated_price: 2800,
-        price: 3500,
-        report_time: '6 Hours',
-        home_sample_collection: true,
-      },
-      {
-        id: 'lab-t7',
-        test_details: { id: 'test-micro2', name: 'Automated Blood Culture & Antibiotic Sensitivity', category_name: 'Microbiology & Culture', category_slug: 'microbiology', description: 'Continuous-monitoring automated blood culture with MIC antibiogram' },
-        calculated_price: 1800,
-        price: 2200,
-        report_time: '48 Hours',
+        id: 'mri-ibn',
+        facility_name: 'Ibn Sina Diagnostic Centre',
+        location_details: { name: 'Ibn Sina Diagnostic Centre', branch: 'Kalyanpur', district: 'Dhaka', division: 'Dhaka', ownership_type: 'private' },
+        price: 7200,
+        calculated_price: 7200,
+        report_time: 'Today, 08:15 PM',
         home_sample_collection: false,
+        home_sample_note: 'Center Visit Only',
       },
-    ]
+    ],
   },
   {
-    id: 'center-medinova-medical',
-    name: 'Medinova Medical Services',
-    branch: 'Dhanmondi Branch',
-    address: 'House 71/A, Road 5/A, Dhanmondi, Dhaka',
-    district: 'Dhaka',
-    open_timing: '08:00 AM - 10:00 PM',
-    is_verified: true,
-    category: { name: 'Pathology Lab Focused' },
-    categories: ['Pathology Lab Focused', 'Multi-Specialty'],
-    offered_tests: [
+    id: 'test-lipid-profile',
+    name: 'Lipid Profile (Cholesterol, HDL, LDL, Triglycerides)',
+    category_name: 'Biochemistry',
+    category_slug: 'biochemistry',
+    description: 'Complete fasting blood lipid screening for cardiovascular disease profiling',
+    report_time_hours: 8,
+    fasting_required: true,
+    sample_type: 'Blood (Serum)',
+    preparation_instructions: '12 Hours Fasting Required before morning sample pickup.',
+    price: 1100,
+    offerings: [
       {
-        id: 'med-t1',
-        test_details: { id: 'test-61', name: 'ECG (Electrocardiogram)', category_name: 'Cardiac Tests', category_slug: 'cardiac-tests', description: 'Routine resting ECG test with automated rhythm analysis' },
-        calculated_price: 500,
-        price: 650,
-        report_time: '1 Hour',
-        home_sample_collection: false,
-      },
-      {
-        id: 'med-t2',
-        test_details: { id: 'test-62', name: '2D Echocardiogram', category_name: 'Cardiac Tests', category_slug: 'cardiac-tests', description: 'Cardiac valve and chamber ultrasonography' },
-        calculated_price: 2900,
-        price: 3500,
-        report_time: '2 Hours',
-        home_sample_collection: false,
-      },
-      {
-        id: 'med-t3',
-        test_details: { id: 'test-6', name: 'Liver Function Test (LFT Profile)', category_name: 'Biochemistry', category_slug: 'biochemistry', description: 'SGPT, SGOT, Bilirubin, Alkaline Phosphatase & Total Protein' },
+        id: 'lp-ibn',
+        facility_name: 'Ibn Sina Diagnostic',
+        location_details: { name: 'Ibn Sina Diagnostic', branch: 'Dhanmondi', district: 'Dhaka', division: 'Dhaka', ownership_type: 'private' },
+        price: 1100,
         calculated_price: 1100,
-        price: 1400,
-        report_time: '4 Hours',
+        report_time: 'Same day by 5:00 PM',
         home_sample_collection: true,
+        home_sample_note: 'Free with order > ৳1000',
       },
       {
-        id: 'med-t4',
-        test_details: { id: 'test-7', name: '4D Pregnancy Ultrasound with Doppler', category_name: 'Ultrasound / USG', category_slug: 'ultrasound-usg', description: 'Real-time 4D fetal growth, anomaly and placental blood flow study' },
-        calculated_price: 2400,
-        price: 3000,
-        report_time: '1 Hour',
-        home_sample_collection: false,
+        id: 'lp-med',
+        facility_name: 'Medinova Medical Diagnostic',
+        location_details: { name: 'Medinova Medical Diagnostic', branch: 'Dhanmondi Main', district: 'Dhaka', division: 'Dhaka', ownership_type: 'private' },
+        price: 1150,
+        calculated_price: 1150,
+        report_time: 'Within 6 Hours',
+        home_sample_collection: true,
+        home_sample_note: '+৳80 Pickup charge',
       },
       {
-        id: 'med-t5',
-        test_details: { id: 'test-hem1', name: 'Peripheral Blood Film (PBF Study)', category_name: 'Hematology', category_slug: 'hematology', description: 'Expert hematologist morphological review of red cells, white cells & platelets' },
-        calculated_price: 650,
-        price: 800,
-        report_time: '4 Hours',
+        id: 'lp-pop',
+        facility_name: 'Popular Diagnostic Centre',
+        location_details: { name: 'Popular Diagnostic Centre', branch: 'Panthapath', district: 'Dhaka', division: 'Dhaka', ownership_type: 'private' },
+        price: 1200,
+        calculated_price: 1200,
+        report_time: 'Same day by 4:00 PM',
         home_sample_collection: true,
+        home_sample_note: 'Available',
       },
-    ]
+    ],
   },
   {
-    id: 'center-square-hospital-lab',
-    name: 'Square Hospital Diagnostic & Lab Unit',
-    branch: 'Panthapath',
-    address: '18/F, Bir Uttam Qazi Nuruzzaman Sarak, West Panthapath, Dhaka',
-    district: 'Dhaka',
-    open_timing: '24 Hours Open',
-    is_verified: true,
-    category: { name: 'Hospital-Affiliated Lab' },
-    categories: ['Hospital-Affiliated Lab', 'Cardiac Diagnostics Focused', 'Multi-Specialty'],
-    offered_tests: [
+    id: 'test-usg-abdomen',
+    name: 'Whole Abdomen Ultrasonography (USG)',
+    category_name: 'Ultrasonography',
+    category_slug: 'ultrasonography',
+    description: 'High-frequency abdominal ultrasound evaluation with liver, spleen, kidneys and bladder imaging',
+    report_time_hours: 1,
+    fasting_required: false,
+    sample_type: 'Ultrasound Imaging',
+    preparation_instructions: 'Full Bladder Required. Female & Male Radiologists Available.',
+    price: 1600,
+    offerings: [
       {
-        id: 'sq-t1',
-        test_details: { id: 'test-61', name: '12-Lead Digital ECG', category_name: 'Cardiac Tests', category_slug: 'cardiac-tests', description: 'High precision electrocardiogram with instant physician review' },
-        calculated_price: 700,
-        price: 900,
-        report_time: '30 Mins',
+        id: 'usg-green',
+        facility_name: 'Green Life Hospital Diagnostic',
+        location_details: { name: 'Green Life Hospital Diagnostic', branch: 'Green Road', district: 'Dhaka', division: 'Dhaka', ownership_type: 'hospital_affiliated' },
+        price: 1600,
+        calculated_price: 1600,
+        report_time: 'Immediate (30 mins)',
         home_sample_collection: false,
+        home_sample_note: 'Center Visit Only',
       },
       {
-        id: 'sq-t2',
-        test_details: { id: 'test-62', name: 'Echocardiogram with Strain Imaging', category_name: 'Cardiac Tests', category_slug: 'cardiac-tests', description: 'Advanced myocardial speckle tracking echocardiogram' },
-        calculated_price: 4200,
-        price: 5000,
-        report_time: '2 Hours',
+        id: 'usg-ibn',
+        facility_name: 'Ibn Sina Diagnostic',
+        location_details: { name: 'Ibn Sina Diagnostic', branch: 'Dhanmondi', district: 'Dhaka', division: 'Dhaka', ownership_type: 'private' },
+        price: 1750,
+        calculated_price: 1750,
+        report_time: 'Within 1 hour',
         home_sample_collection: false,
+        home_sample_note: 'Center Visit Only',
       },
       {
-        id: 'sq-t3',
-        test_details: { id: 'test-65', name: 'Treadmill Stress Test (TMT)', category_name: 'Cardiac Tests', category_slug: 'cardiac-tests', description: 'Monitored cardiovascular exercise tolerance test' },
-        calculated_price: 4000,
-        price: 4800,
-        report_time: '2 Hours',
+        id: 'usg-pop',
+        facility_name: 'Popular Diagnostic Centre',
+        location_details: { name: 'Popular Diagnostic Centre', branch: 'Dhanmondi Main', district: 'Dhaka', division: 'Dhaka', ownership_type: 'private' },
+        price: 1800,
+        calculated_price: 1800,
+        report_time: 'Immediate (45 mins)',
         home_sample_collection: false,
+        home_sample_note: 'Center Visit Only',
       },
-      {
-        id: 'sq-t4',
-        test_details: { id: 'test-8', name: '3.0 Tesla MRI Whole Spine', category_name: 'MRI', category_slug: 'mri', description: 'High-resolution magnetic resonance imaging of cervical, thoracic & lumbar spine' },
-        calculated_price: 11000,
-        price: 13000,
-        report_time: '12 Hours',
-        home_sample_collection: false,
-      },
-      {
-        id: 'sq-t5',
-        test_details: { id: 'test-9', name: 'Digital EEG (Electroencephalogram)', category_name: 'Neuro Diagnostics', category_slug: 'neuro-tests', description: '32-channel digital electroencephalography for seizure and neurological profiling' },
-        calculated_price: 3200,
-        price: 4000,
-        report_time: '6 Hours',
-        home_sample_collection: false,
-      },
-      {
-        id: 'sq-t6',
-        test_details: { id: 'test-ct2', name: 'HRCT Chest (High Resolution CT)', category_name: 'CT Scan Body Imaging', category_slug: 'ct-scan', description: 'Detailed lung parenchyma and airway imaging for interstitial lung conditions' },
-        calculated_price: 6500,
-        price: 7800,
-        report_time: '4 Hours',
-        home_sample_collection: false,
-      },
-      {
-        id: 'sq-t7',
-        test_details: { id: 'test-endo2', name: 'Full Video Colonoscopy & Polypectomy Screening', category_name: 'Endoscopy & Colonoscopy', category_slug: 'endoscopy-colonoscopy', description: 'Complete colorectal examination with sedation and histopathology sampling' },
-        calculated_price: 6500,
-        price: 7800,
-        report_time: '4 Hours',
-        home_sample_collection: false,
-      },
-      {
-        id: 'sq-t8',
-        test_details: { id: 'test-gen2', name: 'High-Risk HPV DNA Screening by PCR', category_name: 'Genetic & Molecular', category_slug: 'genetic-molecular', description: 'Molecular testing for 14 high-risk human papillomavirus genotypes' },
-        calculated_price: 4200,
-        price: 5200,
-        report_time: '48 Hours',
-        home_sample_collection: true,
-      },
-    ]
+    ],
   },
 ];
-
-// Helper to check if an offered test strictly matches the selected test category
-const filterOfferingByCategory = (offering, selectedCat, testCats = []) => {
-  if (!selectedCat || selectedCat === 'all') return true;
-
-  const needle = String(selectedCat).toLowerCase().trim();
-
-  // Find target category object if present in test categories list
-  const catObj = (testCats || []).find(c => {
-    if (!c) return false;
-    const cId = String(c.id || '').toLowerCase();
-    const cSlug = String(c.slug || '').toLowerCase();
-    const cName = String(c.name || '').toLowerCase();
-    return (
-      cId === needle ||
-      cSlug === needle ||
-      cName === needle ||
-      (needle.length >= 4 && (
-        cId.includes(needle) || 
-        (cSlug && cSlug.includes(needle)) || 
-        (cName && cName.includes(needle)) || 
-        (cSlug && needle.includes(cSlug)) || 
-        (cName && needle.includes(cName))
-      ))
-    );
-  });
-
-  const targetId = catObj ? String(catObj.id || '').toLowerCase() : needle;
-  const targetSlug = catObj ? String(catObj.slug || '').toLowerCase() : needle;
-  const targetName = catObj ? String(catObj.name || '').toLowerCase() : needle;
-
-  const testDetails = offering.test_details || offering.testDetails || offering.test || {};
-  
-  const offeringCatId = String(testDetails.category_id || testDetails.category || offering.category_id || offering.category || '').toLowerCase();
-  const offeringCatName = String(testDetails.category_name || testDetails.category || offering.category_name || offering.category || '').toLowerCase();
-  const offeringCatSlug = String(testDetails.category_slug || testDetails.categoryGroup || offering.category_slug || offering.categoryGroup || '').toLowerCase();
-
-  // Normalization helper (lowercase alphanumeric without trailing plural 's')
-  const norm = (s) => String(s || '').toLowerCase().replace(/[^a-z0-9]/g, '').replace(/s$/, '');
-
-  // 1. Direct ID match
-  if (offeringCatId && targetId && offeringCatId === targetId) return true;
-
-  // 2. Direct Slug match
-  if (offeringCatSlug && targetSlug && norm(offeringCatSlug) === norm(targetSlug)) return true;
-
-  // 3. Category Name match (exact or plural variation, e.g. "Cardiac Tests" vs "Cardiac Test")
-  if (offeringCatName && targetName) {
-    const nOff = norm(offeringCatName);
-    const nTarget = norm(targetName);
-    if (nOff === nTarget) return true;
-    if (nOff.length >= 4 && nTarget.length >= 4 && (nOff.startsWith(nTarget) || nTarget.startsWith(nOff))) return true;
-  }
-
-  // 4. Cross match (Name vs Slug)
-  if (offeringCatSlug && targetName && norm(offeringCatSlug) === norm(targetName)) return true;
-  if (offeringCatName && targetSlug && norm(offeringCatName) === norm(targetSlug)) return true;
-
-  return false;
-};
-
 
 export default function DiagnosticsSearchPage({
-  initialTest = '',
-  initialLocation = 'All Bangladesh',
+  initialTest,
+  initialLocation,
   onBookLabTest,
-  onNavigateHome
+  onNavigateHome,
 }) {
-  const [diagnosticCenters, setDiagnosticCenters] = useState([]);
-  const [centerCategories, setCenterCategories] = useState([]);
-  const [testCategories, setTestCategories] = useState([]);
-  const [expandedCenterIds, setExpandedCenterIds] = useState(new Set());
-
-  // URL-serialized state (filters)
   const [searchParams, setSearchParams] = useSearchParams();
-  const location = useLocation();
-  const [isRefresh] = useState(() => getIsInitialLoad() && isPageReload());
+  const lastParamsRef = useRef('');
 
-  const getParam = (key, fallback) => {
-    const v = searchParams.get(key);
-    return v === null || v === undefined ? fallback : v;
-  };
+  // Read URL parameters with fallbacks
+  const urlQ = searchParams.get('q') || '';
+  const urlTestCat = searchParams.get('testcat') || 'all';
+  const urlDivision = searchParams.get('division') || (initialLocation?.division || 'Dhaka Division');
+  const urlDistrict = searchParams.get('district') || (initialLocation?.district || 'Dhaka District');
+  const urlArea = searchParams.get('area') || 'All Areas';
+  const urlFulfillment = searchParams.get('fulfillment') || 'all';
+  const urlOwnership = searchParams.get('ownership') || 'all';
+  const urlSort = searchParams.get('sort') || 'price_asc';
+  const urlPage = Number(searchParams.get('page')) || 1;
 
-  // Filter states
-  const [division, setDivision] = useState(() => {
-    if (isRefresh) return 'All Bangladesh';
-    const urlDiv = getParam('division', '');
-    if (urlDiv) return urlDiv;
-    const urlLoc = getParam('loc', initialLocation);
-    if (DIVISIONS.includes(urlLoc)) return urlLoc;
-    const found = findDivisionForDistrict(urlLoc);
-    if (found) return found;
-    return 'All Bangladesh';
-  });
+  // Filter States
+  const [searchKeyword, setSearchKeyword] = useState(urlQ);
+  const debouncedSearchKeyword = useDebounce(searchKeyword, 300);
 
-  const [district, setDistrict] = useState(() => {
-    if (isRefresh) return 'All Districts';
-    const urlDist = getParam('district', '');
-    if (urlDist) return urlDist;
-    const urlLoc = getParam('loc', '');
-    if (urlLoc && !DIVISIONS.includes(urlLoc) && urlLoc !== 'All Bangladesh') return urlLoc;
-    return 'All Districts';
-  });
+  const [selectedCategory, setSelectedCategory] = useState(urlTestCat);
+  const [division, setDivision] = useState(urlDivision);
+  const [district, setDistrict] = useState(urlDistrict);
+  const [area, setArea] = useState(urlArea);
+  const [fulfillment, setFulfillment] = useState(urlFulfillment);
+  const [ownership, setOwnership] = useState(urlOwnership);
+  const [sortBy, setSortBy] = useState(urlSort);
+  const [currentPage, setCurrentPage] = useState(urlPage);
 
-  const [area, setArea] = useState(() => {
-    if (isRefresh) return 'All Areas';
-    return getParam('area', 'All Areas');
-  });
+  // Data States
+  const [diagnosticCenters, setDiagnosticCenters] = useState([]);
+  const [testCategories, setTestCategories] = useState(STITCH_TEST_CATEGORIES);
+  const [isLoading, setIsLoading] = useState(true);
 
-  const [selectedTestCategory, setSelectedTestCategory] = useState(() => {
-    if (isRefresh) return 'all';
-    const urlCat = getParam('testcat', '');
-    if (urlCat) return urlCat;
-    if (initialTest && initialTest !== 'diagnostics' && initialTest !== 'diagnostics-search') {
-      return initialTest;
-    }
-    return 'all';
-  });
-
-  const [selectedCenterCategory, setSelectedCenterCategory] = useState(() => {
-    if (isRefresh) return 'all';
-    const urlCat = getParam('cat', '') || getParam('spec', '') || getParam('owner', '');
-    if (urlCat) return urlCat;
-    return 'all';
-  });
-
-  const [ownershipType, setOwnershipType] = useState(() => {
-    if (isRefresh) return 'all';
-    return getParam('ownership', 'all');
-  });
-
-  const [searchKeyword, setSearchKeyword] = useState(() => {
-    if (isRefresh) return '';
-    const urlQ = getParam('q', '');
-    if (urlQ) return urlQ;
-    return '';
-  });
-  const debouncedSearchKeyword = useDebounce(searchKeyword, 350);
-
-  const [currentPage, setCurrentPage] = useState(1);
-  const pageSize = 10;
-  const [totalPages, setTotalPages] = useState(1);
-  const lastParamsRef = useRef(searchParams.toString());
-
-  // Sync state when URL searchParams or props change
-  useEffect(() => {
-    if (isRefresh) return;
-    if (lastParamsRef.current === searchParams.toString()) return;
-    lastParamsRef.current = searchParams.toString();
-
-    const urlTestCat = searchParams.get('testcat');
-    const urlCat = searchParams.get('cat') || searchParams.get('spec') || searchParams.get('owner');
-    const urlDiv = searchParams.get('division');
-    const urlDist = searchParams.get('district');
-    const urlLoc = searchParams.get('loc');
-    const urlArea = searchParams.get('area');
-    const urlQ = searchParams.get('q');
-    const urlOwn = searchParams.get('ownership');
-
-    setSelectedTestCategory(urlTestCat || 'all');
-    setSelectedCenterCategory(urlCat || 'all');
-    setOwnershipType(urlOwn || 'all');
-
-    if (urlDiv) {
-      setDivision(urlDiv);
-    } else if (urlLoc) {
-      if (DIVISIONS.includes(urlLoc)) setDivision(urlLoc);
-      else {
-        const found = findDivisionForDistrict(urlLoc);
-        if (found) setDivision(found);
-        else setDivision('All Bangladesh');
-      }
-    } else {
-      setDivision('All Bangladesh');
-    }
-
-    if (urlDist) {
-      setDistrict(urlDist);
-    } else if (urlLoc && !DIVISIONS.includes(urlLoc) && urlLoc !== 'All Bangladesh') {
-      setDistrict(urlLoc);
-    } else {
-      setDistrict('All Districts');
-    }
-
-    setArea(urlArea || 'All Areas');
-    setSearchKeyword(urlQ || '');
-  }, [searchParams, isRefresh]);
-
-
-  // Fetch reference metadata and real-time facets
-  useEffect(() => {
-    let isMounted = true;
-    api.getSearchFacets({ 
-      division: division !== 'All Bangladesh' ? division : undefined, 
-      district: district !== 'All Districts' ? district : undefined, 
-      area: area !== 'All Areas' ? area : undefined 
-    })
-      .then((facets) => {
-        if (isMounted && facets) {
-          if (facets.diagnostic_center_categories) setCenterCategories(ensureArray(facets.diagnostic_center_categories));
-          if (facets.test_categories) setTestCategories(ensureArray(facets.test_categories));
-        }
-      })
-      .catch(() => {
-        api.getSearchMetadata()
-          .then((meta) => {
-            if (isMounted && meta) {
-              if (meta.diagnostic_center_categories) setCenterCategories(ensureArray(meta.diagnostic_center_categories));
-              if (meta.test_categories) setTestCategories(ensureArray(meta.test_categories));
-            }
-          })
-          .catch(() => {
-            Promise.all([
-              api.getDiagnosticCenterCategories().catch(() => []),
-              api.getTestCategories().catch(() => []),
-            ]).then(([dccats, tcats]) => {
-              if (isMounted) {
-                setCenterCategories(ensureArray(dccats, []));
-                setTestCategories(ensureArray(tcats, []));
-              }
-            });
-          });
-      });
-    return () => { isMounted = false; };
-  }, [division, district, area]);
-
-const isUuid = (val) => typeof val === 'string' && /^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/i.test(val.trim());
-
-const resolveCenterCategoryName = (val, centerCats = []) => {
-  if (!val || val === 'all') return 'All Categories';
-  if (typeof val === 'object' && val !== null) {
-    if (val.name) return val.name;
-    if (val.title) return val.title;
-    val = val.id || val.slug || '';
-  }
-  const clean = String(val).trim();
-  
-  // Find in center categories list by id, slug, or name
-  const found = centerCats.find(c => 
-    c && (
-      String(c.id).toLowerCase() === clean.toLowerCase() ||
-      String(c.slug || '').toLowerCase() === clean.toLowerCase() ||
-      String(c.name || '').toLowerCase() === clean.toLowerCase()
-    )
-  );
-  if (found && found.name) return found.name;
-
-  // If it's a UUID and not directly found in centerCats, provide friendly label
-  if (isUuid(clean)) {
-    return 'Diagnostic Center';
-  }
-
-  // Format slug nicely (e.g. cardiac-diagnostics-focused -> Cardiac Diagnostics Focused)
-  return clean
-    .split(/[-_]+/)
-    .map(word => word.charAt(0).toUpperCase() + word.slice(1).toLowerCase())
-    .join(' ');
-};
-
-const resolveTestCategoryName = (val, testCats = []) => {
-  if (!val || val === 'all') return 'All Test Categories';
-  if (typeof val === 'object' && val !== null) {
-    if (val.name) return val.name;
-    val = val.id || val.slug || '';
-  }
-  const clean = String(val).trim();
-  const found = testCats.find(c => 
-    c && (
-      String(c.id).toLowerCase() === clean.toLowerCase() ||
-      String(c.slug || '').toLowerCase() === clean.toLowerCase() ||
-      String(c.name || '').toLowerCase() === clean.toLowerCase()
-    )
-  );
-  if (found && found.name) return found.name;
-  return clean
-    .split(/[-_]+/)
-    .map(word => word.charAt(0).toUpperCase() + word.slice(1).toLowerCase())
-    .join(' ');
-};
-
-  const displayTestCategories = testCategories.length > 0 ? testCategories : FALLBACK_TEST_CATEGORIES;
-  const displayCenterCategories = centerCategories.length > 0 ? centerCategories : FALLBACK_CENTER_CATEGORIES;
-
-  // Normalized active test category ID for the dropdown
-  const normalizedTestCatValue = useMemo(() => {
-    if (!selectedTestCategory || selectedTestCategory === 'all') return 'all';
-    const needle = String(selectedTestCategory).toLowerCase();
-    const found = displayTestCategories.find(c => 
-      c && (
-        String(c.id).toLowerCase() === needle ||
-        String(c.slug || '').toLowerCase() === needle ||
-        String(c.name || '').toLowerCase() === needle ||
-        (c.slug && needle.includes(String(c.slug).toLowerCase())) ||
-        (c.name && String(c.name).toLowerCase().includes(needle))
-      )
-    );
-    return found ? found.id : selectedTestCategory;
-  }, [selectedTestCategory, displayTestCategories]);
-
-  // Normalized active center category ID/name for dropdown
-  const normalizedCenterCatValue = useMemo(() => {
-    if (!selectedCenterCategory || selectedCenterCategory === 'all') return 'all';
-    const needle = String(selectedCenterCategory).toLowerCase();
-    const found = displayCenterCategories.find(c => 
-      c && (
-        String(c.id).toLowerCase() === needle ||
-        String(c.slug || '').toLowerCase() === needle ||
-        String(c.name || '').toLowerCase() === needle ||
-        (c.slug && needle.includes(String(c.slug).toLowerCase())) ||
-        (c.name && String(c.name).toLowerCase().includes(needle))
-      )
-    );
-    return found ? (found.id || found.slug || found.name) : selectedCenterCategory;
-  }, [selectedCenterCategory, displayCenterCategories]);
-
-  // Active Category Display Name for Header & Badges
-  const activeTestCatObj = useMemo(() => {
-    if (!selectedTestCategory || selectedTestCategory === 'all') return null;
-    const needle = String(selectedTestCategory).toLowerCase();
-    return displayTestCategories.find(c => 
-      c && (
-        String(c.id).toLowerCase() === needle ||
-        String(c.slug || '').toLowerCase() === needle ||
-        String(c.name || '').toLowerCase() === needle ||
-        (c.slug && needle.includes(String(c.slug).toLowerCase())) ||
-        (c.name && String(c.name).toLowerCase().includes(needle))
-      )
-    );
-  }, [selectedTestCategory, displayTestCategories]);
-
-  const currentLocationLabel = useMemo(() => {
-    if (district && district !== 'All Districts') {
-      return area && area !== 'All Areas' ? `${area}, ${district}` : district;
-    }
-    if (division && division !== 'All Bangladesh') {
-      return `${division} Division`;
-    }
-    return 'All Bangladesh';
-  }, [division, district, area]);
-
-  // Fetch filtered Diagnostic Centers from backend (instant on filters/buttons, debounced on search text)
-  useEffect(() => {
-    let isMounted = true;
-
-    api.getDiagnosticCenters({
-      division: division !== 'All Bangladesh' ? division : undefined,
-      district: district !== 'All Districts' ? district : undefined,
-      area: area !== 'All Areas' ? area : undefined,
-      testcat: selectedTestCategory !== 'all' ? selectedTestCategory : undefined,
-      ownership_type: ownershipType !== 'all' ? ownershipType : undefined,
-      search: debouncedSearchKeyword.trim() || undefined,
-      page: currentPage,
-      page_size: pageSize
-    })
-      .then((data) => {
-        if (isMounted) {
-          const list = ensureArray(data, []);
-          if (list.length > 0) {
-            setDiagnosticCenters(list);
-            if (data && typeof data === 'object' && data.count) {
-              setTotalPages(Math.ceil(data.count / pageSize));
-            } else {
-              setTotalPages(1);
-            }
-          } else {
-            // If backend returned empty or is offline, use rich fallback
-            setDiagnosticCenters(FALLBACK_DIAGNOSTIC_CENTERS);
-            setTotalPages(1);
-          }
-        }
-      })
-      .catch(() => {
-        if (isMounted) {
-          setDiagnosticCenters(FALLBACK_DIAGNOSTIC_CENTERS);
-          setTotalPages(1);
-        }
-      });
-
-    return () => { isMounted = false; };
-  }, [division, district, area, selectedTestCategory, ownershipType, debouncedSearchKeyword, currentPage]);
-
-  const handleResetFilters = () => {
-    setSelectedTestCategory('all');
-    setSelectedCenterCategory('all');
-    setDivision('All Bangladesh');
-    setDistrict('All Districts');
-    setArea('All Areas');
-    setOwnershipType('all');
-    setSearchKeyword('');
-    setCurrentPage(1);
-  };
-
-  // Serialize filters to URL query parameters
+  // Sync URL parameters
   useEffect(() => {
     const params = new URLSearchParams();
+    if (searchKeyword.trim()) params.set('q', searchKeyword.trim());
+    if (selectedCategory && selectedCategory !== 'all') params.set('testcat', selectedCategory);
     if (division && division !== 'All Bangladesh') params.set('division', division);
     if (district && district !== 'All Districts') params.set('district', district);
     if (area && area !== 'All Areas') params.set('area', area);
-    if (selectedTestCategory && selectedTestCategory !== 'all') params.set('testcat', selectedTestCategory);
-    if (selectedCenterCategory && selectedCenterCategory !== 'all') params.set('cat', selectedCenterCategory);
-    if (ownershipType && ownershipType !== 'all') params.set('ownership', ownershipType);
-    if (searchKeyword.trim()) params.set('q', searchKeyword.trim());
+    if (fulfillment && fulfillment !== 'all') params.set('fulfillment', fulfillment);
+    if (ownership && ownership !== 'all') params.set('ownership', ownership);
+    if (sortBy && sortBy !== 'price_asc') params.set('sort', sortBy);
+    if (currentPage > 1) params.set('page', String(currentPage));
 
     const next = params.toString();
     if (next !== lastParamsRef.current) {
       lastParamsRef.current = next;
       setSearchParams(params, { replace: true });
     }
-  }, [division, district, area, selectedTestCategory, selectedCenterCategory, ownershipType, searchKeyword, setSearchParams]);
+  }, [searchKeyword, selectedCategory, division, district, area, fulfillment, ownership, sortBy, currentPage, setSearchParams]);
 
-  // Filter centers and compute matching tests
-  const filteredCentersWithTests = useMemo(() => {
-    const baseList = diagnosticCenters.length > 0 ? diagnosticCenters : FALLBACK_DIAGNOSTIC_CENTERS;
+  // Load Test Categories from API
+  useEffect(() => {
+    let isMounted = true;
+    api.getTestCategories()
+      .then((data) => {
+        if (isMounted) {
+          const list = ensureArray(data, []);
+          if (list.length > 0) {
+            // Deduplicate and merge: keep Stitch curated standard categories, plus DB categories
+            const dbCategories = list.map((c) => ({
+              id: c.id,
+              name: c.name,
+              slug: c.slug || c.name.toLowerCase().replace(/\s+/g, '-'),
+            }));
 
-    return baseList.map(center => {
-      // Filter center by Division
-      if (division && division !== 'All Bangladesh') {
-        const divLow = division.toLowerCase();
-        const matchesDiv = String(center.division || '').toLowerCase().includes(divLow) ||
-          String(center.district || '').toLowerCase().includes(divLow);
-        if (!matchesDiv) return null;
-      }
-
-      // Filter center by District
-      if (district && district !== 'All Districts') {
-        const distLow = district.toLowerCase();
-        const matchesDist = String(center.district || '').toLowerCase().includes(distLow);
-        if (!matchesDist) return null;
-      }
-
-      // Filter center by Area
-      if (area && area !== 'All Areas') {
-        const areaLow = area.toLowerCase();
-        const matchesArea = String(center.area || '').toLowerCase().includes(areaLow) ||
-          String(center.branch || '').toLowerCase().includes(areaLow);
-        if (!matchesArea) return null;
-      }
-
-      // Filter center by Ownership Type
-      if (ownershipType && ownershipType !== 'all') {
-        const centerOwn = String(center.ownership_type || center.location_details?.ownership_type || 'private').toLowerCase();
-        if (centerOwn !== ownershipType.toLowerCase()) return null;
-      }
-
-      const allOffered = ensureArray(center.offered_tests || center.tests, []);
-      
-      // Compute matching tests for the active test category
-      let matchingTests = allOffered;
-      let isCategoryFiltered = false;
-
-      if (selectedTestCategory && selectedTestCategory !== 'all') {
-        isCategoryFiltered = true;
-        matchingTests = allOffered.filter(offering => 
-          filterOfferingByCategory(offering, selectedTestCategory, displayTestCategories)
-        );
-      }
-
-      if (searchKeyword.trim()) {
-        const q = searchKeyword.trim().toLowerCase();
-        const centerMatches = 
-          String(center.name || '').toLowerCase().includes(q) ||
-          String(center.address || '').toLowerCase().includes(q) ||
-          String(center.branch || '').toLowerCase().includes(q);
-
-        if (!centerMatches) {
-          matchingTests = matchingTests.filter(offering => {
-            const testName = offering.test_details?.name || offering.test?.name || offering.name || '';
-            const testDesc = offering.test_details?.description || offering.test?.description || '';
-            const testCat = offering.test_details?.category_name || offering.test?.category_name || '';
-            return (
-              testName.toLowerCase().includes(q) ||
-              testDesc.toLowerCase().includes(q) ||
-              testCat.toLowerCase().includes(q)
+            // Filter out any "all" from DB list
+            const cleanDbCats = dbCategories.filter(
+              (c) => c.slug !== 'all' && (c.name || '').toLowerCase() !== 'all test types'
             );
-          });
+
+            // Stitch primary categories
+            const stitchCats = STITCH_TEST_CATEGORIES.filter((c) => c.slug !== 'all');
+
+            // Unique categories: Stitch first, then other DB categories
+            const combined = [{ id: 'all', name: 'All Test Types', slug: 'all' }, ...stitchCats];
+            cleanDbCats.forEach((dc) => {
+              const alreadyExists = combined.some(
+                (existing) =>
+                  existing.slug === dc.slug ||
+                  existing.name.toLowerCase() === dc.name.toLowerCase()
+              );
+              if (!alreadyExists) {
+                combined.push(dc);
+              }
+            });
+
+            setTestCategories(combined);
+          }
         }
+      })
+      .catch(() => {});
+    return () => { isMounted = false; };
+  }, []);
+
+  // Load Diagnostic Centers & Offered Tests from API
+  useEffect(() => {
+    let isMounted = true;
+    setIsLoading(true);
+
+    const cleanDiv = (division || '').replace(/\s*Division$/i, '').trim();
+    const cleanDist = (district || '').replace(/\s*District$/i, '').trim();
+    const cleanArea = (area || '').replace(/\s*(Thana|Area)s?$/i, '').trim();
+
+    const isCleanDivAll = !cleanDiv || cleanDiv.toLowerCase() === 'all' || cleanDiv.toLowerCase() === 'all bangladesh';
+    const isCleanDistAll = !cleanDist || cleanDist.toLowerCase() === 'all' || cleanDist.toLowerCase() === 'all districts';
+    const isCleanAreaAll = !cleanArea || cleanArea.toLowerCase() === 'all' || cleanArea.toLowerCase() === 'all areas';
+
+    // Determine query category param for backend
+    let queryTestCat = undefined;
+    if (selectedCategory && selectedCategory !== 'all') {
+      const catObj = testCategories.find(
+        (c) => c.slug === selectedCategory || c.id === selectedCategory || c.name.toLowerCase() === selectedCategory.toLowerCase()
+      );
+      if (catObj) {
+        if (catObj.slug === 'radiology-mri') queryTestCat = 'radiology,mri,ct-scan,imaging';
+        else if (catObj.slug === 'cardiology-ecg') queryTestCat = 'cardiac,ecg';
+        else if (catObj.slug === 'pathology-blood') queryTestCat = 'pathology,haematology,blood';
+        else if (catObj.slug === 'ultrasonography') queryTestCat = 'usg,ultrasonography';
+        else queryTestCat = catObj.slug || catObj.name;
+      } else {
+        queryTestCat = selectedCategory;
       }
+    }
 
-      // If user is explicitly filtering by a specific test category or keyword,
-      // and this center offers 0 matching tests, exclude the center entirely!
-      if ((isCategoryFiltered || searchKeyword.trim()) && matchingTests.length === 0) {
-        return null;
-      }
+    api.getDiagnosticCenters({
+      division: !isCleanDivAll ? cleanDiv : undefined,
+      district: !isCleanDistAll ? cleanDist : undefined,
+      area: !isCleanAreaAll ? cleanArea : undefined,
+      testcat: queryTestCat,
+      search: debouncedSearchKeyword.trim() || undefined,
+      page: 1,
+      page_size: 50,
+    })
+      .then((data) => {
+        if (isMounted) {
+          const list = ensureArray(data, []);
+          setDiagnosticCenters(list);
+          setIsLoading(false);
+        }
+      })
+      .catch(() => {
+        if (isMounted) {
+          setDiagnosticCenters([]);
+          setIsLoading(false);
+        }
+      });
 
+    return () => { isMounted = false; };
+  }, [division, district, area, selectedCategory, debouncedSearchKeyword, testCategories]);
 
+  // Reset all filters to default
+  const handleResetAll = () => {
+    setSearchKeyword('');
+    setSelectedCategory('all');
+    setDivision('Dhaka Division');
+    setDistrict('Dhaka District');
+    setArea('All Areas');
+    setFulfillment('all');
+    setOwnership('all');
+    setSortBy('price_asc');
+    setCurrentPage(1);
+  };
 
-      return {
-        ...center,
-        matchingTests,
-        allOffered,
-        isCategoryFiltered,
-        isCenterMatch: true
-      };
-    }).filter(Boolean);
-  }, [diagnosticCenters, division, district, area, ownershipType, selectedTestCategory, searchKeyword, displayTestCategories]);
+  const handleClearLocation = () => {
+    setDivision('All Bangladesh');
+    setDistrict('All Districts');
+    setArea('All Areas');
+    setCurrentPage(1);
+  };
 
+  // Location label for breadcrumb and titles
+  const locationLabel = useMemo(() => {
+    if (district && district !== 'All Districts') {
+      return district.replace(/\s*District$/i, '').trim();
+    }
+    if (division && division !== 'All Bangladesh') {
+      return division.replace(/\s*Division$/i, '').trim();
+    }
+    return 'Bangladesh';
+  }, [division, district]);
 
-  // Toggle expanded other tests for a center
-  const toggleExpandCenter = (centerId) => {
-    setExpandedCenterIds(prev => {
-      const next = new Set(prev);
-      if (next.has(centerId)) next.delete(centerId);
-      else next.add(centerId);
-      return next;
+  // Transform Diagnostic Centers into Test-centric Grouping
+  const processedTests = useMemo(() => {
+    // Collect all tests from backend centers or fallback catalog
+    const testMap = new Map();
+
+    // 1. Seed with curated Stitch featured tests
+    STITCH_FEATURED_TESTS.forEach((t) => {
+      testMap.set(t.name.toLowerCase(), {
+        ...t,
+        offerings: [...t.offerings],
+      });
     });
+
+    // 2. Ingest real database tests from fetched centers
+    if (diagnosticCenters.length > 0) {
+      diagnosticCenters.forEach((center) => {
+        const centerOffered = ensureArray(center.offered_tests || center.tests, []);
+        const centerLoc = center.location_details || center;
+
+        centerOffered.forEach((offering) => {
+          const tDetails = offering.test_details || offering.test || {};
+          const tName = (tDetails.name || offering.name || '').trim();
+          if (!tName) return;
+
+          const key = tName.toLowerCase();
+          const existing = testMap.get(key);
+
+          const offeringItem = {
+            id: offering.id || `${center.id}-${tDetails.id || tName}`,
+            facility_name: center.name || centerLoc.name || 'Diagnostic Center',
+            location_details: {
+              name: center.name || centerLoc.name,
+              branch: center.branch || centerLoc.branch || '',
+              district: center.district || centerLoc.district || '',
+              division: center.division || centerLoc.division || '',
+              ownership_type: center.ownership_type || centerLoc.ownership_type || 'private',
+            },
+            price: offering.price || offering.calculated_price || 500,
+            calculated_price: offering.calculated_price || offering.price || 500,
+            report_time: offering.report_time || (tDetails.report_time_hours ? `Within ${tDetails.report_time_hours} hrs` : 'Same Day'),
+            home_sample_collection: Boolean(offering.home_sample_collection),
+            home_sample_note: offering.home_sample_note || (offering.home_sample_collection ? 'Available' : 'Center Visit Only'),
+          };
+
+          if (existing) {
+            // Avoid duplicate center offering
+            if (!existing.offerings.some((o) => o.facility_name === offeringItem.facility_name)) {
+              existing.offerings.push(offeringItem);
+            }
+          } else {
+            testMap.set(key, {
+              id: tDetails.id || `test-${tName.replace(/\s+/g, '-').toLowerCase()}`,
+              name: tName,
+              category_id: tDetails.category_id || tDetails.category?.id || '',
+              category_name: tDetails.category_name || tDetails.category?.name || 'Pathology & Lab',
+              category_slug: tDetails.category_slug || tDetails.category?.slug || '',
+              description: tDetails.description || 'Standard laboratory investigation with verified clinical reports.',
+              report_time_hours: tDetails.report_time_hours || 12,
+              fasting_required: Boolean(tDetails.fasting_required),
+              sample_type: tDetails.sample_type || 'Clinical Sample',
+              preparation_instructions: tDetails.preparation_instructions || '',
+              price: offeringItem.price,
+              offerings: [offeringItem],
+            });
+          }
+        });
+      });
+    }
+
+    let list = Array.from(testMap.values());
+
+    const cleanDiv = (division || '').replace(/\s*Division$/i, '').trim().toLowerCase();
+    const cleanDist = (district || '').replace(/\s*District$/i, '').trim().toLowerCase();
+    const cleanArea = (area || '').replace(/\s*(Thana|Area)s?$/i, '').trim().toLowerCase();
+
+    const isAllDiv = !cleanDiv || cleanDiv === 'all bangladesh' || cleanDiv === 'all';
+    const isAllDist = !cleanDist || cleanDist === 'all districts' || cleanDist === 'all';
+    const isAllArea = !cleanArea || cleanArea === 'all areas' || cleanArea === 'all';
+
+    // Canonical Stitch featured tests
+    const stitchKeys = [
+      'complete blood count (cbc) with esr',
+      'mri of brain (plain & contrast - 1.5t / 3.0t)',
+      'lipid profile (cholesterol, hdl, ldl, triglycerides)',
+      'whole abdomen ultrasonography (usg)',
+    ];
+
+    // Determine if we're on the default landing state (Dhaka / all tests showcase)
+    const isDefaultView = !searchKeyword.trim() && selectedCategory === 'all' && (cleanDist === 'dhaka' || isAllDist) && fulfillment === 'all' && ownership === 'all' && sortBy === 'price_asc';
+
+    if (isDefaultView) {
+      // In default showcase view matching Stitch, return the 4 featured tests with all offerings intact, followed by any additional tests
+      const top4 = STITCH_FEATURED_TESTS.map((t) => ({
+        ...t,
+        offerings: [...t.offerings],
+      }));
+
+      // Filter out duplicate occurrences of top 4 from remaining tests
+      const otherTests = list.filter((t) => {
+        const key = t.name.toLowerCase();
+        return !stitchKeys.some((sk) => key === sk || (key.includes('cbc') && sk.includes('cbc')));
+      });
+
+      return [...top4, ...otherTests];
+    }
+
+    // Filter 1: Search Keyword
+    if (searchKeyword.trim()) {
+      const q = searchKeyword.trim().toLowerCase();
+      list = list.filter((t) => {
+        const matchName = t.name.toLowerCase().includes(q);
+        const matchCat = (t.category_name || '').toLowerCase().includes(q);
+        const matchDesc = (t.description || '').toLowerCase().includes(q);
+        const matchCenter = t.offerings.some((o) => o.facility_name.toLowerCase().includes(q));
+        return matchName || matchCat || matchDesc || matchCenter;
+      });
+    }
+
+    // Filter 2: Category (Test Types)
+    if (selectedCategory && selectedCategory !== 'all') {
+      const selCatObj = testCategories.find(
+        (c) => c.slug === selectedCategory || c.id === selectedCategory || (c.name || '').toLowerCase() === selectedCategory.toLowerCase()
+      );
+      const catSlug = (selCatObj?.slug || selectedCategory).toLowerCase();
+      const catName = (selCatObj?.name || '').toLowerCase();
+      const catId = selCatObj?.id;
+
+      // Extract search tokens for the category
+      const keywords = new Set();
+      if (catSlug) {
+        catSlug.split(/[-_\s]+/).forEach((k) => k.length > 2 && keywords.add(k));
+      }
+      if (catName) {
+        catName.split(/[-_\s&/()]+/).forEach((k) => k.length > 2 && keywords.add(k));
+      }
+      // Add domain synonyms and related keywords
+      if (catSlug.includes('radiology') || catSlug.includes('mri')) {
+        keywords.add('radiology');
+        keywords.add('mri');
+        keywords.add('imaging');
+        keywords.add('ct');
+        keywords.add('scan');
+      }
+      if (catSlug.includes('ultrasound') || catSlug.includes('usg') || catSlug.includes('ultrasonography')) {
+        keywords.add('usg');
+        keywords.add('ultrasound');
+        keywords.add('ultrasonography');
+        keywords.add('abdomen');
+      }
+      if (catSlug.includes('biochemistry')) {
+        keywords.add('biochemistry');
+        keywords.add('lipid');
+        keywords.add('cholesterol');
+        keywords.add('creatinine');
+        keywords.add('glucose');
+      }
+      if (catSlug.includes('pathology') || catSlug.includes('blood') || catSlug.includes('haematology')) {
+        keywords.add('pathology');
+        keywords.add('blood');
+        keywords.add('haematology');
+        keywords.add('cbc');
+        keywords.add('esr');
+      }
+      if (catSlug.includes('cardio') || catSlug.includes('ecg')) {
+        keywords.add('cardio');
+        keywords.add('ecg');
+        keywords.add('cardiac');
+        keywords.add('heart');
+      }
+
+      list = list.filter((t) => {
+        if (catId && t.category_id && t.category_id === catId) return true;
+        const cName = (t.category_name || '').toLowerCase();
+        const cSlug = (t.category_slug || '').toLowerCase();
+        const tName = (t.name || '').toLowerCase();
+
+        // Exact slug or name match
+        if (cSlug && (cSlug === catSlug || cSlug.includes(catSlug) || catSlug.includes(cSlug))) return true;
+        if (catName && (cName.includes(catName) || catName.includes(cName))) return true;
+
+        // Keyword overlap
+        for (const kw of keywords) {
+          if (cName.includes(kw) || cSlug.includes(kw) || tName.includes(kw)) {
+            return true;
+          }
+        }
+        return false;
+      });
+    }
+
+    // Filter 3: Location (Division, District, Area)
+    if (!isAllDiv || !isAllDist || (!isAllArea && !searchKeyword.trim())) {
+      list = list.map((t) => {
+        const filteredOfferings = t.offerings.filter((o) => {
+          const loc = o.location_details || {};
+          const oDiv = (loc.division || '').toLowerCase();
+          const oDist = (loc.district || '').toLowerCase();
+          const oBranch = (loc.branch || '').toLowerCase();
+          const oAddress = (loc.address || '').toLowerCase();
+
+          if (!isAllDiv) {
+            const matchDiv = oDiv.includes(cleanDiv) || cleanDiv.includes(oDiv) || oDist.includes(cleanDiv);
+            if (!matchDiv) return false;
+          }
+          if (!isAllDist) {
+            const matchDist = oDist.includes(cleanDist) || cleanDist.includes(oDist);
+            if (!matchDist) return false;
+          }
+          if (!isAllArea && !searchKeyword.trim()) {
+            const matchArea = oBranch.includes(cleanArea) || oAddress.includes(cleanArea);
+            if (!matchArea) return false;
+          }
+          return true;
+        });
+
+        if (filteredOfferings.length === 0) return null;
+        return { ...t, offerings: filteredOfferings };
+      }).filter(Boolean);
+    }
+
+    // Filter 4: Fulfillment (Home Pickup vs Center Visit Only)
+    if (fulfillment !== 'all') {
+      list = list.map((t) => {
+        const filteredOfferings = t.offerings.filter((o) => {
+          if (fulfillment === 'home') return o.home_sample_collection === true;
+          if (fulfillment === 'center') return o.home_sample_collection === false;
+          return true;
+        });
+        if (filteredOfferings.length === 0) return null;
+        return { ...t, offerings: filteredOfferings };
+      }).filter(Boolean);
+    }
+
+    // Filter 5: Ownership Type
+    if (ownership !== 'all') {
+      const ownKey = ownership.toLowerCase();
+      list = list.map((t) => {
+        const filteredOfferings = t.offerings.filter((o) => {
+          const oType = (o.location_details?.ownership_type || 'private').toLowerCase();
+          return oType === ownKey || oType.includes(ownKey);
+        });
+        if (filteredOfferings.length === 0) return null;
+        return { ...t, offerings: filteredOfferings };
+      }).filter(Boolean);
+    }
+
+    // Sort By: strictly price_asc (Low to High) or price_desc (High to Low)
+    if (sortBy === 'price_desc') {
+      list.sort((a, b) => {
+        const pA = Math.max(...a.offerings.map((o) => Number(o.calculated_price || o.price || 0)));
+        const pB = Math.max(...b.offerings.map((o) => Number(o.calculated_price || o.price || 0)));
+        return pB - pA;
+      });
+    } else {
+      // Default: price_asc
+      list.sort((a, b) => {
+        const pA = Math.min(...a.offerings.map((o) => Number(o.calculated_price || o.price || 0)));
+        const pB = Math.min(...b.offerings.map((o) => Number(o.calculated_price || o.price || 0)));
+        return pA - pB;
+      });
+    }
+
+    return list;
+  }, [diagnosticCenters, searchKeyword, selectedCategory, division, district, area, fulfillment, ownership, sortBy, testCategories]);
+
+  // Check if current view is the default Stitch landing showcase
+  const cleanDist = (district || '').replace(/\s*District$/i, '').trim().toLowerCase();
+  const isAllDist = !cleanDist || cleanDist === 'all districts' || cleanDist === 'all';
+  const isDefaultLanding = !searchKeyword.trim() && selectedCategory === 'all' && (cleanDist === 'dhaka' || isAllDist);
+
+  // Pagination calculations - 4 cards per page matching Stitch layout
+  const pageSize = 4;
+  const totalPages = Math.max(1, Math.ceil(processedTests.length / pageSize));
+  const paginatedTests = useMemo(() => {
+    const start = (currentPage - 1) * pageSize;
+    return processedTests.slice(start, start + pageSize);
+  }, [processedTests, currentPage, pageSize]);
+
+  // Handle Book Action from Test Card Table
+  const handleBookTest = (offering, center, testDetails) => {
+    if (onBookLabTest) {
+      onBookLabTest({
+        test: {
+          id: testDetails.id,
+          name: testDetails.name,
+          category_name: testDetails.category_name,
+          description: testDetails.description,
+          fasting_required: testDetails.fasting_required,
+        },
+        branchTest: {
+          id: offering.id,
+          name: testDetails.name,
+          price: offering.price,
+          calculated_price: offering.calculated_price,
+          discounted_price: offering.calculated_price,
+          report_time: offering.report_time,
+          home_sample_collection: offering.home_sample_collection,
+          home_sample_note: offering.home_sample_note,
+        },
+        branch: center || { name: offering.facility_name },
+      });
+    }
+  };
+
+  // Handle Book Home Collection from Promo Banner
+  const handleBookHomeCollection = () => {
+    // Select home sample pickup fulfillment filter
+    setFulfillment('home');
+    setCurrentPage(1);
+    // Smooth scroll down to test list
+    window.scrollTo({ top: 380, behavior: 'smooth' });
+  };
+
+  const handleViewGuidelines = () => {
+    alert('Doorstep Sample Collection Guidelines:\n1. Keep relevant prescriptions ready.\n2. Observe fasting requirements (10-12 hours for Lipid Profile, Fasting Sugar).\n3. Certified phlebotomists arrive with sealed vacutainer kits.');
   };
 
   return (
-    <div className="bg-slate-50 min-h-screen pb-20">
-      
-      {/* HERO HEADER */}
-      <div className="bg-slate-900 text-white py-12 px-4 sm:px-8 border-b border-slate-800">
-        <div className="max-w-7xl mx-auto space-y-6">
-          
-          <button
-            onClick={onNavigateHome}
-            className="inline-flex items-center gap-1.5 text-xs font-semibold text-slate-400 hover:text-emerald-400 transition-colors cursor-pointer"
-          >
-            <ArrowLeft className="w-4 h-4" />
-            <span>Back to Home</span>
-          </button>
+    <div className="bg-background text-on-surface font-body-md antialiased min-h-screen flex flex-col">
+      {/* Main Container Canvas */}
+      <div className="flex-1 w-full max-w-7xl mx-auto px-4 sm:px-6 lg:px-12 py-8">
+        {/* Breadcrumb Navigation & Live Tracker Pill */}
+        <DiagnosticsBreadcrumbs
+          locationLabel={locationLabel}
+          onNavigateHome={onNavigateHome}
+        />
 
-          <div className="flex flex-col md:flex-row md:items-end justify-between gap-6">
-            <div>
-              <div className="inline-flex items-center gap-2 px-3 py-1 rounded-full bg-emerald-500/20 text-emerald-400 text-xs font-bold uppercase tracking-wider mb-3 border border-emerald-500/30">
-                <FlaskConical className="w-3.5 h-3.5 text-emerald-400" />
-                <span>Diagnostics & Lab Tests Search Portal</span>
-              </div>
-              <h1 className="text-3xl sm:text-4xl lg:text-5xl font-black tracking-tight text-white">
-                {activeTestCatObj ? `${activeTestCatObj.name} Diagnostics` : 'Diagnostics Search'}
-              </h1>
-              <p className="mt-2 text-slate-300 text-sm sm:text-base max-w-2xl">
-                {activeTestCatObj 
-                  ? `Showing all verified diagnostic centers offering ${activeTestCatObj.name} (${activeTestCatObj.description || 'specialized testing'}). Compare pricing, turnaround times, and book online.`
-                  : 'Browse verified diagnostic centers by test category (Cardiac, Blood, Imaging & more) and center specialization. Compare pricing and book home sample collection.'
-                }
-              </p>
-            </div>
+        {/* Hero & Integrated Search Section */}
+        <DiagnosticsHeroSearch
+          categories={testCategories}
+          selectedCategory={selectedCategory}
+          onCategoryChange={(cat) => {
+            setSelectedCategory(cat);
+            setCurrentPage(1);
+          }}
+          searchKeyword={searchKeyword}
+          onSearchChange={(kw) => {
+            setSearchKeyword(kw);
+            setCurrentPage(1);
+          }}
+          onSearchSubmit={() => setCurrentPage(1)}
+        />
 
-            <div className="bg-slate-800/80 backdrop-blur-md p-3.5 rounded-2xl border border-slate-700 text-xs flex items-center gap-3 shrink-0">
-              <div className="w-3 h-3 rounded-full bg-emerald-400 animate-ping"></div>
-              <div>
-                <div className="font-extrabold text-white">{filteredCentersWithTests.length} Diagnostic Centers</div>
-                <div className="text-slate-400">
-                  {selectedTestCategory !== 'all' ? 'Offering Selected Tests' : 'Verified Labs & Centers'}
-                </div>
-              </div>
-            </div>
+        {/* Two-Column Diagnostic Marketplace Layout */}
+        <div className="grid grid-cols-1 lg:grid-cols-12 gap-8 items-start">
+          {/* LEFT SIDEBAR: Clinical Filters */}
+          <div className="lg:col-span-3">
+            <DiagnosticsFilterSidebar
+              division={division}
+              district={district}
+              area={area}
+              onLocationChange={({ division: d, district: dist, area: a }) => {
+                setDivision(d);
+                setDistrict(dist);
+                setArea(a);
+                setCurrentPage(1);
+              }}
+              onClearLocation={handleClearLocation}
+              fulfillment={fulfillment}
+              onFulfillmentChange={(f) => {
+                setFulfillment(f);
+                setCurrentPage(1);
+              }}
+              ownership={ownership}
+              onOwnershipChange={(o) => {
+                setOwnership(o);
+                setCurrentPage(1);
+              }}
+              ownershipCounts={{
+                private: 18,
+                hospital_affiliated: 12,
+                government: 5,
+                ngo: 3,
+              }}
+              onResetAll={handleResetAll}
+            />
           </div>
 
-          {/* SEARCH & FILTER CONTROLS BAR */}
-          <div className="bg-slate-800/90 border border-slate-700/80 rounded-2xl p-4 sm:p-5 shadow-xl space-y-4">
-            <div className="flex items-center justify-between text-xs font-extrabold uppercase tracking-wider text-slate-400 pb-2 border-b border-slate-700/60">
-              <div className="flex items-center gap-2">
-                <Filter className="w-4 h-4 text-emerald-400" />
-                <span>Diagnostic Center & Test Search Filters</span>
-              </div>
-              {((ownershipType && ownershipType !== 'all') || (selectedTestCategory && selectedTestCategory !== 'all') || (selectedCenterCategory && selectedCenterCategory !== 'all') || (division && division !== 'All Bangladesh') || (district && district !== 'All Districts') || (area && area !== 'All Areas') || (searchKeyword && searchKeyword.trim())) && (
-                <button
-                  type="button"
-                  onClick={handleResetFilters}
-                  className="text-emerald-400 hover:underline font-bold flex items-center gap-1 cursor-pointer"
-                >
-                  <X className="w-3.5 h-3.5" />
-                  <span>Reset All Filters</span>
-                </button>
-              )}
-            </div>
+          {/* RIGHT TEST CATALOG & COMPARISON CARDS */}
+          <section className="lg:col-span-9 space-y-6">
+            <DiagnosticsResultsHeader
+              locationLabel={locationLabel}
+              totalCount={processedTests.length}
+              sortBy={sortBy}
+              onSortChange={(s) => {
+                setSortBy(s);
+                setCurrentPage(1);
+              }}
+            />
 
-            <div className="flex flex-wrap items-start gap-3">
-              
-              {/* 1. Test Category Filter */}
-              <div className="flex-1 min-w-[160px]">
-                <label className="block text-[11px] font-bold text-slate-300 mb-1 flex items-center gap-1.5 whitespace-nowrap">
-                  <Heart className="w-3.5 h-3.5 text-emerald-400 shrink-0" />
-                  <span>Test Category</span>
-                </label>
-                <div className="relative">
-                  <select
-                    value={normalizedTestCatValue}
-                    onChange={(e) => {
-                      setSelectedTestCategory(e.target.value);
-                      setCurrentPage(1);
-                    }}
-                    className="w-full bg-slate-900 border border-slate-700 rounded-xl pl-3 pr-8 py-2.5 text-xs text-white focus:outline-none focus:border-emerald-500 font-semibold appearance-none cursor-pointer shadow-xs"
-                  >
-                    <option value="all">All Test Categories</option>
-                    {displayTestCategories.filter(c => c && c.id !== 'all').map(cat => (
-                      <option key={cat.id} value={cat.id}>{cat.name}</option>
-                    ))}
-                  </select>
-                  <div className="pointer-events-none absolute inset-y-0 right-0 flex items-center px-3 text-slate-400">
-                    <ChevronRight className="w-4 h-4 rotate-90" />
-                  </div>
-                </div>
-              </div>
-
-              {/* 2. Cascading Location Filter (Division -> District -> Area) */}
-              <CascadingLocationFilter
-                division={division}
-                district={district}
-                area={area}
-                onChange={({ division: d, district: dist, area: a }) => {
-                  setDivision(d);
-                  setDistrict(dist);
-                  setArea(a);
-                  setCurrentPage(1);
-                }}
-                theme="dark"
-                accent="emerald"
-                layout="inline"
-                showLabels={true}
+            {/* Test Cards List */}
+            {paginatedTests.length === 0 ? (
+              <DiagnosticsEmptyState
+                onResetAll={handleResetAll}
+                searchKeyword={searchKeyword}
+                locationLabel={locationLabel}
               />
-
-              {/* 3. Ownership Type Filter */}
-              <div className="flex-1 min-w-[140px]">
-                <label className="block text-[11px] font-bold text-slate-300 mb-1 flex items-center gap-1.5 whitespace-nowrap">
-                  <Building2 className="w-3.5 h-3.5 text-emerald-400 shrink-0" />
-                  <span>Ownership</span>
-                </label>
-                <div className="relative">
-                  <select
-                    value={ownershipType}
-                    onChange={(e) => {
-                      setOwnershipType(e.target.value);
-                      setCurrentPage(1);
-                    }}
-                    className="w-full bg-slate-900 border border-slate-700 rounded-xl pl-3 pr-8 py-2.5 text-xs text-white focus:outline-none focus:border-emerald-500 font-semibold appearance-none cursor-pointer shadow-xs"
-                  >
-                    <option value="all">Any Ownership</option>
-                    <option value="private">Private</option>
-                    <option value="government">Government</option>
-                  </select>
-                  <div className="pointer-events-none absolute inset-y-0 right-0 flex items-center px-3 text-slate-400">
-                    <ChevronRight className="w-4 h-4 rotate-90" />
-                  </div>
-                </div>
-              </div>
-
-              {/* 4. Search Keyword Filter */}
-              <div className="flex-1 min-w-[180px]">
-                <label className="block text-[11px] font-bold text-slate-300 mb-1 flex items-center gap-1.5 whitespace-nowrap">
-                  <Search className="w-3.5 h-3.5 text-emerald-400 shrink-0" />
-                  <span>Search</span>
-                </label>
-                <div className="relative">
-                  <Search className="w-4 h-4 text-slate-400 absolute left-3 top-1/2 -translate-y-1/2" />
-                  <input
-                    type="text"
-                    placeholder="Search center, test (e.g. ECG)..."
-                    value={searchKeyword}
-                    onChange={(e) => {
-                      setSearchKeyword(e.target.value);
-                      setCurrentPage(1);
-                    }}
-                    className="w-full bg-slate-900 border border-slate-700 rounded-xl pl-9 pr-3 py-2.5 text-xs text-white placeholder-slate-400 focus:outline-none focus:border-emerald-500 font-medium shadow-xs"
+            ) : (
+              <div className="space-y-6">
+                {paginatedTests.map((test) => (
+                  <DiagnosticTestCard
+                    key={test.id || test.name}
+                    test={test}
+                    offerings={test.offerings}
+                    onBookTest={handleBookTest}
                   />
-                </div>
-              </div>
+                ))}
 
-            </div>
-
-            {/* ACTIVE FILTER PILLS */}
-            {(ownershipType !== 'all' || selectedTestCategory !== 'all' || division !== 'All Bangladesh' || district !== 'All Districts' || area !== 'All Areas' || searchKeyword) && (
-              <div className="flex flex-wrap items-center gap-2 pt-2 border-t border-slate-700/60 text-xs">
-                <span className="text-slate-400 font-bold">Active Filters:</span>
-                
-                {selectedTestCategory !== 'all' && (
-                  <span className="inline-flex items-center gap-1.5 px-3 py-1 rounded-full bg-emerald-500/20 text-emerald-300 border border-emerald-500/40 font-bold">
-                    <span>Test Category: {activeTestCatObj?.name || resolveTestCategoryName(selectedTestCategory, displayTestCategories)}</span>
-                    <button onClick={() => setSelectedTestCategory('all')} className="hover:text-white cursor-pointer"><X className="w-3 h-3" /></button>
-                  </span>
-                )}
-
-                {ownershipType !== 'all' && (
-                  <span className="inline-flex items-center gap-1.5 px-3 py-1 rounded-full bg-emerald-500/20 text-emerald-300 border border-emerald-500/40 font-bold">
-                    <span>Ownership: {ownershipType.charAt(0).toUpperCase() + ownershipType.slice(1)}</span>
-                    <button onClick={() => setOwnershipType('all')} className="hover:text-white cursor-pointer"><X className="w-3 h-3" /></button>
-                  </span>
-                )}
-
-                {division !== 'All Bangladesh' && (
-                  <span className="inline-flex items-center gap-1.5 px-3 py-1 rounded-full bg-emerald-500/20 text-emerald-300 border border-emerald-500/40 font-bold">
-                    <span>Division: {division}</span>
-                    <button onClick={() => { setDivision('All Bangladesh'); setDistrict('All Districts'); setArea('All Areas'); }} className="hover:text-white cursor-pointer"><X className="w-3 h-3" /></button>
-                  </span>
-                )}
-
-                {district !== 'All Districts' && (
-                  <span className="inline-flex items-center gap-1.5 px-3 py-1 rounded-full bg-emerald-500/20 text-emerald-300 border border-emerald-500/40 font-bold">
-                    <span>District: {district}</span>
-                    <button onClick={() => { setDistrict('All Districts'); setArea('All Areas'); }} className="hover:text-white cursor-pointer"><X className="w-3 h-3" /></button>
-                  </span>
-                )}
-
-                {area !== 'All Areas' && (
-                  <span className="inline-flex items-center gap-1.5 px-3 py-1 rounded-full bg-emerald-500/20 text-emerald-300 border border-emerald-500/40 font-bold">
-                    <span>Area: {area}</span>
-                    <button onClick={() => setArea('All Areas')} className="hover:text-white cursor-pointer"><X className="w-3 h-3" /></button>
-                  </span>
-                )}
-
-                {searchKeyword && (
-                  <span className="inline-flex items-center gap-1.5 px-3 py-1 rounded-full bg-slate-700 text-slate-200 border border-slate-600 font-bold">
-                    <span>Query: "{searchKeyword}"</span>
-                    <button onClick={() => setSearchKeyword('')} className="hover:text-white cursor-pointer"><X className="w-3 h-3" /></button>
-                  </span>
+                {/* Pagination (visible when user is actively searching or filtering) */}
+                {!isDefaultLanding && totalPages > 1 && (
+                  <div className="pt-4">
+                    <Pagination
+                      page={currentPage}
+                      totalPages={totalPages}
+                      onPageChange={(p) => {
+                        setCurrentPage(p);
+                        window.scrollTo({ top: 380, behavior: 'smooth' });
+                      }}
+                    />
+                  </div>
                 )}
               </div>
             )}
-
-
-          </div>
-
-        </div>
-      </div>
-
-      {/* MAIN RESULTS CONTENT */}
-      <div className="max-w-7xl mx-auto px-4 sm:px-8 pt-10">
-        
-        {/* Active Category Information Banner */}
-        {activeTestCatObj && (
-          <div className="bg-gradient-to-r from-emerald-50 via-teal-50 to-cyan-50 border border-emerald-200/90 rounded-2xl p-5 mb-8 shadow-xs flex flex-col md:flex-row items-start md:items-center justify-between gap-4">
-            <div className="flex items-center gap-3.5">
-              <div className="w-12 h-12 rounded-2xl bg-emerald-600 text-white flex items-center justify-center font-bold shadow-sm shrink-0">
-                <Heart className="w-6 h-6" />
-              </div>
-              <div>
-                <div className="text-xs font-black uppercase tracking-wider text-emerald-800">
-                  Filtered by Category
-                </div>
-                <h2 className="text-lg font-black text-slate-900">
-                  Showing {activeTestCatObj.name} Across {filteredCentersWithTests.length} Diagnostic Centers
-                </h2>
-                <p className="text-xs text-slate-600 mt-0.5">
-                  {activeTestCatObj.description || `Explore and book verified ${activeTestCatObj.name} with real-time center pricing.`}
-                </p>
-              </div>
-            </div>
-
-            <button
-              type="button"
-              onClick={() => setSelectedTestCategory('all')}
-              className="px-4 py-2 bg-white text-slate-700 hover:text-emerald-700 border border-slate-300 hover:border-emerald-400 rounded-xl text-xs font-bold transition-all shadow-2xs cursor-pointer shrink-0"
-            >
-              Show All Test Categories
-            </button>
-          </div>
-        )}
-
-        {/* DIAGNOSTIC CENTERS LIST WITH THEIR TEST MENUS */}
-        <div className="space-y-8">
-          {filteredCentersWithTests.length === 0 ? (
-            <div className="bg-white rounded-2xl p-12 text-center border border-slate-200 max-w-lg mx-auto shadow-sm space-y-4">
-              <Building2 className="w-12 h-12 text-slate-300 mx-auto" />
-              <div>
-                <h3 className="text-lg font-bold text-slate-800">No Diagnostic Centers Found</h3>
-                <p className="text-xs text-slate-500 mt-1">
-                  No diagnostic centers matched your search for <strong>{activeTestCatObj?.name || resolveTestCategoryName(selectedTestCategory, displayTestCategories) || 'the current filter'}</strong> in {currentLocationLabel}.
-                </p>
-              </div>
-              <button
-                type="button"
-                onClick={handleResetFilters}
-                className="px-5 py-2.5 bg-emerald-600 hover:bg-emerald-700 text-white font-bold text-xs rounded-xl transition-all shadow-sm cursor-pointer"
-              >
-                Reset All Search Filters
-              </button>
-            </div>
-          ) : (
-            filteredCentersWithTests.map((center) => {
-              const matchingTests = center.matchingTests || [];
-              const displayTests = matchingTests;
-
-              return (
-                <div key={center.id} className="bg-white rounded-2xl border border-slate-200/90 p-6 shadow-md hover:shadow-lg transition-all space-y-5">
-                  
-                  {/* CENTER HEADER */}
-                  <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-4 border-b border-slate-100 pb-4">
-                    <div className="flex items-start gap-4">
-                      <div className="w-14 h-14 rounded-2xl bg-emerald-50 border border-emerald-200 flex items-center justify-center shrink-0 shadow-xs">
-                        <Building2 className="w-7 h-7 text-emerald-600" />
-                      </div>
-                      <div>
-                        <div className="flex items-center gap-2 flex-wrap">
-                          <span className="text-[10px] font-extrabold text-emerald-800 bg-emerald-100 px-2.5 py-0.5 rounded uppercase tracking-wider">
-                            {center.district || "Diagnostic Center"}
-                          </span>
-                          {(center.categories || (center.category ? [center.category] : [])).map((cat, idx) => {
-                            const catName = resolveCenterCategoryName(cat, displayCenterCategories);
-                            if (!catName || isUuid(catName) || catName === 'All Categories') return null;
-                            return (
-                              <span key={idx} className="text-[10px] font-bold text-slate-600 bg-slate-100 px-2 py-0.5 rounded border border-slate-200">
-                                {catName}
-                              </span>
-                            );
-                          })}
-                        </div>
-                        <h2 className="text-xl font-extrabold text-slate-900 mt-1 flex items-center gap-2">
-                          <span>{center.name} {center.branch ? `(${center.branch})` : ''}</span>
-                          {center.is_verified && <CheckCircle className="w-4 h-4 text-emerald-500 shrink-0" />}
-                        </h2>
-                        <p className="text-xs text-slate-500 flex items-center gap-1.5 mt-1">
-                          <MapPin className="w-3.5 h-3.5 text-emerald-600 shrink-0" />
-                          <span>{center.address}</span>
-                        </p>
-                      </div>
-                    </div>
-
-                    <div className="text-right shrink-0 flex sm:flex-col items-center sm:items-end justify-between gap-2">
-                      <span className="inline-flex items-center gap-1 text-xs font-bold text-emerald-700 bg-emerald-50 px-3 py-1 rounded-full border border-emerald-200">
-                        <Clock className="w-3.5 h-3.5" />
-                        <span>{center.open_timing || "08:00 AM - 10:00 PM"}</span>
-                      </span>
-                      {center.phone && (
-                        <span className="text-xs font-semibold text-slate-600">
-                          📞 {center.phone}
-                        </span>
-                      )}
-                    </div>
-                  </div>
-
-                  {/* OFFERED TESTS SECTION */}
-                  <div>
-                    <div className="flex flex-col sm:flex-row items-start sm:items-center justify-between gap-2 mb-3">
-                      <h4 className="text-xs font-bold text-slate-800 flex items-center gap-1.5">
-                        <FlaskConical className="w-4 h-4 text-emerald-600" />
-                        <span>
-                          {activeTestCatObj 
-                            ? `Available ${activeTestCatObj.name} at ${center.name} (${displayTests.length}):`
-                            : `Available Diagnostic Tests & Pricing at ${center.name} (${displayTests.length}):`
-                          }
-                        </span>
-                      </h4>
-                    </div>
-
-
-                    {displayTests.length === 0 ? (
-                      <div className="bg-slate-50 p-4 rounded-xl border border-slate-200 text-xs text-slate-500 italic">
-                        No matching test packages listed for this center yet.
-                      </div>
-                    ) : (
-                      <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-3.5">
-                        {displayTests.map((offering) => {
-                          const testName = offering.test_details?.name || offering.test_name || offering.name || "Diagnostic Test Profile";
-                          const catName = offering.test_details?.category_name || offering.category_name || offering.test_details?.category || "Diagnostic";
-                          const testDesc = offering.test_details?.description || offering.description || "Comprehensive clinical testing with verified lab reports";
-                          const isHome = offering.home_sample_collection;
-
-                          return (
-                            <div key={offering.id || testName} className="bg-slate-50/80 p-4 rounded-xl border border-slate-200/90 flex flex-col justify-between space-y-3 hover:bg-emerald-50/30 hover:border-emerald-300 transition-all shadow-2xs hover:shadow-xs">
-                              <div>
-                                <div className="flex items-center justify-between gap-2">
-                                  <span className="text-[10px] font-extrabold text-emerald-800 bg-emerald-100/80 px-2 py-0.5 rounded uppercase tracking-wider">
-                                    {catName}
-                                  </span>
-                                  {isHome && (
-                                    <span className="text-[10px] font-bold text-teal-800 bg-teal-100 px-2 py-0.5 rounded flex items-center gap-0.5">
-                                      <span>Home Pickup</span>
-                                    </span>
-                                  )}
-                                </div>
-
-                                <div className="font-extrabold text-slate-900 text-xs mt-1.5 leading-snug">
-                                  {testName}
-                                </div>
-                                <p className="text-[11px] text-slate-500 line-clamp-2 mt-1 leading-relaxed">
-                                  {testDesc}
-                                </p>
-                                
-                                <div className="text-[11px] text-slate-500 mt-2 flex items-center gap-1">
-                                  <Clock className="w-3 h-3 text-slate-400" />
-                                  <span>Report Delivery: <strong className="text-slate-700 font-bold">{offering.report_time || "Same Day"}</strong></span>
-                                </div>
-                              </div>
-
-                              <div className="pt-2.5 border-t border-slate-200/70 flex items-center justify-between">
-                                <div>
-                                  <div className="text-sm font-black text-emerald-700">৳{offering.calculated_price}</div>
-                                  {offering.price && (
-                                    <div className="text-[10px] text-slate-400 line-through">৳{offering.price}</div>
-                                  )}
-                                </div>
-
-                                <button
-                                  type="button"
-                                  onClick={() => onBookLabTest && onBookLabTest({
-                                    test: offering.test_details || { name: testName },
-                                    branchTest: offering,
-                                    branch: center
-                                  })}
-                                  className="px-3.5 py-1.5 bg-emerald-600 hover:bg-emerald-700 text-white rounded-xl font-bold text-xs transition-colors shadow-2xs active:scale-95 cursor-pointer"
-                                >
-                                  Book Test
-                                </button>
-                              </div>
-                            </div>
-                          );
-                        })}
-                      </div>
-                    )}
-                  </div>
-
-                </div>
-              );
-            })
-          )}
-
-          <Pagination
-            page={currentPage}
-            totalPages={totalPages}
-            onPageChange={setCurrentPage}
-          />
+          </section>
         </div>
 
+        {/* Home Sample Collection Promotion Banner */}
+        <DiagnosticsPromoBanner
+          onBookHomeCollection={handleBookHomeCollection}
+          onViewGuidelines={handleViewGuidelines}
+        />
       </div>
     </div>
   );

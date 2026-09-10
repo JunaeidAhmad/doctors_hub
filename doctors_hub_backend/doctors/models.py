@@ -37,8 +37,19 @@ class Doctor(models.Model):
     specialties = models.ManyToManyField(DoctorSpecialty, related_name='doctors')
     qualification = models.TextField()
     experience = models.CharField(max_length=50, null=True, blank=True, default='')
-    description = models.TextField(blank=True)
+    about = models.TextField(blank=True, default='')
+    clinical_services = models.TextField(blank=True, default='', help_text="Clinical services offered by the doctor")
     is_verified = models.BooleanField(default=False, db_index=True)
+    image = models.ImageField(upload_to="doctors/images/", blank=True, null=True)
+    gender = models.CharField(
+        max_length=20,
+        choices=[('Male', 'Male'), ('Female', 'Female'), ('Other', 'Other')],
+        default='Male',
+        blank=True
+    )
+    rating = models.DecimalField(max_digits=3, decimal_places=2, default=4.90, blank=True, null=True)
+    review_count = models.PositiveIntegerField(default=120, blank=True)
+    status = models.CharField(max_length=50, default='Active', blank=True)
 
     def save(self, *args, **kwargs):
         if not self.slug:
@@ -59,6 +70,8 @@ class DoctorAffiliation(models.Model):
     doctor = models.ForeignKey(Doctor, on_delete=models.CASCADE, related_name="affiliations")
     location = models.ForeignKey(Location, on_delete=models.CASCADE, related_name="affiliations")
     fee = models.DecimalField(max_digits=8, decimal_places=2)
+    chamber_type = models.CharField(max_length=100, default='Primary Chamber', blank=True)
+    status_label = models.CharField(max_length=100, default='Available Today', blank=True)
 
     def __str__(self):
         return f"{self.doctor.name} @ {self.location.name}"

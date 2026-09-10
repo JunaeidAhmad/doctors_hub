@@ -4,6 +4,7 @@ import TopUtilityStrip from './components/TopUtilityStrip';
 import StickyNavbar from './components/StickyNavbar';
 import HomePage from './views/Home/HomePage';
 import DoctorSearchPage from './views/DoctorSearch/DoctorSearchPage';
+import DoctorProfilePage from './views/DoctorProfile/DoctorProfilePage';
 import DiagnosticsSearchPage from './views/DiagnosticsSearch/DiagnosticsSearchPage';
 import AdminDashboardPage from './views/AdminDashboard';
 import HospitalDetailPage from './views/HospitalDetail/HospitalDetailPage';
@@ -19,6 +20,7 @@ import { api, isPageReload, setInitialLoadComplete } from './services/api';
 function getPageFromPath(path) {
   if (path === '/admin') return 'admin';
   if (path === '/doctor-search') return 'doctor-search';
+  if (path.startsWith('/doctor/')) return 'doctor-profile';
   if (path === '/diagnostics-search') return 'diagnostics-search';
   if (path === '/hospitals') return 'hospitals';
   if (path.startsWith('/hospital/')) return 'hospital-detail';
@@ -35,9 +37,9 @@ export default function App() {
   const [activeTab, setActiveTab] = useState(() => {
     const path = location.pathname;
     if (path === '/admin') return 'admin';
-    if (path === '/doctor-search') return 'doctors';
+    if (path === '/doctor-search' || path.startsWith('/doctor/')) return 'doctors';
     if (path === '/diagnostics-search') return 'diagnostics';
-    if (path === '/hospitals') return 'hospitals';
+    if (path === '/hospitals' || path.startsWith('/hospital/')) return 'hospitals';
     return 'home';
   });
   const isSectionScroll = useRef(false);
@@ -59,7 +61,7 @@ export default function App() {
       return;
     }
     if (currentPage === 'admin') setActiveTab('admin');
-    else if (currentPage === 'doctor-search') setActiveTab('doctors');
+    else if (currentPage === 'doctor-search' || currentPage === 'doctor-profile') setActiveTab('doctors');
     else if (currentPage === 'diagnostics-search') setActiveTab('diagnostics');
     else if (currentPage === 'hospitals' || currentPage === 'hospital-detail') setActiveTab('hospitals');
     else setActiveTab('home');
@@ -245,6 +247,11 @@ export default function App() {
     ? location.pathname.replace('/hospital/', '')
     : '';
 
+  // Helper to extract doctor slug from URL path /doctor/:idOrSlug
+  const currentDoctorSlug = location.pathname.startsWith('/doctor/')
+    ? decodeURIComponent(location.pathname.replace('/doctor/', '').split('/')[0])
+    : '';
+
   return (
     <div className="min-h-screen bg-slate-50 flex flex-col font-sans text-slate-800 antialiased selection:bg-emerald-500 selection:text-white">
       
@@ -341,6 +348,19 @@ export default function App() {
             onBookDoctorSlot={(chamber, doctor) => setBookingDoctorState({ chamber, doctor })}
             onSelectHospital={handleSelectHospital}
             onNavigateHome={() => handleNavClick('home')}
+          />
+        )}
+
+        {currentPage === 'doctor-profile' && (
+          <DoctorProfilePage
+            doctorSlug={currentDoctorSlug}
+            onBookDoctorSlot={(chamber, doctor) => setBookingDoctorState({ chamber, doctor })}
+            onNavigateHome={() => handleNavClick('home')}
+            onNavigateDoctorSearch={() => {
+              navigate('/doctor-search');
+              window.scrollTo({ top: 0, behavior: 'smooth' });
+            }}
+            showToast={showToast}
           />
         )}
 

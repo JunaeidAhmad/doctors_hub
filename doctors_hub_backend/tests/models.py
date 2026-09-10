@@ -48,6 +48,8 @@ class FacilityTest(models.Model):
     report_time = models.CharField(max_length=100, blank=True)
     is_available = models.BooleanField(default=True)
     home_sample_collection = models.BooleanField(default=False)
+    home_sample_charge = models.DecimalField(max_digits=10, decimal_places=2, null=True, blank=True, default=0.0)
+    home_sample_note = models.CharField(max_length=150, blank=True, default='')
     updated_at = models.DateTimeField(auto_now=True)
 
     class Meta:

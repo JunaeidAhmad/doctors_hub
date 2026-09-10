@@ -49,7 +49,7 @@ class FacilityTestSerializer(serializers.ModelSerializer):
         fields = (
             'id', 'location_id', 'location_details', 'test_id', 'test_details', 'price',
             'discount_percent', 'calculated_price', 'discounted_price', 'report_time', 'is_available',
-            'home_sample_collection', 'updated_at', 'facility_name', 'facility_type'
+            'home_sample_collection', 'home_sample_charge', 'home_sample_note', 'updated_at', 'facility_name', 'facility_type'
         )
 
     def to_internal_value(self, data):

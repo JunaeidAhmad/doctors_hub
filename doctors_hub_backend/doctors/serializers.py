@@ -98,6 +98,7 @@ class DoctorAffiliationSerializer(serializers.ModelSerializer):
         fields = (
             'id', 'doctor', 'location_id', 'location_details', 'fee',
             'facility_name', 'district', 'division', 'area', 'schedules',
+            'chamber_type', 'status_label',
             'doctor_name', 'academic_title', 'institution', 'qualification', 'experience', 'specialties'
         )
 
@@ -114,13 +115,15 @@ class DoctorSerializer(serializers.ModelSerializer):
         queryset=DoctorSpecialty.objects.all(), many=True, write_only=True, source='specialties', required=False
     )
     affiliations = DoctorAffiliationSerializer(many=True, required=False)
+    description = serializers.CharField(source='about', required=False, allow_blank=True)
 
     class Meta:
         model = Doctor
         fields = (
             'id', 'name', 'slug', 'academic_title', 'institution',
             'specialties', 'specialty_ids', 'qualification', 'experience',
-            'description', 'bmdc_number', 'is_verified', 'affiliations'
+            'about', 'description', 'clinical_services', 'bmdc_number', 'is_verified', 'image',
+            'gender', 'rating', 'review_count', 'status', 'affiliations'
         )
 
     def create(self, validated_data):

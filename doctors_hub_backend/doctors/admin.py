@@ -20,15 +20,17 @@ class DoctorSpecialtyAdmin(admin.ModelAdmin):
 
 @admin.register(Doctor)
 class DoctorAdmin(admin.ModelAdmin):
-    list_display = ('id', 'name', 'academic_title', 'institution', 'user', 'qualification', 'experience')
-    search_fields = ('name', 'academic_title', 'institution', 'qualification', 'user__phone_number')
+    list_display = ('id', 'name', 'academic_title', 'institution', 'gender', 'rating', 'status', 'is_verified')
+    list_filter = ('gender', 'is_verified', 'status')
+    search_fields = ('name', 'academic_title', 'institution', 'qualification', 'bmdc_number', 'user__phone_number')
     inlines = [DoctorAffiliationInline]
 
 
 @admin.register(DoctorAffiliation)
 class DoctorAffiliationAdmin(admin.ModelAdmin):
-    list_display = ('id', 'doctor', 'location', 'fee')
-    search_fields = ('doctor__name', 'location__name')
+    list_display = ('id', 'doctor', 'location', 'chamber_type', 'fee', 'status_label')
+    list_filter = ('chamber_type',)
+    search_fields = ('doctor__name', 'location__name', 'chamber_type', 'status_label')
     inlines = [AffiliationScheduleInline]
 
 

@@ -12,6 +12,8 @@ class Location(models.Model):
     class OwnershipType(models.TextChoices):
         PRIVATE = "private", "Private"
         GOVERNMENT = "government", "Government"
+        HOSPITAL_AFFILIATED = "hospital_affiliated", "Hospital Affiliated Lab"
+        NGO = "ngo", "NGO / Non-Profit Laboratory"
 
     id = models.UUIDField(primary_key=True, default=uuid.uuid4, editable=False)
     location_type = models.CharField(max_length=30, choices=LocationType.choices)

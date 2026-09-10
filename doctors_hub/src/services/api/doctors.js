@@ -57,12 +57,14 @@ export async function getDoctors({
   search = '',
   hospital = '',
   diagnostic_center = '',
+  facility = '',
+  gender = '',
   fee_max = '',
   day = '',
   page = 1,
   page_size = 20,
 } = {}) {
-  const key = `doc_${specialty}_${location}_${division}_${district}_${area}_${search}_${hospital}_${diagnostic_center}_${fee_max}_${day}_${page}_${page_size}`;
+  const key = `doc_${specialty}_${location}_${division}_${district}_${area}_${search}_${hospital}_${diagnostic_center}_${facility}_${gender}_${fee_max}_${day}_${page}_${page_size}`;
   return fetchWithDeduplicationAndCache(
     key,
     async () => {
@@ -75,8 +77,10 @@ export async function getDoctors({
       if (search) url.searchParams.append('search', search);
       if (hospital) url.searchParams.append('hospital', hospital);
       if (diagnostic_center) url.searchParams.append('diagnostic_center', diagnostic_center);
+      if (facility) url.searchParams.append('facility', facility);
+      if (gender && gender.toLowerCase() !== 'all') url.searchParams.append('gender', gender);
       if (fee_max) url.searchParams.append('fee_max', fee_max);
-      if (day && day !== 'All') url.searchParams.append('day', day);
+      if (day && day !== 'All' && day !== 'All Days') url.searchParams.append('day', day);
       if (page) url.searchParams.append('page', page);
       if (page_size) url.searchParams.append('page_size', page_size);
       const res = await fetchWithTimeout(url, { headers: getHeaders() });
@@ -86,20 +90,36 @@ export async function getDoctors({
   );
 }
 
+export async function getDoctor(idOrSlug) {
+  if (!idOrSlug) return null;
+  return fetchWithDeduplicationAndCache(
+    `doctor_${idOrSlug}`,
+    async () => {
+      const res = await fetchWithTimeout(`${BASE_URL}/doctors/${idOrSlug}/`, {
+        headers: getHeaders(),
+      });
+      return handleResponse(res);
+    },
+    60000
+  );
+}
+
 export async function createDoctor(doctorData) {
+  const isFormData = typeof FormData !== 'undefined' && doctorData instanceof FormData;
   const res = await fetchWithTimeout(`${BASE_URL}/doctors/`, {
     method: 'POST',
-    headers: getHeaders(),
-    body: JSON.stringify(doctorData),
+    headers: getHeaders(null, isFormData),
+    body: isFormData ? doctorData : JSON.stringify(doctorData),
   });
   return handleResponse(res);
 }
 
 export async function updateDoctor(id, doctorData) {
+  const isFormData = typeof FormData !== 'undefined' && doctorData instanceof FormData;
   const res = await fetchWithTimeout(`${BASE_URL}/doctors/${id}/`, {
     method: 'PATCH',
-    headers: getHeaders(),
-    body: JSON.stringify(doctorData),
+    headers: getHeaders(null, isFormData),
+    body: isFormData ? doctorData : JSON.stringify(doctorData),
   });
   return handleResponse(res);
 }

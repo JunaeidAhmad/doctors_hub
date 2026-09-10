@@ -106,10 +106,10 @@ export default function StickyNavbar({ activeTab, setActiveTab, user, onOpenLogi
                   const el = document.getElementById(link.id);
                   if (el) el.scrollIntoView({ behavior: 'smooth' });
                 }}
-                className={`px-3 py-2 rounded-lg text-sm font-semibold transition-all duration-200 ${
+                className={`px-3 py-1.5 text-sm font-semibold transition-all duration-200 cursor-pointer ${
                   isActive
-                    ? 'text-emerald-700 bg-emerald-50 shadow-sm border border-emerald-200/60'
-                    : 'text-slate-600 hover:text-emerald-600 hover:bg-slate-50'
+                    ? 'text-emerald-600 border-b-2 border-emerald-600 pb-1 rounded-none'
+                    : 'text-slate-600 hover:text-emerald-600'
                 }`}
               >
                 {link.name}
@@ -222,7 +222,16 @@ export default function StickyNavbar({ activeTab, setActiveTab, user, onOpenLogi
                 </div>
               )}
             </div>
-          ) : null}
+          ) : (
+            <button
+              onClick={onOpenLogin}
+              type="button"
+              className="bg-[#004d40] hover:bg-[#00382e] text-white font-medium text-xs sm:text-sm px-4 py-2 rounded-lg transition-all shadow-xs flex items-center gap-1.5 cursor-pointer font-label-md"
+            >
+              <span className="material-symbols-outlined text-[16px]">login</span>
+              <span>Sign In / Register</span>
+            </button>
+          )}
         </div>
 
 

@@ -288,17 +288,14 @@ export function flattenFacility(data) {
 /**
  * Get headers, including optional Authorization token
  */
-export function getHeaders(token = null) {
-  const headers = {
-    'Content-Type': 'application/json',
-  };
-  if (token) {
-    headers['Authorization'] = `Bearer ${token}`;
-  } else {
-    const storedToken = localStorage.getItem('access_token');
-    if (storedToken) {
-      headers['Authorization'] = `Bearer ${storedToken}`;
-    }
+export function getHeaders(token = null, isFormData = false) {
+  const headers = {};
+  if (!isFormData) {
+    headers['Content-Type'] = 'application/json';
+  }
+  const storedToken = token || (typeof localStorage !== 'undefined' ? localStorage.getItem('access_token') : null);
+  if (storedToken) {
+    headers['Authorization'] = `Bearer ${storedToken}`;
   }
   return headers;
 }

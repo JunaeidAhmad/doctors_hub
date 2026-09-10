@@ -1,4 +1,5 @@
 from rest_framework import viewsets, filters, exceptions
+from rest_framework.parsers import MultiPartParser, FormParser, JSONParser
 from django_filters.rest_framework import DjangoFilterBackend
 import django_filters
 from drf_spectacular.utils import extend_schema
@@ -25,6 +26,8 @@ class DoctorFilter(django_filters.FilterSet):
     location = django_filters.CharFilter(method='filter_location')
     fee_max = django_filters.NumberFilter(field_name='affiliations__fee', lookup_expr='lte')
     day = django_filters.CharFilter(field_name='affiliations__schedules__day_of_week', lookup_expr='icontains')
+    gender = django_filters.CharFilter(field_name='gender', lookup_expr='iexact')
+    facility = django_filters.CharFilter(method='filter_facility')
     hospital = django_filters.UUIDFilter(field_name='affiliations__location')
     diagnostic_center = django_filters.UUIDFilter(field_name='affiliations__location')
 
@@ -32,7 +35,7 @@ class DoctorFilter(django_filters.FilterSet):
         model = Doctor
         fields = [
             'specialty', 'specialties', 'area', 'district', 'division',
-            'location', 'fee_max', 'day', 'hospital', 'diagnostic_center'
+            'location', 'fee_max', 'day', 'gender', 'facility', 'hospital', 'diagnostic_center'
         ]
 
     def filter_specialty(self, queryset, name, value):
@@ -55,9 +58,21 @@ class DoctorFilter(django_filters.FilterSet):
             models.Q(affiliations__location__area__iexact=value)
         ).distinct()
 
+    def filter_facility(self, queryset, name, value):
+        if not value or value.lower() == 'all':
+            return queryset
+        from django.db import models
+        return queryset.filter(
+            models.Q(affiliations__location__name__icontains=value) |
+            models.Q(affiliations__location__branch__icontains=value) |
+            models.Q(affiliations__location__slug__icontains=value) |
+            models.Q(affiliations__location__id__iexact=value if len(value) == 36 else '00000000-0000-0000-0000-000000000000')
+        ).distinct()
+
 
 @extend_schema(tags=['Doctors'])
 class DoctorViewSet(SlugOrPkLookupMixin, RoleScopedQuerysetMixin, viewsets.ModelViewSet):
+    parser_classes = (MultiPartParser, FormParser, JSONParser)
     queryset = Doctor.objects.all().prefetch_related(
         'specialties',
         'affiliations__location',
@@ -68,7 +83,10 @@ class DoctorViewSet(SlugOrPkLookupMixin, RoleScopedQuerysetMixin, viewsets.Model
     permission_classes = (IsDoctorOwnerOrReadOnly,)
     filter_backends = [DjangoFilterBackend, filters.SearchFilter]
     filterset_class = DoctorFilter
-    search_fields = ['name', 'qualification', 'specialties__name', 'affiliations__location__name']
+    search_fields = [
+        'name', 'qualification', 'academic_title', 'institution',
+        'specialties__name', 'affiliations__location__name', 'about'
+    ]
     scope_doctor_field = "user"
     scope_location_field = "affiliations__location__in"
 

@@ -109,10 +109,10 @@ export async function getDiagnosticCenters({
     key,
     async () => {
       const url = new URL(`${BASE_URL}/diagnostic-centers/`);
-      if (location && location !== 'All Bangladesh') url.searchParams.append('location', location);
-      if (division && division !== 'All Bangladesh') url.searchParams.append('division', division);
-      if (district && district !== 'All Districts') url.searchParams.append('district', district);
-      if (area && area !== 'All Areas') url.searchParams.append('area', area);
+      if (location && location.toLowerCase() !== 'all bangladesh' && location.toLowerCase() !== 'all') url.searchParams.append('location', location);
+      if (division && division.toLowerCase() !== 'all bangladesh' && division.toLowerCase() !== 'all') url.searchParams.append('division', division);
+      if (district && district.toLowerCase() !== 'all districts' && district.toLowerCase() !== 'all') url.searchParams.append('district', district);
+      if (area && area.toLowerCase() !== 'all areas' && area.toLowerCase() !== 'all') url.searchParams.append('area', area);
       if (ownership_type && ownership_type !== 'all') url.searchParams.append('ownership_type', ownership_type);
       if (category) url.searchParams.append('category', category);
       if (spec) url.searchParams.append('spec', spec);
