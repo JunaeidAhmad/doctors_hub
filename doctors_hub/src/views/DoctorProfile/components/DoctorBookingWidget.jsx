@@ -1,43 +1,113 @@
-import React, { useState, useMemo } from 'react';
+import React, { useState, useEffect, useMemo } from 'react';
+
+function formatTime12(timeStr) {
+  if (!timeStr) return '';
+  const parts = timeStr.split(':');
+  if (parts.length < 2) return timeStr;
+  let hours = parseInt(parts[0], 10);
+  const minutes = parts[1];
+  const ampm = hours >= 12 ? 'PM' : 'AM';
+  hours = hours % 12 || 12;
+  return `${hours}:${minutes} ${ampm}`;
+}
 
 function getAffScheduleDays(aff) {
   if (aff?.schedules && aff.schedules.length > 0) {
     const days = [...new Set(aff.schedules.map(s => s.day_of_week?.slice(0, 3)))];
     return days.join(', ');
   }
+  if (aff?.visitSchedule) {
+    return aff.visitSchedule.split('(')[0].trim();
+  }
   return 'Daily / Regular';
+}
+
+function generateSlotsForSchedule(schedule) {
+  if (!schedule || !schedule.start_time || !schedule.end_time) {
+    return ['5:15 PM', '5:45 PM', '6:15 PM', '6:45 PM', '7:15 PM', '7:45 PM', '8:15 PM', '8:45 PM'];
+  }
+  const [startH, startM] = schedule.start_time.split(':').map(Number);
+  const [endH, endM] = schedule.end_time.split(':').map(Number);
+  const startMin = (startH || 0) * 60 + (startM || 0);
+  const endMin = (endH || 0) * 60 + (endM || 0);
+  const totalMin = endMin - startMin;
+
+  if (totalMin <= 30) {
+    return [formatTime12(schedule.start_time)];
+  }
+
+  const step = totalMin >= 300 ? 45 : 30;
+  const slots = [];
+  for (let m = startMin; m + 20 <= endMin && slots.length < 8; m += step) {
+    const h = Math.floor(m / 60);
+    const min = m % 60;
+    const ampm = h >= 12 ? 'PM' : 'AM';
+    const displayH = h % 12 || 12;
+    const displayM = min < 10 ? `0${min}` : min;
+    slots.push(`${displayH}:${displayM} ${ampm}`);
+  }
+
+  return slots.length > 0 ? slots : ['5:15 PM', '5:45 PM', '6:15 PM', '6:45 PM', '7:15 PM', '7:45 PM'];
 }
 
 export default function DoctorBookingWidget({ 
   doctor, 
+  affiliations: affiliationsProp,
+  selectedAffIndex: propSelectedAffIndex,
+  onSelectAffIndex,
   onBookAppointment, 
   showToast 
 }) {
   if (!doctor) return null;
 
-  const affiliations = Array.isArray(doctor.affiliations) && doctor.affiliations.length > 0 
-    ? doctor.affiliations 
-    : [
-        {
-          id: 'default-aff',
-          facility_name: doctor.institution || 'Medical Center Chamber',
-          location_details: {
-            name: doctor.institution || 'Specialist Consultation Center',
-            address_line: 'Chamber Room #408, 4th Floor',
-            branch: 'Central',
-            phone: '09613787801'
-          },
-          fee: '1200',
-          schedules: [
-            { day_of_week: 'Saturday', start_time: '17:00', end_time: '21:00' },
-            { day_of_week: 'Monday', start_time: '17:00', end_time: '21:00' },
-            { day_of_week: 'Wednesday', start_time: '17:00', end_time: '21:00' },
-          ]
-        }
-      ];
+  const affiliations = useMemo(() => {
+    if (Array.isArray(affiliationsProp) && affiliationsProp.length > 0) {
+      return affiliationsProp;
+    }
+    if (Array.isArray(doctor?.affiliations) && doctor.affiliations.length > 1) {
+      return doctor.affiliations;
+    }
+    if (Array.isArray(doctor?.chambers) && doctor.chambers.length > 1) {
+      return doctor.chambers;
+    }
+    if (Array.isArray(doctor?.affiliations) && doctor.affiliations.length > 0) {
+      return doctor.affiliations;
+    }
+    if (Array.isArray(doctor?.chambers) && doctor.chambers.length > 0) {
+      return doctor.chambers;
+    }
+    return [
+      {
+        id: 'default-aff',
+        facility_name: doctor?.institution || 'Medical Center Chamber',
+        location_details: {
+          name: doctor?.institution || 'Specialist Consultation Center',
+          address_line: 'Chamber Room #408, 4th Floor',
+          branch: 'Central',
+          phone: '09613787801'
+        },
+        fee: '1200',
+        schedules: [
+          { day_of_week: 'Saturday', start_time: '17:00', end_time: '21:00' },
+          { day_of_week: 'Monday', start_time: '17:00', end_time: '21:00' },
+          { day_of_week: 'Wednesday', start_time: '17:00', end_time: '21:00' },
+        ]
+      }
+    ];
+  }, [affiliationsProp, doctor]);
 
-  const [selectedAffIndex, setSelectedAffIndex] = useState(0);
-  const activeAff = affiliations[selectedAffIndex] || affiliations[0];
+  const [localAffIndex, setLocalAffIndex] = useState(0);
+  const selectedAffIndex = typeof propSelectedAffIndex === 'number' ? propSelectedAffIndex : localAffIndex;
+
+  const handleSelectAffIndex = (idx) => {
+    if (onSelectAffIndex) {
+      onSelectAffIndex(idx);
+    }
+    setLocalAffIndex(idx);
+    setBookingSuccess(false);
+  };
+
+  const activeAff = affiliations[selectedAffIndex] || affiliations[0] || {};
 
   // Dates calculation: Next 4 days
   const dateOptions = useMemo(() => {
@@ -64,10 +134,11 @@ export default function DoctorBookingWidget({
   const selectedDateObj = dateOptions.find(d => d.id === selectedDateId) || dateOptions[0];
 
   // Time slots for shift
-  const timeSlots = [
-    '5:15 PM', '5:45 PM', '6:15 PM', '6:45 PM', 
-    '7:15 PM', '7:45 PM', '8:15 PM', '8:45 PM'
-  ];
+  const timeSlots = useMemo(() => {
+    const s = activeAff.schedules?.[0];
+    return generateSlotsForSchedule(s);
+  }, [activeAff]);
+
   const [selectedTime, setSelectedTime] = useState('6:15 PM');
 
   // Form Fields
@@ -80,27 +151,44 @@ export default function DoctorBookingWidget({
   const [bookingSuccess, setBookingSuccess] = useState(false);
   const [submitting, setSubmitting] = useState(false);
 
-  const feeAmount = parseInt(activeAff.fee || '1200', 10);
+  const feeAmount = parseInt(activeAff.fee || doctor?.fee || '1200', 10);
   const followUpFee = Math.round(feeAmount * 0.7);
 
   // Visiting schedule string
   const visitingHours = useMemo(() => {
     if (activeAff.schedules && activeAff.schedules.length > 0) {
       const s = activeAff.schedules[0];
-      const start = s.start_time?.slice(0, 5) || '17:00';
-      const end = s.end_time?.slice(0, 5) || '21:00';
+      const start = formatTime12(s.start_time) || s.start_time?.slice(0, 5) || '5:00 PM';
+      const end = formatTime12(s.end_time) || s.end_time?.slice(0, 5) || '9:00 PM';
       return `${start} – ${end}`;
+    }
+    if (activeAff.visitSchedule) {
+      return activeAff.visitSchedule;
     }
     return '5:00 PM – 9:00 PM';
   }, [activeAff]);
 
   const scheduleDays = useMemo(() => {
-    if (activeAff.schedules && activeAff.schedules.length > 0) {
-      const days = [...new Set(activeAff.schedules.map(s => s.day_of_week?.slice(0, 3)))];
-      return days.join(', ');
-    }
-    return 'Daily';
+    return getAffScheduleDays(activeAff);
   }, [activeAff]);
+
+  const shiftInfo = useMemo(() => {
+    if (activeAff.schedules && activeAff.schedules.length > 0) {
+      const s = activeAff.schedules[0];
+      const startH = parseInt(s.start_time?.split(':')[0] || '17', 10);
+      if (startH < 12) return { session: 'Morning Session', shift: 'Morning Shift', icon: 'wb_sunny' };
+      if (startH < 16) return { session: 'Afternoon Session', shift: 'Afternoon Shift', icon: 'wb_sunny' };
+      return { session: 'Evening Session', shift: 'Evening Shift', icon: 'bedtime' };
+    }
+    return { session: 'Evening Session', shift: 'Evening Shift', icon: 'bedtime' };
+  }, [activeAff]);
+
+  // Keep selected time valid when activeAff changes
+  useEffect(() => {
+    if (timeSlots && timeSlots.length > 0 && !timeSlots.includes(selectedTime)) {
+      setSelectedTime(timeSlots[Math.min(2, timeSlots.length - 1)] || timeSlots[0]);
+    }
+  }, [timeSlots, selectedTime]);
 
   const handleBookingSubmit = (e) => {
     e.preventDefault();
@@ -168,50 +256,56 @@ export default function DoctorBookingWidget({
             </span>
           </div>
 
-          <div className={`grid gap-2.5 ${affiliations.length === 1 ? 'grid-cols-1' : 'grid-cols-2'}`}>
+          <div className={`grid gap-2.5 ${affiliations.length === 1 ? 'grid-cols-1' : 'grid-cols-1 sm:grid-cols-2'}`}>
             {affiliations.map((aff, idx) => {
               const isSelected = selectedAffIndex === idx;
-              const name = aff.facility_name || aff.location_details?.name || `Chamber ${idx + 1}`;
+              const name = aff.facility_name || aff.location_details?.name || aff.name || `Chamber ${idx + 1}`;
               const branchOrArea = aff.location_details?.branch 
                 ? `${aff.location_details.branch} Branch` 
-                : (aff.area ? `${aff.area}, Dhaka` : 'Dhaka');
-              const scheduleDays = getAffScheduleDays(aff);
+                : (aff.area ? `${aff.area}, Dhaka` : (aff.location_details?.address_line ? aff.location_details.address_line.split(',')[0] : 'Dhaka'));
+              const days = getAffScheduleDays(aff);
+              const chamberFee = aff.fee ? `৳${parseInt(aff.fee, 10)}` : null;
 
               return (
                 <button
                   key={aff.id || idx}
                   type="button"
-                  onClick={() => {
-                    setSelectedAffIndex(idx);
-                    setBookingSuccess(false);
-                  }}
-                  className={`text-left p-3.5 rounded-xl transition-all relative cursor-pointer ${
+                  onClick={() => handleSelectAffIndex(idx)}
+                  className={`text-left p-3 rounded-xl transition-all relative cursor-pointer flex flex-col justify-between ${
                     isSelected
                       ? 'border-2 border-primary bg-surface-container-lowest shadow-sm ring-1 ring-primary/20'
                       : 'border border-outline-variant bg-surface-container-low/70 hover:bg-surface-container hover:border-slate-400'
                   }`}
                 >
-                  <span
-                    className={`absolute top-3 right-3 w-3.5 h-3.5 rounded-full flex items-center justify-center transition-colors ${
-                      isSelected ? 'bg-primary' : 'border-2 border-slate-300 bg-white'
-                    }`}
-                  >
-                    {isSelected && <span className="w-1.5 h-1.5 rounded-full bg-white" />}
-                  </span>
-
-                  <p className={`font-title-md text-title-md font-bold leading-tight truncate pr-5 ${
-                    isSelected ? 'text-primary' : 'text-on-surface text-slate-800'
-                  }`}>
-                    {name}
-                  </p>
-                  <p className="text-label-sm font-label-sm text-on-surface-variant mt-0.5 text-slate-500 truncate">
+                  <div className="flex items-start justify-between gap-1.5 w-full">
+                    <p className={`font-bold text-sm leading-snug line-clamp-2 ${
+                      isSelected ? 'text-primary' : 'text-slate-800'
+                    }`}>
+                      {name}
+                    </p>
+                    <span
+                      className={`w-3.5 h-3.5 rounded-full flex items-center justify-center shrink-0 mt-0.5 transition-colors ${
+                        isSelected ? 'bg-primary' : 'border-2 border-slate-300 bg-white'
+                      }`}
+                    >
+                      {isSelected && <span className="w-1.5 h-1.5 rounded-full bg-white" />}
+                    </span>
+                  </div>
+                  <p className="text-xs text-slate-500 mt-0.5 truncate">
                     {branchOrArea}
                   </p>
-                  <p className={`text-body-sm font-body-sm mt-1.5 font-medium truncate ${
-                    isSelected ? 'text-teal-700 font-semibold' : 'text-slate-400'
-                  }`}>
-                    {scheduleDays}
-                  </p>
+                  <div className="flex items-center justify-between mt-2 pt-1.5 border-t border-slate-200/60 w-full">
+                    <span className={`text-[11px] font-medium truncate ${
+                      isSelected ? 'text-teal-700 font-semibold' : 'text-slate-500'
+                    }`}>
+                      {days}
+                    </span>
+                    {chamberFee && (
+                      <span className="text-[11px] font-bold text-slate-700 bg-slate-100 px-1.5 py-0.5 rounded shrink-0 ml-1">
+                        {chamberFee}
+                      </span>
+                    )}
+                  </div>
                 </button>
               );
             })}
@@ -226,7 +320,7 @@ export default function DoctorBookingWidget({
             </span>
             <div>
               <span className="font-semibold text-on-surface text-slate-900 block">
-                {activeAff.location_details?.address_line || activeAff.facility_name || 'Chamber Facility'}
+                {activeAff.location_details?.address_line || activeAff.address || activeAff.facility_name || 'Chamber Facility'}
               </span>
               <p className="text-body-sm font-body-sm text-on-surface-variant text-slate-500">
                 {activeAff.location_details?.branch ? `${activeAff.location_details.branch} Branch • ` : ''}Room #408 (Consultation Wing)
@@ -260,18 +354,20 @@ export default function DoctorBookingWidget({
             </div>
           </div>
 
-          {/* <div className="pt-2 flex items-center justify-between text-body-sm font-body-sm bg-surface-container-low/70 px-3.5 py-2 rounded-xl border border-outline-variant/40">
-            <span className="flex items-center gap-1.5 text-on-surface-variant text-slate-600 font-medium">
-              <span className="material-symbols-outlined text-[16px] text-primary">support_agent</span>
-              <span>Chamber Assistant:</span>
-            </span>
-            <a 
-              href={`tel:${activeAff.location_details?.phone || '09613787801'}`} 
-              className="font-bold text-primary hover:underline"
-            >
-              {activeAff.location_details?.phone || '+880 1711-234567'}
-            </a>
-          </div> */}
+          {(activeAff.location_details?.phone || activeAff.phone) && (
+            <div className="pt-2 flex items-center justify-between text-body-sm font-body-sm bg-surface-container-low/70 px-3.5 py-2 rounded-xl border border-outline-variant/40">
+              <span className="flex items-center gap-1.5 text-on-surface-variant text-slate-600 font-medium">
+                <span className="material-symbols-outlined text-[16px] text-primary">support_agent</span>
+                <span>Chamber Contact:</span>
+              </span>
+              <a 
+                href={`tel:${activeAff.location_details?.phone || activeAff.phone}`} 
+                className="font-bold text-primary hover:underline"
+              >
+                {activeAff.location_details?.phone || activeAff.phone}
+              </a>
+            </div>
+          )}
         </div>
 
         {/* Interactive Booking Content */}
@@ -345,13 +441,13 @@ export default function DoctorBookingWidget({
                 <label className="text-label-sm font-label-sm text-on-surface font-bold uppercase tracking-wider text-slate-700">
                   2. Chamber Shift
                 </label>
-                <span className="text-label-sm font-label-sm text-slate-500 font-medium">Evening Session</span>
+                <span className="text-label-sm font-label-sm text-slate-500 font-medium">{shiftInfo.session}</span>
               </div>
               <div className="p-2.5 rounded-xl bg-surface-container-low/70 border border-outline-variant/60 flex items-center justify-between">
                 <div className="flex items-center gap-2">
-                  <span className="material-symbols-outlined text-primary text-[20px]">bedtime</span>
+                  <span className="material-symbols-outlined text-primary text-[20px]">{shiftInfo.icon}</span>
                   <span className="text-label-md font-label-md font-semibold text-on-surface text-slate-800">
-                    Evening Shift ({visitingHours})
+                    {shiftInfo.shift} ({visitingHours})
                   </span>
                 </div>
                 <span className="text-label-sm font-label-sm bg-teal-100 text-teal-800 px-2 py-0.5 rounded font-bold">

@@ -36,8 +36,8 @@ export default function DoctorChamberCard({
       }}
       className={`p-3.5 rounded-xl border relative transition-all duration-150 cursor-pointer select-none ${
         isSelected
-          ? 'border-2 border-[#006877] bg-[#f0f9fa] dark:bg-teal-950/25 ring-2 ring-[#006877]/20 shadow-xs'
-          : 'border border-slate-200 dark:border-slate-700/80 bg-slate-50/70 dark:bg-slate-800/40 hover:border-teal-500/50 hover:bg-slate-100/60 dark:hover:bg-slate-800/70 shadow-2xs'
+          ? 'border-2 border-[#006877] bg-[#f0f9fa] ring-2 ring-[#006877]/20 shadow-xs'
+          : 'border border-slate-200 bg-slate-50/70 hover:border-teal-500/50 hover:bg-slate-100/60 shadow-2xs'
       } ${className}`}
     >
       {/* Top Header: Radio / Facility Name & Fee */}
@@ -49,7 +49,7 @@ export default function DoctorChamberCard({
               className={`w-4 h-4 rounded-full flex items-center justify-center transition-colors ${
                 isSelected
                   ? 'border-2 border-[#006877] bg-[#006877]'
-                  : 'border-2 border-slate-300 dark:border-slate-600 bg-white dark:bg-slate-800'
+                  : 'border-2 border-slate-300 bg-white'
               }`}
             >
               {isSelected && <div className="w-1.5 h-1.5 rounded-full bg-white" />}
@@ -64,14 +64,14 @@ export default function DoctorChamberCard({
                   onSelectHospital(facilityId);
                 }
               }}
-              className={`text-xs sm:text-sm font-bold text-slate-900 dark:text-slate-100 truncate ${
+              className={`text-xs sm:text-sm font-bold text-slate-900 truncate ${
                 onSelectHospital && facilityId ? 'hover:text-[#006877] cursor-pointer underline-offset-2 hover:underline' : ''
               }`}
               title={facilityName}
             >
               {facilityName}
             </h4>
-            <p className="text-[11px] text-slate-500 dark:text-slate-400 truncate mt-0.5">
+            <p className="text-[11px] text-slate-500 truncate mt-0.5">
               {address}
             </p>
           </div>
@@ -81,8 +81,8 @@ export default function DoctorChamberCard({
         <span
           className={`text-xs font-bold px-2 py-0.5 rounded border shrink-0 ${
             isSelected
-              ? 'text-[#006877] bg-white dark:bg-slate-900 border-[#006877]/40 shadow-2xs'
-              : 'text-slate-800 dark:text-slate-200 bg-white dark:bg-slate-900 border-slate-200 dark:border-slate-700'
+              ? 'text-[#006877] bg-white border-[#006877]/40 shadow-2xs'
+              : 'text-slate-800 bg-white border-slate-200'
           }`}
         >
           {fee}
@@ -92,10 +92,10 @@ export default function DoctorChamberCard({
       {/* Bottom Schedule & Status Strip */}
       <div
         className={`mt-2.5 flex items-center justify-between text-xs pt-2 border-t ${
-          isSelected ? 'border-[#006877]/15' : 'border-slate-200/80 dark:border-slate-700/60'
+          isSelected ? 'border-[#006877]/15' : 'border-slate-200/80'
         }`}
       >
-        <span className="text-slate-600 dark:text-slate-400 text-[11px] truncate mr-2 flex items-center gap-1">
+        <span className="text-slate-600 text-[11px] truncate mr-2 flex items-center gap-1">
           <span className="material-symbols-outlined text-[13px] text-slate-400">schedule</span>
           <span className="truncate">{visitSchedule}</span>
         </span>
@@ -107,7 +107,7 @@ export default function DoctorChamberCard({
           )}
           <span
             className={`font-semibold text-[11px] ${
-              isSelected ? 'text-[#006877]' : 'text-slate-600 dark:text-slate-400'
+              isSelected ? 'text-[#006877]' : 'text-slate-600'
             }`}
           >
             {statusLabel}

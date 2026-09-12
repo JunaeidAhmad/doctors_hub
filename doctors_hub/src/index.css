@@ -1,5 +1,7 @@
 @import "tailwindcss";
 
+@custom-variant dark (&:where(.dark, .dark *));
+
 @theme {
   --color-primary: #00685f;
   --color-primary-container: #008378;
@@ -29,6 +31,8 @@
   --color-inverse-surface: #283044;
   --color-inverse-on-surface: #eef0ff;
   --color-inverse-primary: #6bd8cb;
+  --color-tertiary: #4b41e1;
+  --color-tertiary-container: #645efb;
 }
 
 @layer base {

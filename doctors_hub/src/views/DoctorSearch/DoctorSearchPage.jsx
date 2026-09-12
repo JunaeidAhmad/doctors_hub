@@ -68,6 +68,7 @@ export default function DoctorSearchPage({
   const [facilities, setFacilities] = useState([]);
   const [isLoading, setIsLoading] = useState(false);
   const [selectedDoctorForProfile, setSelectedDoctorForProfile] = useState(null);
+  const [isMobileFiltersOpen, setIsMobileFiltersOpen] = useState(false);
 
   // Sync state from URL search params on back/forward navigation
   useEffect(() => {
@@ -292,6 +293,24 @@ export default function DoctorSearchPage({
 
         {/* Two-Column Layout: Left Filter Sidebar + Right Doctors Results */}
         <div className="flex flex-col lg:flex-row gap-6 items-start">
+          {/* Mobile Filter Toggle Icon Button at the Right */}
+          <div className="lg:hidden w-full flex justify-end">
+            <button
+              type="button"
+              onClick={() => setIsMobileFiltersOpen((prev) => !prev)}
+              className="relative p-2.5 bg-surface-container-lowest hover:bg-surface-container-low border border-outline-variant rounded-xl text-primary shadow-xs transition-all flex items-center justify-center cursor-pointer active:scale-95"
+              title={isMobileFiltersOpen ? "Hide filters" : "Open filters"}
+              aria-label={isMobileFiltersOpen ? "Hide filters" : "Open filters"}
+            >
+              <span className="material-symbols-outlined text-[22px]">
+                {isMobileFiltersOpen ? 'close' : 'tune'}
+              </span>
+              {!isMobileFiltersOpen && hasActiveFilters && (
+                <span className="absolute top-1.5 right-1.5 w-2 h-2 rounded-full bg-primary ring-2 ring-surface-container-lowest" />
+              )}
+            </button>
+          </div>
+
           {/* Left Sidebar Filter Engine */}
           <DoctorFilterSidebar
             division={division}
@@ -330,7 +349,12 @@ export default function DoctorSearchPage({
               setCurrentPage(1);
             }}
             onResetAll={handleClearAll}
-            onApplyFilters={() => setCurrentPage(1)}
+            onApplyFilters={() => {
+              setCurrentPage(1);
+              setIsMobileFiltersOpen(false);
+            }}
+            onClose={() => setIsMobileFiltersOpen(false)}
+            className={isMobileFiltersOpen ? 'block' : 'hidden lg:block'}
           />
 
           {/* Right Content Area: Doctor Cards & Pagination */}
@@ -362,7 +386,7 @@ export default function DoctorSearchPage({
                   index={idx}
                   onBookDoctorSlot={onBookDoctorSlot}
                   onViewProfile={(d) => {
-                    navigate(`/doctor/${d.slug || d.id}`);
+                    navigate(`/doctor/${d.slug || d.id}`, { state: { doctor: d, chambers: d.chambers } });
                     window.scrollTo({ top: 0, behavior: 'smooth' });
                   }}
                   onSelectHospital={onSelectHospital}

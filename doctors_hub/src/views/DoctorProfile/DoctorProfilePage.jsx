@@ -1,4 +1,5 @@
-import React, { useState, useEffect } from 'react';
+import React, { useState, useEffect, useMemo } from 'react';
+import { useLocation } from 'react-router-dom';
 import { api } from '../../services/api';
 import DoctorProfileHero from './components/DoctorProfileHero';
 import DoctorAboutSection from './components/DoctorAboutSection';
@@ -15,9 +16,14 @@ export default function DoctorProfilePage({
   onNavigateDoctorSearch,
   showToast
 }) {
-  const [doctor, setDoctor] = useState(null);
-  const [loading, setLoading] = useState(true);
+  const location = useLocation();
+  const stateDoctor = location.state?.doctor;
+  const stateChambers = location.state?.chambers || stateDoctor?.chambers;
+
+  const [doctor, setDoctor] = useState(stateDoctor || null);
+  const [loading, setLoading] = useState(!stateDoctor);
   const [error, setError] = useState(null);
+  const [selectedAffIndex, setSelectedAffIndex] = useState(0);
 
   useEffect(() => {
     let isMounted = true;
@@ -28,21 +34,23 @@ export default function DoctorProfilePage({
         return;
       }
 
-      setLoading(true);
+      if (!stateDoctor) setLoading(true);
       setError(null);
       try {
         const data = await api.getDoctor(doctorSlug);
         if (isMounted) {
           if (data) {
             setDoctor(data);
-          } else {
+          } else if (!stateDoctor) {
             setError('Doctor profile not found.');
           }
         }
       } catch (err) {
         if (isMounted) {
           console.error('Failed to load doctor profile:', err);
-          setError('Failed to load doctor profile. Please try again.');
+          if (!stateDoctor) {
+            setError('Failed to load doctor profile. Please try again.');
+          }
         }
       } finally {
         if (isMounted) {
@@ -57,7 +65,7 @@ export default function DoctorProfilePage({
     return () => {
       isMounted = false;
     };
-  }, [doctorSlug]);
+  }, [doctorSlug, stateDoctor]);
 
   if (loading) {
     return (
@@ -129,6 +137,26 @@ export default function DoctorProfilePage({
   const primarySpecialty = doctor.specialties?.[0]?.name || 'Specialist';
   const isVerified = Boolean(doctor.is_verified && doctor.bmdc_number);
 
+  const resolvedAffiliations = useMemo(() => {
+    if (!doctor) return [];
+    if (Array.isArray(doctor.affiliations) && doctor.affiliations.length > 1) {
+      return doctor.affiliations;
+    }
+    if (Array.isArray(stateChambers) && stateChambers.length > 1) {
+      return stateChambers;
+    }
+    if (Array.isArray(doctor.chambers) && doctor.chambers.length > 1) {
+      return doctor.chambers;
+    }
+    if (Array.isArray(doctor.affiliations) && doctor.affiliations.length > 0) {
+      return doctor.affiliations;
+    }
+    if (Array.isArray(doctor.chambers) && doctor.chambers.length > 0) {
+      return doctor.chambers;
+    }
+    return [];
+  }, [doctor, stateChambers]);
+
   return (
     <div className="bg-background text-on-surface min-h-screen flex flex-col selection:bg-primary selection:text-on-primary">
       {/* 1. Top Sub-Header & Breadcrumb Bar */}
@@ -192,7 +220,12 @@ export default function DoctorProfilePage({
             <DoctorQualificationsTimeline doctor={doctor} />
 
             {/* Section D: Hospital Affiliations & Chambers Table */}
-            <DoctorAffiliationsTable doctor={doctor} />
+            <DoctorAffiliationsTable 
+              doctor={doctor} 
+              affiliations={resolvedAffiliations}
+              selectedAffIndex={selectedAffIndex}
+              onSelectAffIndex={setSelectedAffIndex}
+            />
 
             {/* Section E: Patient Reviews & Testimonials */}
             <DoctorReviewsSection doctor={doctor} />
@@ -202,6 +235,9 @@ export default function DoctorProfilePage({
           <div className="lg:col-span-5">
             <DoctorBookingWidget
               doctor={doctor}
+              affiliations={resolvedAffiliations}
+              selectedAffIndex={selectedAffIndex}
+              onSelectAffIndex={setSelectedAffIndex}
               onBookAppointment={onBookDoctorSlot}
               showToast={showToast}
             />

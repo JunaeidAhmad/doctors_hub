@@ -62,13 +62,39 @@ class HospitalSerializer(serializers.ModelSerializer):
     test_category_ids = serializers.ListField(
         child=serializers.UUIDField(), write_only=True, required=False
     )
+    affiliated_doctors = serializers.SerializerMethodField()
+    offered_tests = serializers.SerializerMethodField()
 
     class Meta:
         model = Hospital
         fields = (
             'location_details', 'location_id', 'category', 'category_id',
-            'services', 'service_ids', 'has_diagnostic_center', 'test_category_ids'
+            'services', 'service_ids', 'has_diagnostic_center', 'test_category_ids',
+            'bed_capacity', 'icu_beds_total', 'icu_beds_available',
+            'emergency_phone', 'ambulance_phone', 'accreditation', 'dghs_reg_no',
+            'ot_suites_count', 'has_helipad', 'parking_capacity',
+            'affiliated_doctors', 'offered_tests'
         )
+
+    def get_affiliated_doctors(self, obj):
+        if not obj.location:
+            return []
+        try:
+            from doctors.serializers import DoctorAffiliationSerializer
+            affs = obj.location.affiliations.select_related('doctor', 'location').prefetch_related('schedules', 'doctor__specialties').all()
+            return DoctorAffiliationSerializer(affs, many=True).data
+        except Exception:
+            return []
+
+    def get_offered_tests(self, obj):
+        if not obj.location:
+            return []
+        try:
+            from tests.serializers import FacilityTestSerializer
+            fts = obj.location.offered_tests.select_related('test', 'test__category').all()
+            return FacilityTestSerializer(fts, many=True).data
+        except Exception:
+            return []
 
     def create(self, validated_data):
         from services.facilities import create_hospital

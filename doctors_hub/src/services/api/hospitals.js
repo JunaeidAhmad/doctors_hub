@@ -139,6 +139,7 @@ export async function getHospitalById(id) {
   const res = await fetchWithTimeout(`${BASE_URL}/hospitals/${id}/`, { headers: getHeaders() });
   return flattenFacility(await handleResponse(res));
 }
+export const getBranchById = getHospitalById;
 
 export async function createHospital(data) {
   clearCache();

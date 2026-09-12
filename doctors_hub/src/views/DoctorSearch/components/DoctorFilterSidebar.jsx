@@ -17,7 +17,9 @@ export default function DoctorFilterSidebar({
   onDayChange,
   onGenderChange,
   onResetAll,
-  onApplyFilters
+  onApplyFilters,
+  onClose,
+  className = 'hidden lg:block'
 }) {
   const districtList = useMemo(() => {
     if (!division || division === 'All Bangladesh') {
@@ -44,21 +46,33 @@ export default function DoctorFilterSidebar({
   };
 
   return (
-    <aside className="w-full lg:w-80 shrink-0 bg-surface-container-lowest rounded-xl border border-outline-variant shadow-xs p-5 space-y-6 lg:sticky lg:top-24">
+    <aside className={`w-full lg:w-80 shrink-0 bg-surface-container-lowest rounded-xl border border-outline-variant shadow-xs p-5 space-y-6 lg:sticky lg:top-24 ${className}`}>
       {/* Sidebar Header */}
       <div className="flex items-center justify-between pb-3 border-b border-outline-variant">
         <div className="flex items-center gap-2">
           <span className="material-symbols-outlined text-primary text-[20px]">tune</span>
           <h3 className="text-base font-bold text-on-surface">Filters</h3>
         </div>
-        <button
-          onClick={onResetAll}
-          className="text-xs font-semibold text-primary hover:underline flex items-center gap-1 cursor-pointer transition-colors"
-          type="button"
-        >
-          <span className="material-symbols-outlined text-[15px]">restart_alt</span>
-          Reset All
-        </button>
+        <div className="flex items-center gap-2.5">
+          <button
+            onClick={onResetAll}
+            className="text-xs font-semibold text-primary hover:underline flex items-center gap-1 cursor-pointer transition-colors"
+            type="button"
+          >
+            <span className="material-symbols-outlined text-[15px]">restart_alt</span>
+            Reset All
+          </button>
+          {onClose && (
+            <button
+              type="button"
+              onClick={onClose}
+              className="lg:hidden p-1 text-on-surface-variant hover:text-on-surface cursor-pointer rounded-md hover:bg-surface-container-low transition-colors flex items-center justify-center"
+              title="Close Filters"
+            >
+              <span className="material-symbols-outlined text-[18px]">close</span>
+            </button>
+          )}
+        </div>
       </div>
 
       {/* LOCATION Filter Section */}

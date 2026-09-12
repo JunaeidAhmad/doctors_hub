@@ -131,7 +131,7 @@ export default function DoctorCard({
               className="w-24 h-24 rounded-2xl object-cover border border-outline-variant shadow-inner bg-surface-container-low"
             />
             <div
-              className="absolute -bottom-1 -right-1 w-6 h-6 rounded-full bg-[#006877] ring-2 ring-white dark:ring-slate-900 flex items-center justify-center shadow-xs"
+              className="absolute -bottom-1 -right-1 w-6 h-6 rounded-full bg-[#006877] ring-2 ring-white flex items-center justify-center shadow-xs"
               title="Chamber Appointment Available"
             >
               <span className="material-symbols-outlined text-white text-[13px]">
@@ -146,17 +146,17 @@ export default function DoctorCard({
             <div className="flex flex-col sm:flex-row sm:items-start justify-between gap-2 sm:gap-4">
               <div className="min-w-0 flex-1">
                 {/* Non-clickable Doctor Name without designation */}
-                <h3 className="font-bold text-xl sm:text-[22px] text-slate-900 dark:text-slate-100 tracking-tight leading-snug">
+                <h3 className="font-bold text-xl sm:text-[22px] text-slate-900 tracking-tight leading-snug">
                   {doctorDisplayName}
                 </h3>
                 {/* Qualifications Line in Cyan/Teal */}
-                <p className="text-[13px] sm:text-sm font-semibold text-[#007a8c] dark:text-cyan-400 mt-1 leading-snug">
+                <p className="text-[13px] sm:text-sm font-semibold text-[#007a8c] mt-1 leading-snug">
                   {qualification}
                 </p>
               </div>
 
               {/* BMDC Verified Badge */}
-              <div className="inline-flex items-center gap-1.5 px-3 py-1 rounded-full border border-sky-300/80 bg-sky-50/60 dark:bg-sky-950/40 dark:border-sky-800 text-[#0284c7] font-bold text-xs shrink-0 self-start sm:self-auto shadow-2xs">
+              <div className="inline-flex items-center gap-1.5 px-3 py-1 rounded-full border border-sky-300/80 bg-sky-50/60 text-[#0284c7] font-bold text-xs shrink-0 self-start sm:self-auto shadow-2xs">
                 <span className="material-symbols-outlined text-[#007a8c] text-[16px]" style={{ fontVariationSettings: "'FILL' 1" }}>
                   verified
                 </span>
@@ -165,29 +165,29 @@ export default function DoctorCard({
             </div>
 
             {/* Institution Row: Gray Building Icon + Normal Designation + Bold Institution Name */}
-            <div className="mt-2 text-xs sm:text-sm text-slate-600 dark:text-slate-300 flex items-center gap-1.5">
-              <span className="material-symbols-outlined text-slate-400 text-[18px] shrink-0">apartment</span>
-              <span className="truncate">
-                {designation && <span className="text-slate-600 dark:text-slate-400 font-normal">{designation}, </span>}
-                <strong className="text-slate-900 dark:text-slate-100 font-bold">{institution}</strong>
+            <div className="mt-2 text-xs sm:text-sm text-slate-600 flex items-start sm:items-center gap-1.5">
+              <span className="material-symbols-outlined text-slate-400 text-[18px] shrink-0 mt-0.5 sm:mt-0">apartment</span>
+              <span className="leading-snug break-words">
+                {designation && <span className="text-slate-600 font-normal">{designation}, </span>}
+                <strong className="text-slate-900 font-bold">{institution}</strong>
               </span>
             </div>
 
             {/* Metrics Row: Blue Ribbon + Experience • Star + Rating (Instant Booking Confirmation removed) */}
             <div className="mt-2.5 flex flex-wrap items-center gap-2 sm:gap-2.5 text-xs sm:text-sm">
-              <span className="inline-flex items-center gap-1 text-slate-700 dark:text-slate-300 font-medium">
+              <span className="inline-flex items-center gap-1 text-slate-700 font-medium">
                 <span className="material-symbols-outlined text-[#0284c7] text-[18px]">workspace_premium</span>
                 <span>{experience}</span>
               </span>
 
-              <span className="text-slate-300 dark:text-slate-600">•</span>
+              <span className="text-slate-300">•</span>
 
-              <span className="inline-flex items-center gap-1 text-slate-700 dark:text-slate-300 font-medium">
+              <span className="inline-flex items-center gap-1 text-slate-700 font-medium">
                 <span className="material-symbols-outlined text-[#007a8c] text-[16px]" style={{ fontVariationSettings: "'FILL' 1" }}>
                   star
                 </span>
-                <strong className="text-slate-900 dark:text-slate-100 font-bold">{rating}</strong>
-                <span className="text-slate-500 dark:text-slate-400">({reviewCount} reviews)</span>
+                <strong className="text-slate-900 font-bold">{rating}</strong>
+                <span className="text-slate-500">({reviewCount} reviews)</span>
               </span>
             </div>
           </div>
@@ -235,7 +235,7 @@ export default function DoctorCard({
               type="button"
               onClick={() => {
                 if (onViewProfile) {
-                  onViewProfile(doctor);
+                  onViewProfile({ ...doctor, chambers });
                 } else {
                   const targetSlug = doctor?.slug || doctor?.id;
                   if (targetSlug) {

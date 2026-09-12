@@ -102,6 +102,16 @@ class Hospital(models.Model):
     category = models.ForeignKey(HospitalCategory, on_delete=models.SET_NULL, null=True, blank=True, related_name="hospitals")
     services = models.ManyToManyField(HospitalService, related_name="hospitals", blank=True)
     has_diagnostic_center = models.BooleanField(default=True)
+    bed_capacity = models.IntegerField(default=650)
+    icu_beds_total = models.IntegerField(default=48)
+    icu_beds_available = models.IntegerField(default=4)
+    emergency_phone = models.CharField(max_length=50, default="10678", blank=True)
+    ambulance_phone = models.CharField(max_length=50, default="+880 1700-000000", blank=True)
+    accreditation = models.CharField(max_length=150, default="JCI Accredited Facility", blank=True)
+    dghs_reg_no = models.CharField(max_length=100, default="DGHS Reg #H-098234", blank=True)
+    ot_suites_count = models.IntegerField(default=16)
+    has_helipad = models.BooleanField(default=True)
+    parking_capacity = models.CharField(max_length=100, default="280 Car Parking Available", blank=True)
 
     def __str__(self):
         return f"Hospital: {self.location.name}"

@@ -13,6 +13,9 @@ export default function DiagnosticsFilterSidebar({
   onOwnershipChange,
   ownershipCounts = {},
   onResetAll,
+  onApplyFilters,
+  onClose,
+  className = 'hidden lg:block',
 }) {
   // Clean division name
   const cleanDivision = (division || '').replace(/\s*Division$/i, '').trim();
@@ -25,21 +28,33 @@ export default function DiagnosticsFilterSidebar({
   const availableAreas = DISTRICT_THANAS[activeDistrict] || DISTRICT_THANAS['Dhaka'] || [];
 
   return (
-    <aside className="bg-surface-container-lowest rounded-2xl border border-outline-variant/60 p-6 shadow-sm space-y-6">
+    <aside className={`bg-surface-container-lowest rounded-2xl border border-outline-variant/60 p-6 shadow-sm space-y-6 ${className}`}>
       {/* Header */}
       <div className="flex items-center justify-between pb-4 border-b border-outline-variant/60">
         <div className="flex items-center gap-2 text-on-surface font-title-md font-bold">
           <span className="material-symbols-outlined text-primary text-[20px]">tune</span>
           <span>Filters</span>
         </div>
-        <button
-          type="button"
-          onClick={onResetAll}
-          className="text-xs font-semibold text-primary hover:underline flex items-center gap-1 cursor-pointer transition-colors"
-        >
-          <span className="material-symbols-outlined text-[15px]">restart_alt</span>
-          Reset All
-        </button>
+        <div className="flex items-center gap-2.5">
+          <button
+            type="button"
+            onClick={onResetAll}
+            className="text-xs font-semibold text-primary hover:underline flex items-center gap-1 cursor-pointer transition-colors"
+          >
+            <span className="material-symbols-outlined text-[15px]">restart_alt</span>
+            Reset All
+          </button>
+          {onClose && (
+            <button
+              type="button"
+              onClick={onClose}
+              className="lg:hidden p-1 text-on-surface-variant hover:text-on-surface cursor-pointer rounded-md hover:bg-surface-container-low transition-colors flex items-center justify-center"
+              title="Close Filters"
+            >
+              <span className="material-symbols-outlined text-[18px]">close</span>
+            </button>
+          )}
+        </div>
       </div>
 
       {/* Location Section */}
@@ -225,6 +240,18 @@ export default function DiagnosticsFilterSidebar({
           })}
         </div>
       </div>
+
+      {/* Apply / Close Filters Button on Mobile */}
+      {onApplyFilters && (
+        <button
+          type="button"
+          onClick={onApplyFilters}
+          className="lg:hidden w-full py-2.5 bg-primary hover:bg-primary-container text-on-primary font-semibold text-xs sm:text-sm rounded-lg transition-all shadow-xs flex items-center justify-center gap-2 active:scale-[0.98] cursor-pointer"
+        >
+          <span className="material-symbols-outlined text-[16px]">check</span>
+          Apply Filters
+        </button>
+      )}
     </aside>
   );
 }

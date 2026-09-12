@@ -236,6 +236,7 @@ export default function DiagnosticsSearchPage({
   const [ownership, setOwnership] = useState(urlOwnership);
   const [sortBy, setSortBy] = useState(urlSort);
   const [currentPage, setCurrentPage] = useState(urlPage);
+  const [isMobileFiltersOpen, setIsMobileFiltersOpen] = useState(false);
 
   // Data States
   const [diagnosticCenters, setDiagnosticCenters] = useState([]);
@@ -662,6 +663,13 @@ export default function DiagnosticsSearchPage({
   const cleanDist = (district || '').replace(/\s*District$/i, '').trim().toLowerCase();
   const isAllDist = !cleanDist || cleanDist === 'all districts' || cleanDist === 'all';
   const isDefaultLanding = !searchKeyword.trim() && selectedCategory === 'all' && (cleanDist === 'dhaka' || isAllDist);
+  const hasActiveFilters = Boolean(
+    (searchKeyword && searchKeyword.trim()) ||
+    (selectedCategory && selectedCategory !== 'all') ||
+    (fulfillment && fulfillment !== 'all') ||
+    (ownership && ownership !== 'all') ||
+    (division && division !== 'All Bangladesh' && division !== 'Dhaka Division')
+  );
 
   // Pagination calculations - 4 cards per page matching Stitch layout
   const pageSize = 4;
@@ -738,8 +746,26 @@ export default function DiagnosticsSearchPage({
 
         {/* Two-Column Diagnostic Marketplace Layout */}
         <div className="grid grid-cols-1 lg:grid-cols-12 gap-8 items-start">
+          {/* Mobile Filter Toggle Icon Button at the Right */}
+          <div className="lg:hidden col-span-1 flex justify-end">
+            <button
+              type="button"
+              onClick={() => setIsMobileFiltersOpen((prev) => !prev)}
+              className="relative p-2.5 bg-surface-container-lowest hover:bg-surface-container-low border border-outline-variant rounded-xl text-primary shadow-xs transition-all flex items-center justify-center cursor-pointer active:scale-95"
+              title={isMobileFiltersOpen ? "Hide filters" : "Open filters"}
+              aria-label={isMobileFiltersOpen ? "Hide filters" : "Open filters"}
+            >
+              <span className="material-symbols-outlined text-[22px]">
+                {isMobileFiltersOpen ? 'close' : 'tune'}
+              </span>
+              {!isMobileFiltersOpen && hasActiveFilters && (
+                <span className="absolute top-1.5 right-1.5 w-2 h-2 rounded-full bg-primary ring-2 ring-surface-container-lowest" />
+              )}
+            </button>
+          </div>
+
           {/* LEFT SIDEBAR: Clinical Filters */}
-          <div className="lg:col-span-3">
+          <div className={`${isMobileFiltersOpen ? 'col-span-1 block' : 'hidden'} lg:block lg:col-span-3`}>
             <DiagnosticsFilterSidebar
               division={division}
               district={district}
@@ -768,11 +794,17 @@ export default function DiagnosticsSearchPage({
                 ngo: 3,
               }}
               onResetAll={handleResetAll}
+              onClose={() => setIsMobileFiltersOpen(false)}
+              onApplyFilters={() => {
+                setCurrentPage(1);
+                setIsMobileFiltersOpen(false);
+              }}
+              className={isMobileFiltersOpen ? 'block' : 'hidden lg:block'}
             />
           </div>
 
           {/* RIGHT TEST CATALOG & COMPARISON CARDS */}
-          <section className="lg:col-span-9 space-y-6">
+          <section className="col-span-1 lg:col-span-9 space-y-6">
             <DiagnosticsResultsHeader
               locationLabel={locationLabel}
               totalCount={processedTests.length}
