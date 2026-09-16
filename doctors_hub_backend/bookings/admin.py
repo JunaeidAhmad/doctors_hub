@@ -25,8 +25,8 @@ class DoctorBookingAdmin(admin.ModelAdmin):
 
 @admin.register(TestBooking)
 class TestBookingAdmin(admin.ModelAdmin):
-    list_display = ('id', 'patient_name', 'patient_phone', 'facility_test', 'pickup_date', 'pickup_district', 'status')
-    list_filter = ('status', 'pickup_date', 'pickup_district')
+    list_display = ('id', 'patient_name', 'patient_phone', 'facility_test', 'pickup_date', 'status')
+    list_filter = ('status', 'pickup_date')
     search_fields = ('patient_name', 'patient_phone')
 
 

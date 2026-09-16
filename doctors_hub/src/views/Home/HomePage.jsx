@@ -105,9 +105,7 @@ export default function HomePage({
       <LandingHubPortal />
 
       {/* 9. THE REST (MOBILE APP DOWNLOAD BANNER) */}
-      <div id="app-download">
-        <AppDownloadBanner showToast={showToast} />
-      </div>
+      <AppDownloadBanner showToast={showToast} />
     </div>
   );
 }

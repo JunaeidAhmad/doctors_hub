@@ -10,7 +10,7 @@ export default function DiagnosticsResultsHeader({
     <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-4">
       <div>
         <h2 className="font-title-lg text-title-lg text-on-surface font-bold">
-          Showing Verified Diagnostics in {locationLabel}
+          Showing {totalCount} Verified Diagnostics in {locationLabel}
         </h2>
         <p className="font-body-sm text-xs text-on-surface-variant mt-0.5">
           Real-time lab slots and transparent fee schedules

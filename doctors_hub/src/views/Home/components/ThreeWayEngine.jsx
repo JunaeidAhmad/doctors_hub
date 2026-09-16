@@ -4,18 +4,30 @@ import { api, ensureArray } from '../../../services/api';
 import CascadingLocationFilter from '../../../components/CascadingLocationFilter';
 
 const FALLBACK_TEST_CATS = [
-  { id: 'cardiac-tests', name: 'Cardiac Tests' },
-  { id: 'hematology', name: 'Hematology & Blood' },
-  { id: 'biochemistry', name: 'Biochemistry & LFT/KFT' },
-  { id: 'radiology-imaging', name: 'Radiology & X-Ray' },
-  { id: 'ultrasound-usg', name: 'Ultrasound / USG' },
-  { id: 'ct-scan', name: 'CT Scan Body Imaging' },
-  { id: 'mri', name: 'MRI Diagnostics' },
-  { id: 'neuro-tests', name: 'Neuro Diagnostics' },
-  { id: 'genetic-molecular', name: 'Genetic & Molecular' },
-  { id: 'endoscopy-colonoscopy', name: 'Endoscopy & Colonoscopy' },
-  { id: 'serology', name: 'Serology & Immunity' },
-  { id: 'microbiology', name: 'Microbiology & Culture' },
+  { id: 'cardiac-tests', name: 'Cardiac Tests', slug: 'cardiac-tests' },
+  { id: 'hematology', name: 'Hematology & Blood', slug: 'hematology' },
+  { id: 'biochemistry', name: 'Biochemistry & LFT/KFT', slug: 'biochemistry' },
+  { id: 'radiology-imaging', name: 'Radiology & X-Ray', slug: 'radiology-imaging' },
+  { id: 'ultrasound-usg', name: 'Ultrasound / USG', slug: 'ultrasound-usg' },
+  { id: 'ct-scan', name: 'CT Scan Body Imaging', slug: 'ct-scan' },
+  { id: 'mri', name: 'MRI Diagnostics', slug: 'mri' },
+  { id: 'neuro-tests', name: 'Neuro Diagnostics', slug: 'neuro-tests' },
+  { id: 'genetic-molecular', name: 'Genetic & Molecular', slug: 'genetic-molecular' },
+  { id: 'endoscopy-colonoscopy', name: 'Endoscopy & Colonoscopy', slug: 'endoscopy-colonoscopy' },
+  { id: 'serology', name: 'Serology & Immunity', slug: 'serology' },
+  { id: 'microbiology', name: 'Microbiology & Culture', slug: 'microbiology' },
+  { id: 'histopathology', name: 'Histopathology & Biopsy', slug: 'histopathology' },
+  { id: 'hormone-endocrinology', name: 'Hormones & Thyroid', slug: 'hormone-endocrinology' },
+  { id: 'urine-renal', name: 'Urine & Renal Tests', slug: 'urine-renal' },
+  { id: 'allergy-immunology', name: 'Allergy & Immunology', slug: 'allergy-immunology' },
+  { id: 'dental-imaging', name: 'Dental X-Ray & OPG', slug: 'dental-imaging' },
+  { id: 'mammography', name: 'Mammography & Breast', slug: 'mammography' },
+  { id: 'pulmonary-pft', name: 'Pulmonary Function (PFT)', slug: 'pulmonary-pft' },
+  { id: 'bone-dexa', name: 'Bone Mineral DEXA Scan', slug: 'bone-dexa' },
+  { id: 'infectious-diseases', name: 'Infectious Disease Panels', slug: 'infectious-diseases' },
+  { id: 'ophthalmology-diagnostics', name: 'Eye & Retinal Imaging', slug: 'ophthalmology-diagnostics' },
+  { id: 'pediatric-diagnostics', name: 'Pediatric Diagnostics', slug: 'pediatric-diagnostics' },
+  { id: 'health-checkup-packages', name: 'Health Checkup Packages', slug: 'health-checkup-packages' },
 ];
 
 export default function ThreeWayEngine({
@@ -229,7 +241,7 @@ export default function ThreeWayEngine({
                     <option value="">All Test Categories</option>
 
                     {(testCategories.length > 0 ? testCategories : FALLBACK_TEST_CATS).filter((cat) => cat && cat.id !== 'all').map((cat) => (
-                      <option key={cat.id} value={cat.id}>
+                      <option key={cat.slug || cat.id} value={cat.slug || cat.id}>
                         {cat.name}
                       </option>
                     ))}

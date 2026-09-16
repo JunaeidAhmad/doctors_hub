@@ -10,6 +10,7 @@ import { useDebounce } from '../../hooks/useDebounce';
 import { DIVISIONS, findDivisionForDistrict } from '../../data/constants';
 import Pagination from '../../components/Pagination';
 import CascadingLocationFilter from '../../components/CascadingLocationFilter';
+import { formatFacilityName } from '../../utils/facilityUtils';
 
 
 
@@ -39,7 +40,7 @@ function HospitalCardImage({ hospital }) {
 
       <img
         src={error ? fallbackImg : rawImg}
-        alt={hospital.name}
+        alt={formatFacilityName(hospital)}
         loading="lazy"
         decoding="async"
         onLoad={() => setLoaded(true)}
@@ -71,7 +72,7 @@ function HospitalCardImage({ hospital }) {
           </div>
         )}
         <h3 className="text-lg font-extrabold text-white group-hover:text-emerald-300 transition-colors flex items-center gap-2">
-          <span>{hospital.name}{hospital.branch ? ` - ${hospital.branch}` : ''}</span>
+          <span>{formatFacilityName(hospital)}</span>
           {hospital.is_verified && (
             <CheckCircle className="w-4 h-4 text-emerald-400 shrink-0" />
           )}

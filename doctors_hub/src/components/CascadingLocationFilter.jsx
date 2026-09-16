@@ -1,6 +1,7 @@
-import React from 'react';
+import React, { useState, useEffect } from 'react';
 import { MapPin, ChevronRight } from 'lucide-react';
 import { DIVISIONS, DIVISION_DISTRICTS, DISTRICT_THANAS, getDistrictsForDivision, getThanasForDistrict } from '../data/constants';
+import { getDivisions as fetchDivisionsApi, getDistricts as fetchDistrictsApi, getThanas as fetchThanasApi } from '../services/api/geo';
 
 /**
  * CascadingLocationFilter
@@ -20,13 +21,70 @@ export default function CascadingLocationFilter({
   className = '',
   divisionOnly = false
 }) {
-  const currentDistricts = division && division !== 'All Bangladesh' 
-    ? getDistrictsForDivision(division) 
-    : [];
+  const [apiDivisions, setApiDivisions] = useState([]);
+  const [apiDistricts, setApiDistricts] = useState([]);
+  const [apiThanas, setApiThanas] = useState([]);
 
-  const currentThanas = district && district !== 'All Districts' 
-    ? getThanasForDistrict(district) 
-    : [];
+  useEffect(() => {
+    let isMounted = true;
+    fetchDivisionsApi()
+      .then((data) => {
+        if (isMounted && Array.isArray(data) && data.length > 0) {
+          setApiDivisions(data);
+        }
+      })
+      .catch(() => {});
+    return () => { isMounted = false; };
+  }, []);
+
+  const selectedDivObj = apiDivisions.find((d) => d.name.toLowerCase() === (division || '').toLowerCase());
+
+  useEffect(() => {
+    let isMounted = true;
+    if (selectedDivObj?.id) {
+      fetchDistrictsApi(selectedDivObj.id)
+        .then((data) => {
+          if (isMounted && Array.isArray(data)) {
+            setApiDistricts(data);
+          }
+        })
+        .catch(() => {});
+    } else {
+      setApiDistricts([]);
+    }
+    return () => { isMounted = false; };
+  }, [selectedDivObj?.id]);
+
+  const selectedDistObj = apiDistricts.find((d) => d.name.toLowerCase() === (district || '').toLowerCase());
+
+  useEffect(() => {
+    let isMounted = true;
+    if (selectedDistObj?.id) {
+      fetchThanasApi(selectedDistObj.id)
+        .then((data) => {
+          if (isMounted && Array.isArray(data)) {
+            setApiThanas(data);
+          }
+        })
+        .catch(() => {});
+    } else {
+      setApiThanas([]);
+    }
+    return () => { isMounted = false; };
+  }, [selectedDistObj?.id]);
+
+  // Use dynamic API names if available, falling back seamlessly to local constants
+  const currentDivisions = apiDivisions.length > 0
+    ? apiDivisions.map((d) => d.name)
+    : DIVISIONS;
+
+  const currentDistricts = apiDistricts.length > 0
+    ? apiDistricts.map((d) => d.name)
+    : (division && division !== 'All Bangladesh' ? getDistrictsForDivision(division) : []);
+
+  const currentThanas = apiThanas.length > 0
+    ? apiThanas.map((t) => t.name)
+    : (district && district !== 'All Districts' ? getThanasForDistrict(district) : []);
 
   const isDark = theme === 'dark';
 

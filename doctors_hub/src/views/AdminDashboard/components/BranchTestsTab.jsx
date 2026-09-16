@@ -5,6 +5,7 @@ import BranchTestModal from './modals/BranchTestModal';
 import AdminPagination from './AdminPagination';
 import { api, ensureArray } from '../../../services/api';
 import { useDebounce } from '../../../hooks/useDebounce';
+import { formatFacilityName } from '../../../utils/facilityUtils';
 
 export default function BranchTestsTab() {
   const {
@@ -178,10 +179,7 @@ export default function BranchTestsTab() {
                               </span>
                             )}
                             <div>
-                              <div className="text-white text-xs font-bold">{facilityName}</div>
-                              <div className="text-[10px] text-slate-400 font-normal">
-                                {branchName}
-                              </div>
+                              <div className="text-white text-xs font-bold">{formatFacilityName(facilityName, branchName)}</div>
                             </div>
                           </div>
                         </td>

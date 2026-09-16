@@ -5,222 +5,16 @@ import {
 } from 'lucide-react';
 import { useAdminContext } from '../../context/AdminContext';
 import { api } from '../../../../services/api';
+import TimePickerInput from '../../../../components/TimePickerInput';
+import {
+  DAYS_OF_WEEK,
+  TIME_PRESETS,
+  formatDisplayTime,
+  calculateSlotDuration,
+  checkScheduleConflict
+} from '../../../../utils/scheduleUtils';
+import { formatFacilityName } from '../../../../utils/facilityUtils';
 
-const DAYS_OF_WEEK = [
-  'Saturday', 'Sunday', 'Monday', 'Tuesday', 
-  'Wednesday', 'Thursday', 'Friday'
-];
-
-// Helper: convert HH:MM:SS or HH:MM to total minutes
-const timeToMinutes = (timeStr) => {
-  if (!timeStr) return 0;
-  const parts = String(timeStr).slice(0, 5).split(':');
-  return parseInt(parts[0] || '0', 10) * 60 + parseInt(parts[1] || '0', 10);
-};
-
-// Helper: convert 24h "HH:MM:SS" or "HH:MM" to 12-hour object
-const parse24To12 = (timeStr) => {
-  if (!timeStr) return { hour12: 5, minute: '00', period: 'PM' };
-  const parts = String(timeStr).split(':');
-  const h24 = parseInt(parts[0] || '0', 10);
-  const m = parseInt(parts[1] || '0', 10);
-  const period = h24 >= 12 ? 'PM' : 'AM';
-  let hour12 = h24 % 12;
-  if (hour12 === 0) hour12 = 12;
-  const minute = String(Number.isNaN(m) ? 0 : m).padStart(2, '0');
-  return { hour12, minute, period };
-};
-
-// Helper: convert 12-hour values back to "HH:MM:00"
-const format12To24 = (hour12, minute, period) => {
-  let h = parseInt(hour12, 10) || 12;
-  if (period === 'AM') {
-    if (h === 12) h = 0;
-  } else {
-    if (h !== 12) h += 12;
-  }
-  const m = String(parseInt(minute, 10) || 0).padStart(2, '0');
-  return `${String(h).padStart(2, '0')}:${m}:00`;
-};
-
-// Helper: format for human readable 12-hour display e.g. "05:00 PM"
-const formatDisplayTime = (timeStr) => {
-  if (!timeStr) return '';
-  const { hour12, minute, period } = parse24To12(timeStr);
-  return `${String(hour12).padStart(2, '0')}:${minute} ${period}`;
-};
-
-// Helper: calculate readable duration between two times
-const calculateSlotDuration = (startStr, endStr) => {
-  const startMin = timeToMinutes(startStr);
-  const endMin = timeToMinutes(endStr);
-  if (endMin <= startMin) return null;
-  const diff = endMin - startMin;
-  const hours = Math.floor(diff / 60);
-  const mins = diff % 60;
-  if (mins === 0) return `${hours} hr${hours > 1 ? 's' : ''}`;
-  if (hours === 0) return `${mins} min${mins > 1 ? 's' : ''}`;
-  return `${hours} hr${hours > 1 ? 's' : ''} ${mins} min`;
-};
-
-// Quick Schedule Presets
-const TIME_PRESETS = [
-  { label: 'Morning', icon: '🌅', start: '09:00:00', end: '13:00:00', desc: '09:00 AM – 01:00 PM' },
-  { label: 'Afternoon', icon: '☀️', start: '14:00:00', end: '17:00:00', desc: '02:00 PM – 05:00 PM' },
-  { label: 'Evening', icon: '🌇', start: '17:00:00', end: '21:00:00', desc: '05:00 PM – 09:00 PM' },
-  { label: 'Night', icon: '🌙', start: '19:00:00', end: '22:00:00', desc: '07:00 PM – 10:00 PM' },
-];
-
-// Helper: validate schedule time ordering and check overlap across doctor affiliations
-const checkScheduleConflict = (targetDay, startStr, endStr, allAffiliations, currentScheduleId = null) => {
-  const startMin = timeToMinutes(startStr);
-  const endMin = timeToMinutes(endStr);
-
-  if (startMin >= endMin) {
-    return {
-      hasConflict: true,
-      error: 'End time must be strictly after start time.'
-    };
-  }
-
-  for (const aff of allAffiliations || []) {
-    const schedules = Array.isArray(aff.schedules) ? aff.schedules : [];
-    for (const s of schedules) {
-      if (currentScheduleId && String(s.id) === String(currentScheduleId)) continue;
-      if (s.day_of_week === targetDay) {
-        const sStartMin = timeToMinutes(s.start_time);
-        const sEndMin = timeToMinutes(s.end_time);
-
-        // Interval overlap: start1 < end2 && end1 > start2
-        if (startMin < sEndMin && endMin > sStartMin) {
-          const locName = aff.hospital?.name || aff.diagnostic_center?.name || aff.chamber_name || aff.facility_name || aff.location?.name || 'another chamber/location';
-          const sStartFormatted = formatDisplayTime(s.start_time);
-          const sEndFormatted = formatDisplayTime(s.end_time);
-          return {
-            hasConflict: true,
-            conflictSlot: s,
-            locationName: locName,
-            error: `Schedule conflict on ${targetDay}: Overlaps with an existing slot (${sStartFormatted} - ${sEndFormatted}) at ${locName}.`
-          };
-        }
-      }
-    }
-  }
-
-  return { hasConflict: false };
-};
-
-// Reusable User-Friendly 12-Hour Time Picker Component
-function TimePickerInput({ label, value, onChange, hasError }) {
-  const { hour12, minute, period } = parse24To12(value);
-
-  const handleHourChange = (newHour) => {
-    onChange(format12To24(newHour, minute, period));
-  };
-
-  const handleMinuteChange = (newMinute) => {
-    onChange(format12To24(hour12, newMinute, period));
-  };
-
-  const handlePeriodChange = (newPeriod) => {
-    onChange(format12To24(hour12, minute, newPeriod));
-  };
-
-  const hours = [1, 2, 3, 4, 5, 6, 7, 8, 9, 10, 11, 12];
-  const standardMinutes = ['00', '05', '10', '15', '20', '25', '30', '35', '40', '45', '50', '55'];
-  const minuteOptions = standardMinutes.includes(minute)
-    ? standardMinutes
-    : [...standardMinutes, minute].sort((a, b) => Number(a) - Number(b));
-
-  return (
-    <div className={`p-3.5 rounded-2xl bg-slate-950/80 border transition-all ${
-      hasError ? 'border-amber-500/50 bg-amber-500/5' : 'border-slate-800 hover:border-slate-700/90'
-    }`}>
-      <div className="flex items-center justify-between mb-2.5">
-        <label className="text-slate-300 font-bold text-xs flex items-center gap-1.5">
-          <Clock className="w-3.5 h-3.5 text-cyan-400" />
-          <span>{label}</span>
-        </label>
-        <span className="text-[11px] font-mono font-bold px-2 py-0.5 rounded-lg bg-cyan-500/10 border border-cyan-500/20 text-cyan-300">
-          {formatDisplayTime(value)}
-        </span>
-      </div>
-
-      <div className="flex items-center gap-2">
-        {/* Hour Select */}
-        <div className="flex-1">
-          <select
-            value={hour12}
-            onChange={(e) => handleHourChange(e.target.value)}
-            className="w-full bg-slate-900 border border-slate-700/80 rounded-xl px-2 py-2 text-center text-white text-xs font-bold font-mono focus:outline-none focus:border-cyan-500 focus:ring-1 focus:ring-cyan-500 cursor-pointer"
-            aria-label={`${label} Hour`}
-          >
-            {hours.map((h) => (
-              <option key={h} value={h} className="bg-slate-900 text-white">
-                {String(h).padStart(2, '0')}
-              </option>
-            ))}
-          </select>
-          <span className="block text-[9px] text-slate-500 text-center mt-1 uppercase font-semibold tracking-wider">
-            Hour
-          </span>
-        </div>
-
-        <span className="text-slate-500 font-bold text-base mb-4">:</span>
-
-        {/* Minute Select */}
-        <div className="flex-1">
-          <select
-            value={minute}
-            onChange={(e) => handleMinuteChange(e.target.value)}
-            className="w-full bg-slate-900 border border-slate-700/80 rounded-xl px-2 py-2 text-center text-white text-xs font-bold font-mono focus:outline-none focus:border-cyan-500 focus:ring-1 focus:ring-cyan-500 cursor-pointer"
-            aria-label={`${label} Minute`}
-          >
-            {minuteOptions.map((m) => (
-              <option key={m} value={m} className="bg-slate-900 text-white">
-                {m}
-              </option>
-            ))}
-          </select>
-          <span className="block text-[9px] text-slate-500 text-center mt-1 uppercase font-semibold tracking-wider">
-            Min
-          </span>
-        </div>
-
-        {/* AM / PM Segmented Switch */}
-        <div className="flex-1">
-          <div className="flex bg-slate-900 border border-slate-700/80 rounded-xl p-0.5">
-            <button
-              type="button"
-              onClick={() => handlePeriodChange('AM')}
-              className={`flex-1 py-1.5 rounded-lg text-[11px] font-bold transition-all cursor-pointer ${
-                period === 'AM'
-                  ? 'bg-cyan-600 text-white shadow-sm shadow-cyan-600/30'
-                  : 'text-slate-400 hover:text-slate-200'
-              }`}
-            >
-              AM
-            </button>
-            <button
-              type="button"
-              onClick={() => handlePeriodChange('PM')}
-              className={`flex-1 py-1.5 rounded-lg text-[11px] font-bold transition-all cursor-pointer ${
-                period === 'PM'
-                  ? 'bg-cyan-600 text-white shadow-sm shadow-cyan-600/30'
-                  : 'text-slate-400 hover:text-slate-200'
-              }`}
-            >
-              PM
-            </button>
-          </div>
-          <span className="block text-[9px] text-slate-500 text-center mt-1 uppercase font-semibold tracking-wider">
-            AM / PM
-          </span>
-        </div>
-      </div>
-    </div>
-  );
-}
 
 export default function DoctorScheduleManager() {
   const {
@@ -256,7 +50,7 @@ export default function DoctorScheduleManager() {
       .filter(s => s.day_of_week === dayOfWeek)
       .map(s => ({
         ...s,
-        loc: a.hospital?.name || a.diagnostic_center?.name || a.chamber_name || a.facility_name || 'Practice Location'
+        loc: formatFacilityName(a.hospital || a.diagnostic_center || a.location || a) || a.chamber_name || a.facility_name || 'Practice Location'
       }))
   );
 
@@ -461,7 +255,7 @@ export default function DoctorScheduleManager() {
                 >
                   {affiliations.map(aff => (
                     <option key={aff.id} value={aff.id}>
-                      {aff.hospital?.name || aff.diagnostic_center?.name || aff.facility_name || aff.chamber_name}
+                      {formatFacilityName(aff.hospital || aff.diagnostic_center || aff.location || aff) || aff.facility_name || aff.chamber_name}
                     </option>
                   ))}
                 </select>

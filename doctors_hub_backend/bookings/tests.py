@@ -193,7 +193,6 @@ class EnhancedFeaturesTestCase(TestCase):
             "patient_name": "Charlie Brown",
             "patient_phone": phone,
             "pickup_address_line": "House 10, Road 4",
-            "pickup_district": "Dhaka",
             "otp_code": "123"
         }
         # Test endpoint

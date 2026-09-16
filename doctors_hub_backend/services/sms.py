@@ -1,5 +1,6 @@
 import json
 import logging
+import re
 import urllib.parse
 import urllib.request
 from django.conf import settings
@@ -73,6 +74,38 @@ def send_sms_via_sms_bd(phone: str, message: str) -> dict:
         return {"success": False, "error": str(e)}
 
 
+def format_facility_name_sms(name: str, branch: str) -> str:
+    """
+    Canonical rule: Normalize all suffix forms (- Branch, , Branch, bare Branch) to canonical `Name (Branch)`,
+    unless the name is identical to the branch or already enclosed in parentheses.
+    This ensures identical presentation parity between the UI and SMS notifications.
+    """
+    name = (name or "").strip()
+    branch = (branch or "").strip()
+    if not name:
+        return f"({branch})" if branch else ""
+    if not branch:
+        return name
+
+    lower_name = name.lower()
+    lower_branch = branch.lower()
+
+    if lower_name == lower_branch:
+        return name
+
+    if f"({lower_branch})" in lower_name:
+        return name
+
+    # Normalize all trailing delimiter forms ("- Branch", ", Branch", " Branch") to canonical "Name (Branch)"
+    pattern = rf"[- ,]+\s*{re.escape(branch)}$"
+    match = re.search(pattern, name, flags=re.IGNORECASE)
+    if match and match.start() > 0:
+        base = name[:match.start()].strip()
+        return f"{base} ({branch})" if base else name
+
+    return f"{name} ({branch})"
+
+
 def send_doctor_booking_confirmation_sms(booking) -> dict:
     """
     Sends an automated booking confirmation SMS for doctor appointments.
@@ -84,7 +117,10 @@ def send_doctor_booking_confirmation_sms(booking) -> dict:
 
         patient_name = booking.patient_name or (booking.patient.name if booking.patient else "Patient")
         doctor_name = booking.affiliation.doctor.name if (booking.affiliation and booking.affiliation.doctor) else "Doctor"
-        chamber_name = booking.affiliation.location.name if (booking.affiliation and booking.affiliation.location) else "Chamber"
+        loc = booking.affiliation.location if booking.affiliation else None
+        chamber_raw = loc.name if loc else "Chamber"
+        chamber_branch = loc.branch if loc else ""
+        chamber_name = format_facility_name_sms(chamber_raw, chamber_branch)
         serial = booking.serial_display or f"SL-{booking.serial_number or 1:03d}"
         date_str = str(booking.date)
         slot_str = booking.slot or ""
@@ -111,7 +147,10 @@ def send_test_booking_confirmation_sms(booking) -> dict:
 
         patient_name = booking.patient_name or (booking.patient.name if booking.patient else "Patient")
         test_name = booking.facility_test.test.name if (booking.facility_test and booking.facility_test.test) else "Diagnostic Test"
-        center_name = booking.facility_test.location.name if (booking.facility_test and booking.facility_test.location) else "Diagnostic Center"
+        loc = booking.facility_test.location if booking.facility_test else None
+        center_raw = loc.name if loc else "Diagnostic Center"
+        center_branch = loc.branch if loc else ""
+        center_name = format_facility_name_sms(center_raw, center_branch)
         pickup_date = str(booking.pickup_date or "")
         ref_id = f"TESTBD-{booking.id}"
 
@@ -136,11 +175,10 @@ def send_hospital_service_booking_confirmation_sms(booking) -> dict:
 
         patient_name = booking.patient_name or (booking.patient.name if booking.patient else "Patient")
         service_name = booking.service.name if booking.service else "Hospital Service"
-        hospital_name = (
-            booking.hospital.location.name
-            if (booking.hospital and getattr(booking.hospital, 'location', None))
-            else getattr(booking.hospital, 'name', 'Hospital')
-        )
+        loc = booking.hospital.location if (booking.hospital and getattr(booking.hospital, 'location', None)) else None
+        hospital_raw = loc.name if loc else getattr(booking.hospital, 'name', 'Hospital')
+        hospital_branch = loc.branch if loc else getattr(booking.hospital, 'branch', '')
+        hospital_name = format_facility_name_sms(hospital_raw, hospital_branch)
         booking_date = str(booking.booking_date or "")
         time_str = booking.preferred_time or ""
         time_info = f" ({time_str})" if time_str else ""

@@ -1,6 +1,7 @@
 import uuid
 from django.db import models
 from django.utils import timezone
+from core.uuid7 import uuid7
 from accounts.models import User
 from doctors.models import DoctorAffiliation
 from tests.models import FacilityTest
@@ -15,7 +16,7 @@ class Patient(models.Model):
         FEMALE = "female", "Female"
         OTHER = "other", "Other"
 
-    id = models.UUIDField(primary_key=True, default=uuid.uuid4, editable=False)
+    id = models.UUIDField(primary_key=True, default=uuid7, editable=False)
     name = models.CharField(max_length=150)
     phone = models.CharField(max_length=20, unique=True, validators=[bangladesh_phone_validator], db_index=True)
     age = models.PositiveIntegerField(null=True, blank=True)
@@ -33,7 +34,7 @@ class Patient(models.Model):
 
 
 class OTPVerification(models.Model):
-    id = models.UUIDField(primary_key=True, default=uuid.uuid4, editable=False)
+    id = models.UUIDField(primary_key=True, default=uuid7, editable=False)
     phone = models.CharField(max_length=20, validators=[bangladesh_phone_validator], db_index=True)
     otp_code = models.CharField(max_length=6)
     purpose = models.CharField(max_length=50, default='booking')
@@ -61,7 +62,7 @@ class BaseBooking(models.Model):
         COMPLETED = "completed", "Completed"
         NO_SHOW = "no_show", "No show"
 
-    id = models.UUIDField(primary_key=True, default=uuid.uuid4, editable=False)
+    id = models.UUIDField(primary_key=True, default=uuid7, editable=False)
     patient = models.ForeignKey(Patient, on_delete=models.CASCADE, related_name="%(class)ss", null=True, blank=True)
     booked_by_user = models.ForeignKey(User, null=True, blank=True, on_delete=models.SET_NULL, related_name="booked_%(class)ss")
     status = models.CharField(max_length=20, choices=Status.choices, default=Status.PENDING)
@@ -75,6 +76,10 @@ class BaseBooking(models.Model):
     @property
     def user(self):
         return self.booked_by_user
+
+    @user.setter
+    def user(self, value):
+        self.booked_by_user = value
 
 
 class DoctorBooking(BaseBooking):
@@ -133,24 +138,28 @@ class DoctorBooking(BaseBooking):
 class TestBooking(BaseBooking):
     facility_test = models.ForeignKey(FacilityTest, on_delete=models.CASCADE, related_name="bookings")
     pickup_date = models.DateField()
+    pickup_thana = models.ForeignKey(
+        'facilities.Thana',
+        on_delete=models.SET_NULL,
+        null=True,
+        blank=True,
+        related_name="test_bookings",
+        help_text="Canonical administrative Thana/Upazila for sample pickup"
+    )
     patient_name = models.CharField(max_length=100, blank=True)
     patient_phone = models.CharField(max_length=20, default="", validators=[bangladesh_phone_validator])
-    pickup_address_line = models.CharField(max_length=300, default="")
-    pickup_area = models.CharField(max_length=100, blank=True, default="")
-    pickup_city = models.CharField(max_length=100, blank=True, default="")
-    pickup_district = models.CharField(max_length=100, default="Dhaka")
+    pickup_address_line = models.CharField(max_length=300, blank=True, default="")
 
     class Meta:
         ordering = ["-pickup_date", "-created_at"]
 
     @property
     def full_pickup_address(self):
-        parts = [self.pickup_address_line, self.pickup_area, self.pickup_city, self.pickup_district]
-        return ", ".join([p for p in parts if p])
+        return self.pickup_address_line
 
     @property
     def address(self):
-        return self.full_pickup_address
+        return self.pickup_address_line
 
     def save(self, *args, **kwargs):
         if self.patient:

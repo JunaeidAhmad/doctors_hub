@@ -2,7 +2,7 @@ import React, { useEffect, useState } from 'react';
 import { 
   Building2, FlaskConical, Heart, Brain, Dna, ShieldCheck, 
   Activity, FileText, Sparkles, Landmark, Award, Stethoscope,
-  Microscope, Droplet, ArrowRight
+  Microscope, Droplet, ArrowRight, ChevronDown
 } from 'lucide-react';
 import { api, ensureArray } from '../../../services/api';
 
@@ -52,7 +52,7 @@ const categoryIconMap = {
   'mammography': Sparkles,
 };
 
-// Rich Fallback Data for Test Categories (By Test Domain)
+// Rich Fallback Data for Test Categories (By Test Domain - 24 Categories)
 const FALLBACK_TEST_CATEGORIES = [
   { 
     id: 'cardiac-tests', 
@@ -162,6 +162,114 @@ const FALLBACK_TEST_CATEGORIES = [
     count: 6, 
     badge: 'Routine' 
   },
+  { 
+    id: 'histopathology', 
+    name: 'Histopathology & Biopsy', 
+    slug: 'histopathology', 
+    icon: 'Microscope', 
+    description: 'Surgical specimen biopsy, FNAC, Pap smear & cell cytology', 
+    count: 5, 
+    badge: 'Specialized' 
+  },
+  { 
+    id: 'hormone-endocrinology', 
+    name: 'Hormones & Thyroid', 
+    slug: 'hormone-endocrinology', 
+    icon: 'Activity', 
+    description: 'Thyroid profile (TSH, FT3, FT4), Vitamin D, B12 & fertility hormones', 
+    count: 11, 
+    badge: 'Popular' 
+  },
+  { 
+    id: 'urine-renal', 
+    name: 'Urine & Renal Tests', 
+    slug: 'urine-renal', 
+    icon: 'Droplet', 
+    description: 'Urine albumin, 24hr protein, microalbuminuria & renal clearance', 
+    count: 8, 
+    badge: 'Routine' 
+  },
+  { 
+    id: 'allergy-immunology', 
+    name: 'Allergy & Immunology', 
+    slug: 'allergy-immunology', 
+    icon: 'ShieldCheck', 
+    description: 'Total IgE, food/dust allergy panels, ANA & autoimmune screening', 
+    count: 6, 
+    badge: 'Specialized' 
+  },
+  { 
+    id: 'dental-imaging', 
+    name: 'Dental X-Ray & OPG', 
+    slug: 'dental-imaging', 
+    icon: 'FileText', 
+    description: 'Panoramic dental OPG, lateral cephalogram & RVG digital radiograph', 
+    count: 4, 
+    badge: 'Imaging' 
+  },
+  { 
+    id: 'mammography', 
+    name: 'Mammography & Breast', 
+    slug: 'mammography', 
+    icon: 'Sparkles', 
+    description: 'Digital bilateral mammography screening & breast ultrasound', 
+    count: 4, 
+    badge: 'Women Health' 
+  },
+  { 
+    id: 'pulmonary-pft', 
+    name: 'Pulmonary Function (PFT)', 
+    slug: 'pulmonary-pft', 
+    icon: 'Activity', 
+    description: 'Spirometry, lung volume capacity & asthma bronchodilator evaluation', 
+    count: 5, 
+    badge: 'Specialized' 
+  },
+  { 
+    id: 'bone-dexa', 
+    name: 'Bone Mineral DEXA Scan', 
+    slug: 'bone-dexa', 
+    icon: 'FileText', 
+    description: 'Dual-energy X-ray bone densitometry for osteoporosis detection', 
+    count: 4, 
+    badge: 'Advanced' 
+  },
+  { 
+    id: 'infectious-diseases', 
+    name: 'Infectious Disease Panels', 
+    slug: 'infectious-diseases', 
+    icon: 'FlaskConical', 
+    description: 'Malaria, Typhoid, Chikungunya, COVID PCR & seasonal viral panels', 
+    count: 8, 
+    badge: 'Essential' 
+  },
+  { 
+    id: 'ophthalmology-diagnostics', 
+    name: 'Eye & Retinal Imaging', 
+    slug: 'ophthalmology-diagnostics', 
+    icon: 'FileText', 
+    description: 'OCT retina, visual fields perimetry, fundus photo & pachymetry', 
+    count: 5, 
+    badge: 'Specialized' 
+  },
+  { 
+    id: 'pediatric-diagnostics', 
+    name: 'Pediatric Diagnostics', 
+    slug: 'pediatric-diagnostics', 
+    icon: 'Sparkles', 
+    description: 'Newborn metabolic screening, pediatric blood work & pediatric USG', 
+    count: 6, 
+    badge: 'Child Care' 
+  },
+  { 
+    id: 'health-checkup-packages', 
+    name: 'Health Checkup Packages', 
+    slug: 'health-checkup-packages', 
+    icon: 'Award', 
+    description: 'Comprehensive whole-body, executive wellness & senior citizen panels', 
+    count: 10, 
+    badge: 'Package' 
+  },
 ];
 
 // Rich Fallback Data for Diagnostic Center Specialization & Types
@@ -195,6 +303,7 @@ export default function DiagnosticsSection({
 }) {
   const [testCategories, setTestCategories] = useState([]);
   const [centerCategories, setCenterCategories] = useState([]);
+  const [showAll, setShowAll] = useState(false);
 
   useEffect(() => {
     let isMounted = true;
@@ -229,9 +338,10 @@ export default function DiagnosticsSection({
   }, []);
 
   const displayTestCategories = testCategories.length > 0 ? testCategories : FALLBACK_TEST_CATEGORIES;
+  const visibleCategories = showAll ? displayTestCategories : displayTestCategories.slice(0, 20);
 
   const handleTestCategoryClick = (cat) => {
-    const idOrSlug = cat.id || cat.slug || cat.name;
+    const idOrSlug = cat.slug || cat.id || cat.name;
     if (onSelectTestCategory) {
       onSelectTestCategory(idOrSlug, cat);
     } else if (onSelectCategory) {
@@ -316,7 +426,7 @@ export default function DiagnosticsSection({
           */}
 
           <div className="grid grid-cols-2 sm:grid-cols-3 md:grid-cols-4 lg:grid-cols-6 gap-4">
-            {displayTestCategories.map((cat) => {
+            {visibleCategories.map((cat) => {
               const IconComp = categoryIconMap[cat.icon] || categoryIconMap[cat.slug] || categoryIconMap[cat.id] || FlaskConical;
 
               return (
@@ -347,6 +457,19 @@ export default function DiagnosticsSection({
               );
             })}
           </div>
+
+          {displayTestCategories.length > 20 && (
+            <div className="mt-8 text-center">
+              <button
+                type="button"
+                onClick={() => setShowAll(!showAll)}
+                className="inline-flex items-center gap-2 px-6 py-2.5 rounded-xl font-bold text-sm bg-white text-slate-800 border border-slate-300 hover:border-emerald-500 hover:text-emerald-700 hover:shadow-md transition-all duration-200 cursor-pointer active:scale-95"
+              >
+                <span>{showAll ? 'Show Less' : `Show All (${displayTestCategories.length})`}</span>
+                <ChevronDown className={`w-4 h-4 transition-transform duration-200 ${showAll ? 'rotate-180' : ''}`} />
+              </button>
+            </div>
+          )}
         </div>
 
       </div>

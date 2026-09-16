@@ -3,6 +3,7 @@ import {
   Stethoscope, Search, ShieldCheck, Calendar, Clock, 
   DoorClosed, CheckCircle2, Timer, ArrowRight, UserCheck 
 } from 'lucide-react';
+import { formatFacilityName } from '../../../utils/facilityUtils';
 
 const STITCH_DEFAULT_DOCTORS = [
   {
@@ -63,7 +64,7 @@ export default function HospitalDoctorsSection({
   const [selectedSpecialty, setSelectedSpecialty] = useState('All');
   const [showAll, setShowAll] = useState(false);
 
-  const hospitalName = hospital?.name || hospital?.facility_name || 'Square Hospital';
+  const hospitalName = formatFacilityName(hospital) || 'Square Hospital';
 
   // Helper to format 24h to 12h AM/PM
   const formatTime12h = (tStr) => {

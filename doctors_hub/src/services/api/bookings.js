@@ -60,9 +60,6 @@ export async function createTestBooking(testData) {
   if (testData.address && !testData.pickup_address_line) {
     payload.pickup_address_line = testData.address;
   }
-  if (!payload.pickup_district) {
-    payload.pickup_district = testData.city || testData.district || 'Dhaka';
-  }
   const res = await fetchWithTimeout(`${BASE_URL}/bookings/test/`, {
     method: 'POST',
     headers: getHeaders(),

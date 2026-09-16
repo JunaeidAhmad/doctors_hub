@@ -62,16 +62,6 @@ export default function DoctorFilterSidebar({
             <span className="material-symbols-outlined text-[15px]">restart_alt</span>
             Reset All
           </button>
-          {onClose && (
-            <button
-              type="button"
-              onClick={onClose}
-              className="lg:hidden p-1 text-on-surface-variant hover:text-on-surface cursor-pointer rounded-md hover:bg-surface-container-low transition-colors flex items-center justify-center"
-              title="Close Filters"
-            >
-              <span className="material-symbols-outlined text-[18px]">close</span>
-            </button>
-          )}
         </div>
       </div>
 

@@ -5,6 +5,7 @@ import {
 } from 'lucide-react';
 import { useAdminContext } from '../../context/AdminContext';
 import { api } from '../../../../services/api';
+import { formatFacilityName } from '../../../../utils/facilityUtils';
 
 export default function DoctorAffiliationsManager() {
   const {
@@ -27,8 +28,8 @@ export default function DoctorAffiliationsManager() {
   const [localErr, setLocalErr] = useState('');
 
   const allLocations = [
-    ...(hospitals || []).map(h => ({ id: h.id, name: `${h.name} (${h.branch || 'Main'})`, type: 'hospital' })),
-    ...(diagnosticCenters || []).map(dc => ({ id: dc.id, name: `${dc.name} (${dc.branch || 'Main'})`, type: 'diagnostic' }))
+    ...(hospitals || []).map(h => ({ id: h.id, name: formatFacilityName(h), type: 'hospital' })),
+    ...(diagnosticCenters || []).map(dc => ({ id: dc.id, name: formatFacilityName(dc), type: 'diagnostic' }))
   ];
 
   const handleOpenAddModal = () => {
@@ -119,7 +120,7 @@ export default function DoctorAffiliationsManager() {
             <div className="flex items-start justify-between">
               <div>
                 <h3 className="text-base font-bold text-white mt-1">
-                  {aff.hospital?.name || aff.diagnostic_center?.name || aff.chamber_name || aff.facility_name || 'Specialist Chamber'}
+                  {formatFacilityName(aff.hospital || aff.diagnostic_center || aff.location || aff) || aff.chamber_name || aff.facility_name || 'Specialist Chamber'}
                 </h3>
                 <p className="text-xs text-slate-400 flex items-center gap-1.5 mt-0.5">
                   <MapPin className="w-3.5 h-3.5 text-teal-400" />

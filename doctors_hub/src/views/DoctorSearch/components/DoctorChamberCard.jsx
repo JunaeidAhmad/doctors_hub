@@ -1,4 +1,5 @@
 import React from 'react';
+import { formatFacilityName } from '../../../utils/facilityUtils';
 
 export default function DoctorChamberCard({
   chamber,
@@ -7,7 +8,7 @@ export default function DoctorChamberCard({
   onSelectHospital,
   className = ''
 }) {
-  const facilityName = chamber.facility_name || chamber.facilityName || chamber.name || 'Specialist Chamber';
+  const facilityName = formatFacilityName(chamber) || 'Specialist Chamber';
   const rawAddress = chamber.address || chamber.district || chamber.location;
   const address = (rawAddress && rawAddress.length > 8)
     ? rawAddress
@@ -58,15 +59,7 @@ export default function DoctorChamberCard({
 
           <div className="min-w-0 flex-1">
             <h4
-              onClick={(e) => {
-                if (onSelectHospital && facilityId) {
-                  e.stopPropagation();
-                  onSelectHospital(facilityId);
-                }
-              }}
-              className={`text-xs sm:text-sm font-bold text-slate-900 truncate ${
-                onSelectHospital && facilityId ? 'hover:text-[#006877] cursor-pointer underline-offset-2 hover:underline' : ''
-              }`}
+              className="text-xs sm:text-sm font-bold text-slate-900 truncate"
               title={facilityName}
             >
               {facilityName}

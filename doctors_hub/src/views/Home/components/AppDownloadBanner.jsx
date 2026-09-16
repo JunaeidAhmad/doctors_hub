@@ -3,7 +3,7 @@ import { Smartphone, Star, Download, CheckCircle2, QrCode } from 'lucide-react';
 
 export default function AppDownloadBanner({ showToast }) {
   return (
-    <section className="py-16 px-4 sm:px-8 bg-gradient-to-r from-emerald-900 via-slate-900 to-teal-950 text-white relative overflow-hidden">
+    <section id="app-download" className="py-16 px-4 sm:px-8 bg-gradient-to-r from-emerald-900 via-slate-900 to-teal-950 text-white relative overflow-hidden">
       <div className="max-w-7xl mx-auto flex flex-col lg:flex-row items-center justify-between gap-10">
         
         {/* Left Content */}

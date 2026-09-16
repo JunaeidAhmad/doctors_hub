@@ -99,6 +99,8 @@ def resolve_patient(patient_data):
 class DoctorBookingSerializer(serializers.ModelSerializer):
     doctor_name = serializers.CharField(source='affiliation.doctor.name', read_only=True)
     facility_name = serializers.CharField(source='affiliation.location.name', read_only=True)
+    branch = serializers.SerializerMethodField(read_only=True)
+    user = serializers.PrimaryKeyRelatedField(source='booked_by_user', read_only=True)
     affiliation_id = serializers.PrimaryKeyRelatedField(
         queryset=DoctorAffiliation.objects.all(), write_only=True, source='affiliation'
     )
@@ -117,9 +119,13 @@ class DoctorBookingSerializer(serializers.ModelSerializer):
             'id', 'patient', 'patient_id', 'user', 'status', 'notes', 'created_at', 'updated_at',
             'affiliation_id', 'date', 'slot', 'serial_number', 'serial_display',
             'patient_name', 'patient_phone', 'patient_age', 'gender',
-            'doctor_name', 'facility_name', 'otp_code'
+            'doctor_name', 'facility_name', 'branch', 'otp_code'
         )
         read_only_fields = ('user', 'created_at', 'updated_at', 'serial_number', 'serial_display')
+
+    def get_branch(self, obj):
+        loc = getattr(getattr(obj, 'affiliation', None), 'location', None)
+        return getattr(loc, 'branch', '') or ''
 
     def to_internal_value(self, data):
         mutable_data = data.copy() if hasattr(data, 'copy') else dict(data)
@@ -175,9 +181,14 @@ class DoctorBookingSerializer(serializers.ModelSerializer):
 class TestBookingSerializer(serializers.ModelSerializer):
     test_name = serializers.CharField(source='facility_test.test.name', read_only=True, default='')
     center_name = serializers.CharField(source='facility_test.location.name', read_only=True, default='')
-    center_branch = serializers.CharField(source='facility_test.location.branch', read_only=True, default='')
+    branch = serializers.SerializerMethodField(read_only=True)
+    center_branch = serializers.SerializerMethodField(
+        read_only=True,
+        help_text="[DEPRECATED] Use 'branch' instead. Scheduled for removal in v2.0."
+    )
     price = serializers.DecimalField(source='facility_test.price', max_digits=10, decimal_places=2, read_only=True, default=0)
     address = serializers.CharField(source='full_pickup_address', read_only=True)
+    user = serializers.PrimaryKeyRelatedField(source='booked_by_user', read_only=True)
     facility_test_id = serializers.PrimaryKeyRelatedField(
         queryset=FacilityTest.objects.all(), write_only=True, source='facility_test'
     )
@@ -194,10 +205,17 @@ class TestBookingSerializer(serializers.ModelSerializer):
         fields = (
             'id', 'patient', 'patient_id', 'user', 'status', 'notes', 'created_at', 'updated_at',
             'facility_test_id', 'pickup_date', 'patient_name', 'patient_phone', 'patient_age', 'gender',
-            'pickup_address_line', 'pickup_area', 'pickup_city', 'pickup_district',
-            'address', 'test_name', 'center_name', 'center_branch', 'price', 'otp_code'
+            'pickup_address_line',
+            'address', 'test_name', 'center_name', 'branch', 'center_branch', 'price', 'otp_code'
         )
         read_only_fields = ('user', 'created_at', 'updated_at')
+
+    def get_branch(self, obj):
+        loc = getattr(getattr(obj, 'facility_test', None), 'location', None)
+        return getattr(loc, 'branch', '') or ''
+
+    def get_center_branch(self, obj):
+        return self.get_branch(obj)
 
     def to_internal_value(self, data):
         mutable_data = data.copy() if hasattr(data, 'copy') else dict(data)
@@ -210,8 +228,6 @@ class TestBookingSerializer(serializers.ModelSerializer):
         if 'address' in mutable_data and not mutable_data.get('pickup_address_line'):
             raw_addr = mutable_data.get('address', '')
             mutable_data['pickup_address_line'] = raw_addr
-            if not mutable_data.get('pickup_district'):
-                mutable_data['pickup_district'] = 'Dhaka'
         return super().to_internal_value(mutable_data)
 
     def validate(self, attrs):
@@ -247,7 +263,9 @@ class TestBookingSerializer(serializers.ModelSerializer):
 
 class HospitalServiceBookingSerializer(serializers.ModelSerializer):
     hospital_name = serializers.CharField(source='hospital.location.name', read_only=True)
+    branch = serializers.SerializerMethodField(read_only=True)
     service_name = serializers.CharField(source='service.name', read_only=True)
+    user = serializers.PrimaryKeyRelatedField(source='booked_by_user', read_only=True)
     hospital_id = serializers.PrimaryKeyRelatedField(
         queryset=Hospital.objects.all(), write_only=True, source='hospital'
     )
@@ -268,9 +286,13 @@ class HospitalServiceBookingSerializer(serializers.ModelSerializer):
             'id', 'patient', 'patient_id', 'user', 'status', 'notes', 'created_at', 'updated_at',
             'hospital_id', 'service_id', 'booking_date', 'preferred_time',
             'patient_name', 'patient_phone', 'patient_age', 'gender',
-            'hospital_name', 'service_name', 'otp_code'
+            'hospital_name', 'branch', 'service_name', 'otp_code'
         )
         read_only_fields = ('user', 'created_at', 'updated_at')
+
+    def get_branch(self, obj):
+        loc = getattr(getattr(obj, 'hospital', None), 'location', None)
+        return getattr(loc, 'branch', '') or ''
 
     def to_internal_value(self, data):
         mutable_data = data.copy() if hasattr(data, 'copy') else dict(data)

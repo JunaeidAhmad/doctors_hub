@@ -39,6 +39,7 @@ class FacilityTestSerializer(serializers.ModelSerializer):
         queryset=Location.objects.all(), write_only=True, source='location', required=False
     )
     facility_name = serializers.CharField(source='location.name', read_only=True, default='')
+    branch = serializers.CharField(source='location.branch', read_only=True, default='')
     facility_type = serializers.CharField(source='location.location_type', read_only=True, default='')
 
     calculated_price = serializers.DecimalField(max_digits=10, decimal_places=2, read_only=True)
@@ -49,7 +50,7 @@ class FacilityTestSerializer(serializers.ModelSerializer):
         fields = (
             'id', 'location_id', 'location_details', 'test_id', 'test_details', 'price',
             'discount_percent', 'calculated_price', 'discounted_price', 'report_time', 'is_available',
-            'home_sample_collection', 'home_sample_charge', 'home_sample_note', 'updated_at', 'facility_name', 'facility_type'
+            'home_sample_collection', 'home_sample_charge', 'home_sample_note', 'updated_at', 'facility_name', 'branch', 'facility_type'
         )
 
     def to_internal_value(self, data):

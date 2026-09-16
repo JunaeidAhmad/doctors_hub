@@ -49,6 +49,7 @@ export default function AdminSidebar() {
     if (id === 'doc-bookings') return counts.docBookings;
     if (id === 'lab-bookings') return counts.labBookings;
     if (id === 'branch-tests') return counts.branchTests;
+    if (id === 'specialty-aliases') return counts.unverifiedAliases;
     return null;
   };
 

@@ -3,6 +3,7 @@ import { Search, Calendar, TestTube, CheckCircle } from 'lucide-react';
 import { useAdminContext } from '../context/AdminContext';
 import { api } from '../../../services/api';
 import StatusBadge from './shared/StatusBadge';
+import { formatFacilityName } from '../../../utils/facilityUtils';
 
 export default function BookingsTab() {
   const { 
@@ -100,11 +101,11 @@ export default function BookingsTab() {
                       {isDoctor ? (
                         <div>
                           <div>{b.doctor_name || 'Specialist Doctor'}</div>
-                          <div className="text-[10px] text-slate-400">{b.facility_name || 'Hospital / Chamber'}</div>
+                          <div className="text-[10px] text-slate-400">{formatFacilityName(b.facility_name, b.branch) || 'Hospital / Chamber'}</div>
                         </div>
                       ) : (
                         <div>
-                          <div>{b.center_name || 'Diagnostic Center'}</div>
+                          <div>{formatFacilityName(b.center_name, b.branch || b.center_branch) || 'Diagnostic Center'}</div>
                           <div className="text-[10px] text-slate-400">{b.test_name || b.test_names || 'Test Booking'}</div>
                         </div>
                       )}

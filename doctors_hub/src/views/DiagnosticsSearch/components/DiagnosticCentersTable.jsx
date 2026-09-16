@@ -1,4 +1,5 @@
 import React, { useState } from 'react';
+import { formatFacilityName } from '../../../utils/facilityUtils';
 
 export default function DiagnosticCentersTable({ offerings = [], testDetails = {}, onBookTest }) {
   const [isExpanded, setIsExpanded] = useState(false);
@@ -33,9 +34,10 @@ export default function DiagnosticCentersTable({ offerings = [], testDetails = {
         <tbody className="divide-y divide-outline-variant/40 font-body-sm text-xs">
           {visibleOfferings.map((offering, idx) => {
             const center = offering.location_details || offering.center || offering.branch || {};
-            const centerName = center.name || offering.facility_name || 'Diagnostic Center';
-            const branchName = center.branch || '';
-            const initial = getInitial(centerName);
+            const rawCenterName = center.name || offering.facility_name || 'Diagnostic Center';
+            const branchName = center.branch || offering.branch || '';
+            const centerName = formatFacilityName(rawCenterName, branchName);
+            const initial = getInitial(rawCenterName);
 
             const isHome = Boolean(offering.home_sample_collection);
             const homeNote = offering.home_sample_note || (isHome ? 'Available' : 'Center Visit Only');
@@ -62,11 +64,6 @@ export default function DiagnosticCentersTable({ offerings = [], testDetails = {
                       <span className="font-semibold text-slate-900 block leading-tight">
                         {centerName}
                       </span>
-                      {branchName && (
-                        <span className="text-[11px] font-normal text-on-surface-variant">
-                          {branchName}
-                        </span>
-                      )}
                     </div>
                   </div>
                 </td>

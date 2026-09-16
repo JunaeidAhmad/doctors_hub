@@ -1,4 +1,5 @@
 import React, { useMemo } from 'react';
+import { formatFacilityName } from '../../../utils/facilityUtils';
 
 export default function DoctorAffiliationsTable({ 
   doctor, 
@@ -6,9 +7,8 @@ export default function DoctorAffiliationsTable({
   selectedAffIndex, 
   onSelectAffIndex 
 }) {
-  if (!doctor) return null;
-
   const affiliations = useMemo(() => {
+    if (!doctor) return [];
     if (Array.isArray(affiliationsProp) && affiliationsProp.length > 0) {
       return affiliationsProp;
     }
@@ -26,6 +26,8 @@ export default function DoctorAffiliationsTable({
     }
     return [];
   }, [doctor, affiliationsProp]);
+
+  if (!doctor) return null;
 
   return (
     <section className="bg-surface-container-lowest border border-outline-variant/60 rounded-2xl overflow-hidden shadow-[0_1px_3px_0_rgba(15,23,42,0.04)]">
@@ -56,8 +58,8 @@ export default function DoctorAffiliationsTable({
           <tbody className="divide-y divide-outline-variant/40 text-body-md font-body-md text-slate-700">
             {affiliations.length > 0 ? (
               affiliations.map((aff, idx) => {
-                const facilityName = aff.facility_name || aff.location_details?.name || aff.name || 'Medical Center';
-                const branch = aff.location_details?.branch ? `${aff.location_details.branch} Branch` : '';
+                const facilityName = formatFacilityName(aff) || 'Medical Center';
+                const branch = '';
                 const role = aff.chamber_type || (idx === 0 ? 'Primary Visiting Consultant' : 'Visiting Consultant');
                 const locationAddress = aff.location_details?.address_line || aff.address || aff.location ||
                   (aff.area && aff.district ? `${aff.area}, ${aff.district}` : (aff.district || 'Dhaka'));

@@ -1,4 +1,5 @@
 import React from 'react';
+import { formatFacilityName } from '../../../utils/facilityUtils';
 
 export default function DoctorProfileModal({
   doctor,
@@ -14,17 +15,7 @@ export default function DoctorProfileModal({
 
   const affiliations = Array.isArray(doctor.affiliations) && doctor.affiliations.length > 0
     ? doctor.affiliations
-    : [
-        {
-          id: 'aff-default',
-          facility_name: doctor.hospital_name || doctor.chamber_name || 'Specialist Chamber',
-          district: doctor.district || 'Dhaka, Bangladesh',
-          fee: doctor.fee || 1500,
-          chamber_type: 'Primary Chamber',
-          status_label: 'Available Today',
-          schedules: [{ day_of_week: 'Saturday', start_time: '17:00', end_time: '21:00' }]
-        }
-      ];
+    : [];
 
   return (
     <div
@@ -147,14 +138,15 @@ export default function DoctorProfileModal({
             Chambers &amp; Consultation Visiting Hours
           </h3>
 
-          <div className="space-y-3">
-            {affiliations.map((aff, affIdx) => {
-              const facName = aff.facility_name || aff.facilityName || aff.name || 'Medical Facility';
-              const facAddr = aff.district || aff.address || 'Dhaka';
-              const affFee = aff.fee ? `৳${Number(aff.fee).toLocaleString()}` : '৳1,200';
-              const schedText = aff.schedules && aff.schedules.length > 0
-                ? aff.schedules.map(s => `${s.day_of_week} (${s.start_time?.slice(0, 5)} - ${s.end_time?.slice(0, 5)})`).join(' | ')
-                : (aff.visitDays ? `${aff.visitDays} (${aff.visitTime || '5:00 PM - 9:00 PM'})` : 'Daily (Except Friday) 6:00 PM - 9:00 PM');
+          {affiliations.length > 0 ? (
+            <div className="space-y-3">
+              {affiliations.map((aff, affIdx) => {
+                const facName = formatFacilityName(aff) || 'Medical Facility';
+                const facAddr = aff.district || aff.address || 'Dhaka';
+                const affFee = aff.fee ? `৳${Number(aff.fee).toLocaleString()}` : '৳1,000';
+                const schedText = aff.schedules && aff.schedules.length > 0
+                  ? aff.schedules.map(s => `${s.day_of_week} (${s.start_time?.slice(0, 5)} - ${s.end_time?.slice(0, 5)})`).join(' | ')
+                  : 'Consultation by Appointment';
 
               return (
                 <div
@@ -194,7 +186,10 @@ export default function DoctorProfileModal({
               );
             })}
           </div>
-        </div>
+        ) : (
+          <p className="text-xs text-outline italic py-2">Chamber and visiting hours available upon appointment request.</p>
+        )}
+      </div>
       </div>
     </div>
   );

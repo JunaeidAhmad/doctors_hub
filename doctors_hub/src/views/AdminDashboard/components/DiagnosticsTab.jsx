@@ -5,6 +5,7 @@ import DiagnosticModal from './modals/DiagnosticModal';
 import AdminPagination from './AdminPagination';
 import { api, ensureArray } from '../../../services/api';
 import { useDebounce } from '../../../hooks/useDebounce';
+import { formatFacilityName } from '../../../utils/facilityUtils';
 
 export default function DiagnosticsTab() {
   const {
@@ -139,7 +140,7 @@ export default function DiagnosticsTab() {
                   return (
                     <tr key={dcId || dcName} className={`hover:bg-slate-800/40 transition ${isFetching ? 'opacity-60' : 'opacity-100'}`}>
                       <td className="py-4 px-4 font-bold text-white">
-                        <div className="text-sm text-cyan-400">{dcName}</div>
+                        <div className="text-sm text-cyan-400">{formatFacilityName(dcName, dcBranch)}</div>
                         {dcTagline && <div className="text-slate-400 text-[11px] font-normal">{dcTagline}</div>}
                         {dcCategoryName && (
                           <span className="inline-block mt-1 px-2 py-0.5 bg-cyan-500/10 text-cyan-400 border border-cyan-500/20 rounded text-[10px] font-bold">

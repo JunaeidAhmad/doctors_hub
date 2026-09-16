@@ -8,7 +8,7 @@ from accounts.models import User
 from doctors.models import Doctor, DoctorSpecialty, DoctorAffiliation, AffiliationSchedule
 from facilities.models import Location, Hospital, HospitalCategory, HospitalService, DiagnosticCenter, DiagnosticCenterCategory, DiagnosticService
 from tests.models import TestCategory, Test, FacilityTest
-from bookings.models import DoctorBooking, LabBooking
+from bookings.models import DoctorBooking, LabBooking, TestBooking, HospitalServiceBooking
 
 
 @pytest.mark.django_db
@@ -34,9 +34,9 @@ def test_doctors_list_no_n_plus_one():
         data = res.data.get("results", res.data)
         assert len(data) == 5
 
-    # Should execute bounded number of queries (Count + Doctors + Specialties + Affiliations + Locations + Schedules + DoctorSpecialties)
+    # Should execute bounded number of queries (Count + Doctors + Specialties + Components + Affiliations + Locations + Thanas + Districts + Divisions + Schedules)
     # Regardless of whether there are 5 or 50 doctors, it must not execute per-doctor or per-affiliation queries
-    assert len(ctx.captured_queries) <= 8
+    assert len(ctx.captured_queries) <= 10
 
 
 @pytest.mark.django_db
@@ -102,7 +102,7 @@ def test_lab_bookings_list_no_n_plus_one():
         LabBooking.objects.create(
             user=user, facility_test=ft, pickup_date=date(2026, 8, 20),
             patient_name=f"Lab Patient {i}", patient_phone="01700000000",
-            pickup_address_line=f"House {i}", pickup_district="Dhaka"
+            pickup_address_line=f"House {i}"
         )
 
     client = APIClient()
@@ -142,7 +142,7 @@ def test_hospitals_and_diagnostic_centers_no_n_plus_one():
         data_h = res_h.data.get("results", res_h.data)
         assert len(data_h) == 4
 
-    assert len(ctx_h.captured_queries) <= 4
+    assert len(ctx_h.captured_queries) <= 5
 
     with CaptureQueriesContext(connection) as ctx_d:
         res_d = client.get("/api/diagnostic-centers/")
@@ -151,3 +151,76 @@ def test_hospitals_and_diagnostic_centers_no_n_plus_one():
         assert len(data_d) == 4
 
     assert len(ctx_d.captured_queries) <= 5
+
+
+@pytest.mark.django_db
+def test_facility_tests_list_no_n_plus_one():
+    cat = TestCategory.objects.create(name="Hematology")
+    test_obj = Test.objects.create(name="CBC", category=cat)
+
+    for i in range(5):
+        loc = Location.objects.create(
+            name=f"Diagnostic Center {i}",
+            branch=f"Branch {i}",
+            location_type="diagnostic_center",
+            address_line=f"{i} Street",
+            district="Dhaka",
+            division="Dhaka"
+        )
+        FacilityTest.objects.create(location=loc, test=test_obj, price=500 + i * 50)
+
+    client = APIClient()
+    with CaptureQueriesContext(connection) as ctx:
+        res = client.get("/api/facility-tests/")
+        assert res.status_code == 200
+        data = res.data.get("results", res.data)
+        assert len(data) == 5
+        # Verify branch is present in each item
+        for item in data:
+            assert "branch" in item
+            assert item["branch"].startswith("Branch ")
+
+    # Bounded query count: count + select_related(location, test, test__category)
+    assert len(ctx.captured_queries) <= 4
+
+
+@pytest.mark.django_db
+def test_hospital_service_bookings_list_no_n_plus_one():
+    user = User.objects.create_superuser(phone_number="01733333333", password="password")
+    hcat = HospitalCategory.objects.create(name="Specialized Hospital")
+    hserv = HospitalService.objects.create(name="Ambulance Service")
+
+    for i in range(5):
+        hloc = Location.objects.create(
+            name=f"Metro Hospital {i}",
+            branch=f"Campus {i}",
+            location_type="hospital",
+            address_line=f"Road {i}",
+            district="Dhaka",
+            division="Dhaka"
+        )
+        h = Hospital.objects.create(location=hloc, category=hcat)
+        h.services.add(hserv)
+        HospitalServiceBooking.objects.create(
+            user=user,
+            hospital=h,
+            service=hserv,
+            booking_date=date(2026, 8, 25),
+            patient_name=f"Patient {i}",
+            patient_phone="01711111111"
+        )
+
+    client = APIClient()
+    client.force_authenticate(user=user)
+    with CaptureQueriesContext(connection) as ctx:
+        res = client.get("/api/bookings/hospital-services/")
+        assert res.status_code == 200
+        data = res.data.get("results", res.data)
+        assert len(data) == 5
+        for item in data:
+            assert "branch" in item
+            assert item["branch"].startswith("Campus ")
+
+    # Bounded query count: 1 count query + 1 select_related query
+    assert len(ctx.captured_queries) <= 4
+

@@ -1,20 +1,46 @@
 from django.db import transaction
-from facilities.models import Location, Hospital, DiagnosticCenter
+from facilities.models import Location, Hospital, DiagnosticCenter, Thana
 from tests.models import Test, FacilityTest
+
+
+def _resolve_thana(district_str, area_str):
+    DIST_ALIASES = {
+        'chittagong': 'Chattogram', 'comilla': 'Cumilla', 'bogra': 'Bogura',
+        'jessore': 'Jashore', 'barisal': 'Barishal', 'ঢাকা': 'Dhaka',
+        'চট্টগ্রাম': 'Chattogram', 'সিলেট': 'Sylhet'
+    }
+    norm_dist = DIST_ALIASES.get((district_str or '').strip().lower(), (district_str or '').strip())
+    norm_area = (area_str or '').strip()
+
+    qs = Thana.objects.filter(district__name__iexact=norm_dist) if norm_dist else Thana.objects.all()
+    resolved = None
+    if norm_area:
+        resolved = qs.filter(name__iexact=norm_area).first() or qs.filter(bn_name__iexact=norm_area).first()
+    if not resolved and norm_dist:
+        resolved = qs.filter(name__icontains='Sadar').first() or qs.first()
+    if not resolved:
+        resolved = Thana.objects.filter(district__name='Dhaka', name='Dhanmondi').first() or Thana.objects.first()
+    return resolved
 
 
 def _extract_or_create_location(location_data, default_type):
     if not location_data:
         return None
+    thana = location_data.get('thana')
+    if not thana:
+        thana_id = location_data.get('thana_id')
+        if thana_id:
+            thana = Thana.objects.filter(id=thana_id).first()
+    if not thana:
+        thana = _resolve_thana(location_data.get('district', 'Dhaka'), location_data.get('area', ''))
+
     loc_fields = {
         'name': location_data.get('name', 'Facility'),
         'branch': location_data.get('branch', ''),
         'location_type': location_data.get('location_type', default_type),
         'ownership_type': location_data.get('ownership_type', 'private'),
+        'thana': thana,
         'address_line': location_data.get('address_line', location_data.get('address', '')),
-        'area': location_data.get('area', ''),
-        'district': location_data.get('district', 'Dhaka'),
-        'division': location_data.get('division', 'Dhaka'),
         'phone': location_data.get('phone', ''),
         'email': location_data.get('email', ''),
         'description': location_data.get('description', ''),
@@ -31,9 +57,21 @@ def _extract_or_create_location(location_data, default_type):
 def _update_location_fields(location, location_data):
     if not location or not location_data:
         return
-    for field in ['name', 'branch', 'address_line', 'area', 'district', 'division', 'phone', 'email', 'description', 'tagline', 'badge', 'open_timing', 'ownership_type']:
+    for field in ['name', 'branch', 'address_line', 'phone', 'email', 'description', 'tagline', 'badge', 'open_timing', 'ownership_type']:
         if field in location_data:
             setattr(location, field, location_data[field])
+    if 'thana' in location_data and location_data['thana']:
+        location.thana = location_data['thana']
+    elif 'thana_id' in location_data and location_data['thana_id']:
+        thana_obj = Thana.objects.filter(id=location_data['thana_id']).first()
+        if thana_obj:
+            location.thana = thana_obj
+    elif 'district' in location_data or 'area' in location_data:
+        dist = location_data.get('district', location.district)
+        area = location_data.get('area', location.area)
+        resolved = _resolve_thana(dist, area)
+        if resolved:
+            location.thana = resolved
     if 'address' in location_data and 'address_line' not in location_data:
         location.address_line = location_data['address']
     if 'rating' in location_data:

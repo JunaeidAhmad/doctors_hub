@@ -66,7 +66,7 @@ class FacilityTestFilter(django_filters.FilterSet):
 
 @extend_schema(tags=['Diagnostic Tests'])
 class FacilityTestViewSet(RoleScopedQuerysetMixin, viewsets.ModelViewSet):
-    queryset = FacilityTest.objects.all().select_related('location', 'test', 'test__category').order_by('test__name')
+    queryset = FacilityTest.objects.all().select_related('location__thana__district__division', 'test', 'test__category').order_by('test__name')
     serializer_class = FacilityTestSerializer
     permission_classes = (ScopedFacilityOrReadOnly,)
     filter_backends = [django_filters.rest_framework.DjangoFilterBackend, filters.SearchFilter]
@@ -75,7 +75,7 @@ class FacilityTestViewSet(RoleScopedQuerysetMixin, viewsets.ModelViewSet):
     scope_location_field = "location_id__in"
 
     def get_queryset(self):
-        qs = FacilityTest.objects.all().select_related('location', 'test', 'test__category').order_by('test__name')
+        qs = FacilityTest.objects.all().select_related('location__thana__district__division', 'test', 'test__category').order_by('test__name')
         return self.get_scoped_queryset(qs)
 
     def perform_create(self, serializer):

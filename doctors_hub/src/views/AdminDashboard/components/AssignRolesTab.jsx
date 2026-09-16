@@ -1,15 +1,17 @@
-import React, { useState, useEffect, useMemo } from 'react';
+import React, { useState, useEffect, useMemo, useCallback } from 'react';
 import { 
-  UserCheck, Plus, Trash2, Search, Filter, Shield, Globe, 
-  Building2, RefreshCw, X, CheckCircle2, AlertCircle, Eye, 
-  User, ShieldAlert, Sparkles, Phone, Lock, ChevronRight
+  UserCheck, Plus, Trash2, Search, Globe, 
+  Building2, RefreshCw, Eye, User, X
 } from 'lucide-react';
 import api, { ensureArray } from '../../../services/api';
 import { useAdminContext } from '../context/AdminContext';
 import Can from '../../../components/Can';
+import AssignRoleModal from './roles/AssignRoleModal';
+import InspectPermissionsModal from './roles/InspectPermissionsModal';
+import RevokeAssignmentModal from './roles/RevokeAssignmentModal';
 
 export default function AssignRolesTab() {
-  const { isSuperAdmin, hospitals, diagnosticCenters, showToast } = useAdminContext();
+  const { hospitals, diagnosticCenters, showToast } = useAdminContext();
   
   // Data States
   const [assignments, setAssignments] = useState([]);
@@ -27,7 +29,6 @@ export default function AssignRolesTab() {
   const [selectedUser, setSelectedUser] = useState(null);
   const [selectedRoleId, setSelectedRoleId] = useState('');
   const [selectedFacilityId, setSelectedFacilityId] = useState('');
-  const [searchingUsers, setSearchingUsers] = useState(false);
 
   // Inspect Permissions Modal State
   const [inspectUser, setInspectUser] = useState(null);
@@ -55,7 +56,7 @@ export default function AssignRolesTab() {
     return [...hosps, ...diags].filter(f => f.id);
   }, [hospitals, diagnosticCenters]);
 
-  const loadData = async () => {
+  const loadData = useCallback(async () => {
     setLoading(true);
     try {
       const [assignmentsRes, rolesRes] = await Promise.all([
@@ -70,11 +71,11 @@ export default function AssignRolesTab() {
     } finally {
       setLoading(false);
     }
-  };
+  }, [showToast]);
 
   useEffect(() => {
     loadData();
-  }, []);
+  }, [loadData]);
 
   // Search users with debounce
   useEffect(() => {
@@ -83,14 +84,11 @@ export default function AssignRolesTab() {
       return;
     }
     const timer = setTimeout(async () => {
-      setSearchingUsers(true);
       try {
         const res = await api.searchUsers(userQuery);
         setUserSuggestions(ensureArray(res));
       } catch (err) {
         console.error(err);
-      } finally {
-        setSearchingUsers(false);
       }
     }, 300);
     return () => clearTimeout(timer);
@@ -515,296 +513,42 @@ export default function AssignRolesTab() {
         )}
       </div>
 
-      {/* ========================================================================= */}
       {/* MODAL: ASSIGN ROLES TO USER */}
-      {/* ========================================================================= */}
-      {isAssignModalOpen && (
-        <div className="fixed inset-0 bg-slate-950/80 backdrop-blur-sm z-50 flex items-center justify-center p-4">
-          <div className="bg-slate-900 border border-slate-800 rounded-3xl max-w-lg w-full shadow-2xl overflow-hidden animate-in fade-in zoom-in-95 duration-150">
-            
-            {/* Modal Header */}
-            <div className="px-6 py-5 border-b border-slate-800 flex justify-between items-center bg-slate-800/40">
-              <div className="flex items-center gap-2">
-                <div className="p-2 rounded-xl bg-teal-500/10 text-teal-400 border border-teal-500/20">
-                  <UserCheck className="w-5 h-5" />
-                </div>
-                <div>
-                  <h3 className="text-base font-bold text-white">Assign Role to User</h3>
-                  <p className="text-xs text-slate-400">Delegate administrative or facility capabilities.</p>
-                </div>
-              </div>
-              <button 
-                onClick={handleCloseAssignModal}
-                className="p-2 text-slate-400 hover:text-white rounded-xl hover:bg-slate-800 transition"
-              >
-                <X className="w-5 h-5" />
-              </button>
-            </div>
+      <AssignRoleModal
+        isOpen={isAssignModalOpen}
+        onClose={handleCloseAssignModal}
+        onSubmit={handleAssignSubmit}
+        assignLoading={assignLoading}
+        userQuery={userQuery}
+        setUserQuery={setUserQuery}
+        selectedUser={selectedUser}
+        setSelectedUser={setSelectedUser}
+        userSuggestions={userSuggestions}
+        setUserSuggestions={setUserSuggestions}
+        selectedRoleId={selectedRoleId}
+        setSelectedRoleId={setSelectedRoleId}
+        roles={roles}
+        selectedRoleObj={selectedRoleObj}
+        selectedFacilityId={selectedFacilityId}
+        setSelectedFacilityId={setSelectedFacilityId}
+        allFacilities={allFacilities}
+      />
 
-            {/* Modal Form */}
-            <form onSubmit={handleAssignSubmit} className="p-6 space-y-4 text-xs">
-              
-              {/* Step 1: User Lookup */}
-              <div>
-                <label className="block text-slate-300 font-semibold mb-1 flex items-center gap-1.5">
-                  <Phone className="w-3.5 h-3.5 text-teal-400" />
-                  <span>Target User Phone Number *</span>
-                </label>
-                
-                <div className="relative">
-                  <input
-                    type="text"
-                    required
-                    placeholder="Search user phone (e.g. 017xxxxxxxx) or name..."
-                    value={selectedUser ? `${selectedUser.first_name || 'User'} (+880 ${selectedUser.phone_number})` : userQuery}
-                    onChange={e => {
-                      setSelectedUser(null);
-                      setUserQuery(e.target.value);
-                    }}
-                    className="w-full bg-slate-950 border border-slate-800 rounded-xl px-3.5 py-2.5 text-white font-mono placeholder-slate-500 focus:outline-none focus:border-teal-500"
-                  />
-                  {selectedUser && (
-                    <button
-                      type="button"
-                      onClick={() => { setSelectedUser(null); setUserQuery(''); }}
-                      className="absolute right-3 top-1/2 -translate-y-1/2 text-slate-400 hover:text-white"
-                    >
-                      <X className="w-3.5 h-3.5" />
-                    </button>
-                  )}
-                </div>
-
-                {/* Suggestions Dropdown */}
-                {userSuggestions.length > 0 && !selectedUser && (
-                  <div className="mt-1 bg-slate-950 border border-slate-800 rounded-xl max-h-36 overflow-y-auto divide-y divide-slate-800/60 shadow-lg">
-                    {userSuggestions.map(u => (
-                      <div
-                        key={u.id}
-                        onClick={() => {
-                          setSelectedUser(u);
-                          setUserSuggestions([]);
-                        }}
-                        className="px-3.5 py-2 hover:bg-slate-800/60 cursor-pointer flex items-center justify-between"
-                      >
-                        <div>
-                          <div className="font-semibold text-slate-200">
-                            {u.first_name ? `${u.first_name} ${u.last_name || ''}` : 'Registered User'}
-                          </div>
-                          <div className="font-mono text-[11px] text-teal-400">{u.phone_number}</div>
-                        </div>
-                        <ChevronRight className="w-3.5 h-3.5 text-slate-500" />
-                      </div>
-                    ))}
-                  </div>
-                )}
-                <p className="text-[11px] text-slate-500 mt-1">
-                  Type a registered phone number to assign.
-                </p>
-              </div>
-
-              {/* Step 2: Role Selection */}
-              <div>
-                <label className="block text-slate-300 font-semibold mb-1 flex items-center gap-1.5">
-                  <Shield className="w-3.5 h-3.5 text-teal-400" />
-                  <span>Select Role to Assign *</span>
-                </label>
-                <select
-                  required
-                  value={selectedRoleId}
-                  onChange={e => setSelectedRoleId(e.target.value)}
-                  className="w-full bg-slate-950 border border-slate-800 rounded-xl px-3.5 py-2.5 text-white focus:outline-none focus:border-teal-500 cursor-pointer font-medium"
-                >
-                  <option value="" disabled>Select a role...</option>
-                  {roles.map(r => (
-                    <option key={r.id} value={r.id}>
-                      {r.name} — [{r.scope_type.toUpperCase()} SCOPE] {r.is_system ? '(System)' : '(Custom)'}
-                    </option>
-                  ))}
-                </select>
-                {selectedRoleObj && (
-                  <div className="mt-1 text-[11px] text-slate-400">
-                    Scope: <span className="font-bold uppercase text-slate-300">{selectedRoleObj.scope_type}</span>
-                    {selectedRoleObj.description && ` — ${selectedRoleObj.description}`}
-                  </div>
-                )}
-              </div>
-
-              {/* Step 3: Dynamic Facility Selector (for Facility-Scoped Roles) */}
-              {selectedRoleObj?.scope_type === 'facility' && (
-                <div className="p-3.5 bg-slate-950/70 border border-emerald-500/30 rounded-2xl space-y-2">
-                  <label className="block text-slate-200 font-semibold flex items-center gap-1.5">
-                    <Building2 className="w-3.5 h-3.5 text-emerald-400" />
-                    <span>Target Facility Location *</span>
-                  </label>
-                  <select
-                    required
-                    value={selectedFacilityId}
-                    onChange={e => setSelectedFacilityId(e.target.value)}
-                    className="w-full bg-slate-900 border border-slate-700 rounded-xl px-3.5 py-2.5 text-white focus:outline-none focus:border-emerald-500 cursor-pointer"
-                  >
-                    <option value="">Select target Hospital / Diagnostic Center...</option>
-                    {allFacilities.map(f => (
-                      <option key={f.id} value={f.id}>
-                        {f.name} {f.branch ? `(${f.branch})` : ''} [{f.type.replace('_', ' ').toUpperCase()}]
-                      </option>
-                    ))}
-                  </select>
-                  <p className="text-[10px] text-slate-400">
-                    This role is scoped specifically to this location.
-                  </p>
-                </div>
-              )}
-
-              {/* Action Buttons */}
-              <div className="pt-3 border-t border-slate-800 flex justify-end gap-2.5">
-                <button
-                  type="button"
-                  onClick={handleCloseAssignModal}
-                  className="px-4 py-2 bg-slate-800 hover:bg-slate-700 text-slate-300 rounded-xl font-semibold transition"
-                >
-                  Cancel
-                </button>
-                <button
-                  type="submit"
-                  disabled={assignLoading}
-                  className="px-5 py-2 bg-gradient-to-r from-teal-600 to-emerald-600 hover:from-teal-500 hover:to-emerald-500 text-white rounded-xl font-bold transition flex items-center gap-2 shadow-lg shadow-teal-500/20 disabled:opacity-50 cursor-pointer"
-                >
-                  {assignLoading ? <RefreshCw className="w-3.5 h-3.5 animate-spin" /> : <CheckCircle2 className="w-3.5 h-3.5" />}
-                  <span>Confirm Assignment</span>
-                </button>
-              </div>
-
-            </form>
-
-          </div>
-        </div>
-      )}
-
-      {/* ========================================================================= */}
       {/* MODAL: INSPECT EFFECTIVE PERMISSIONS */}
-      {/* ========================================================================= */}
-      {inspectUser && (
-        <div className="fixed inset-0 bg-slate-950/80 backdrop-blur-sm z-50 flex items-center justify-center p-4">
-          <div className="bg-slate-900 border border-slate-800 rounded-3xl max-w-2xl w-full shadow-2xl overflow-hidden max-h-[85vh] flex flex-col">
-            
-            {/* Modal Header */}
-            <div className="px-6 py-5 border-b border-slate-800 flex justify-between items-center bg-slate-800/40 shrink-0">
-              <div className="flex items-center gap-2">
-                <div className="p-2 rounded-xl bg-teal-500/10 text-teal-400 border border-teal-500/20">
-                  <Shield className="w-5 h-5" />
-                </div>
-                <div>
-                  <h3 className="text-base font-bold text-white">Effective Permissions Matrix</h3>
-                  <p className="text-xs text-slate-400">
-                    Capabilities for {inspectUser.first_name || 'User'} ({inspectUser.phone_number})
-                  </p>
-                </div>
-              </div>
-              <button 
-                onClick={() => { setInspectUser(null); setInspectPerms(null); }}
-                className="p-2 text-slate-400 hover:text-white rounded-xl hover:bg-slate-800 transition"
-              >
-                <X className="w-5 h-5" />
-              </button>
-            </div>
+      <InspectPermissionsModal
+        inspectUser={inspectUser}
+        inspectPerms={inspectPerms}
+        inspectLoading={inspectLoading}
+        onClose={() => { setInspectUser(null); setInspectPerms(null); }}
+      />
 
-            {/* Modal Body */}
-            <div className="p-6 overflow-y-auto space-y-4 text-xs">
-              {inspectLoading ? (
-                <div className="py-12 text-center text-slate-400 flex flex-col items-center">
-                  <RefreshCw className="w-6 h-6 animate-spin text-teal-400 mb-2" />
-                  <span>Loading effective user permissions...</span>
-                </div>
-              ) : inspectPerms && Object.keys(inspectPerms).length > 0 ? (
-                <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
-                  {Object.entries(inspectPerms).map(([permKey, scopes]) => (
-                    <div key={permKey} className="bg-slate-950/60 border border-slate-800 p-3 rounded-xl flex items-center justify-between">
-                      <div className="font-mono text-slate-200 text-[11px] font-semibold">{permKey}</div>
-                      <div className="flex gap-1">
-                        {scopes.map(s => (
-                          <span 
-                            key={s} 
-                            className={`px-2 py-0.5 rounded text-[9px] font-bold uppercase ${
-                              s === 'global' ? 'bg-amber-500/10 text-amber-300 border border-amber-500/20' : 'bg-emerald-500/10 text-emerald-300 border border-emerald-500/20'
-                            }`}
-                          >
-                            {s}
-                          </span>
-                        ))}
-                      </div>
-                    </div>
-                  ))}
-                </div>
-              ) : (
-                <div className="py-8 text-center text-slate-400">
-                  No individual granular permissions mapped.
-                </div>
-              )}
-            </div>
-
-            {/* Modal Footer */}
-            <div className="px-6 py-4 border-t border-slate-800 flex justify-end bg-slate-800/20 shrink-0">
-              <button
-                onClick={() => { setInspectUser(null); setInspectPerms(null); }}
-                className="px-4 py-2 bg-slate-800 hover:bg-slate-700 text-slate-300 rounded-xl font-semibold transition"
-              >
-                Close
-              </button>
-            </div>
-
-          </div>
-        </div>
-      )}
-
-      {/* ========================================================================= */}
       {/* MODAL: CONFIRM REVOKE */}
-      {/* ========================================================================= */}
-      {revokingAssignment && (
-        <div className="fixed inset-0 bg-slate-950/80 backdrop-blur-sm z-50 flex items-center justify-center p-4">
-          <div className="bg-slate-900 border border-slate-800 rounded-3xl max-w-md w-full shadow-2xl p-6 space-y-4">
-            <div className="flex items-center gap-3">
-              <div className="p-3 rounded-2xl bg-rose-500/10 border border-rose-500/30 text-rose-400">
-                <ShieldAlert className="w-6 h-6" />
-              </div>
-              <div>
-                <h3 className="text-base font-bold text-white">Revoke Role Assignment?</h3>
-                <p className="text-xs text-slate-400">This will remove the user's granted permissions.</p>
-              </div>
-            </div>
-
-            <div className="p-3.5 bg-slate-950 rounded-2xl border border-slate-800 text-xs space-y-1">
-              <div className="text-slate-300">
-                <span className="text-slate-500">User:</span> <strong className="text-white">{revokingAssignment.user_details?.phone_number || revokingAssignment.user}</strong>
-              </div>
-              <div className="text-slate-300">
-                <span className="text-slate-500">Role:</span> <strong className="text-teal-300">{revokingAssignment.role_details?.name}</strong>
-              </div>
-              {revokingAssignment.facility_details && (
-                <div className="text-slate-300">
-                  <span className="text-slate-500">Facility:</span> <strong className="text-slate-200">{revokingAssignment.facility_details.name}</strong>
-                </div>
-              )}
-            </div>
-
-            <div className="flex justify-end gap-2.5 pt-2">
-              <button
-                onClick={() => setRevokingAssignment(null)}
-                className="px-4 py-2 bg-slate-800 hover:bg-slate-700 text-slate-300 rounded-xl font-semibold transition text-xs cursor-pointer"
-              >
-                Cancel
-              </button>
-              <button
-                onClick={handleRevokeConfirm}
-                disabled={revokeLoading}
-                className="px-4 py-2 bg-rose-600 hover:bg-rose-500 text-white rounded-xl font-bold transition text-xs flex items-center gap-1.5 shadow-lg shadow-rose-600/30 disabled:opacity-50 cursor-pointer"
-              >
-                {revokeLoading ? <RefreshCw className="w-3.5 h-3.5 animate-spin" /> : <Trash2 className="w-3.5 h-3.5" />}
-                <span>Confirm Revoke</span>
-              </button>
-            </div>
-          </div>
-        </div>
-      )}
+      <RevokeAssignmentModal
+        revokingAssignment={revokingAssignment}
+        revokeLoading={revokeLoading}
+        onClose={() => setRevokingAssignment(null)}
+        onConfirm={handleRevokeConfirm}
+      />
 
     </div>
   );

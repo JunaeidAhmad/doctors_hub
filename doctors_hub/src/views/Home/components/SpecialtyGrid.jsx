@@ -1,7 +1,7 @@
 import React, { useEffect, useState } from 'react';
 import {
   Heart, Brain, User, Activity, Sparkles, Baby, Stethoscope, Flame, Ear, ShieldAlert, Wind, Droplet,
-  Building2, FlaskConical, Award, ShieldCheck, FileText
+  Building2, FlaskConical, Award, ShieldCheck, FileText, ChevronDown, Eye, Smile, Scissors, Syringe, Pill, Bone
 } from 'lucide-react';
 import { api, ensureArray } from '../../../services/api';
 
@@ -22,7 +22,13 @@ const iconMap = {
   FlaskConical,
   Award,
   ShieldCheck,
-  FileText
+  FileText,
+  Eye,
+  Smile,
+  Scissors,
+  Syringe,
+  Pill,
+  Bone,
 };
 
 const FALLBACK_SPECIALTIES = [
@@ -38,10 +44,23 @@ const FALLBACK_SPECIALTIES = [
   { id: 'spec-10', name: 'Urology', slug: 'urology', icon: 'ShieldAlert', description: 'Kidney, bladder & urinary tract care', count: 55 },
   { id: 'spec-11', name: 'Pulmonology / Chest', slug: 'pulmonology', icon: 'Wind', description: 'Lungs, asthma & respiratory care', count: 65 },
   { id: 'spec-12', name: 'Nephrology', slug: 'nephrology', icon: 'Droplet', description: 'Kidney care, dialysis & renal wellness', count: 50 },
+  { id: 'spec-13', name: 'Ophthalmology (Eye)', slug: 'ophthalmology', icon: 'Eye', description: 'Vision correction, cataract & retinal care', count: 70 },
+  { id: 'spec-14', name: 'Psychiatry & Mental Health', slug: 'psychiatry', icon: 'Brain', description: 'Mental wellness, anxiety, depression & therapy', count: 45 },
+  { id: 'spec-15', name: 'Dentistry & Oral Surgery', slug: 'dentistry', icon: 'Smile', description: 'Dental implants, orthodontic & oral health', count: 90 },
+  { id: 'spec-16', name: 'General & Laparoscopic Surgery', slug: 'general-surgery', icon: 'Scissors', description: 'Hernia, appendix, gallbladder & day care surgeries', count: 80 },
+  { id: 'spec-17', name: 'Endocrinology & Diabetology', slug: 'endocrinology', icon: 'Activity', description: 'Thyroid, hormone imbalance & diabetes management', count: 65 },
+  { id: 'spec-18', name: 'Oncology (Cancer)', slug: 'oncology', icon: 'ShieldCheck', description: 'Medical, surgical & radiation cancer treatments', count: 40 },
+  { id: 'spec-19', name: 'Physical Medicine & Rehab', slug: 'physical-medicine', icon: 'Activity', description: 'Physiotherapy, chronic pain relief & rehabilitation', count: 55 },
+  { id: 'spec-20', name: 'Hematology', slug: 'hematology', icon: 'Droplet', description: 'Blood disorders, anemia, leukemia & coagulation', count: 35 },
+  { id: 'spec-21', name: 'Rheumatology', slug: 'rheumatology', icon: 'Bone', description: 'Arthritis, autoimmune & musculoskeletal conditions', count: 30 },
+  { id: 'spec-22', name: 'Plastic & Cosmetic Surgery', slug: 'plastic-surgery', icon: 'Sparkles', description: 'Reconstructive, burn & aesthetic plastic surgery', count: 25 },
+  { id: 'spec-23', name: 'Vascular Surgery', slug: 'vascular-surgery', icon: 'Activity', description: 'Artery, vein & circulatory surgical treatments', count: 20 },
+  { id: 'spec-24', name: 'Anesthesiology & Pain Care', slug: 'anesthesiology', icon: 'Syringe', description: 'Critical pain interventions & intensive care medicine', count: 30 },
 ];
 
 export default function SpecialtyGrid({ selectedSpecialty, setSelectedSpecialty, onSelectSpecialty }) {
   const [specialties, setSpecialties] = useState([]);
+  const [showAll, setShowAll] = useState(false);
 
   useEffect(() => {
     let isMounted = true;
@@ -64,6 +83,7 @@ export default function SpecialtyGrid({ selectedSpecialty, setSelectedSpecialty,
   }, []);
 
   const displayList = specialties.length > 0 ? specialties : FALLBACK_SPECIALTIES;
+  const visibleList = showAll ? displayList : displayList.slice(0, 20);
 
   return (
     <section className="py-14 px-4 sm:px-8 bg-slate-100/70 border-t border-slate-200">
@@ -82,7 +102,7 @@ export default function SpecialtyGrid({ selectedSpecialty, setSelectedSpecialty,
         </div>
 
         <div className="grid grid-cols-2 sm:grid-cols-3 md:grid-cols-4 lg:grid-cols-6 gap-4">
-          {displayList.map((spec) => {
+          {visibleList.map((spec) => {
             const IconComponent = iconMap[spec.icon] || iconMap[spec.slug] || Stethoscope;
             const isSelected = selectedSpecialty === spec.name || selectedSpecialty === spec.slug;
 
@@ -129,6 +149,19 @@ export default function SpecialtyGrid({ selectedSpecialty, setSelectedSpecialty,
             );
           })}
         </div>
+
+        {displayList.length > 20 && (
+          <div className="mt-8 text-center">
+            <button
+              type="button"
+              onClick={() => setShowAll(!showAll)}
+              className="inline-flex items-center gap-2 px-6 py-2.5 rounded-xl font-bold text-sm bg-white text-slate-800 border border-slate-300 hover:border-emerald-500 hover:text-emerald-700 hover:shadow-md transition-all duration-200 cursor-pointer active:scale-95"
+            >
+              <span>{showAll ? 'Show Less' : `Show All (${displayList.length})`}</span>
+              <ChevronDown className={`w-4 h-4 transition-transform duration-200 ${showAll ? 'rotate-180' : ''}`} />
+            </button>
+          </div>
+        )}
 
       </div>
     </section>

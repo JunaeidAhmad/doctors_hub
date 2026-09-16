@@ -17,6 +17,14 @@ export async function getSpecialties() {
   });
 }
 
+export async function getCanonicalSpecialties({ search = '' } = {}) {
+  const url = new URL(`${BASE_URL}/specialties/`);
+  url.searchParams.append('canonical_only', 'true');
+  if (search) url.searchParams.append('search', search);
+  const res = await fetchWithTimeout(url, { headers: getHeaders() });
+  return handleResponse(res);
+}
+
 export async function createSpecialty(data) {
   clearCache();
   const res = await fetchWithTimeout(`${BASE_URL}/specialties/`, {
@@ -44,6 +52,85 @@ export async function deleteSpecialty(id) {
     headers: getHeaders(),
   });
   if (res.status === 204 || res.status === 200) return true;
+  return handleResponse(res);
+}
+
+// Specialty Aliases
+export async function getSpecialtyAliases({
+  specialty = '',
+  is_verified = '',
+  language = '',
+  search = '',
+  page = '',
+  page_size = '',
+} = {}) {
+  const url = new URL(`${BASE_URL}/specialty-aliases/`);
+  if (specialty) url.searchParams.append('specialty', specialty);
+  if (is_verified !== '' && is_verified !== null && is_verified !== undefined) {
+    url.searchParams.append('is_verified', is_verified);
+  }
+  if (language) url.searchParams.append('language', language);
+  if (search) url.searchParams.append('search', search);
+  if (page) url.searchParams.append('page', page);
+  if (page_size) url.searchParams.append('page_size', page_size);
+
+  const res = await fetchWithTimeout(url, { headers: getHeaders() });
+  return handleResponse(res);
+}
+
+export async function getSpecialtyAliasCounts() {
+  const res = await fetchWithTimeout(`${BASE_URL}/specialty-aliases/counts/`, {
+    headers: getHeaders(),
+  });
+  return handleResponse(res);
+}
+
+export async function createSpecialtyAlias(data) {
+  clearCache();
+  const res = await fetchWithTimeout(`${BASE_URL}/specialty-aliases/`, {
+    method: 'POST',
+    headers: getHeaders(),
+    body: JSON.stringify(data),
+  });
+  return handleResponse(res);
+}
+
+export async function updateSpecialtyAlias(id, data) {
+  clearCache();
+  const res = await fetchWithTimeout(`${BASE_URL}/specialty-aliases/${id}/`, {
+    method: 'PATCH',
+    headers: getHeaders(),
+    body: JSON.stringify(data),
+  });
+  return handleResponse(res);
+}
+
+export async function deleteSpecialtyAlias(id) {
+  clearCache();
+  const res = await fetchWithTimeout(`${BASE_URL}/specialty-aliases/${id}/`, {
+    method: 'DELETE',
+    headers: getHeaders(),
+  });
+  if (res.status === 204 || res.status === 200) return true;
+  return handleResponse(res);
+}
+
+export async function verifySpecialtyAlias(id) {
+  clearCache();
+  const res = await fetchWithTimeout(`${BASE_URL}/specialty-aliases/${id}/verify/`, {
+    method: 'POST',
+    headers: getHeaders(),
+  });
+  return handleResponse(res);
+}
+
+export async function batchVerifySpecialtyAliases(alias_ids) {
+  clearCache();
+  const res = await fetchWithTimeout(`${BASE_URL}/specialty-aliases/batch-verify/`, {
+    method: 'POST',
+    headers: getHeaders(),
+    body: JSON.stringify({ alias_ids }),
+  });
   return handleResponse(res);
 }
 

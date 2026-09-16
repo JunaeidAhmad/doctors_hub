@@ -487,7 +487,8 @@ export function AdminProvider({ children, currentUser, onLogout, showToast }) {
     testCats: (testCategories || []).length,
     branchTests: dashboardCounts.branch_tests ?? (branchTests || []).length,
     docBookings: dashboardCounts.doctor_bookings ?? (doctorBookings || []).length,
-    labBookings: dashboardCounts.lab_bookings ?? (labBookings || []).length
+    labBookings: dashboardCounts.lab_bookings ?? (labBookings || []).length,
+    unverifiedAliases: dashboardCounts.unverified_aliases ?? 0
   };
 
   const value = {

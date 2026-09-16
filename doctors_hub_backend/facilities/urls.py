@@ -1,6 +1,7 @@
 from django.urls import path, include
 from rest_framework.routers import DefaultRouter
 from .views import (
+    DivisionViewSet, DistrictViewSet, ThanaViewSet,
     LocationViewSet, HospitalCategoryViewSet, HospitalServiceViewSet,
     HospitalViewSet, DiagnosticCenterCategoryViewSet, DiagnosticServiceViewSet,
     DiagnosticCenterViewSet, ChamberViewSet
@@ -8,6 +9,9 @@ from .views import (
 
 
 router = DefaultRouter()
+router.register(r'divisions', DivisionViewSet, basename='division')
+router.register(r'districts', DistrictViewSet, basename='district')
+router.register(r'thanas', ThanaViewSet, basename='thana')
 router.register(r'locations', LocationViewSet, basename='location')
 router.register(r'hospitals', HospitalViewSet, basename='hospital')
 router.register(r'hospital-categories', HospitalCategoryViewSet, basename='hospital-category')

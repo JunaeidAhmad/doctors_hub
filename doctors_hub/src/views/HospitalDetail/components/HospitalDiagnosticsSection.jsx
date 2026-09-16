@@ -3,6 +3,7 @@ import {
   FlaskConical, Truck, Activity, Heart, 
   TestTube2, Sparkles, Clock, ArrowRight, Search 
 } from 'lucide-react';
+import { formatFacilityName } from '../../../utils/facilityUtils';
 
 const STITCH_FEATURED_DIAGNOSTICS = [
   {
@@ -71,8 +72,9 @@ export default function HospitalDiagnosticsSection({
         id: test.id,
         name: test.name || test.test_name || 'Diagnostic Procedure',
         price: test.price || test.calculated_price || 0,
-        facility_name: hospital?.name || hospital?.facility_name || 'Square Hospital',
+        facility_name: formatFacilityName(hospital) || 'Square Hospital',
         branch_name: hospital?.branch || '',
+        branch: hospital?.branch || '',
         category: test.category || 'Diagnostic',
       });
     }

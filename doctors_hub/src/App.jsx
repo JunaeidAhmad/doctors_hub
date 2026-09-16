@@ -1,14 +1,17 @@
-import React, { useState, useEffect, useRef } from 'react';
+import React, { useState, useEffect, useRef, lazy, Suspense } from 'react';
 import { useNavigate, useLocation } from 'react-router-dom';
 import TopUtilityStrip from './components/TopUtilityStrip';
 import StickyNavbar from './components/StickyNavbar';
 import HomePage from './views/Home/HomePage';
 import DoctorSearchPage from './views/DoctorSearch/DoctorSearchPage';
-import DoctorProfilePage from './views/DoctorProfile/DoctorProfilePage';
-import DiagnosticsSearchPage from './views/DiagnosticsSearch/DiagnosticsSearchPage';
-import AdminDashboardPage from './views/AdminDashboard';
-import HospitalDetailPage from './views/HospitalDetail/HospitalDetailPage';
-import HospitalsPage from './views/Hospitals/HospitalsPage';
+
+// Code-split heavy pages to optimize initial bundle size & performance
+const DoctorProfilePage = lazy(() => import('./views/DoctorProfile/DoctorProfilePage'));
+const DiagnosticsSearchPage = lazy(() => import('./views/DiagnosticsSearch/DiagnosticsSearchPage'));
+const AdminDashboardPage = lazy(() => import('./views/AdminDashboard'));
+const HospitalDetailPage = lazy(() => import('./views/HospitalDetail/HospitalDetailPage'));
+const HospitalsPage = lazy(() => import('./views/Hospitals/HospitalsPage'));
+
 import BookingModal from './components/BookingModal';
 import LabBookingModal from './components/LabBookingModal';
 import LoginModal from './components/LoginModal';
@@ -25,6 +28,15 @@ function getPageFromPath(path) {
   if (path === '/hospitals') return 'hospitals';
   if (path.startsWith('/hospital/')) return 'hospital-detail';
   return 'home';
+}
+
+function PageLoadingFallback() {
+  return (
+    <div className="min-h-[50vh] flex flex-col items-center justify-center space-y-3 py-16">
+      <div className="w-8 h-8 border-3 border-emerald-500/20 border-t-emerald-500 rounded-full animate-spin" />
+      <p className="text-xs font-semibold text-slate-400">Loading page view...</p>
+    </div>
+  );
 }
 
 export default function App() {
@@ -199,6 +211,21 @@ export default function App() {
 
   const handleNavClick = (tabId) => {
     setActiveTab(tabId);
+    if (tabId === 'contact') {
+      const el = document.getElementById('contact');
+      if (el) {
+        el.scrollIntoView({ behavior: 'smooth' });
+      } else {
+        isSectionScroll.current = true;
+        navigate('/');
+        setTimeout(() => {
+          const contactEl = document.getElementById('contact');
+          if (contactEl) contactEl.scrollIntoView({ behavior: 'smooth' });
+        }, 150);
+      }
+      return;
+    }
+
     if (tabId === 'admin') {
       navigate('/admin');
     } else if (tabId === 'home') {
@@ -218,6 +245,22 @@ export default function App() {
       }, 100);
     }
     window.scrollTo({ top: 0, behavior: 'smooth' });
+  };
+
+  const handleDownloadAppClick = () => {
+    const el = document.getElementById("app-download");
+    if (el) {
+      el.scrollIntoView({ behavior: 'smooth' });
+    } else {
+      isSectionScroll.current = true;
+      navigate('/');
+      setTimeout(() => {
+        const target = document.getElementById("app-download");
+        if (target) {
+          target.scrollIntoView({ behavior: 'smooth' });
+        }
+      }, 150);
+    }
   };
 
   const handleSelectHospital = (hospitalId) => {
@@ -273,106 +316,103 @@ export default function App() {
           onOpenLogin={() => setLoginModalOpen(true)}
           onOpenSettings={() => setUserSettingsModalOpen(true)}
           onLogout={handleLogout}
-          onOpenAppModal={() => {
-            showToast("Scroll down to scan QR or click download APK!");
-            const el = document.getElementById("app-download");
-            if (el) el.scrollIntoView({ behavior: 'smooth' });
-          }}
+          onOpenAppModal={handleDownloadAppClick}
         />
       )}
 
       {/* DYNAMIC PAGE ROUTING RENDER */}
       <main className="flex-1">
-        {currentPage === 'admin' && (
-          <AdminDashboardPage
-            currentUser={user}
-            onNavigate={handleNavClick}
-            onAdminLoggedIn={(loggedInUser) => setUser(loggedInUser)}
-            onLogout={handleLogout}
-            showToast={showToast}
-          />
-        )}
+        <Suspense fallback={<PageLoadingFallback />}>
+          {currentPage === 'admin' && (
+            <AdminDashboardPage
+              currentUser={user}
+              onNavigate={handleNavClick}
+              onAdminLoggedIn={(loggedInUser) => setUser(loggedInUser)}
+              onLogout={handleLogout}
+              showToast={showToast}
+            />
+          )}
 
-        {currentPage === 'home' && (
-          <HomePage
-            selectedSpecialty={selectedSpecialty}
-            setSelectedSpecialty={setSelectedSpecialty}
-            selectedTest={selectedTest}
-            setSelectedTest={setSelectedTest}
-            selectedHospitalCategory={selectedHospitalCategory}
-            setSelectedHospitalCategory={setSelectedHospitalCategory}
-            doctorKeyword={doctorKeyword}
-            setDoctorKeyword={setDoctorKeyword}
-            selectedLocation={selectedLocation}
-            setSelectedLocation={setSelectedLocation}
-            activeEngineTab={activeEngineTab}
-            setActiveEngineTab={setActiveEngineTab}
-            onExecuteSearch={handleExecuteSearch}
-            onBookDoctorSlot={(chamber, doctor) => setBookingDoctorState({ chamber, doctor })}
-            onBookLabTest={(test) => setBookingLabState(test)}
-            onSelectHospital={handleSelectHospital}
-            showToast={showToast}
-          />
-        )}
+          {currentPage === 'home' && (
+            <HomePage
+              selectedSpecialty={selectedSpecialty}
+              setSelectedSpecialty={setSelectedSpecialty}
+              selectedTest={selectedTest}
+              setSelectedTest={setSelectedTest}
+              selectedHospitalCategory={selectedHospitalCategory}
+              setSelectedHospitalCategory={setSelectedHospitalCategory}
+              doctorKeyword={doctorKeyword}
+              setDoctorKeyword={setDoctorKeyword}
+              selectedLocation={selectedLocation}
+              setSelectedLocation={setSelectedLocation}
+              activeEngineTab={activeEngineTab}
+              setActiveEngineTab={setActiveEngineTab}
+              onExecuteSearch={handleExecuteSearch}
+              onBookDoctorSlot={(chamber, doctor) => setBookingDoctorState({ chamber, doctor })}
+              onBookLabTest={(test) => setBookingLabState(test)}
+              onSelectHospital={handleSelectHospital}
+              showToast={showToast}
+            />
+          )}
 
-        {currentPage === 'hospitals' && (
-          <HospitalsPage
-            initialCategory={selectedHospitalCategory}
-            initialKeyword={hospitalKeyword}
-            onSelectHospital={handleSelectHospital}
-            onNavigateHome={() => handleNavClick('home')}
-          />
-        )}
+          {currentPage === 'hospitals' && (
+            <HospitalsPage
+              initialCategory={selectedHospitalCategory}
+              initialKeyword={hospitalKeyword}
+              onSelectHospital={handleSelectHospital}
+              onNavigateHome={() => handleNavClick('home')}
+            />
+          )}
 
-        {currentPage === 'hospital-detail' && (
-          <HospitalDetailPage
-            hospitalId={currentHospitalId}
-            onBookDoctorSlot={(arg1, arg2) => {
-              if (arg1 && typeof arg1 === 'object' && arg1.chamber && arg1.doctor) {
-                setBookingDoctorState({ chamber: arg1.chamber, doctor: arg1.doctor });
-              } else {
-                setBookingDoctorState({ chamber: arg1, doctor: arg2 });
-              }
-            }}
-            onBookLabTest={(test) => setBookingLabState(test)}
-            onNavigateHome={() => handleNavClick('home')}
-            onNavigateHospitals={() => handleNavClick('hospitals')}
-          />
-        )}
+          {currentPage === 'hospital-detail' && (
+            <HospitalDetailPage
+              hospitalId={currentHospitalId}
+              onBookDoctorSlot={(arg1, arg2) => {
+                if (arg1 && typeof arg1 === 'object' && arg1.chamber && arg1.doctor) {
+                  setBookingDoctorState({ chamber: arg1.chamber, doctor: arg1.doctor });
+                } else {
+                  setBookingDoctorState({ chamber: arg1, doctor: arg2 });
+                }
+              }}
+              onBookLabTest={(test) => setBookingLabState(test)}
+              onNavigateHome={() => handleNavClick('home')}
+              onNavigateHospitals={() => handleNavClick('hospitals')}
+            />
+          )}
 
-        {currentPage === 'doctor-search' && (
-          <DoctorSearchPage
-            initialSpecialty={selectedSpecialty}
-            initialLocation={selectedLocation}
-            initialKeyword={doctorKeyword}
-            onBookDoctorSlot={(chamber, doctor) => setBookingDoctorState({ chamber, doctor })}
-            onSelectHospital={handleSelectHospital}
-            onNavigateHome={() => handleNavClick('home')}
-          />
-        )}
+          {currentPage === 'doctor-search' && (
+            <DoctorSearchPage
+              initialSpecialty={selectedSpecialty}
+              initialLocation={selectedLocation}
+              initialKeyword={doctorKeyword}
+              onBookDoctorSlot={(chamber, doctor) => setBookingDoctorState({ chamber, doctor })}
+              onSelectHospital={handleSelectHospital}
+              onNavigateHome={() => handleNavClick('home')}
+            />
+          )}
 
-        {currentPage === 'doctor-profile' && (
-          <DoctorProfilePage
-            doctorSlug={currentDoctorSlug}
-            onBookDoctorSlot={(chamber, doctor) => setBookingDoctorState({ chamber, doctor })}
-            onNavigateHome={() => handleNavClick('home')}
-            onNavigateDoctorSearch={() => {
-              navigate('/doctor-search');
-              window.scrollTo({ top: 0, behavior: 'smooth' });
-            }}
-            showToast={showToast}
-          />
-        )}
+          {currentPage === 'doctor-profile' && (
+            <DoctorProfilePage
+              doctorSlug={currentDoctorSlug}
+              onBookDoctorSlot={(chamber, doctor) => setBookingDoctorState({ chamber, doctor })}
+              onNavigateHome={() => handleNavClick('home')}
+              onNavigateDoctorSearch={() => {
+                navigate('/doctor-search');
+                window.scrollTo({ top: 0, behavior: 'smooth' });
+              }}
+              showToast={showToast}
+            />
+          )}
 
-        {currentPage === 'diagnostics-search' && (
-          <DiagnosticsSearchPage
-            initialTest={selectedTest}
-            initialLocation={selectedLocation}
-            onBookLabTest={(test) => setBookingLabState(test)}
-            onNavigateHome={() => handleNavClick('home')}
-          />
-        )}
-
+          {currentPage === 'diagnostics-search' && (
+            <DiagnosticsSearchPage
+              initialTest={selectedTest}
+              initialLocation={selectedLocation}
+              onBookLabTest={(test) => setBookingLabState(test)}
+              onNavigateHome={() => handleNavClick('home')}
+            />
+          )}
+        </Suspense>
       </main>
 
       {/* FOOTER */}

@@ -1,6 +1,6 @@
 import { 
   LayoutDashboard, ShieldCheck, Building2, FlaskConical, Stethoscope, 
-  TestTube, Calculator, Calendar, Users, List, Activity, Settings, UserCheck
+  TestTube, Calculator, Calendar, Users, List, Activity, Settings, UserCheck, Tag
 } from 'lucide-react';
 
 export const navConfig = {
@@ -28,7 +28,8 @@ export const navConfig = {
     {
       group: 'CATALOG / TAXONOMY (super admin)',
       items: [
-        { id: 'doctor-specs', label: 'Doctor Specialties', icon: Stethoscope },
+        { id: 'doctor-specs', label: 'Doctor Specialties & Taxonomy', icon: Stethoscope },
+        { id: 'specialty-aliases', label: 'Aliases & Review Queue', icon: Tag },
         { id: 'hospital-specs', label: 'Hospital Categories', icon: Building2 },
         { id: 'diag-cats', label: 'Diagnostic Categories', icon: FlaskConical },
         { id: 'hosp-services', label: 'Hospital Services', icon: Activity },

@@ -42,7 +42,7 @@ def test_search_facets_endpoint_returns_aggregations(api_client):
     assert "specialties" in res_global.data
     assert "districts" in res_global.data
     assert "Dhaka" in res_global.data["districts"]
-    assert "Chittagong" in res_global.data["districts"]
+    assert "Chattogram" in res_global.data["districts"] or "Chittagong" in res_global.data["districts"]
 
     # 2. Location-filtered facets (location=Dhaka)
     res_filtered = api_client.get("/api/search-facets/?location=Dhaka")

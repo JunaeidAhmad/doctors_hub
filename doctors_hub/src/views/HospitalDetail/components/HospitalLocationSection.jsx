@@ -3,9 +3,10 @@ import {
   Navigation, ExternalLink, Car, Ambulance, PhoneCall, 
   ArrowRight, ShieldAlert, ParkingCircle, MapPin 
 } from 'lucide-react';
+import { formatFacilityName } from '../../../utils/facilityUtils';
 
 export default function HospitalLocationSection({ hospital }) {
-  const hospitalName = hospital?.name || hospital?.facility_name || 'Square Hospital';
+  const hospitalName = formatFacilityName(hospital) || 'Square Hospital';
   const address = hospital?.address_line || hospital?.address || '18/F, Bir Uttam Qazi Nuruzzaman Sarak, West Panthapath, Dhaka 1205';
   const parkingText = hospital?.parking_capacity || '280 Car Parking Available';
   const ambulancePhone = hospital?.ambulance_phone || '+880 1700-000000';

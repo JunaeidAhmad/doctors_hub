@@ -1,17 +1,4 @@
-import React from 'react';
-
-const DEFAULT_FACILITIES = [
-  { id: 'popular', name: 'Popular Diagnostic Centre' },
-  { id: 'square', name: 'Square Hospital' },
-  { id: 'evercare', name: 'Evercare Hospital' },
-  { id: 'ibn_sina', name: 'Ibn Sina Diagnostic & Hospital' },
-  { id: 'labaid', name: 'LabAid Specialized Hospital' },
-  { id: 'united', name: 'United Hospital' },
-  { id: 'medinova', name: 'Medinova Medical Centre' },
-  { id: 'central', name: 'Central Hospital Limited' },
-  { id: 'anwer_khan', name: 'Anwer Khan Modern Hospital' },
-  { id: 'green_life', name: 'Green Life Hospital' }
-];
+import { formatFacilityName } from '../../../utils/facilityUtils';
 
 export default function DoctorSearchBarStrip({
   specialty,
@@ -24,7 +11,9 @@ export default function DoctorSearchBarStrip({
   onKeywordChange,
   onSearchSubmit
 }) {
-  const facilityOptions = facilities.length > 0 ? facilities : DEFAULT_FACILITIES;
+  const facilityOptions = (facilities || [])
+    .slice()
+    .sort((a, b) => (a.name || '').localeCompare(b.name || ''));
 
   const handleSubmit = (e) => {
     e.preventDefault();
@@ -90,8 +79,8 @@ export default function DoctorSearchBarStrip({
           >
             <option value="">Select Hospital & Diagnostic Center</option>
             {facilityOptions.map((fac) => {
-              const facVal = fac.id || fac.name;
-              const facLabel = fac.name;
+              const facVal = fac.id || fac.slug || fac.name;
+              const facLabel = formatFacilityName(fac);
               return (
                 <option key={facVal} value={facVal}>
                   {facLabel}

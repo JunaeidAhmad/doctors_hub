@@ -1,3 +1,5 @@
+import { formatFacilityName } from '../../utils/facilityUtils';
+
 export const BASE_URL = import.meta.env.VITE_API_BASE_URL || 'http://localhost:8000/api';
 
 let refreshPromise = null;
@@ -263,12 +265,17 @@ export function flattenFacility(data) {
       catList = [data.category];
     }
 
+    const name = loc.name || data.name || data.facility_name || data.center_name || '';
+    const branch = loc.branch || data.branch || '';
+    const displayName = formatFacilityName(name, branch);
+
     return {
       ...data,
       ...loc,
       ...addr,
-      name: loc.name || data.name || data.facility_name || data.center_name || '',
-      branch: loc.branch || data.branch || '',
+      name,
+      branch,
+      display_name: displayName,
       address_line: addressLine,
       address: addressLine,
       city,
@@ -281,6 +288,13 @@ export function flattenFacility(data) {
       location_id: data.location_id || loc.id,
       id: data.id || data.location_id || loc.id,
     };
+  }
+  if (data && typeof data === 'object') {
+    const rawName = data.name || data.facility_name || data.center_name || data.hospital_name || '';
+    const rawBranch = data.branch || '';
+    if (rawName && !data.display_name) {
+      data.display_name = formatFacilityName(rawName, rawBranch);
+    }
   }
   return data;
 }

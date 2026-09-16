@@ -4,6 +4,7 @@ import {
   Building2, TestTube2, Stethoscope, MapPin, Award, Phone, Calendar
 } from 'lucide-react';
 import { api, ensureArray } from '../../../services/api';
+import { formatFacilityName } from '../../../utils/facilityUtils';
 
 export default function VerificationQueueTab() {
   const [queue, setQueue] = useState({ pending_facilities: [], pending_doctors: [], total_pending: 0 });
@@ -161,8 +162,7 @@ export default function VerificationQueueTab() {
                           <TestTube2 className="w-4 h-4 text-teal-400 shrink-0" />
                         )}
                         <div>
-                          <div>{fac.name}</div>
-                          {fac.branch && <div className="text-[11px] text-slate-400 font-normal">{fac.branch}</div>}
+                          <div>{formatFacilityName(fac.name, fac.branch)}</div>
                         </div>
                       </div>
                     </td>

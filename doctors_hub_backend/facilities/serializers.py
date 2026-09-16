@@ -1,9 +1,44 @@
 from rest_framework import serializers
 from drf_spectacular.utils import extend_schema_field
 from .models import (
+    Division, District, Thana,
     Location, HospitalCategory, HospitalService, Hospital,
     DiagnosticCenterCategory, DiagnosticService, DiagnosticCenter, Chamber
 )
+
+class DivisionSerializer(serializers.ModelSerializer):
+    districts_count = serializers.IntegerField(source='districts.count', read_only=True)
+
+    class Meta:
+        model = Division
+        fields = ('id', 'name', 'bn_name', 'slug', 'order', 'districts_count')
+
+
+class DistrictSerializer(serializers.ModelSerializer):
+    division_name = serializers.CharField(source='division.name', read_only=True)
+    division_bn_name = serializers.CharField(source='division.bn_name', read_only=True)
+    thanas_count = serializers.IntegerField(source='thanas.count', read_only=True)
+
+    class Meta:
+        model = District
+        fields = ('id', 'division', 'division_name', 'division_bn_name', 'name', 'bn_name', 'slug', 'thanas_count')
+
+
+class ThanaSerializer(serializers.ModelSerializer):
+    district_name = serializers.CharField(source='district.name', read_only=True)
+    district_bn_name = serializers.CharField(source='district.bn_name', read_only=True)
+    division_id = serializers.IntegerField(source='district.division_id', read_only=True)
+    division_name = serializers.CharField(source='district.division.name', read_only=True)
+    division_bn_name = serializers.CharField(source='district.division.bn_name', read_only=True)
+
+    class Meta:
+        model = Thana
+        fields = (
+            'id', 'district', 'district_name', 'district_bn_name',
+            'division_id', 'division_name', 'division_bn_name',
+            'name', 'bn_name', 'slug'
+        )
+
 
 class HospitalCategorySerializer(serializers.ModelSerializer):
     hospital_count = serializers.IntegerField(read_only=True, required=False)
@@ -33,16 +68,71 @@ class DiagnosticCenterCategorySerializer(serializers.ModelSerializer):
         fields = ('id', 'name', 'slug', 'icon', 'description', 'center_count')
 
 
-
 class LocationSerializer(serializers.ModelSerializer):
+    thana = serializers.PrimaryKeyRelatedField(queryset=Thana.objects.all(), required=False, allow_null=True)
+    thana_details = ThanaSerializer(source='thana', read_only=True)
+    area = serializers.CharField(read_only=True)
+    district = serializers.CharField(read_only=True)
+    division = serializers.CharField(read_only=True)
+
+    input_area = serializers.CharField(write_only=True, required=False, allow_blank=True)
+    input_district = serializers.CharField(write_only=True, required=False, allow_blank=True)
+    input_division = serializers.CharField(write_only=True, required=False, allow_blank=True)
+
     class Meta:
         model = Location
         fields = (
             'id', 'location_type', 'ownership_type', 'name', 'branch', 'slug',
-            'address_line', 'area', 'district', 'division',
+            'address_line', 'thana', 'thana_details', 'area', 'district', 'division',
+            'input_area', 'input_district', 'input_division',
             'phone', 'email', 'logo', 'image', 'description', 'tagline', 'badge',
             'rating', 'reviews_count', 'open_timing', 'is_verified', 'is_active', 'created_at'
         )
+
+    def to_internal_value(self, data):
+        ret = super().to_internal_value(data)
+        if 'thana' not in ret or ret.get('thana') is None:
+            raw_dist = data.get('district', '')
+            raw_area = data.get('area', '')
+            if raw_dist or raw_area:
+                ret['input_district'] = raw_dist
+                ret['input_area'] = raw_area
+        return ret
+
+    def _resolve_thana(self, validated_data):
+        thana = validated_data.get('thana')
+        input_district = validated_data.pop('input_district', None)
+        input_area = validated_data.pop('input_area', None)
+        validated_data.pop('input_division', None)
+
+        if not thana and (input_district or input_area):
+            DIST_ALIASES = {
+                'chittagong': 'Chattogram', 'comilla': 'Cumilla', 'bogra': 'Bogura',
+                'jessore': 'Jashore', 'barisal': 'Barishal', 'ঢাকা': 'Dhaka',
+                'চট্টগ্রাম': 'Chattogram', 'সিলেট': 'Sylhet'
+            }
+            norm_dist = DIST_ALIASES.get((input_district or '').strip().lower(), (input_district or '').strip())
+            norm_area = (input_area or '').strip()
+
+            qs = Thana.objects.filter(district__name__iexact=norm_dist) if norm_dist else Thana.objects.all()
+            resolved = None
+            if norm_area:
+                resolved = qs.filter(name__iexact=norm_area).first() or qs.filter(bn_name__iexact=norm_area).first()
+            if not resolved and norm_dist:
+                resolved = qs.filter(name__icontains='Sadar').first() or qs.first()
+            if resolved:
+                validated_data['thana'] = resolved
+        return validated_data
+
+    def create(self, validated_data):
+        validated_data = self._resolve_thana(validated_data)
+        if 'thana' not in validated_data or not validated_data['thana']:
+            validated_data['thana'] = Thana.objects.filter(district__name='Dhaka', name='Dhanmondi').first() or Thana.objects.first()
+        return super().create(validated_data)
+
+    def update(self, instance, validated_data):
+        validated_data = self._resolve_thana(validated_data)
+        return super().update(instance, validated_data)
 
 
 class HospitalSerializer(serializers.ModelSerializer):
@@ -81,7 +171,7 @@ class HospitalSerializer(serializers.ModelSerializer):
             return []
         try:
             from doctors.serializers import DoctorAffiliationSerializer
-            affs = obj.location.affiliations.select_related('doctor', 'location').prefetch_related('schedules', 'doctor__specialties').all()
+            affs = obj.location.affiliations.all()
             return DoctorAffiliationSerializer(affs, many=True).data
         except Exception:
             return []
@@ -91,7 +181,7 @@ class HospitalSerializer(serializers.ModelSerializer):
             return []
         try:
             from tests.serializers import FacilityTestSerializer
-            fts = obj.location.offered_tests.select_related('test', 'test__category').all()
+            fts = obj.location.offered_tests.all()
             return FacilityTestSerializer(fts, many=True).data
         except Exception:
             return []

@@ -2,14 +2,14 @@ import React from 'react';
 import { DIVISIONS, DIVISION_DISTRICTS, DISTRICT_THANAS } from '../../../data/constants';
 
 export default function DiagnosticsFilterSidebar({
-  division = 'Dhaka Division',
-  district = 'Dhaka District',
-  area = 'Dhanmondi',
+  division = 'All Bangladesh',
+  district = 'All Districts',
+  area = 'All Areas',
   onLocationChange,
   onClearLocation,
-  fulfillment = 'home', // 'all' | 'home' | 'center'
+  fulfillment = 'all', // 'all' | 'home' | 'center'
   onFulfillmentChange,
-  ownership = 'private', // 'all' | 'private' | 'hospital_affiliated' | 'government' | 'ngo'
+  ownership = 'all', // 'all' | 'private' | 'hospital_affiliated' | 'government' | 'ngo'
   onOwnershipChange,
   ownershipCounts = {},
   onResetAll,
@@ -19,13 +19,21 @@ export default function DiagnosticsFilterSidebar({
 }) {
   // Clean division name
   const cleanDivision = (division || '').replace(/\s*Division$/i, '').trim();
-  const activeDivision = DIVISIONS.includes(cleanDivision) ? cleanDivision : 'Dhaka';
-  const availableDistricts = DIVISION_DISTRICTS[activeDivision] || DIVISION_DISTRICTS['Dhaka'] || [];
+  const isAllBangladesh = !cleanDivision || cleanDivision.toLowerCase() === 'all' || cleanDivision.toLowerCase() === 'all bangladesh';
+  const activeDivision = isAllBangladesh ? 'All Bangladesh' : (DIVISIONS.includes(cleanDivision) ? cleanDivision : 'All Bangladesh');
+
+  const availableDistricts = !isAllBangladesh && DIVISION_DISTRICTS[activeDivision]
+    ? DIVISION_DISTRICTS[activeDivision]
+    : Object.values(DIVISION_DISTRICTS).flat();
 
   // Clean district name
   const cleanDistrict = (district || '').replace(/\s*District$/i, '').trim();
-  const activeDistrict = availableDistricts.includes(cleanDistrict) ? cleanDistrict : (availableDistricts[0] || 'Dhaka');
-  const availableAreas = DISTRICT_THANAS[activeDistrict] || DISTRICT_THANAS['Dhaka'] || [];
+  const isAllDistricts = !cleanDistrict || cleanDistrict.toLowerCase() === 'all' || cleanDistrict.toLowerCase() === 'all districts';
+  const activeDistrict = isAllDistricts ? 'All Districts' : (availableDistricts.includes(cleanDistrict) ? cleanDistrict : 'All Districts');
+
+  const availableAreas = (!isAllDistricts && DISTRICT_THANAS[activeDistrict])
+    ? DISTRICT_THANAS[activeDistrict]
+    : [];
 
   return (
     <aside className={`bg-surface-container-lowest rounded-2xl border border-outline-variant/60 p-6 shadow-sm space-y-6 ${className}`}>
@@ -44,16 +52,6 @@ export default function DiagnosticsFilterSidebar({
             <span className="material-symbols-outlined text-[15px]">restart_alt</span>
             Reset All
           </button>
-          {onClose && (
-            <button
-              type="button"
-              onClick={onClose}
-              className="lg:hidden p-1 text-on-surface-variant hover:text-on-surface cursor-pointer rounded-md hover:bg-surface-container-low transition-colors flex items-center justify-center"
-              title="Close Filters"
-            >
-              <span className="material-symbols-outlined text-[18px]">close</span>
-            </button>
-          )}
         </div>
       </div>
 
@@ -82,7 +80,14 @@ export default function DiagnosticsFilterSidebar({
               </span>
               <select
                 value={activeDivision}
-                onChange={(e) => onLocationChange({ division: `${e.target.value} Division`, district: 'Dhaka District', area: 'Dhanmondi' })}
+                onChange={(e) => {
+                  const val = e.target.value;
+                  if (val === 'All Bangladesh') {
+                    onLocationChange({ division: 'All Bangladesh', district: 'All Districts', area: 'All Areas' });
+                  } else {
+                    onLocationChange({ division: `${val} Division`, district: 'All Districts', area: 'All Areas' });
+                  }
+                }}
                 className="w-full pl-9 pr-8 py-2 bg-surface-container-low border border-outline-variant rounded-lg text-on-surface font-label-md text-xs focus:ring-2 focus:ring-primary appearance-none cursor-pointer"
                 style={{ backgroundImage: 'none', WebkitAppearance: 'none', MozAppearance: 'none' }}
               >
@@ -108,10 +113,18 @@ export default function DiagnosticsFilterSidebar({
               </span>
               <select
                 value={activeDistrict}
-                onChange={(e) => onLocationChange({ division, district: `${e.target.value} District`, area: 'All Areas' })}
+                onChange={(e) => {
+                  const val = e.target.value;
+                  if (val === 'All Districts') {
+                    onLocationChange({ division, district: 'All Districts', area: 'All Areas' });
+                  } else {
+                    onLocationChange({ division, district: `${val} District`, area: 'All Areas' });
+                  }
+                }}
                 className="w-full pl-9 pr-8 py-2 bg-surface-container-low border border-outline-variant rounded-lg text-on-surface font-label-md text-xs focus:ring-2 focus:ring-primary appearance-none cursor-pointer"
                 style={{ backgroundImage: 'none', WebkitAppearance: 'none', MozAppearance: 'none' }}
               >
+                <option value="All Districts">All Districts</option>
                 {availableDistricts.map((dist) => (
                   <option key={dist} value={dist}>
                     {dist} District
@@ -132,21 +145,13 @@ export default function DiagnosticsFilterSidebar({
                 near_me
               </span>
               <select
-                value={area}
+                value={area || 'All Areas'}
                 onChange={(e) => onLocationChange({ division, district, area: e.target.value })}
                 className="w-full pl-9 pr-8 py-2 bg-surface-container-low border border-outline-variant rounded-lg text-on-surface font-label-md text-xs focus:ring-2 focus:ring-primary appearance-none cursor-pointer"
                 style={{ backgroundImage: 'none', WebkitAppearance: 'none', MozAppearance: 'none' }}
               >
-                <option value="Dhanmondi">Dhanmondi</option>
-                <option value="Gulshan / Banani">Gulshan / Banani</option>
-                <option value="Uttara">Uttara</option>
-                <option value="Mirpur">Mirpur</option>
-                <option value="Mohakhali">Mohakhali</option>
-                <option value="Mohammadpur">Mohammadpur</option>
-                <option value="Badda">Badda</option>
-                <option value="Motijheel">Motijheel</option>
                 <option value="All Areas">All Areas / Thanas</option>
-                {availableAreas.filter((a) => !['Dhanmondi', 'Mirpur', 'Uttara', 'Mohammadpur', 'Motijheel', 'Badda'].includes(a)).map((a) => (
+                {availableAreas.map((a) => (
                   <option key={a} value={a}>
                     {a}
                   </option>

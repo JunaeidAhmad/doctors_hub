@@ -1,6 +1,7 @@
 import React, { useState, useEffect } from 'react';
 import { X, Calendar, Clock, Phone, CheckCircle2, Building2, Stethoscope, ShieldCheck, ArrowRight, Sparkles, Award } from 'lucide-react';
 import { api } from '../services/api';
+import { formatFacilityName } from '../utils/facilityUtils';
 
 export default function BookingModal({ chamber, doctor, onClose, onConfirmBooking, showToast }) {
   const today = new Date().toISOString().split('T')[0];
@@ -114,7 +115,8 @@ export default function BookingModal({ chamber, doctor, onClose, onConfirmBookin
         onConfirmBooking({
           doctorName: doctor.name,
           specialty: typeof doctor.specialty === 'object' ? doctor.specialty?.name : doctor.specialty,
-          chamberName: chamber.facility_name || chamber.facilityName || chamber.name || doctor.hospital_name || 'Specialist Chamber',
+          chamberName: formatFacilityName(chamber) || doctor.hospital_name || 'Specialist Chamber',
+          facility_name: formatFacilityName(chamber) || doctor.hospital_name || 'Specialist Chamber',
           location: chamber.address || chamber.district || chamber.location || 'Dhaka, Bangladesh',
           date: selectedDate,
           slot: selectedSlot,
@@ -195,7 +197,7 @@ export default function BookingModal({ chamber, doctor, onClose, onConfirmBookin
                 <Building2 className="w-4 h-4 text-primary shrink-0 mt-0.5" />
                 <div className="min-w-0">
                   <div className="font-bold text-slate-900 text-xs truncate">
-                    {chamber.facility_name || chamber.facilityName || chamber.name || doctor.hospital_name || 'Specialist Chamber'}
+                    {formatFacilityName(chamber) || doctor.hospital_name || 'Specialist Chamber'}
                   </div>
                   <div className="text-[11px] text-slate-500 truncate mt-0.5">
                     {chamber.address || chamber.district || chamber.location || 'Dhaka, Bangladesh'}
@@ -216,15 +218,6 @@ export default function BookingModal({ chamber, doctor, onClose, onConfirmBookin
             )}
           </div>
         </div>
-
-        {/* Mock Demo Banner 
-        <div className="bg-emerald-50 px-4 py-2 border-b border-emerald-100 flex items-center justify-between text-[11px] font-semibold text-emerald-800">
-          <span className="flex items-center gap-1">
-            <ShieldCheck className="w-3.5 h-3.5 text-emerald-600" />
-            <span>Mock Credentials:</span>
-          </span>
-          <span>Phone: <strong>01787878787</strong> | OTP: <strong>123</strong></span>
-        </div> */}
 
         {step === 'details' ? (
           /* STEP 1: Details & Serial Date */

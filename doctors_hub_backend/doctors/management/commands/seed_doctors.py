@@ -8,7 +8,7 @@ from django.db import transaction
 from django.utils.text import slugify
 
 from doctors.models import Doctor, DoctorSpecialty, DoctorAffiliation, AffiliationSchedule
-from facilities.models import Location, Hospital, DiagnosticCenter, Chamber
+from facilities.models import Location, Hospital, DiagnosticCenter, Chamber, Thana
 
 
 VALID_DAYS = {
@@ -138,11 +138,13 @@ class Command(BaseCommand):
                                     icon = icon_name
                                     break
 
-                            spec_obj, _ = DoctorSpecialty.objects.get_or_create(
-                                name=spec_name_clean,
-                                defaults={"slug": spec_slug, "icon": icon}
-                            )
-                            specialties_objs.append(spec_obj)
+                            from doctors.services.specialty_resolver import resolve_or_create_specialty
+                            spec_obj = resolve_or_create_specialty(spec_name_clean)
+                            if spec_obj:
+                                if icon != "Stethoscope" and spec_obj.icon == "Stethoscope":
+                                    spec_obj.icon = icon
+                                    spec_obj.save()
+                                specialties_objs.append(spec_obj)
 
                         # 2. Handle Doctor
                         bmdc = item.get("bmdc_number")
@@ -227,9 +229,24 @@ class Command(BaseCommand):
                             address_line = aff_data.get("address_line", "").strip() or f"{fac_name}, {district}"
                             phone = aff_data.get("phone", "").strip()
 
+                            # Resolve canonical Thana
+                            DIST_ALIASES = {
+                                'chittagong': 'Chattogram', 'comilla': 'Cumilla', 'bogra': 'Bogura',
+                                'jessore': 'Jashore', 'barisal': 'Barishal', 'ঢাকা': 'Dhaka',
+                                'চট্টগ্রাম': 'Chattogram', 'সিলেট': 'Sylhet'
+                            }
+                            norm_dist = DIST_ALIASES.get(district.lower(), district)
+                            norm_area = area.strip()
+
+                            thana_obj = Thana.objects.filter(district__name__iexact=norm_dist, name__iexact=norm_area).first()
+                            if not thana_obj and norm_area:
+                                thana_obj = Thana.objects.filter(district__name__iexact=norm_dist, bn_name__iexact=norm_area).first()
+                            if not thana_obj:
+                                thana_obj = Thana.objects.filter(district__name__iexact=norm_dist, name__icontains='Sadar').first() or Thana.objects.filter(district__name__iexact=norm_dist).first()
+                            if not thana_obj:
+                                thana_obj = Thana.objects.filter(district__name='Dhaka', name='Dhanmondi').first() or Thana.objects.first()
+
                             # Match or create Location:
-                            # - Hospitals & Diagnostic Centers are shared across multiple doctors
-                            # - Chambers are private to this specific doctor
                             location = None
                             if loc_type == Location.LocationType.CHAMBER:
                                 location = Location.objects.filter(
@@ -238,7 +255,7 @@ class Command(BaseCommand):
                                     name__iexact=fac_name
                                 ).first()
                             else:
-                                loc_filter = {"name__iexact": fac_name, "district__iexact": district}
+                                loc_filter = {"name__iexact": fac_name, "thana__district__name__iexact": norm_dist}
                                 if branch:
                                     loc_filter["branch__iexact"] = branch
                                 location = Location.objects.filter(**loc_filter).first()
@@ -248,7 +265,8 @@ class Command(BaseCommand):
                                 base_slug = slugify(f"{fac_name}{b_slug}")
                                 slug = base_slug
                                 if Location.objects.filter(slug=slug).exists():
-                                    slug = f"{base_slug}-{uuid.uuid4().hex[:6]}"
+                                    from core.uuid7 import uuid7
+                                    slug = f"{base_slug}-{uuid7().hex[:6]}"
 
                                 location = Location.objects.create(
                                     name=fac_name,
@@ -256,9 +274,7 @@ class Command(BaseCommand):
                                     location_type=loc_type,
                                     ownership_type=Location.OwnershipType.PRIVATE,
                                     address_line=address_line,
-                                    area=area,
-                                    district=district,
-                                    division=division,
+                                    thana=thana_obj,
                                     phone=phone,
                                     is_verified=True,
                                     is_active=True,

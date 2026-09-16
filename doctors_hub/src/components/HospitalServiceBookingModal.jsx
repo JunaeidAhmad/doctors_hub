@@ -1,6 +1,7 @@
 import React, { useState, useEffect } from 'react';
 import { X, Calendar, Clock, User, Phone, CheckCircle2, Building2, Activity, ShieldCheck, ArrowRight, Sparkles } from 'lucide-react';
 import { api } from '../services/api';
+import { formatFacilityName } from '../utils/facilityUtils';
 
 export default function HospitalServiceBookingModal({ hospital, service, onClose, onConfirmBooking, showToast }) {
   const today = new Date().toISOString().split('T')[0];
@@ -19,10 +20,9 @@ export default function HospitalServiceBookingModal({ hospital, service, onClose
   const [existingPatientFound, setExistingPatientFound] = useState(false);
   const [isLookingUp, setIsLookingUp] = useState(false);
 
-  if (!hospital || !service) return null;
-
   // Auto-fetch patient details when 11-digit phone number is entered
   useEffect(() => {
+    if (!hospital || !service) return;
     const cleanPhone = patientPhone.trim();
     if (cleanPhone.length >= 11) {
       let isMounted = true;
@@ -56,7 +56,9 @@ export default function HospitalServiceBookingModal({ hospital, service, onClose
     } else {
       setExistingPatientFound(false);
     }
-  }, [patientPhone]);
+  }, [patientPhone, hospital, service]);
+
+  if (!hospital || !service) return null;
 
   const handleSendOtp = async (e) => {
     e.preventDefault();
@@ -115,7 +117,7 @@ export default function HospitalServiceBookingModal({ hospital, service, onClose
 
       if (onConfirmBooking) {
         onConfirmBooking({
-          hospitalName: hospital.name,
+          hospitalName: formatFacilityName(hospital),
           serviceName: service.name,
           bookingDate: selectedDate,
           preferredTime: selectedTime,
@@ -149,7 +151,7 @@ export default function HospitalServiceBookingModal({ hospital, service, onClose
                 Book Hospital Service
               </h3>
               <p className="text-xs text-teal-100 font-medium">
-                {step === 'details' ? `${service.name} @ ${hospital.name}` : 'Phone OTP Verification'}
+                {step === 'details' ? `${service.name} @ ${formatFacilityName(hospital)}` : 'Phone OTP Verification'}
               </p>
             </div>
           </div>
@@ -170,7 +172,7 @@ export default function HospitalServiceBookingModal({ hospital, service, onClose
           <p className="text-slate-600 text-xs leading-relaxed">{service.description || 'Hospital facility clinical care and specialized unit service.'}</p>
           <div className="flex items-center gap-1 text-slate-600 pt-1">
             <Building2 className="w-3.5 h-3.5 text-teal-600" />
-            <span className="font-semibold text-slate-800">{hospital.name}</span>
+            <span className="font-semibold text-slate-800">{formatFacilityName(hospital)}</span>
           </div>
         </div>
 

@@ -12,6 +12,7 @@ import DoctorCard from './components/DoctorCard';
 import DoctorPagination from './components/DoctorPagination';
 import DoctorTrustSeal from './components/DoctorTrustSeal';
 import DoctorProfileModal from './components/DoctorProfileModal';
+import { formatFacilityName } from '../../utils/facilityUtils';
 
 export default function DoctorSearchPage({
   initialSpecialty = '',
@@ -69,6 +70,7 @@ export default function DoctorSearchPage({
   const [isLoading, setIsLoading] = useState(false);
   const [selectedDoctorForProfile, setSelectedDoctorForProfile] = useState(null);
   const [isMobileFiltersOpen, setIsMobileFiltersOpen] = useState(false);
+  const [searchMeta, setSearchMeta] = useState(null);
 
   // Sync state from URL search params on back/forward navigation
   useEffect(() => {
@@ -116,12 +118,14 @@ export default function DoctorSearchPage({
       .then((meta) => {
         if (isMounted && meta) {
           if (meta.specialties) setSpecialties(ensureArray(meta.specialties));
-          if (meta.hospitals || meta.diagnostic_centers) {
+          if (meta.facilities) {
+            setFacilities(ensureArray(meta.facilities));
+          } else if (meta.hospitals || meta.diagnostic_centers) {
             const list = [
               ...ensureArray(meta.hospitals),
               ...ensureArray(meta.diagnostic_centers)
             ];
-            setFacilities(list);
+            if (list.length > 0) setFacilities(list);
           }
         }
       })
@@ -130,6 +134,19 @@ export default function DoctorSearchPage({
           if (isMounted && s) setSpecialties(ensureArray(s));
         }).catch(() => {});
       });
+
+    // Ensure all hospital & diagnostic center locations are loaded from system
+    api.getLocations()
+      .then((res) => {
+        if (isMounted && res) {
+          const locs = ensureArray(res);
+          if (locs.length > 0) {
+            const validLocs = locs.filter(l => l.location_type === 'hospital' || l.location_type === 'diagnostic_center' || !l.location_type);
+            setFacilities(validLocs);
+          }
+        }
+      })
+      .catch(() => {});
 
     return () => { isMounted = false; };
   }, []);
@@ -159,6 +176,13 @@ export default function DoctorSearchPage({
           if (data) {
             list = ensureArray(data);
             count = (typeof data === 'object' && typeof data.count === 'number') ? data.count : list.length;
+            if (data.meta) {
+              setSearchMeta(data.meta);
+            } else {
+              setSearchMeta(null);
+            }
+          } else {
+            setSearchMeta(null);
           }
           setDoctors(list);
           setTotalCount(count);
@@ -172,6 +196,7 @@ export default function DoctorSearchPage({
       })
       .catch(() => {
         if (isMounted) {
+          setSearchMeta(null);
           if (currentPage > 1) {
             setCurrentPage(1);
             return;
@@ -259,7 +284,10 @@ export default function DoctorSearchPage({
         area={area}
         specialty={specialty}
         facility={facility}
-        facilityName={facilities.find(f => String(f.id) === String(facility))?.name}
+        facilityName={(() => {
+          const found = facilities.find(f => String(f.id) === String(facility) || String(f.slug) === String(facility) || String(f.name) === String(facility));
+          return found ? formatFacilityName(found) : facility;
+        })()}
         selectedDay={selectedDay}
         gender={gender}
         maxFee={maxFee}
@@ -379,19 +407,50 @@ export default function DoctorSearchPage({
                 ))}
               </div>
             ) : sortedDoctors.length > 0 ? (
-              sortedDoctors.map((doc, idx) => (
-                <DoctorCard
-                  key={doc.id || idx}
-                  doctor={doc}
-                  index={idx}
-                  onBookDoctorSlot={onBookDoctorSlot}
-                  onViewProfile={(d) => {
-                    navigate(`/doctor/${d.slug || d.id}`, { state: { doctor: d, chambers: d.chambers } });
-                    window.scrollTo({ top: 0, behavior: 'smooth' });
-                  }}
-                  onSelectHospital={onSelectHospital}
-                />
-              ))
+              sortedDoctors.map((doc, idx) => {
+                const prevDoc = idx > 0 ? sortedDoctors[idx - 1] : null;
+                const isFirstTier1 = doc.match_tier === 1 && idx === 0 && searchMeta?.tier2_count > 0;
+                const isFirstTier2 = doc.match_tier === 2 && (!prevDoc || prevDoc.match_tier === 1);
+
+                return (
+                  <React.Fragment key={doc.id || idx}>
+                    {isFirstTier1 && (
+                      <div className="flex items-center gap-2 pb-2 mb-1 border-b border-primary/20 text-primary font-semibold text-sm">
+                        <span className="material-symbols-outlined text-base">verified</span>
+                        <span>{searchMeta?.specialty_bn || searchMeta?.specialty || specialty} বিশেষজ্ঞ (Primary Specialists)</span>
+                        {searchMeta?.tier1_count > 0 && (
+                          <span className="text-xs bg-primary/10 text-primary px-2 py-0.5 rounded-full font-bold ml-auto">
+                            {searchMeta.tier1_count}
+                          </span>
+                        )}
+                      </div>
+                    )}
+                    {isFirstTier2 && (
+                      <div className="pt-4 pb-2 mb-1 border-b border-outline-variant/60 flex items-center justify-between text-slate-700">
+                        <div className="flex items-center gap-2">
+                          <span className="material-symbols-outlined text-base text-slate-500">hub</span>
+                          <span className="font-semibold text-sm">অন্যান্য সম্পর্কিত বিশেষজ্ঞ (Related & Sub-specialists)</span>
+                        </div>
+                        {searchMeta?.tier2_count > 0 && (
+                          <span className="text-xs bg-slate-100 text-slate-600 px-2 py-0.5 rounded-full font-bold">
+                            {searchMeta.tier2_count}
+                          </span>
+                        )}
+                      </div>
+                    )}
+                    <DoctorCard
+                      doctor={doc}
+                      index={idx}
+                      onBookDoctorSlot={onBookDoctorSlot}
+                      onViewProfile={(d) => {
+                        navigate(`/doctor/${d.slug || d.id}`, { state: { doctor: d, chambers: d.chambers } });
+                        window.scrollTo({ top: 0, behavior: 'smooth' });
+                      }}
+                      onSelectHospital={onSelectHospital}
+                    />
+                  </React.Fragment>
+                );
+              })
             ) : (
               <div className="bg-surface-container-lowest rounded-xl border border-outline-variant p-12 text-center space-y-3">
                 <div className="w-14 h-14 mx-auto rounded-full bg-primary/10 flex items-center justify-center text-primary">

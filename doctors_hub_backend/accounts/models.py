@@ -1,12 +1,13 @@
 import uuid
 from django.db import models
+from core.uuid7 import uuid7
 from django.contrib.auth.models import AbstractBaseUser, BaseUserManager, PermissionsMixin
 from django.utils import timezone
 from core.validators import bangladesh_phone_validator
 
 
 class Permission(models.Model):
-    id = models.UUIDField(primary_key=True, default=uuid.uuid4, editable=False)
+    id = models.UUIDField(primary_key=True, default=uuid7, editable=False)
     codename = models.CharField(max_length=100, unique=True, db_index=True)
     module = models.CharField(max_length=50)
     action = models.CharField(max_length=50)
@@ -26,7 +27,7 @@ class Role(models.Model):
         FACILITY = "facility", "Facility"
         SELF = "self", "Self"
 
-    id = models.UUIDField(primary_key=True, default=uuid.uuid4, editable=False)
+    id = models.UUIDField(primary_key=True, default=uuid7, editable=False)
     name = models.CharField(max_length=100)
     description = models.TextField(blank=True)
     scope_type = models.CharField(max_length=20, choices=ScopeType.choices)
@@ -47,7 +48,7 @@ class Role(models.Model):
 
 
 class UserRole(models.Model):
-    id = models.UUIDField(primary_key=True, default=uuid.uuid4, editable=False)
+    id = models.UUIDField(primary_key=True, default=uuid7, editable=False)
     user = models.ForeignKey('accounts.User', on_delete=models.CASCADE, related_name='user_roles')
     role = models.ForeignKey(Role, on_delete=models.CASCADE, related_name='user_assignments')
     facility = models.ForeignKey(
@@ -89,7 +90,7 @@ class UserManager(BaseUserManager):
 
 
 class User(AbstractBaseUser, PermissionsMixin):
-    id = models.UUIDField(primary_key=True, default=uuid.uuid4, editable=False)
+    id = models.UUIDField(primary_key=True, default=uuid7, editable=False)
     phone_number = models.CharField(max_length=15, unique=True, validators=[bangladesh_phone_validator])
     first_name = models.CharField(max_length=50, blank=True)
     last_name = models.CharField(max_length=50, blank=True)

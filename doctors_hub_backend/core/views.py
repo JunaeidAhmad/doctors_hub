@@ -6,7 +6,7 @@ from django.db.models import Count
 from drf_spectacular.utils import extend_schema, OpenApiParameter, OpenApiTypes
 
 from accounts.serializers import UserProfileSerializer
-from doctors.models import DoctorSpecialty, Doctor, DoctorAffiliation
+from doctors.models import DoctorSpecialty, SpecialtyAlias, Doctor, DoctorAffiliation
 from facilities.models import (
     Location, HospitalCategory, HospitalService, Hospital,
     DiagnosticCenterCategory, DiagnosticService, DiagnosticCenter, Chamber
@@ -16,6 +16,7 @@ from bookings.models import DoctorBooking, LabBooking
 
 from doctors.serializers import DoctorSpecialtySerializer, DoctorSerializer
 from facilities.serializers import (
+    LocationSerializer,
     HospitalCategorySerializer, DiagnosticCenterCategorySerializer,
     HospitalServiceSerializer, DiagnosticServiceSerializer,
     HospitalSerializer, DiagnosticCenterSerializer
@@ -29,6 +30,9 @@ class SearchMetadataResponseSerializer(serializers.Serializer):
     test_categories = TestCategorySerializer(many=True)
     hospital_categories = HospitalCategorySerializer(many=True)
     diagnostic_center_categories = DiagnosticCenterCategorySerializer(many=True)
+    facilities = LocationSerializer(many=True, required=False)
+    hospitals = LocationSerializer(many=True, required=False)
+    diagnostic_centers = LocationSerializer(many=True, required=False)
 
 
 class SearchFacetsResponseSerializer(serializers.Serializer):
@@ -79,16 +83,26 @@ class SearchMetadataAPIView(APIView):
         if cached_data is not None:
             return Response(cached_data)
 
-        specialties = DoctorSpecialty.objects.annotate(doctor_count=Count('doctors', distinct=True)).order_by('name')
+        from doctors.models import SpecialtyAlias
+        from doctors.serializers import SpecialtyOptionSerializer
+        aliases = list(SpecialtyAlias.objects.filter(is_verified=True).select_related('specialty').order_by('name'))
+        specialties_data = SpecialtyOptionSerializer(aliases, many=True, context={'request': request}).data
+
         test_categories = TestCategory.objects.annotate(test_count=Count('tests', distinct=True)).order_by('name')
         hospital_categories = HospitalCategory.objects.annotate(hospital_count=Count('hospitals', distinct=True)).order_by('name')
         diagnostic_center_categories = DiagnosticCenterCategory.objects.annotate(center_count=Count('centers', distinct=True)).order_by('name')
 
+        locations = Location.objects.filter(is_active=True, location_type__in=['hospital', 'diagnostic_center']).order_by('name', 'branch')
+        facilities_data = LocationSerializer(locations, many=True, context={'request': request}).data
+
         response_data = {
-            'specialties': DoctorSpecialtySerializer(specialties, many=True, context={'request': request}).data,
+            'specialties': specialties_data,
             'test_categories': TestCategorySerializer(test_categories, many=True, context={'request': request}).data,
             'hospital_categories': HospitalCategorySerializer(hospital_categories, many=True, context={'request': request}).data,
             'diagnostic_center_categories': DiagnosticCenterCategorySerializer(diagnostic_center_categories, many=True, context={'request': request}).data,
+            'facilities': facilities_data,
+            'hospitals': [f for f in facilities_data if f.get('location_type') == 'hospital'],
+            'diagnostic_centers': [f for f in facilities_data if f.get('location_type') == 'diagnostic_center'],
         }
         cache.set('search_metadata_global', response_data, timeout=300)
         return Response(response_data)
@@ -124,16 +138,30 @@ class SearchFacetsAPIView(APIView):
         if cached_data is not None:
             return Response(cached_data, status=status.HTTP_200_OK)
 
+        DIST_ALIASES = {
+            'chittagong': 'Chattogram', 'comilla': 'Cumilla', 'bogra': 'Bogura',
+            'jessore': 'Jashore', 'barisal': 'Barishal', 'ঢাকা': 'Dhaka',
+            'চট্টগ্রাম': 'Chattogram', 'সিলেট': 'Sylhet'
+        }
+        norm_loc = DIST_ALIASES.get(loc_filter.strip().lower(), loc_filter.strip()) if loc_filter else ''
+        norm_area = area_filter.strip() if area_filter else ''
+
         # Filtered base doctor queryset
         doc_qs = Doctor.objects.all()
-        if loc_filter and loc_filter not in ('All Bangladesh', 'all', ''):
+        if norm_loc and norm_loc not in ('All Bangladesh', 'all', ''):
             doc_qs = doc_qs.filter(
-                models.Q(affiliations__location__district__iexact=loc_filter) |
-                models.Q(affiliations__location__division__iexact=loc_filter) |
-                models.Q(affiliations__location__area__iexact=loc_filter)
+                models.Q(affiliations__location__thana__district__name__iexact=norm_loc) |
+                models.Q(affiliations__location__thana__district__division__name__iexact=norm_loc) |
+                models.Q(affiliations__location__thana__name__iexact=norm_loc) |
+                models.Q(affiliations__location__thana__district__bn_name__iexact=norm_loc) |
+                models.Q(affiliations__location__thana__district__division__bn_name__iexact=norm_loc) |
+                models.Q(affiliations__location__thana__bn_name__iexact=norm_loc)
             )
-        if area_filter and area_filter not in ('All Areas', 'all', ''):
-            doc_qs = doc_qs.filter(affiliations__location__area__iexact=area_filter)
+        if norm_area and norm_area not in ('All Areas', 'all', ''):
+            doc_qs = doc_qs.filter(
+                models.Q(affiliations__location__thana__name__iexact=norm_area) |
+                models.Q(affiliations__location__thana__bn_name__iexact=norm_area)
+            )
         if search_query:
             doc_qs = doc_qs.filter(
                 models.Q(name__icontains=search_query) |
@@ -148,14 +176,20 @@ class SearchFacetsAPIView(APIView):
 
         # Filtered base hospital queryset
         hosp_qs = Hospital.objects.all()
-        if loc_filter and loc_filter not in ('All Bangladesh', 'all', ''):
+        if norm_loc and norm_loc not in ('All Bangladesh', 'all', ''):
             hosp_qs = hosp_qs.filter(
-                models.Q(location__district__iexact=loc_filter) |
-                models.Q(location__division__iexact=loc_filter) |
-                models.Q(location__area__iexact=loc_filter)
+                models.Q(location__thana__district__name__iexact=norm_loc) |
+                models.Q(location__thana__district__division__name__iexact=norm_loc) |
+                models.Q(location__thana__name__iexact=norm_loc) |
+                models.Q(location__thana__district__bn_name__iexact=norm_loc) |
+                models.Q(location__thana__district__division__bn_name__iexact=norm_loc) |
+                models.Q(location__thana__bn_name__iexact=norm_loc)
             )
-        if area_filter and area_filter not in ('All Areas', 'all', ''):
-            hosp_qs = hosp_qs.filter(location__area__iexact=area_filter)
+        if norm_area and norm_area not in ('All Areas', 'all', ''):
+            hosp_qs = hosp_qs.filter(
+                models.Q(location__thana__name__iexact=norm_area) |
+                models.Q(location__thana__bn_name__iexact=norm_area)
+            )
         if search_query:
             hosp_qs = hosp_qs.filter(
                 models.Q(location__name__icontains=search_query) |
@@ -168,14 +202,20 @@ class SearchFacetsAPIView(APIView):
 
         # Filtered base diagnostic center queryset
         diag_qs = DiagnosticCenter.objects.all()
-        if loc_filter and loc_filter not in ('All Bangladesh', 'all', ''):
+        if norm_loc and norm_loc not in ('All Bangladesh', 'all', ''):
             diag_qs = diag_qs.filter(
-                models.Q(location__district__iexact=loc_filter) |
-                models.Q(location__division__iexact=loc_filter) |
-                models.Q(location__area__iexact=loc_filter)
+                models.Q(location__thana__district__name__iexact=norm_loc) |
+                models.Q(location__thana__district__division__name__iexact=norm_loc) |
+                models.Q(location__thana__name__iexact=norm_loc) |
+                models.Q(location__thana__district__bn_name__iexact=norm_loc) |
+                models.Q(location__thana__district__division__bn_name__iexact=norm_loc) |
+                models.Q(location__thana__bn_name__iexact=norm_loc)
             )
-        if area_filter and area_filter not in ('All Areas', 'all', ''):
-            diag_qs = diag_qs.filter(location__area__iexact=area_filter)
+        if norm_area and norm_area not in ('All Areas', 'all', ''):
+            diag_qs = diag_qs.filter(
+                models.Q(location__thana__name__iexact=norm_area) |
+                models.Q(location__thana__bn_name__iexact=norm_area)
+            )
         if search_query:
             diag_qs = diag_qs.filter(
                 models.Q(location__name__icontains=search_query) |
@@ -191,8 +231,8 @@ class SearchFacetsAPIView(APIView):
             center_count=Count('tests__offered_at__location', filter=models.Q(tests__offered_at__location__diagnostic_center_detail__in=diag_qs), distinct=True)
         ).order_by('-center_count', 'name')
 
-        districts = list(Location.objects.values_list('district', flat=True).distinct().order_by('district'))
-        divisions = list(Location.objects.values_list('division', flat=True).distinct().order_by('division'))
+        districts = list(Location.objects.values_list('thana__district__name', flat=True).distinct().order_by('thana__district__name'))
+        divisions = list(Location.objects.values_list('thana__district__division__name', flat=True).distinct().order_by('thana__district__division__name'))
 
         response_data = {
             'total_doctors': doc_qs.distinct().count(),
@@ -236,7 +276,14 @@ class AdminInitAPIView(APIView):
             )
 
         # Reference Taxonomies
-        doctor_specialties = DoctorSpecialtySerializer(DoctorSpecialty.objects.all().order_by('name'), many=True, context={'request': request}).data
+        doctor_specialties = DoctorSpecialtySerializer(
+            DoctorSpecialty.objects.annotate(
+                doctor_count=Count('doctors', distinct=True),
+                alias_count=Count('aliases', distinct=True)
+            ).prefetch_related('components').order_by('name'),
+            many=True,
+            context={'request': request}
+        ).data
         hospital_categories = HospitalCategorySerializer(HospitalCategory.objects.all().order_by('name'), many=True, context={'request': request}).data
         diagnostic_categories = DiagnosticCenterCategorySerializer(DiagnosticCenterCategory.objects.all().order_by('name'), many=True, context={'request': request}).data
         hospital_services = HospitalServiceSerializer(HospitalService.objects.all().order_by('name'), many=True, context={'request': request}).data
@@ -263,6 +310,7 @@ class AdminInitAPIView(APIView):
                 "branch_tests": branch_test_base.count(),
                 "doctor_bookings": doc_booking_base.count(),
                 "lab_bookings": lab_booking_base.count(),
+                "unverified_aliases": SpecialtyAlias.objects.filter(is_verified=False).count(),
             }
             hospitals_data = HospitalSerializer(hosp_base.all()[:INIT_LIMIT], many=True, context={'request': request}).data
             diagnostic_centers_data = DiagnosticCenterSerializer(diag_base.all()[:INIT_LIMIT], many=True, context={'request': request}).data

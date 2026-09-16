@@ -2,7 +2,7 @@ import React from 'react';
 import { 
   Stethoscope, Building2, Calendar, Clock, MapPin, 
   Phone, User, Edit, CheckCircle, Plus, ArrowUpRight, 
-  Sparkles, ShieldCheck, Activity 
+  Sparkles, ShieldCheck, Activity, Award 
 } from 'lucide-react';
 import { useAdminContext } from '../../context/AdminContext';
 

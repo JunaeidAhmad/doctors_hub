@@ -14,9 +14,10 @@ class FacilityRegistrationSerializer(serializers.Serializer):
     name = serializers.CharField(max_length=250)
     branch = serializers.CharField(max_length=200, required=False, allow_blank=True, default="")
     license_number = serializers.CharField(max_length=100, required=False, allow_blank=True, default="")
-    division = serializers.CharField(max_length=100)
-    district = serializers.CharField(max_length=100)
+    division = serializers.CharField(max_length=100, required=False, allow_blank=True, default="")
+    district = serializers.CharField(max_length=100, required=False, allow_blank=True, default="")
     area = serializers.CharField(max_length=100, required=False, allow_blank=True, default="")
+    thana_id = serializers.IntegerField(required=False, allow_null=True, default=None)
     address_line = serializers.CharField(max_length=300)
     category_id = serializers.CharField(required=False, allow_blank=True, allow_null=True, default=None)
     phone_number = serializers.CharField(max_length=20)
@@ -64,15 +65,35 @@ class FacilityRegistrationSerializer(serializers.Serializer):
         user.set_password(password)
         user.save()
 
-        # 2. Create Location
+        # 2. Resolve Thana & Create Location
+        from facilities.models import Thana
+        thana_obj = None
+        thana_id = validated_data.get("thana_id")
+        if thana_id:
+            thana_obj = Thana.objects.filter(id=thana_id).first()
+
+        if not thana_obj:
+            DIST_ALIASES = {
+                'chittagong': 'Chattogram', 'comilla': 'Cumilla', 'bogra': 'Bogura',
+                'jessore': 'Jashore', 'barisal': 'Barishal', 'ঢাকা': 'Dhaka',
+                'চট্টগ্রাম': 'Chattogram', 'সিলেট': 'Sylhet'
+            }
+            norm_dist = DIST_ALIASES.get(district.strip().lower(), district.strip())
+            norm_area = area.strip()
+            qs = Thana.objects.filter(district__name__iexact=norm_dist) if norm_dist else Thana.objects.all()
+            if norm_area:
+                thana_obj = qs.filter(name__iexact=norm_area).first() or qs.filter(bn_name__iexact=norm_area).first()
+            if not thana_obj and norm_dist:
+                thana_obj = qs.filter(name__icontains='Sadar').first() or qs.first()
+            if not thana_obj:
+                thana_obj = Thana.objects.filter(district__name='Dhaka', name='Dhanmondi').first() or Thana.objects.first()
+
         location = Location.objects.create(
             name=name,
             branch=branch,
             location_type=fac_type,
             ownership_type=ownership_type,
-            division=division,
-            district=district,
-            area=area,
+            thana=thana_obj,
             address_line=address,
             phone=phone,
             email=email,
@@ -182,6 +203,9 @@ class DoctorRegistrationSerializer(serializers.Serializer):
             specs = []
             for sid in specialty_ids:
                 s = DoctorSpecialty.objects.filter(id=sid).first() if len(sid) == 36 else DoctorSpecialty.objects.filter(slug=sid).first()
+                if not s:
+                    from doctors.services.specialty_resolver import resolve_specialty
+                    s = resolve_specialty(sid)
                 if s:
                     specs.append(s)
             if specs:

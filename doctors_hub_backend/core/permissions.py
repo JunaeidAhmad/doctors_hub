@@ -40,12 +40,23 @@ class HasPagePermission(permissions.BasePermission):
             elif view.action == 'destroy':
                 action = 'delete'
             else:
-                action = view.action
+                action = getattr(view, 'page_action_map', {}).get(view.action) or getattr(view, 'action_override', None) or view.action
                 
         if not action:
             return False
             
         return has_permission(request.user, required_module, action)
+
+
+class HasPagePermissionOrReadOnly(HasPagePermission):
+    """
+    Allows read-only access to unauthenticated/safe requests, but enforces
+    HasPagePermission for modifying actions (create, edit, delete).
+    """
+    def has_permission(self, request, view):
+        if request.method in permissions.SAFE_METHODS:
+            return True
+        return super().has_permission(request, view)
 
 
 # Legacy classes kept for backward compatibility during phased cutover

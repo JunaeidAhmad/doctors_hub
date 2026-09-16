@@ -1,11 +1,12 @@
 import uuid
 from django.db import models
 from django.core.exceptions import ValidationError
+from core.uuid7 import uuid7
 from facilities.models import Location
 from django.utils.text import slugify
 
 class TestCategory(models.Model):
-    id = models.UUIDField(primary_key=True, default=uuid.uuid4, editable=False)
+    id = models.UUIDField(primary_key=True, default=uuid7, editable=False)
     name = models.CharField(max_length=150)
     slug = models.SlugField(max_length=170, unique=True, blank=True)
     icon = models.CharField(max_length=100, blank=True)
@@ -22,7 +23,7 @@ class TestCategory(models.Model):
         super().save(*args, **kwargs)
 
 class Test(models.Model):
-    id = models.UUIDField(primary_key=True, default=uuid.uuid4, editable=False)
+    id = models.UUIDField(primary_key=True, default=uuid7, editable=False)
     category = models.ForeignKey(TestCategory, related_name='tests', on_delete=models.CASCADE)
     name = models.CharField(max_length=200)
     slug = models.SlugField(max_length=220, unique=True, blank=True)
@@ -36,11 +37,11 @@ class Test(models.Model):
 
     def save(self, *args, **kwargs):
         if not self.slug:
-            self.slug = f"{slugify(self.name)}-{uuid.uuid4().hex[:6]}"
+            self.slug = f"{slugify(self.name)}-{uuid7().hex[:6]}"
         super().save(*args, **kwargs)
 
 class FacilityTest(models.Model):
-    id = models.UUIDField(primary_key=True, default=uuid.uuid4, editable=False)
+    id = models.UUIDField(primary_key=True, default=uuid7, editable=False)
     location = models.ForeignKey(Location, on_delete=models.CASCADE, related_name="offered_tests")
     test = models.ForeignKey(Test, on_delete=models.CASCADE, related_name="offered_at")
     price = models.DecimalField(max_digits=10, decimal_places=2)

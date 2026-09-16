@@ -5,6 +5,7 @@ import {
 } from 'lucide-react';
 import { api } from '../../../services/api';
 import { useAdminContext } from '../context/AdminContext';
+import { formatFacilityName } from '../../../utils/facilityUtils';
 
 export default function AddTestsToDiagnosticsTab() {
   const {
@@ -435,7 +436,7 @@ export default function AddTestsToDiagnosticsTab() {
                   const dcDistrict = dc.district || dc.location_details?.district || 'Dhaka';
                   return (
                     <option key={dcId} value={dcId}>
-                      {dcName} ({dcBranch}) — {dcDistrict}
+                      {formatFacilityName(dcName, dcBranch)} — {dcDistrict}
                     </option>
                   );
                 })}
@@ -453,7 +454,7 @@ export default function AddTestsToDiagnosticsTab() {
                   const hDistrict = h.district || h.location_details?.district || 'Dhaka';
                   return (
                     <option key={hId} value={hId}>
-                      {hName} ({hBranch}) — {hDistrict}
+                      {formatFacilityName(hName, hBranch)} — {hDistrict}
                     </option>
                   );
                 })}

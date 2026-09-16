@@ -2,7 +2,7 @@ import React from 'react';
 
 export default function DoctorSearchHeader({
   specialty = '',
-  location = 'Dhaka',
+  location = 'Bangladesh',
   onNavigateHome
 }) {
   const displayLocation = location && location !== 'All Bangladesh' ? location : 'Bangladesh';

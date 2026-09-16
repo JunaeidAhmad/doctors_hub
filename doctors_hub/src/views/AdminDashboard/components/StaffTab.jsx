@@ -5,14 +5,15 @@ import {
 } from 'lucide-react';
 import { api, ensureArray } from '../../../services/api';
 import { useAdminContext } from '../context/AdminContext';
+import { formatFacilityName } from '../../../utils/facilityUtils';
 
 export default function StaffTab() {
   const { isSuperAdmin, isFacilityAdmin, hospitals, diagnosticCenters, activeUser, setSuccessMsg, setError } = useAdminContext();
   
   // Available facilities to manage
   const managedFacilities = [
-    ...(ensureArray(hospitals) || []).map(h => ({ id: h.id || h.location_id, name: h.name, type: 'Hospital' })),
-    ...(ensureArray(diagnosticCenters) || []).map(d => ({ id: d.id || d.location_id, name: d.name, type: 'Diagnostic Center' }))
+    ...(ensureArray(hospitals) || []).map(h => ({ id: h.id || h.location_id, name: formatFacilityName(h), type: 'Hospital' })),
+    ...(ensureArray(diagnosticCenters) || []).map(d => ({ id: d.id || d.location_id, name: formatFacilityName(d), type: 'Diagnostic Center' }))
   ];
 
   const [selectedFacilityId, setSelectedFacilityId] = useState(managedFacilities[0]?.id || '');

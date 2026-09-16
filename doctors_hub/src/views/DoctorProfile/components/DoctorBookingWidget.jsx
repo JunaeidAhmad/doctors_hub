@@ -1,4 +1,5 @@
 import React, { useState, useEffect, useMemo } from 'react';
+import { formatFacilityName } from '../../../utils/facilityUtils';
 
 function formatTime12(timeStr) {
   if (!timeStr) return '';
@@ -58,8 +59,6 @@ export default function DoctorBookingWidget({
   onBookAppointment, 
   showToast 
 }) {
-  if (!doctor) return null;
-
   const affiliations = useMemo(() => {
     if (Array.isArray(affiliationsProp) && affiliationsProp.length > 0) {
       return affiliationsProp;
@@ -224,6 +223,8 @@ export default function DoctorBookingWidget({
     }, 600);
   };
 
+  if (!doctor) return null;
+
   return (
     <aside className="sticky top-24 space-y-6">
       <div className="bg-surface-container-lowest border border-primary/30 rounded-2xl overflow-hidden shadow-[0_10px_25px_-5px_rgba(15,23,42,0.08),0_8px_10px_-6px_rgba(15,23,42,0.04)] ring-1 ring-primary/10">
@@ -259,7 +260,7 @@ export default function DoctorBookingWidget({
           <div className={`grid gap-2.5 ${affiliations.length === 1 ? 'grid-cols-1' : 'grid-cols-1 sm:grid-cols-2'}`}>
             {affiliations.map((aff, idx) => {
               const isSelected = selectedAffIndex === idx;
-              const name = aff.facility_name || aff.location_details?.name || aff.name || `Chamber ${idx + 1}`;
+              const name = formatFacilityName(aff) || `Chamber ${idx + 1}`;
               const branchOrArea = aff.location_details?.branch 
                 ? `${aff.location_details.branch} Branch` 
                 : (aff.area ? `${aff.area}, Dhaka` : (aff.location_details?.address_line ? aff.location_details.address_line.split(',')[0] : 'Dhaka'));
@@ -320,7 +321,7 @@ export default function DoctorBookingWidget({
             </span>
             <div>
               <span className="font-semibold text-on-surface text-slate-900 block">
-                {activeAff.location_details?.address_line || activeAff.address || activeAff.facility_name || 'Chamber Facility'}
+                {formatFacilityName(activeAff) || activeAff.location_details?.address_line || activeAff.address || 'Chamber Facility'}
               </span>
               <p className="text-body-sm font-body-sm text-on-surface-variant text-slate-500">
                 {activeAff.location_details?.branch ? `${activeAff.location_details.branch} Branch • ` : ''}Room #408 (Consultation Wing)

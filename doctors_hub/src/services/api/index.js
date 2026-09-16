@@ -7,6 +7,7 @@ import * as tests from './tests';
 import * as bookings from './bookings';
 import * as admin from './admin';
 import * as roles from './roles';
+import * as geo from './geo';
 
 export const api = {
   ...auth,
@@ -17,6 +18,7 @@ export const api = {
   ...bookings,
   ...admin,
   ...roles,
+  ...geo,
 };
 
 export {
@@ -43,5 +45,6 @@ export * from './tests';
 export * from './bookings';
 export * from './admin';
 export * from './roles';
+export * from './geo';
 
 export default api;

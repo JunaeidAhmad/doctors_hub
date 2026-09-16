@@ -14,6 +14,7 @@ import DoctorsTab from './components/DoctorsTab';
 import TestsTab from './components/TestsTab';
 import BranchTestsTab from './components/BranchTestsTab';
 import CategoriesTab from './components/CategoriesTab';
+import SpecialtiesTaxonomyTab from './components/SpecialtiesTaxonomyTab';
 import BookingsTab from './components/BookingsTab';
 import AddTestsToDiagnosticsTab from './components/AddTestsToDiagnosticsTab';
 import DoctorAffiliationsManager from './components/doctor/DoctorAffiliationsManager';
@@ -184,7 +185,10 @@ function AdminDashboardContent({ onNavigate, onAdminLoggedIn }) {
           {activeTab === 'doc-schedules' && <DoctorScheduleManager />}
           {activeTab === 'tests' && <TestsTab />}
           {activeTab === 'branch-tests' && <BranchTestsTab />}
-          {['doctor-specs', 'hospital-specs', 'diag-cats', 'hosp-services', 'diag-services', 'test-cats'].includes(activeTab) && <CategoriesTab />}
+          {['doctor-specs', 'specialty-aliases'].includes(activeTab) && (
+            <SpecialtiesTaxonomyTab initialTab={activeTab === 'specialty-aliases' ? 'aliases' : 'canonical'} />
+          )}
+          {['hospital-specs', 'diag-cats', 'hosp-services', 'diag-services', 'test-cats'].includes(activeTab) && <CategoriesTab />}
           {['doc-bookings', 'lab-bookings'].includes(activeTab) && <BookingsTab />}
         </div>
 

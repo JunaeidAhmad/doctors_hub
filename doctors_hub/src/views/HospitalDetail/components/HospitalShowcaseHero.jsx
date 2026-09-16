@@ -4,12 +4,13 @@ import {
   Users, AlertCircle, Bed, Stethoscope, Plane, Clock, Activity,
   CheckCircle2, Copy, Check
 } from 'lucide-react';
+import { formatFacilityName } from '../../../utils/facilityUtils';
 
 export default function HospitalShowcaseHero({ hospital, onScrollToSection }) {
   const [copied, setCopied] = useState(false);
 
   // Fallback defaults from Stitch design
-  const name = hospital?.name || hospital?.facility_name || 'Square Hospital, Dhaka';
+  const name = formatFacilityName(hospital) || 'Square Hospital, Dhaka';
   const address = hospital?.address_line && hospital.address_line.includes('West Panthapath')
     ? hospital.address_line
     : '18/F, Bir Uttam Qazi Nuruzzaman Sarak, West Panthapath, Dhaka 1205';

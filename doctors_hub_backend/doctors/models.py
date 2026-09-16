@@ -1,27 +1,75 @@
 import uuid
 from django.db import models
+from core.uuid7 import uuid7
 from facilities.models import Location
 from django.utils.text import slugify
 
 
 class DoctorSpecialty(models.Model):
-    id = models.UUIDField(primary_key=True, default=uuid.uuid4, editable=False)
-    name = models.CharField(max_length=100)
+    id = models.UUIDField(primary_key=True, default=uuid7, editable=False)
+    name = models.CharField(max_length=100, unique=True)
+    canonical_name = models.CharField(max_length=100, unique=True, blank=True)
+    bn_name = models.CharField(max_length=100, blank=True, default='')
     slug = models.SlugField(max_length=120, unique=True, blank=True)
     icon = models.CharField(max_length=50, default='Stethoscope')
     description = models.TextField(blank=True)
+    components = models.ManyToManyField(
+        "self",
+        symmetrical=False,
+        related_name="compound_specialties",
+        blank=True,
+        help_text="For compound specialties: the canonical specialties it covers. For simple ones: just itself."
+    )
 
     def save(self, *args, **kwargs):
+        if not self.canonical_name:
+            self.canonical_name = self.name
         if not self.slug:
-            self.slug = slugify(self.name)
+            base_slug = slugify(self.canonical_name) or slugify(self.name) or "specialty"
+            slug = base_slug
+            counter = 1
+            while DoctorSpecialty.objects.filter(slug=slug).exclude(pk=self.pk).exists():
+                slug = f"{base_slug}-{counter}"
+                counter += 1
+            self.slug = slug
         super().save(*args, **kwargs)
 
     def __str__(self):
         return self.name
 
 
+class SpecialtyAlias(models.Model):
+    id = models.UUIDField(primary_key=True, default=uuid7, editable=False)
+    specialty = models.ForeignKey(DoctorSpecialty, related_name='aliases', on_delete=models.CASCADE)
+    name = models.CharField(max_length=100)
+    normalized = models.CharField(max_length=100, db_index=True)
+    language = models.CharField(max_length=2, choices=(('bn', 'Bengali'), ('en', 'English')), blank=True)
+    is_verified = models.BooleanField(default=True)
+    created_at = models.DateTimeField(auto_now_add=True)
+    updated_at = models.DateTimeField(auto_now=True)
+
+    class Meta:
+        verbose_name = 'Specialty Alias'
+        verbose_name_plural = 'Specialty Aliases'
+        constraints = [
+            models.UniqueConstraint(fields=['normalized'], name='uniq_alias_global'),
+        ]
+
+    def save(self, *args, **kwargs):
+        if not self.normalized:
+            from doctors.services.specialty_resolver import normalize_text
+            self.normalized = normalize_text(self.name)
+        if not self.language:
+            from doctors.services.specialty_resolver import detect_language
+            self.language = detect_language(self.name)
+        super().save(*args, **kwargs)
+
+    def __str__(self):
+        return f"{self.name} -> {self.specialty.name} ({'verified' if self.is_verified else 'unverified'})"
+
+
 class Doctor(models.Model):
-    id = models.UUIDField(primary_key=True, default=uuid.uuid4, editable=False)
+    id = models.UUIDField(primary_key=True, default=uuid7, editable=False)
     user = models.OneToOneField(
         "accounts.User",
         null=True,
@@ -56,7 +104,7 @@ class Doctor(models.Model):
             base_slug = slugify(self.name)
             slug = base_slug
             if Doctor.objects.filter(slug=slug).exclude(pk=self.pk).exists():
-                slug = f"{base_slug}-{uuid.uuid4().hex[:6]}"
+                slug = f"{base_slug}-{uuid7().hex[:6]}"
             self.slug = slug
         super().save(*args, **kwargs)
 
@@ -66,7 +114,7 @@ class Doctor(models.Model):
 
 
 class DoctorAffiliation(models.Model):
-    id = models.UUIDField(primary_key=True, default=uuid.uuid4, editable=False)
+    id = models.UUIDField(primary_key=True, default=uuid7, editable=False)
     doctor = models.ForeignKey(Doctor, on_delete=models.CASCADE, related_name="affiliations")
     location = models.ForeignKey(Location, on_delete=models.CASCADE, related_name="affiliations")
     fee = models.DecimalField(max_digits=8, decimal_places=2)
@@ -87,7 +135,7 @@ class AffiliationSchedule(models.Model):
         ('Saturday', 'Saturday'),
         ('Sunday', 'Sunday'),
     ]
-    id = models.UUIDField(primary_key=True, default=uuid.uuid4, editable=False)
+    id = models.UUIDField(primary_key=True, default=uuid7, editable=False)
     affiliation = models.ForeignKey(DoctorAffiliation, on_delete=models.CASCADE, related_name='schedules')
     day_of_week = models.CharField(max_length=20, choices=DAY_CHOICES)
     start_time = models.TimeField()

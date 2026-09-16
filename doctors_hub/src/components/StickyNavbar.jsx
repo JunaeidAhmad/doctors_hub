@@ -1,5 +1,5 @@
 import React, { useState, useRef, useEffect } from 'react';
-import { Stethoscope, Smartphone, LogIn, Menu, X, HeartPulse, ChevronDown, Settings, LogOut, User, LayoutDashboard } from 'lucide-react';
+import { Stethoscope, Smartphone, Menu, X, HeartPulse, ChevronDown, Settings, LogOut, User, LayoutDashboard } from 'lucide-react';
 
 export default function StickyNavbar({ activeTab, setActiveTab, user, onOpenLogin, onOpenSettings, onLogout, onOpenAppModal }) {
   const [mobileMenuOpen, setMobileMenuOpen] = useState(false);
@@ -148,7 +148,7 @@ export default function StickyNavbar({ activeTab, setActiveTab, user, onOpenLogi
             </div>
           </button>
 
-          {/* User Profile Avatar Icon or Sign In / Partner Portal */}
+          {/* User Profile Avatar Icon */}
           {user ? (
             <div className="relative" ref={dropdownRef}>
               <button
@@ -222,18 +222,8 @@ export default function StickyNavbar({ activeTab, setActiveTab, user, onOpenLogi
                 </div>
               )}
             </div>
-          ) : (
-            <button
-              onClick={onOpenLogin}
-              type="button"
-              className="bg-[#004d40] hover:bg-[#00382e] text-white font-medium text-xs sm:text-sm px-4 py-2 rounded-lg transition-all shadow-xs flex items-center gap-1.5 cursor-pointer font-label-md"
-            >
-              <span className="material-symbols-outlined text-[16px]">login</span>
-              <span>Sign In / Register</span>
-            </button>
-          )}
+          ) : null}
         </div>
-
 
         {/* Mobile Hamburger Toggle */}
         <div className="flex lg:hidden items-center gap-2">

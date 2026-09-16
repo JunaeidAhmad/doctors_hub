@@ -1,15 +1,110 @@
 from rest_framework import serializers
-from .models import DoctorSpecialty, Doctor, DoctorAffiliation, AffiliationSchedule
+from .models import DoctorSpecialty, SpecialtyAlias, Doctor, DoctorAffiliation, AffiliationSchedule
 from facilities.models import Location
 from facilities.serializers import LocationSerializer
 
 
 class DoctorSpecialtySerializer(serializers.ModelSerializer):
     doctor_count = serializers.IntegerField(read_only=True, required=False)
+    alias_count = serializers.IntegerField(read_only=True, required=False)
+    components = serializers.SerializerMethodField(read_only=True)
+    component_ids = serializers.ListField(
+        child=serializers.UUIDField(), write_only=True, required=False
+    )
 
     class Meta:
         model = DoctorSpecialty
-        fields = ('id', 'name', 'slug', 'icon', 'description', 'doctor_count')
+        fields = (
+            'id', 'name', 'canonical_name', 'bn_name', 'slug',
+            'icon', 'description', 'doctor_count', 'alias_count', 'components', 'component_ids'
+        )
+
+    def get_components(self, obj):
+        return [
+            {"id": str(c.id), "name": c.name, "canonical_name": c.canonical_name, "slug": c.slug}
+            for c in obj.components.all()
+        ]
+
+    def create(self, validated_data):
+        component_ids = validated_data.pop('component_ids', None)
+        from doctors.services.specialty_resolver import resolve_or_create_specialty
+        raw_name = validated_data.get('name', '')
+        specialty = resolve_or_create_specialty(raw_name, is_verified=True)
+        updated = False
+        for field in ('canonical_name', 'bn_name', 'icon', 'description'):
+            if field in validated_data and validated_data[field]:
+                setattr(specialty, field, validated_data[field])
+                updated = True
+        if updated:
+            specialty.save()
+        if component_ids is not None:
+            specialty.components.set(component_ids)
+        return specialty
+
+    def update(self, instance, validated_data):
+        component_ids = validated_data.pop('component_ids', None)
+        for attr, val in validated_data.items():
+            setattr(instance, attr, val)
+        instance.save()
+        if component_ids is not None:
+            instance.components.set(component_ids)
+        return instance
+
+
+class SpecialtyAliasSerializer(serializers.ModelSerializer):
+    specialty_name = serializers.CharField(source='specialty.name', read_only=True)
+    specialty_canonical = serializers.CharField(source='specialty.canonical_name', read_only=True)
+    specialty_bn = serializers.CharField(source='specialty.bn_name', read_only=True)
+    specialty = serializers.PrimaryKeyRelatedField(
+        queryset=DoctorSpecialty.objects.all()
+    )
+
+    class Meta:
+        model = SpecialtyAlias
+        fields = (
+            'id', 'specialty', 'specialty_name', 'specialty_canonical', 'specialty_bn',
+            'name', 'normalized', 'language', 'is_verified', 'created_at', 'updated_at'
+        )
+        read_only_fields = ('id', 'normalized', 'created_at', 'updated_at')
+
+    def validate(self, attrs):
+        from doctors.services.specialty_resolver import normalize_text, detect_language
+        name = attrs.get('name')
+        if name:
+            attrs['normalized'] = normalize_text(name)
+            if not attrs.get('language'):
+                attrs['language'] = detect_language(name)
+        return attrs
+
+    def create(self, validated_data):
+        from doctors.services.specialty_resolver import normalize_text, detect_language
+        name = validated_data.get('name')
+        if not validated_data.get('normalized'):
+            validated_data['normalized'] = normalize_text(name)
+        if not validated_data.get('language'):
+            validated_data['language'] = detect_language(name)
+        existing = SpecialtyAlias.objects.filter(normalized=validated_data['normalized']).first()
+        if existing:
+            for k, v in validated_data.items():
+                setattr(existing, k, v)
+            existing.save()
+            return existing
+        return super().create(validated_data)
+
+
+class SpecialtyOptionSerializer(serializers.Serializer):
+    id = serializers.UUIDField(source='specialty.id')
+    alias_id = serializers.UUIDField(source='id')
+    name = serializers.CharField()
+    canonical_name = serializers.CharField(source='specialty.canonical_name')
+    bn_name = serializers.CharField(source='specialty.bn_name')
+    slug = serializers.CharField(source='specialty.slug')
+    icon = serializers.CharField(source='specialty.icon')
+    description = serializers.CharField(source='specialty.description')
+    doctor_count = serializers.SerializerMethodField()
+
+    def get_doctor_count(self, obj):
+        return getattr(obj.specialty, 'cached_doctor_count', None) or obj.specialty.doctors.count()
 
 
 class AffiliationScheduleSerializer(serializers.ModelSerializer):
@@ -74,6 +169,7 @@ class AffiliationScheduleSerializer(serializers.ModelSerializer):
 
 class DoctorAffiliationSerializer(serializers.ModelSerializer):
     facility_name = serializers.CharField(source='location.name', read_only=True, default='')
+    branch = serializers.CharField(source='location.branch', read_only=True, default='')
     district = serializers.CharField(source='location.district', read_only=True, default='')
     division = serializers.CharField(source='location.division', read_only=True, default='')
     area = serializers.CharField(source='location.area', read_only=True, default='')
@@ -97,7 +193,7 @@ class DoctorAffiliationSerializer(serializers.ModelSerializer):
         model = DoctorAffiliation
         fields = (
             'id', 'doctor', 'location_id', 'location_details', 'fee',
-            'facility_name', 'district', 'division', 'area', 'schedules',
+            'facility_name', 'branch', 'district', 'division', 'area', 'schedules',
             'chamber_type', 'status_label',
             'doctor_name', 'academic_title', 'institution', 'qualification', 'experience', 'specialties'
         )
@@ -116,6 +212,7 @@ class DoctorSerializer(serializers.ModelSerializer):
     )
     affiliations = DoctorAffiliationSerializer(many=True, required=False)
     description = serializers.CharField(source='about', required=False, allow_blank=True)
+    match_tier = serializers.IntegerField(read_only=True, required=False, allow_null=True)
 
     class Meta:
         model = Doctor
@@ -123,7 +220,7 @@ class DoctorSerializer(serializers.ModelSerializer):
             'id', 'name', 'slug', 'academic_title', 'institution',
             'specialties', 'specialty_ids', 'qualification', 'experience',
             'about', 'description', 'clinical_services', 'bmdc_number', 'is_verified', 'image',
-            'gender', 'rating', 'review_count', 'status', 'affiliations'
+            'gender', 'rating', 'review_count', 'status', 'affiliations', 'match_tier'
         )
 
     def create(self, validated_data):
