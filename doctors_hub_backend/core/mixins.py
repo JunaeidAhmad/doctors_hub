@@ -1,4 +1,5 @@
 from rest_framework.generics import get_object_or_404
+from django.http import Http404
 import uuid
 
 class SlugOrPkLookupMixin:
@@ -9,11 +10,15 @@ class SlugOrPkLookupMixin:
         
         try:
             uuid.UUID(str(lookup_value))
-            filter_kwargs = {'pk': lookup_value}
+            obj = get_object_or_404(queryset, pk=lookup_value)
         except ValueError:
             slug_field = getattr(self, 'slug_field', 'slug')
-            filter_kwargs = {slug_field: lookup_value}
+            obj = queryset.filter(**{slug_field: lookup_value}).first()
+            if not obj and hasattr(queryset.model, 'old_slugs'):
+                obj = queryset.filter(old_slugs__contains=lookup_value).first()
+            if not obj:
+                raise Http404(f"No {queryset.model._meta.object_name} found matching the query")
             
-        obj = get_object_or_404(queryset, **filter_kwargs)
         self.check_object_permissions(self.request, obj)
         return obj
+

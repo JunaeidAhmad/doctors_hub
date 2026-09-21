@@ -1,4 +1,5 @@
 import React from 'react';
+import { formatDoctorTitle } from '../../../utils/doctorUtils';
 
 export default function DoctorReviewsSection({ doctor }) {
   if (!doctor) return null;
@@ -14,7 +15,7 @@ export default function DoctorReviewsSection({ doctor }) {
       type: `${specialtyName} Follow-up`,
       date: '3 days ago',
       rating: 5,
-      comment: `Dr. ${doctor.name.replace(/^Dr\.\s*|^Prof\.\s*/i, '')} listened to my medical concerns with great patience. Took time to thoroughly explain my diagnostic reports in plain terms without causing any alarm. The treatment plan has made a tremendous difference.`,
+      comment: `${formatDoctorTitle(doctor)} listened to my medical concerns with great patience. Took time to thoroughly explain my diagnostic reports in plain terms without causing any alarm. The treatment plan has made a tremendous difference.`,
       waitTime: '~15 mins'
     },
     {

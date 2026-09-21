@@ -2,6 +2,7 @@ import React, { useState, useEffect } from 'react';
 import { X, Calendar, Clock, Phone, CheckCircle2, Building2, Stethoscope, ShieldCheck, ArrowRight, Sparkles, Award } from 'lucide-react';
 import { api } from '../services/api';
 import { formatFacilityName } from '../utils/facilityUtils';
+import { displayName, formatDoctorTitle } from '../utils/doctorUtils';
 
 export default function BookingModal({ chamber, doctor, onClose, onConfirmBooking, showToast }) {
   const today = new Date().toISOString().split('T')[0];
@@ -108,12 +109,12 @@ export default function BookingModal({ chamber, doctor, onClose, onConfirmBookin
       const serialDisplay = bookingRes?.serial_display || `SL-${String(serialNum).padStart(3, '0')}`;
 
       if (showToast) {
-        showToast(`🎉 Serial #${serialNum} booked for ${patientName} with Dr. ${doctor.name}!`, 'success');
+        showToast(`🎉 Serial #${serialNum} booked for ${patientName} with ${formatDoctorTitle(doctor)}!`, 'success');
       }
 
       if (onConfirmBooking) {
         onConfirmBooking({
-          doctorName: doctor.name,
+          doctorName: displayName(doctor),
           specialty: typeof doctor.specialty === 'object' ? doctor.specialty?.name : doctor.specialty,
           chamberName: formatFacilityName(chamber) || doctor.hospital_name || 'Specialist Chamber',
           facility_name: formatFacilityName(chamber) || doctor.hospital_name || 'Specialist Chamber',
@@ -182,7 +183,7 @@ export default function BookingModal({ chamber, doctor, onClose, onConfirmBookin
           {/* 2. Doctor Name & Qualification */}
           <div>
             <h4 className="font-bold text-slate-900 text-sm">
-              {doctor.name.startsWith('Dr.') ? doctor.name : `Dr. ${doctor.name}`}
+              {formatDoctorTitle(doctor)}
               <span className="text-slate-500 font-normal ml-1.5 text-xs">
                 ({typeof doctor.specialty === 'object' ? doctor.specialty?.name : (doctor.specialty || 'General Practitioner')})
               </span>

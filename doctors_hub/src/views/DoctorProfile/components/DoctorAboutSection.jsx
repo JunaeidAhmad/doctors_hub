@@ -1,9 +1,10 @@
 import React from 'react';
+import { formatDoctorTitle } from '../../../utils/doctorUtils';
 
 export default function DoctorAboutSection({ doctor }) {
   if (!doctor) return null;
 
-  const doctorDisplayName = doctor.name || '';
+  const doctorDisplayName = formatDoctorTitle(doctor);
 
   const primarySpecialty = doctor.specialties?.[0]?.name || 'Specialist Physician';
 

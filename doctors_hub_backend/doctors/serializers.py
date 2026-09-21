@@ -167,6 +167,22 @@ class AffiliationScheduleSerializer(serializers.ModelSerializer):
         return attrs
 
 
+import re
+
+HONORIFIC_PREFIX_RE = re.compile(r'^(?:Dr\.?|Dr\b|ডাক্তার|ডা[ঃ:\.]?)\s*', re.IGNORECASE)
+
+def strip_doctor_honorific(name_str):
+    if not name_str:
+        return ""
+    cleaned = str(name_str).strip()
+    while True:
+        subbed = HONORIFIC_PREFIX_RE.sub('', cleaned).strip()
+        if subbed == cleaned:
+            break
+        cleaned = subbed
+    return cleaned
+
+
 class DoctorAffiliationSerializer(serializers.ModelSerializer):
     facility_name = serializers.CharField(source='location.name', read_only=True, default='')
     branch = serializers.CharField(source='location.branch', read_only=True, default='')
@@ -176,6 +192,7 @@ class DoctorAffiliationSerializer(serializers.ModelSerializer):
     schedules = AffiliationScheduleSerializer(many=True, required=False)
 
     doctor_name = serializers.CharField(source='doctor.name', read_only=True, default='')
+    doctor_bn_name = serializers.CharField(source='doctor.bn_name', read_only=True, default='')
     academic_title = serializers.CharField(source='doctor.academic_title', read_only=True, default='')
     institution = serializers.CharField(source='doctor.institution', read_only=True, default='')
     qualification = serializers.CharField(source='doctor.qualification', read_only=True, default='')
@@ -195,7 +212,7 @@ class DoctorAffiliationSerializer(serializers.ModelSerializer):
             'id', 'doctor', 'location_id', 'location_details', 'fee',
             'facility_name', 'branch', 'district', 'division', 'area', 'schedules',
             'chamber_type', 'status_label',
-            'doctor_name', 'academic_title', 'institution', 'qualification', 'experience', 'specialties'
+            'doctor_name', 'doctor_bn_name', 'academic_title', 'institution', 'qualification', 'experience', 'specialties'
         )
 
     def to_internal_value(self, data):
@@ -206,6 +223,7 @@ class DoctorAffiliationSerializer(serializers.ModelSerializer):
 
 
 class DoctorSerializer(serializers.ModelSerializer):
+    bn_name = serializers.CharField(required=False, allow_blank=True, default='')
     specialties = DoctorSpecialtySerializer(many=True, read_only=True)
     specialty_ids = serializers.PrimaryKeyRelatedField(
         queryset=DoctorSpecialty.objects.all(), many=True, write_only=True, source='specialties', required=False
@@ -217,11 +235,39 @@ class DoctorSerializer(serializers.ModelSerializer):
     class Meta:
         model = Doctor
         fields = (
-            'id', 'name', 'slug', 'academic_title', 'institution',
+            'id', 'name', 'bn_name', 'slug', 'old_slugs', 'academic_title', 'institution',
             'specialties', 'specialty_ids', 'qualification', 'experience',
             'about', 'description', 'clinical_services', 'bmdc_number', 'is_verified', 'image',
             'gender', 'rating', 'review_count', 'status', 'affiliations', 'match_tier'
         )
+        read_only_fields = ('old_slugs',)
+
+    def validate_name(self, value):
+        from doctors.services.specialty_resolver import detect_language
+        cleaned = strip_doctor_honorific(value)
+        if not cleaned:
+            raise serializers.ValidationError("Doctor name cannot be empty.")
+        if detect_language(cleaned) == 'bn':
+            raise serializers.ValidationError(
+                "Doctor name must be in English. Please provide the Bangla name in the bn_name field."
+            )
+        return cleaned
+
+    def validate_bn_name(self, value):
+        from doctors.services.specialty_resolver import detect_language
+        if not value:
+            return ""
+        cleaned = strip_doctor_honorific(value)
+        if cleaned and detect_language(cleaned) != 'bn':
+            raise serializers.ValidationError(
+                "Bangla name must contain Bangla script."
+            )
+        return cleaned
+
+    def validate_bmdc_number(self, value):
+        if not value or not str(value).strip():
+            return None
+        return str(value).strip()
 
     def create(self, validated_data):
         affiliations_data = validated_data.pop('affiliations', None)

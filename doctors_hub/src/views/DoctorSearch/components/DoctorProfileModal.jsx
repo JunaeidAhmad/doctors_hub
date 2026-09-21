@@ -1,5 +1,6 @@
 import React from 'react';
 import { formatFacilityName } from '../../../utils/facilityUtils';
+import { displayName, formatDoctorTitle } from '../../../utils/doctorUtils';
 
 export default function DoctorProfileModal({
   doctor,
@@ -9,9 +10,8 @@ export default function DoctorProfileModal({
   if (!doctor) return null;
 
   const academicTitle = doctor.academic_title || '';
-  const fullName = academicTitle
-    ? `${academicTitle} ${doctor.name}`
-    : (doctor.name.startsWith('Dr.') ? doctor.name : `Dr. ${doctor.name}`);
+  const baseTitle = formatDoctorTitle(doctor);
+  const fullName = academicTitle ? `${academicTitle} ${doctor.name}` : baseTitle;
 
   const affiliations = Array.isArray(doctor.affiliations) && doctor.affiliations.length > 0
     ? doctor.affiliations
@@ -29,15 +29,14 @@ export default function DoctorProfileModal({
         {/* Close Button */}
         <button
           onClick={onClose}
-          type="button"
-          className="absolute top-4 right-4 w-8 h-8 rounded-full bg-surface-container-low hover:bg-surface-container flex items-center justify-center text-outline hover:text-on-surface transition-colors cursor-pointer"
-          title="Close"
+          className="absolute top-4 right-4 p-2 rounded-full hover:bg-surface-container-high transition-colors text-on-surface-variant hover:text-on-surface"
+          title="Close modal"
         >
           <span className="material-symbols-outlined text-[20px]">close</span>
         </button>
 
         {/* Doctor Header */}
-        <div className="flex flex-col sm:flex-row items-start gap-4 pb-5 border-b border-outline-variant">
+        <div className="flex flex-col sm:flex-row items-start gap-4 pb-6 border-b border-outline-variant">
           {(() => {
             const isFemale = String(doctor?.gender).toLowerCase() === 'female';
             const defaultAvatar = isFemale ? '/default-doctor-female.svg' : '/default-doctor-male.svg';
@@ -45,7 +44,7 @@ export default function DoctorProfileModal({
             return (
               <img
                 src={avatarUrl}
-                alt={doctor.name}
+                alt={displayName(doctor)}
                 onError={(e) => {
                   e.target.onerror = null;
                   e.target.src = defaultAvatar;
@@ -60,6 +59,11 @@ export default function DoctorProfileModal({
               <h2 className="text-xl font-bold text-on-surface">
                 {fullName}
               </h2>
+              {doctor.bn_name && (
+                <span className="text-sm font-normal text-slate-500">
+                  ({doctor.bn_name.startsWith('ডা') ? doctor.bn_name : `ডাঃ ${doctor.bn_name}`})
+                </span>
+              )}
               {doctor.bmdc_number && (
                 <span className="inline-flex items-center gap-1 bg-primary/10 border border-primary/30 text-primary text-xs font-semibold px-2 py-0.5 rounded-full">
                   <span className="material-symbols-outlined text-[14px]" style={{ fontVariationSettings: "'FILL' 1" }}>

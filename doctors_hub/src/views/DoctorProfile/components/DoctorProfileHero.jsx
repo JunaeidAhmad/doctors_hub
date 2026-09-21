@@ -1,4 +1,5 @@
 import React, { useState } from 'react';
+import { displayName, formatDoctorTitle } from '../../../utils/doctorUtils';
 
 function getDoctorDefaultAvatar(doctor) {
   const isFemale = String(doctor?.gender).toLowerCase() === 'female';
@@ -15,7 +16,7 @@ export default function DoctorProfileHero({ doctor, onShare, onSave, onPrint }) 
   const avatarUrl = doctor.image || defaultAvatar;
   const isVerified = Boolean(doctor.is_verified && doctor.bmdc_number);
   const specialtyName = doctor.specialties?.[0]?.name || 'Specialist Physician';
-  const doctorDisplayName = doctor.name || '';
+  const doctorDisplayName = formatDoctorTitle(doctor);
 
   const ratingNum = parseFloat(doctor.rating) || 4.9;
   const reviewCount = doctor.review_count || 120;
@@ -93,9 +94,16 @@ export default function DoctorProfileHero({ doctor, onShare, onSave, onPrint }) 
             </div>
 
             {/* Doctor Full Name */}
-            <h1 className="font-headline-lg text-headline-lg text-on-surface font-bold tracking-tight text-slate-900 leading-tight">
-              {doctorDisplayName}
-            </h1>
+            <div>
+              <h1 className="font-headline-lg text-headline-lg text-on-surface font-bold tracking-tight text-slate-900 leading-tight">
+                {doctorDisplayName}
+              </h1>
+              {doctor.bn_name && (
+                <p className="text-base font-medium text-slate-500 mt-1">
+                  {doctor.bn_name.startsWith('ডা') ? doctor.bn_name : `ডাঃ ${doctor.bn_name}`}
+                </p>
+              )}
+            </div>
 
             {/* Qualifications Line */}
             {doctor.qualification && (

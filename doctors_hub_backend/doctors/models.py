@@ -79,7 +79,9 @@ class Doctor(models.Model):
     )
     bmdc_number = models.CharField(max_length=50, unique=True, null=True, blank=True)
     name = models.CharField(max_length=200)
+    bn_name = models.CharField(max_length=200, blank=True, default='')
     slug = models.SlugField(max_length=250, unique=True, blank=True)
+    old_slugs = models.JSONField(default=list, blank=True)
     academic_title = models.CharField(max_length=150, blank=True, default='')
     institution = models.CharField(max_length=250, blank=True, default='')
     specialties = models.ManyToManyField(DoctorSpecialty, related_name='doctors')
@@ -102,9 +104,13 @@ class Doctor(models.Model):
     def save(self, *args, **kwargs):
         if not self.slug:
             base_slug = slugify(self.name)
+            if not base_slug or base_slug.startswith('-'):
+                base_slug = f"doctor-{uuid.uuid4().hex[:8]}"
             slug = base_slug
-            if Doctor.objects.filter(slug=slug).exclude(pk=self.pk).exists():
-                slug = f"{base_slug}-{uuid7().hex[:6]}"
+            counter = 1
+            while Doctor.objects.filter(slug=slug).exclude(pk=self.pk).exists():
+                slug = f"{base_slug}-{counter}"
+                counter += 1
             self.slug = slug
         super().save(*args, **kwargs)
 

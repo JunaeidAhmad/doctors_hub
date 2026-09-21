@@ -147,6 +147,27 @@ class Command(BaseCommand):
                                 specialties_objs.append(spec_obj)
 
                         # 2. Handle Doctor
+                        # 2. Handle Doctor Bilingual Name & Script Detection
+                        from doctors.services.specialty_resolver import detect_language
+                        from doctors.serializers import strip_doctor_honorific
+
+                        raw_name = item.get("name", "").strip()
+                        raw_bn_name = item.get("bn_name", "").strip()
+                        name_lang = detect_language(raw_name)
+
+                        if name_lang == "bn":
+                            doc_name = ""
+                            doc_bn_name = strip_doctor_honorific(raw_name)
+                            self.stdout.write(
+                                self.style.WARNING(
+                                    f"[{index}] Warning: Doctor '{raw_name}' has only a Bangla name; "
+                                    "no English name provided (slug will use fallback)."
+                                )
+                            )
+                        else:
+                            doc_name = strip_doctor_honorific(raw_name)
+                            doc_bn_name = strip_doctor_honorific(raw_bn_name)
+
                         bmdc = item.get("bmdc_number")
                         if bmdc:
                             bmdc = str(bmdc).strip()
@@ -165,6 +186,7 @@ class Command(BaseCommand):
                                 bmdc_number=bmdc,
                                 defaults={
                                     "name": doc_name,
+                                    "bn_name": doc_bn_name,
                                     "qualification": qualification,
                                     "experience": experience,
                                     "description": description,
@@ -173,10 +195,11 @@ class Command(BaseCommand):
                             )
                         else:
                             # Search by name match
-                            doctor = Doctor.objects.filter(name__iexact=doc_name).first()
+                            doctor = Doctor.objects.filter(name__iexact=doc_name).first() if doc_name else None
                             if not doctor:
                                 doctor = Doctor.objects.create(
                                     name=doc_name,
+                                    bn_name=doc_bn_name,
                                     bmdc_number=None,
                                     qualification=qualification,
                                     experience=experience,
@@ -187,6 +210,10 @@ class Command(BaseCommand):
 
                         if not created:
                             # Update details
+                            if doc_name:
+                                doctor.name = doc_name
+                            if doc_bn_name:
+                                doctor.bn_name = doc_bn_name
                             doctor.qualification = qualification or doctor.qualification
                             doctor.experience = experience or doctor.experience
                             if description:

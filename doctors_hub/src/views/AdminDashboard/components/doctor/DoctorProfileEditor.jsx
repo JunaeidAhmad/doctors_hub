@@ -15,6 +15,7 @@ export default function DoctorProfileEditor() {
   const doctor = doctors && doctors.length > 0 ? doctors[0] : null;
 
   const [name, setName] = useState('');
+  const [bnName, setBnName] = useState('');
   const [academicTitle, setAcademicTitle] = useState('');
   const [institution, setInstitution] = useState('');
   const [bmdcNumber, setBmdcNumber] = useState('');
@@ -29,6 +30,7 @@ export default function DoctorProfileEditor() {
   useEffect(() => {
     if (doctor) {
       setName(doctor.name || '');
+      setBnName(doctor.bn_name || '');
       setAcademicTitle(doctor.academic_title || '');
       setInstitution(doctor.institution || '');
       setBmdcNumber(doctor.bmdc_number || '');
@@ -71,6 +73,7 @@ export default function DoctorProfileEditor() {
     try {
       const payload = {
         name: name.trim(),
+        bn_name: bnName.trim(),
         academic_title: academicTitle.trim(),
         institution: institution.trim(),
         bmdc_number: bmdcNumber.trim(),
@@ -138,14 +141,28 @@ export default function DoctorProfileEditor() {
           <div>
             <label className="block text-slate-300 text-xs font-bold mb-2 flex items-center gap-1.5">
               <User className="w-3.5 h-3.5 text-teal-400" />
-              <span>Full Name & Title</span>
+              <span>Full name (English) *</span>
             </label>
             <input
               type="text"
               required
               value={name}
               onChange={(e) => setName(e.target.value)}
-              placeholder="Prof. Dr. Harun-Or-Rashid"
+              placeholder="Harun-Or-Rashid"
+              className="w-full bg-slate-950 border border-slate-800 rounded-xl px-4 py-3 text-sm text-white focus:outline-none focus:border-teal-500"
+            />
+          </div>
+
+          <div>
+            <label className="block text-slate-300 text-xs font-bold mb-2 flex items-center gap-1.5">
+              <User className="w-3.5 h-3.5 text-teal-400" />
+              <span>নাম (বাংলা) <span className="text-slate-500 font-normal">(Optional)</span></span>
+            </label>
+            <input
+              type="text"
+              value={bnName}
+              onChange={(e) => setBnName(e.target.value)}
+              placeholder="হারুন-অর-রশিদ"
               className="w-full bg-slate-950 border border-slate-800 rounded-xl px-4 py-3 text-sm text-white focus:outline-none focus:border-teal-500"
             />
           </div>

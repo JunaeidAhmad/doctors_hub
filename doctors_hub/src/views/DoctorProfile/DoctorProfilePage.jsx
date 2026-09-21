@@ -1,6 +1,7 @@
 import React, { useState, useEffect, useMemo } from 'react';
 import { useLocation } from 'react-router-dom';
 import { api } from '../../services/api';
+import { displayName, formatDoctorTitle } from '../../utils/doctorUtils';
 import DoctorProfileHero from './components/DoctorProfileHero';
 import DoctorAboutSection from './components/DoctorAboutSection';
 import DoctorServicesSection from './components/DoctorServicesSection';
@@ -182,7 +183,7 @@ export default function DoctorProfilePage({
             <span className="text-slate-600">{primarySpecialty}</span>
             <span className="text-outline-variant text-slate-300">/</span>
             <span className="text-primary font-semibold text-teal-800 truncate max-w-[200px] sm:max-w-xs">
-              {doctor.name}
+              {formatDoctorTitle(doctor)}
             </span>
           </nav>
 

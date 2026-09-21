@@ -13,9 +13,7 @@ export default function DoctorsTab() {
   const {
     isDoctor,
     isFacilityAdmin,
-    isHospitalAdmin,
     isDiagnosticAdmin,
-    isSuperAdmin,
     storedUser,
     hospitals = [],
     diagnosticCenters = [],
@@ -90,8 +88,8 @@ export default function DoctorsTab() {
   return (
     <>
       <div className="bg-slate-900 border border-slate-800 rounded-2xl overflow-hidden shadow-xl">
-        <div className="p-5 border-b border-slate-800 flex flex-wrap items-center justify-between gap-4">
-          <div className="relative flex-1 min-w-[240px]">
+        <div className="p-4 sm:p-5 border-b border-slate-800 flex flex-col sm:flex-row items-stretch sm:items-center justify-between gap-3 sm:gap-4">
+          <div className="relative flex-1 min-w-0">
             <Search className="w-4 h-4 absolute left-3 top-3 text-slate-400" />
             <input
               type="text"
@@ -104,14 +102,14 @@ export default function DoctorsTab() {
           {isFacilityAdmin ? (
             <button
               onClick={() => setShowAffiliateDrawer(true)}
-              className="flex items-center gap-2 px-4 py-2.5 bg-teal-600 hover:bg-teal-500 text-white font-bold text-xs rounded-xl transition shadow-lg shadow-teal-600/20 cursor-pointer"
+              className="flex items-center justify-center gap-2 px-4 py-2.5 bg-teal-600 hover:bg-teal-500 text-white font-bold text-xs rounded-xl transition shadow-lg shadow-teal-600/20 cursor-pointer shrink-0"
             >
               <Plus className="w-4 h-4" /> Onboard / Affiliate Doctor
             </button>
           ) : (
             <button
               onClick={() => handleOpenDoctorModal()}
-              className="flex items-center gap-2 px-4 py-2.5 bg-teal-600 hover:bg-teal-500 text-white font-bold text-xs rounded-xl transition shadow-lg shadow-teal-600/20 cursor-pointer"
+              className="flex items-center justify-center gap-2 px-4 py-2.5 bg-teal-600 hover:bg-teal-500 text-white font-bold text-xs rounded-xl transition shadow-lg shadow-teal-600/20 cursor-pointer shrink-0"
             >
               <Plus className="w-4 h-4" /> Add New Specialist Doctor
             </button>
@@ -126,7 +124,7 @@ export default function DoctorsTab() {
             </div>
           )}
 
-          <table className="w-full text-left text-xs text-slate-300">
+          <table className="w-full min-w-[640px] text-left text-xs text-slate-300">
             <thead className="bg-slate-950 text-slate-400 text-[11px] uppercase tracking-wider border-b border-slate-800">
               <tr>
                 <th className="py-3.5 px-4 w-[25%]">Doctor Name</th>

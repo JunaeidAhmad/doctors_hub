@@ -1,6 +1,7 @@
 import React, { useState } from 'react';
 import DoctorChamberCard from './DoctorChamberCard';
 import { formatFacilityName } from '../../../utils/facilityUtils';
+import { displayName, formatDoctorTitle } from '../../../utils/doctorUtils';
 
 function getDoctorDefaultAvatar(doctor) {
   const isFemale = String(doctor?.gender).toLowerCase() === 'female';
@@ -67,7 +68,8 @@ export default function DoctorCard({
     }
   };
 
-  const doctorDisplayName = doctor.name || '';
+  const doctorDisplayName = formatDoctorTitle(doctor);
+  const doctorBnName = doctor.bn_name;
 
   return (
     <article className="bg-surface-container-lowest rounded-2xl border border-outline-variant shadow-xs hover:shadow-md transition-shadow duration-200 overflow-hidden">
@@ -78,7 +80,7 @@ export default function DoctorCard({
           <div className="relative shrink-0 mx-auto sm:mx-0">
             <img
               src={avatarUrl}
-              alt={doctor.name}
+              alt={displayName(doctor)}
               onError={(e) => {
                 e.target.onerror = null;
                 e.target.src = defaultAvatar;
@@ -103,8 +105,13 @@ export default function DoctorCard({
             <div className="flex flex-col sm:flex-row sm:items-start justify-between gap-2 sm:gap-4">
               <div className="min-w-0 flex-1">
                 {/* Non-clickable Doctor Name without designation */}
-                <h3 className="font-bold text-xl sm:text-[22px] text-slate-900 tracking-tight leading-snug">
-                  {doctorDisplayName}
+                <h3 className="font-bold text-xl sm:text-[22px] text-slate-900 tracking-tight leading-snug flex flex-wrap items-baseline gap-2">
+                  <span>{doctorDisplayName}</span>
+                  {doctorBnName && (
+                    <span className="text-sm sm:text-base font-normal text-slate-500">
+                      ({doctorBnName.startsWith('ডা') ? doctorBnName : `ডাঃ ${doctorBnName}`})
+                    </span>
+                  )}
                 </h3>
                 {/* Qualifications Line in Cyan/Teal */}
                 {qualification && (

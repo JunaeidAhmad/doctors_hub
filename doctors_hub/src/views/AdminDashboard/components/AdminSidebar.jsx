@@ -3,7 +3,7 @@ import { useAdminContext } from '../context/AdminContext';
 import { navConfig } from '../navConfig';
 import { ChevronRight } from 'lucide-react';
 
-export default function AdminSidebar() {
+export default function AdminSidebar({ onTabSelect, isMobile = false }) {
   const { 
     activeTab, 
     setActiveTab, 
@@ -68,7 +68,10 @@ export default function AdminSidebar() {
   };
 
   return (
-    <aside className="w-64 bg-slate-900/90 border-r border-slate-800/80 flex-shrink-0 min-h-[calc(100vh-80px)] p-4 flex flex-col gap-6 sticky top-20 overflow-y-auto">
+    <aside className={isMobile 
+      ? "w-full bg-slate-900 flex-shrink-0 p-4 flex flex-col gap-6 overflow-y-auto" 
+      : "w-64 bg-slate-900/90 border-r border-slate-800/80 flex-shrink-0 min-h-[calc(100vh-80px)] p-4 flex flex-col gap-6 sticky top-20 overflow-y-auto"
+    }>
       {visibleGroups.map(group => (
         <div key={group.group} className="flex flex-col gap-1">
           <h3 className="text-[10px] font-extrabold text-slate-500 uppercase tracking-wider mb-2 px-3">
@@ -81,7 +84,11 @@ export default function AdminSidebar() {
             return (
               <button
                 key={tab.id}
-                onClick={() => { setActiveTab(tab.id); if (setSearchTerm) setSearchTerm(''); }}
+                onClick={() => { 
+                  setActiveTab(tab.id); 
+                  if (setSearchTerm) setSearchTerm(''); 
+                  if (onTabSelect) onTabSelect(tab.id);
+                }}
                 className={`px-3 py-2 rounded-xl text-xs font-semibold flex items-center justify-between transition-all duration-150 cursor-pointer ${
                   isActive 
                     ? roleStyles.active 

@@ -1,7 +1,8 @@
 import React, { useState, useEffect, useMemo } from 'react';
 import { 
   X, Stethoscope, Building2, DollarSign, Clock, 
-  Plus, Trash2, AlertCircle, Save, Sparkles, User
+  Plus, Trash2, AlertCircle, Save, Sparkles, User,
+  Camera, Star, ShieldCheck
 } from 'lucide-react';
 import { useAdminContext } from '../../context/AdminContext';
 import { api } from '../../../../services/api';
@@ -10,6 +11,11 @@ const DAYS_OF_WEEK = [
   'Saturday', 'Sunday', 'Monday', 'Tuesday', 
   'Wednesday', 'Thursday', 'Friday'
 ];
+
+const GENDER_CHOICES = ['Male', 'Female', 'Other'];
+const STATUS_CHOICES = ['Active', 'Inactive', 'On Leave', 'Retired'];
+const CHAMBER_TYPES = ['Primary Chamber', 'Visiting Chamber', 'Consultation Room', 'Evening Chamber'];
+const STATUS_LABELS = ['Available Today', 'Visiting Consultant', 'On Call', 'Advance Booking Only'];
 
 export default function DoctorModal() {
   const {
@@ -25,6 +31,8 @@ export default function DoctorModal() {
   } = useAdminContext();
 
   const [name, setName] = useState('');
+  const [bnName, setBnName] = useState('');
+  const [gender, setGender] = useState('Male');
   const [academicTitle, setAcademicTitle] = useState('');
   const [institution, setInstitution] = useState('');
   const [bmdcNumber, setBmdcNumber] = useState('');
@@ -33,6 +41,13 @@ export default function DoctorModal() {
   const [about, setAbout] = useState('');
   const [clinicalServices, setClinicalServices] = useState('');
   const [selectedSpecialties, setSelectedSpecialties] = useState([]);
+  const [isVerified, setIsVerified] = useState(true);
+  const [status, setStatus] = useState('Active');
+  const [rating, setRating] = useState('4.90');
+  const [reviewCount, setReviewCount] = useState('120');
+  const [imageFile, setImageFile] = useState(null);
+  const [imagePreview, setImagePreview] = useState('');
+
   const [affiliations, setAffiliations] = useState([]);
   
   // Tracking initial IDs to detect deletions on submit
@@ -72,6 +87,8 @@ export default function DoctorModal() {
     setErrorMsg('');
     if (editingDoctor) {
       setName(editingDoctor.name || '');
+      setBnName(editingDoctor.bn_name || '');
+      setGender(editingDoctor.gender || 'Male');
       setAcademicTitle(editingDoctor.academic_title || '');
       setInstitution(editingDoctor.institution || '');
       setBmdcNumber(editingDoctor.bmdc_number || '');
@@ -79,6 +96,12 @@ export default function DoctorModal() {
       setExperience(editingDoctor.experience || '10+ Yrs Exp.');
       setAbout(editingDoctor.about || editingDoctor.description || '');
       setClinicalServices(editingDoctor.clinical_services || '');
+      setIsVerified(editingDoctor.is_verified ?? true);
+      setStatus(editingDoctor.status || 'Active');
+      setRating(editingDoctor.rating != null ? String(editingDoctor.rating) : '4.90');
+      setReviewCount(editingDoctor.review_count != null ? String(editingDoctor.review_count) : '120');
+      setImageFile(null);
+      setImagePreview(editingDoctor.image || '');
 
       const specIds = Array.isArray(editingDoctor.specialties) 
         ? editingDoctor.specialties.map(s => typeof s === 'object' && s !== null ? (s.id || s) : s)
@@ -104,6 +127,8 @@ export default function DoctorModal() {
             return {
               id: a.id,
               location_id: String(locId),
+              chamber_type: a.chamber_type || 'Primary Chamber',
+              status_label: a.status_label || 'Available Today',
               fee: String(a.fee != null ? a.fee : '1200'),
               schedules: schedules.length > 0 ? schedules : [
                 {
@@ -119,6 +144,8 @@ export default function DoctorModal() {
             {
               id: `temp-aff-${Date.now()}`,
               location_id: allLocations[0]?.id || '',
+              chamber_type: 'Primary Chamber',
+              status_label: 'Available Today',
               fee: '1200',
               schedules: [
                 {
@@ -143,6 +170,8 @@ export default function DoctorModal() {
       setInitialScheduleIds(origSchedMap);
     } else {
       setName('');
+      setBnName('');
+      setGender('Male');
       setAcademicTitle('');
       setInstitution('');
       setBmdcNumber('');
@@ -150,12 +179,19 @@ export default function DoctorModal() {
       setExperience('10+ Yrs Exp.');
       setAbout('');
       setClinicalServices('');
+      setIsVerified(true);
+      setStatus('Active');
+      setRating('4.90');
+      setReviewCount('120');
+      setImageFile(null);
+      setImagePreview('');
       setSelectedSpecialties((doctorSpecialties || [])[0] ? [doctorSpecialties[0].id] : []);
       setAffiliations([
         {
           id: `temp-aff-${Date.now()}`,
           location_id: allLocations[0]?.id || '',
-
+          chamber_type: 'Primary Chamber',
+          status_label: 'Available Today',
           fee: '1200',
           schedules: [
             {
@@ -182,6 +218,19 @@ export default function DoctorModal() {
     );
   };
 
+  const handleImageChange = (e) => {
+    const file = e.target.files?.[0];
+    if (file) {
+      setImageFile(file);
+      setImagePreview(URL.createObjectURL(file));
+    }
+  };
+
+  const handleRemoveImage = () => {
+    setImageFile(null);
+    setImagePreview('');
+  };
+
   const handleAddChamber = () => {
     const defaultLoc = allLocations[0]?.id || '';
     setAffiliations(prev => [
@@ -189,7 +238,8 @@ export default function DoctorModal() {
       {
         id: `temp-aff-${Date.now()}-${Math.random()}`,
         location_id: defaultLoc,
-
+        chamber_type: 'Primary Chamber',
+        status_label: 'Available Today',
         fee: '1200',
         schedules: [
           {
@@ -314,17 +364,45 @@ export default function DoctorModal() {
     setErrorMsg('');
 
     try {
-      const docPayload = {
-        name: name.trim(),
-        academic_title: academicTitle.trim(),
-        institution: institution.trim(),
-        qualification: qualification.trim(),
-        experience: experience.trim(),
-        about: about.trim(),
-        clinical_services: clinicalServices.trim(),
-        bmdc_number: bmdcNumber.trim() || undefined,
-        specialty_ids: selectedSpecialties
-      };
+      let docPayload;
+      if (imageFile) {
+        const fd = new FormData();
+        fd.append('name', name.trim());
+        if (bnName.trim()) fd.append('bn_name', bnName.trim());
+        if (bmdcNumber.trim()) fd.append('bmdc_number', bmdcNumber.trim());
+        if (academicTitle.trim()) fd.append('academic_title', academicTitle.trim());
+        if (institution.trim()) fd.append('institution', institution.trim());
+        fd.append('qualification', qualification.trim());
+        if (experience.trim()) fd.append('experience', experience.trim());
+        if (about.trim()) fd.append('about', about.trim());
+        if (clinicalServices.trim()) fd.append('clinical_services', clinicalServices.trim());
+        fd.append('gender', gender);
+        fd.append('status', status);
+        fd.append('is_verified', isVerified ? 'true' : 'false');
+        fd.append('rating', parseFloat(rating) || 4.90);
+        fd.append('review_count', parseInt(reviewCount, 10) || 120);
+        selectedSpecialties.forEach(id => fd.append('specialty_ids', id));
+        fd.append('image', imageFile);
+        docPayload = fd;
+      } else {
+        docPayload = {
+          name: name.trim(),
+          bn_name: bnName.trim(),
+          academic_title: academicTitle.trim(),
+          institution: institution.trim(),
+          qualification: qualification.trim(),
+          experience: experience.trim(),
+          about: about.trim(),
+          clinical_services: clinicalServices.trim(),
+          bmdc_number: bmdcNumber.trim() || undefined,
+          gender,
+          status,
+          is_verified: isVerified,
+          rating: parseFloat(rating) || 4.90,
+          review_count: parseInt(reviewCount, 10) || 120,
+          specialty_ids: selectedSpecialties
+        };
+      }
 
       let doctorId = editingDoctor?.id;
       
@@ -375,14 +453,16 @@ export default function DoctorModal() {
           const createdAff = await api.createDoctorAffiliation({
             doctor: doctorId,
             location_id: targetLocId,
-
+            chamber_type: aff.chamber_type || 'Primary Chamber',
+            status_label: aff.status_label || 'Available Today',
             fee: parseFloat(aff.fee) || 1200
           });
           affId = createdAff?.id;
         } else {
           // Update existing affiliation fee & type
           await api.updateDoctorAffiliation(affId, {
-
+            chamber_type: aff.chamber_type || 'Primary Chamber',
+            status_label: aff.status_label || 'Available Today',
             fee: parseFloat(aff.fee) || 1200
           });
         }
@@ -443,20 +523,20 @@ export default function DoctorModal() {
   };
 
   return (
-    <div className="fixed inset-0 z-50 bg-slate-950/80 backdrop-blur-md flex items-center justify-center p-4 overflow-y-auto">
-      <div className="bg-slate-900 border border-slate-800 rounded-3xl p-6 max-w-3xl w-full space-y-5 my-8 shadow-2xl max-h-[90vh] flex flex-col">
+    <div className="fixed inset-0 z-50 bg-slate-950/80 backdrop-blur-md flex items-center justify-center p-2 sm:p-4 overflow-y-auto">
+      <div className="bg-slate-900 border border-slate-800 rounded-2xl sm:rounded-3xl p-4 sm:p-6 max-w-3xl w-full space-y-4 sm:space-y-5 my-2 sm:my-8 shadow-2xl max-h-[94vh] sm:max-h-[90vh] flex flex-col">
         
         {/* Modal Header */}
-        <div className="flex items-center justify-between border-b border-slate-800 pb-4 flex-shrink-0">
-          <div className="flex items-center gap-3">
-            <div className="p-2.5 rounded-2xl bg-teal-500/10 border border-teal-500/20 text-teal-400">
-              <Stethoscope className="w-5 h-5" />
+        <div className="flex items-center justify-between border-b border-slate-800 pb-3 sm:pb-4 flex-shrink-0">
+          <div className="flex items-center gap-2.5 sm:gap-3">
+            <div className="p-2 sm:p-2.5 rounded-xl sm:rounded-2xl bg-teal-500/10 border border-teal-500/20 text-teal-400">
+              <Stethoscope className="w-4 h-4 sm:w-5 sm:h-5" />
             </div>
             <div>
-              <h3 className="text-lg font-bold text-white leading-tight">
+              <h3 className="text-base sm:text-lg font-bold text-white leading-tight">
                 {editingDoctor ? `Edit Doctor: Dr. ${editingDoctor.name}` : 'Add New Specialist Doctor'}
               </h3>
-              <p className="text-xs text-slate-400 mt-0.5">
+              <p className="text-[11px] sm:text-xs text-slate-400 mt-0.5">
                 {editingDoctor 
                   ? 'Update doctor credentials, consultation fees, chambers, and visiting schedules.' 
                   : 'Register a specialist doctor with chambers, consultation fees, and visiting hours.'}
@@ -474,29 +554,30 @@ export default function DoctorModal() {
 
         {/* Error Alert */}
         {errorMsg && (
-          <div className="bg-rose-500/15 border border-rose-500/30 text-rose-300 p-3.5 rounded-2xl text-xs font-semibold flex items-center gap-2 flex-shrink-0">
+          <div className="bg-rose-500/15 border border-rose-500/30 text-rose-300 p-3 sm:p-3.5 rounded-2xl text-xs font-semibold flex items-center gap-2 flex-shrink-0">
             <AlertCircle className="w-4 h-4 text-rose-400 shrink-0" />
             <span>{errorMsg}</span>
           </div>
         )}
 
         {/* Scrollable Form Content */}
-        <form onSubmit={handleSaveDoctor} id="doctor-modal-form" className="space-y-6 text-xs overflow-y-auto pr-1 flex-1">
+        <form onSubmit={handleSaveDoctor} id="doctor-modal-form" className="space-y-4 sm:space-y-6 text-xs overflow-y-auto pr-1 flex-1">
           
           {/* SECTION 1: Doctor Credentials */}
-          <div className="bg-slate-950/60 border border-slate-800/80 rounded-2xl p-4 space-y-4">
+          <div className="bg-slate-950/60 border border-slate-800/80 rounded-2xl p-3.5 sm:p-4 space-y-4">
             <h4 className="text-xs font-bold text-slate-200 uppercase tracking-wider flex items-center gap-2 border-b border-slate-800/60 pb-2">
               <User className="w-4 h-4 text-teal-400" />
               <span>Doctor Personal & Professional Information</span>
             </h4>
 
-            <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
-              <div>
-                <label className="block text-slate-300 font-semibold mb-1">Doctor Full Name *</label>
+            {/* Row 1: Name, Bangla Name, Gender */}
+            <div className="grid grid-cols-1 sm:grid-cols-3 gap-3 sm:gap-4">
+              <div className="sm:col-span-1">
+                <label className="block text-slate-300 font-semibold mb-1">Full name (English) *</label>
                 <input
                   type="text"
                   required
-                  placeholder="e.g. Prof. Dr. M. A. Karim"
+                  placeholder="e.g. M. A. Karim"
                   value={name}
                   disabled={!isSuperAdmin}
                   onChange={e => setName(e.target.value)}
@@ -504,6 +585,37 @@ export default function DoctorModal() {
                 />
               </div>
 
+              <div>
+                <label className="block text-slate-300 font-semibold mb-1">
+                  নাম (বাংলা) <span className="text-slate-500 font-normal">(Optional)</span>
+                </label>
+                <input
+                  type="text"
+                  placeholder="e.g. মোঃ এ. করিম"
+                  value={bnName}
+                  disabled={!isSuperAdmin}
+                  onChange={e => setBnName(e.target.value)}
+                  className="w-full bg-slate-900 border border-slate-800 rounded-xl px-3 py-2 text-white focus:outline-none focus:border-teal-500 transition"
+                />
+              </div>
+
+              <div>
+                <label className="block text-slate-300 font-semibold mb-1">Gender</label>
+                <select
+                  value={gender}
+                  disabled={!isSuperAdmin}
+                  onChange={e => setGender(e.target.value)}
+                  className="w-full bg-slate-900 border border-slate-800 rounded-xl px-3 py-2 text-white focus:outline-none focus:border-teal-500 transition cursor-pointer"
+                >
+                  {GENDER_CHOICES.map(g => (
+                    <option key={g} value={g}>{g}</option>
+                  ))}
+                </select>
+              </div>
+            </div>
+
+            {/* Row 2: BMDC & Academic Title */}
+            <div className="grid grid-cols-1 sm:grid-cols-2 gap-3 sm:gap-4">
               <div>
                 <label className="block text-slate-300 font-semibold mb-1">BMDC Registration No.</label>
                 <input
@@ -515,9 +627,22 @@ export default function DoctorModal() {
                   className="w-full bg-slate-900 border border-slate-800 rounded-xl px-3 py-2 text-white focus:outline-none focus:border-teal-500 transition"
                 />
               </div>
+
+              <div>
+                <label className="block text-slate-300 font-semibold mb-1">Academic Title / Seniority</label>
+                <input
+                  type="text"
+                  placeholder="e.g. Professor, Associate Professor, Consultant"
+                  value={academicTitle}
+                  disabled={!isSuperAdmin}
+                  onChange={e => setAcademicTitle(e.target.value)}
+                  className="w-full bg-slate-900 border border-slate-800 rounded-xl px-3 py-2 text-white focus:outline-none focus:border-teal-500 transition"
+                />
+              </div>
             </div>
 
-            <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
+            {/* Row 3: Qualifications & Experience */}
+            <div className="grid grid-cols-1 sm:grid-cols-2 gap-3 sm:gap-4">
               <div>
                 <label className="block text-slate-300 font-semibold mb-1">Qualifications & Degrees *</label>
                 <input
@@ -544,32 +669,125 @@ export default function DoctorModal() {
               </div>
             </div>
 
-            <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
+            {/* Row 4: Institution */}
+            <div>
+              <label className="block text-slate-300 font-semibold mb-1">Medical Institution / Hospital</label>
+              <input
+                type="text"
+                placeholder="e.g. Dhaka Medical College & Hospital"
+                value={institution}
+                disabled={!isSuperAdmin}
+                onChange={e => setInstitution(e.target.value)}
+                className="w-full bg-slate-900 border border-slate-800 rounded-xl px-3 py-2 text-white focus:outline-none focus:border-teal-500 transition"
+              />
+            </div>
+
+            {/* Row 5: Profile Image Upload & Preview */}
+            <div className="p-3 bg-slate-900/80 border border-slate-800 rounded-xl">
+              <label className="block text-slate-300 font-semibold mb-1.5 flex items-center gap-1.5">
+                <Camera className="w-3.5 h-3.5 text-teal-400" />
+                <span>Doctor Profile Photo</span>
+              </label>
+              <div className="flex flex-col sm:flex-row items-center gap-3">
+                {imagePreview ? (
+                  <div className="relative w-16 h-16 rounded-xl overflow-hidden border border-slate-700 bg-slate-950 shrink-0">
+                    <img src={imagePreview} alt="Preview" className="w-full h-full object-cover" />
+                    {isSuperAdmin && (
+                      <button
+                        type="button"
+                        onClick={handleRemoveImage}
+                        className="absolute top-0.5 right-0.5 p-1 bg-rose-600/90 hover:bg-rose-500 text-white rounded-full transition cursor-pointer"
+                        title="Remove photo"
+                      >
+                        <X className="w-3 h-3" />
+                      </button>
+                    )}
+                  </div>
+                ) : (
+                  <div className="w-16 h-16 rounded-xl border border-dashed border-slate-700 flex flex-col items-center justify-center text-slate-500 shrink-0">
+                    <Camera className="w-5 h-5 mb-0.5" />
+                    <span className="text-[9px]">No image</span>
+                  </div>
+                )}
+                <div className="flex-1 w-full">
+                  <input
+                    type="file"
+                    accept="image/*"
+                    disabled={!isSuperAdmin}
+                    onChange={handleImageChange}
+                    className="w-full text-xs text-slate-400 file:mr-3 file:py-1.5 file:px-3 file:rounded-lg file:border file:border-teal-500/30 file:text-teal-300 file:bg-teal-500/10 file:font-semibold hover:file:bg-teal-500/20 file:cursor-pointer transition"
+                  />
+                  <p className="text-[10px] text-slate-500 mt-1">Supports JPG, PNG, WEBP. Square ratio recommended.</p>
+                </div>
+              </div>
+            </div>
+
+            {/* Row 6: Status, Verification, Rating & Reviews */}
+            <div className="grid grid-cols-2 sm:grid-cols-4 gap-3">
               <div>
-                <label className="block text-slate-300 font-semibold mb-1">Academic Title / Seniority</label>
-                <input
-                  type="text"
-                  placeholder="e.g. Professor, Associate Professor, Consultant"
-                  value={academicTitle}
+                <label className="block text-slate-300 font-semibold mb-1">Status</label>
+                <select
+                  value={status}
                   disabled={!isSuperAdmin}
-                  onChange={e => setAcademicTitle(e.target.value)}
-                  className="w-full bg-slate-900 border border-slate-800 rounded-xl px-3 py-2 text-white focus:outline-none focus:border-teal-500 transition"
+                  onChange={e => setStatus(e.target.value)}
+                  className="w-full bg-slate-900 border border-slate-800 rounded-xl px-2.5 py-2 text-white text-xs focus:outline-none focus:border-teal-500 transition cursor-pointer"
+                >
+                  {STATUS_CHOICES.map(s => (
+                    <option key={s} value={s}>{s}</option>
+                  ))}
+                </select>
+              </div>
+
+              <div>
+                <label className="block text-slate-300 font-semibold mb-1">Verification</label>
+                <button
+                  type="button"
+                  disabled={!isSuperAdmin}
+                  onClick={() => setIsVerified(!isVerified)}
+                  className={`w-full py-2 px-2.5 rounded-xl border text-xs font-bold transition flex items-center justify-center gap-1.5 cursor-pointer ${
+                    isVerified 
+                      ? 'bg-emerald-500/20 text-emerald-300 border-emerald-500/50' 
+                      : 'bg-slate-900 text-slate-400 border-slate-800 hover:border-slate-700'
+                  }`}
+                >
+                  <ShieldCheck className={`w-3.5 h-3.5 ${isVerified ? 'text-emerald-400' : 'text-slate-500'}`} />
+                  <span>{isVerified ? 'Verified' : 'Unverified'}</span>
+                </button>
+              </div>
+
+              <div>
+                <label className="block text-slate-300 font-semibold mb-1 flex items-center gap-1">
+                  <Star className="w-3 h-3 text-amber-400" />
+                  <span>Rating</span>
+                </label>
+                <input
+                  type="number"
+                  min="1"
+                  max="5"
+                  step="0.05"
+                  placeholder="4.90"
+                  value={rating}
+                  disabled={!isSuperAdmin}
+                  onChange={e => setRating(e.target.value)}
+                  className="w-full bg-slate-900 border border-slate-800 rounded-xl px-2.5 py-2 text-white focus:outline-none focus:border-teal-500 transition text-xs"
                 />
               </div>
 
               <div>
-                <label className="block text-slate-300 font-semibold mb-1">Medical Institution / Hospital</label>
+                <label className="block text-slate-300 font-semibold mb-1">Review Count</label>
                 <input
-                  type="text"
-                  placeholder="e.g. Dhaka Medical College & Hospital"
-                  value={institution}
+                  type="number"
+                  min="0"
+                  placeholder="120"
+                  value={reviewCount}
                   disabled={!isSuperAdmin}
-                  onChange={e => setInstitution(e.target.value)}
-                  className="w-full bg-slate-900 border border-slate-800 rounded-xl px-3 py-2 text-white focus:outline-none focus:border-teal-500 transition"
+                  onChange={e => setReviewCount(e.target.value)}
+                  className="w-full bg-slate-900 border border-slate-800 rounded-xl px-2.5 py-2 text-white focus:outline-none focus:border-teal-500 transition text-xs"
                 />
               </div>
             </div>
 
+            {/* Row 7 & 8: Biography & Clinical Services */}
             <div className="space-y-4 pt-2 border-t border-slate-800/40">
               <div>
                 <label className="block text-slate-300 font-semibold mb-1">About Doctor (Biography)</label>
@@ -599,7 +817,7 @@ export default function DoctorModal() {
           </div>
 
           {/* SECTION 2: Specialties */}
-          <div className="bg-slate-950/60 border border-slate-800/80 rounded-2xl p-4 space-y-2.5">
+          <div className="bg-slate-950/60 border border-slate-800/80 rounded-2xl p-3.5 sm:p-4 space-y-2.5">
             <h4 className="text-xs font-bold text-slate-200 uppercase tracking-wider flex items-center gap-2 border-b border-slate-800/60 pb-2">
               <Sparkles className="w-4 h-4 text-teal-400" />
               <span>Medical Specialties *</span>
@@ -629,7 +847,7 @@ export default function DoctorModal() {
           </div>
 
           {/* SECTION 3: Chambers, Fees & Visiting Schedules */}
-          <div className="bg-slate-950/60 border border-slate-800/80 rounded-2xl p-4 space-y-4">
+          <div className="bg-slate-950/60 border border-slate-800/80 rounded-2xl p-3.5 sm:p-4 space-y-4">
             <div className="flex items-center justify-between border-b border-slate-800/60 pb-2.5">
               <h4 className="text-xs font-bold text-slate-200 uppercase tracking-wider flex items-center gap-2">
                 <Building2 className="w-4 h-4 text-cyan-400" />
@@ -660,7 +878,7 @@ export default function DoctorModal() {
             ) : (
               <div className="space-y-4">
                 {affiliations.map((aff, aIdx) => (
-                  <div key={aff.id || aIdx} className="bg-slate-900/90 border border-slate-800 rounded-2xl p-4 space-y-3.5">
+                  <div key={aff.id || aIdx} className="bg-slate-900/90 border border-slate-800 rounded-2xl p-3 sm:p-4 space-y-3.5">
                     
                     {/* Chamber Header */}
                     <div className="flex items-center justify-between border-b border-slate-800/80 pb-2">
@@ -682,14 +900,14 @@ export default function DoctorModal() {
                       )}
                     </div>
 
-                    {/* Chamber Facility, Type & Fee */}
-                    <div className="grid grid-cols-1 sm:grid-cols-3 gap-3">
+                    {/* Chamber Facility, Type, Status Label & Fee */}
+                    <div className="grid grid-cols-1 sm:grid-cols-4 gap-3">
                       <div>
                         <label className="block text-slate-300 font-semibold mb-1">Facility / Hospital *</label>
                         <select
                           value={aff.location_id}
                           onChange={e => handleUpdateChamberField(aIdx, 'location_id', e.target.value)}
-                          className="w-full bg-slate-950 border border-slate-800 rounded-xl px-2.5 py-2 text-white text-xs focus:outline-none focus:border-cyan-500 transition"
+                          className="w-full bg-slate-950 border border-slate-800 rounded-xl px-2.5 py-2 text-white text-xs focus:outline-none focus:border-cyan-500 transition cursor-pointer"
                         >
                           {allLocations.length === 0 ? (
                             <option value="">No locations available</option>
@@ -703,7 +921,31 @@ export default function DoctorModal() {
                         </select>
                       </div>
 
+                      <div>
+                        <label className="block text-slate-300 font-semibold mb-1">Chamber Type</label>
+                        <select
+                          value={aff.chamber_type || 'Primary Chamber'}
+                          onChange={e => handleUpdateChamberField(aIdx, 'chamber_type', e.target.value)}
+                          className="w-full bg-slate-950 border border-slate-800 rounded-xl px-2.5 py-2 text-white text-xs focus:outline-none focus:border-cyan-500 transition cursor-pointer"
+                        >
+                          {CHAMBER_TYPES.map(t => (
+                            <option key={t} value={t}>{t}</option>
+                          ))}
+                        </select>
+                      </div>
 
+                      <div>
+                        <label className="block text-slate-300 font-semibold mb-1">Status Label</label>
+                        <select
+                          value={aff.status_label || 'Available Today'}
+                          onChange={e => handleUpdateChamberField(aIdx, 'status_label', e.target.value)}
+                          className="w-full bg-slate-950 border border-slate-800 rounded-xl px-2.5 py-2 text-white text-xs focus:outline-none focus:border-cyan-500 transition cursor-pointer"
+                        >
+                          {STATUS_LABELS.map(sl => (
+                            <option key={sl} value={sl}>{sl}</option>
+                          ))}
+                        </select>
+                      </div>
 
                       <div>
                         <label className="block text-slate-300 font-semibold mb-1 flex items-center gap-1">
@@ -747,9 +989,9 @@ export default function DoctorModal() {
                       ) : (
                         <div className="space-y-2">
                           {aff.schedules.map((s, sIdx) => (
-                            <div key={s.id || sIdx} className="bg-slate-900 border border-slate-800/80 rounded-xl p-2.5 flex flex-wrap items-center gap-2 text-xs">
+                            <div key={s.id || sIdx} className="bg-slate-900 border border-slate-800/80 rounded-xl p-2.5 grid grid-cols-1 sm:grid-cols-4 gap-2 items-center text-xs">
                               
-                              <div className="flex-1 min-w-[110px]">
+                              <div>
                                 <label className="block text-[10px] text-slate-400 font-semibold mb-0.5">Day</label>
                                 <select
                                   value={s.day_of_week}
@@ -762,7 +1004,7 @@ export default function DoctorModal() {
                                 </select>
                               </div>
 
-                              <div className="w-24">
+                              <div>
                                 <label className="block text-[10px] text-slate-400 font-semibold mb-0.5">Start Time</label>
                                 <input
                                   type="time"
@@ -773,7 +1015,7 @@ export default function DoctorModal() {
                                 />
                               </div>
 
-                              <div className="w-24">
+                              <div>
                                 <label className="block text-[10px] text-slate-400 font-semibold mb-0.5">End Time</label>
                                 <input
                                   type="time"
@@ -784,14 +1026,15 @@ export default function DoctorModal() {
                                 />
                               </div>
 
-                              <div className="self-end pb-1">
+                              <div className="flex sm:justify-end items-center pt-2 sm:pt-4">
                                 <button
                                   type="button"
                                   onClick={() => handleRemoveScheduleSlot(aIdx, sIdx)}
-                                  className="p-1.5 text-rose-400 hover:text-rose-300 hover:bg-rose-500/10 rounded-lg transition cursor-pointer"
+                                  className="p-1.5 text-rose-400 hover:text-rose-300 hover:bg-rose-500/10 rounded-lg transition cursor-pointer flex items-center gap-1 text-[11px]"
                                   title="Remove slot"
                                 >
                                   <Trash2 className="w-3.5 h-3.5" />
+                                  <span className="sm:hidden">Remove Slot</span>
                                 </button>
                               </div>
 
@@ -810,12 +1053,12 @@ export default function DoctorModal() {
         </form>
 
         {/* Modal Footer Controls */}
-        <div className="flex items-center justify-end gap-3 pt-4 border-t border-slate-800 flex-shrink-0">
+        <div className="flex items-center justify-end gap-3 pt-3 sm:pt-4 border-t border-slate-800 flex-shrink-0">
           <button 
             type="button" 
             onClick={() => setShowDoctorModal(false)} 
             disabled={saving}
-            className="px-4 py-2 bg-slate-800 hover:bg-slate-700 text-slate-300 font-bold rounded-xl transition cursor-pointer"
+            className="px-4 py-2 bg-slate-800 hover:bg-slate-700 text-slate-300 font-bold rounded-xl transition cursor-pointer text-xs"
           >
             Cancel
           </button>
@@ -823,7 +1066,7 @@ export default function DoctorModal() {
             type="submit" 
             form="doctor-modal-form"
             disabled={saving}
-            className="px-5 py-2 bg-teal-600 hover:bg-teal-500 disabled:opacity-50 text-white font-bold rounded-xl shadow-lg shadow-teal-600/20 transition flex items-center gap-2 cursor-pointer"
+            className="px-5 py-2 bg-teal-600 hover:bg-teal-500 disabled:opacity-50 text-white font-bold rounded-xl shadow-lg shadow-teal-600/20 transition flex items-center gap-2 cursor-pointer text-xs"
           >
             {saving ? (
               <>

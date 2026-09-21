@@ -268,8 +268,8 @@ class DoctorViewSet(SlugOrPkLookupMixin, RoleScopedQuerysetMixin, viewsets.Model
     filter_backends = [DjangoFilterBackend, filters.SearchFilter]
     filterset_class = DoctorFilter
     search_fields = [
-        'name', 'qualification', 'academic_title', 'institution',
-        'specialties__name', 'affiliations__location__name', 'about'
+        'name', 'bn_name', 'qualification', 'academic_title', 'institution',
+        'specialties__name', 'specialties__bn_name', 'affiliations__location__name', 'about'
     ]
     scope_doctor_field = "user"
     scope_location_field = "affiliations__location__in"

@@ -167,6 +167,16 @@ class DoctorRegistrationSerializer(serializers.Serializer):
             raise serializers.ValidationError("A doctor with this BMDC number is already registered.")
         return bmdc
 
+    def validate_name(self, value):
+        from doctors.serializers import strip_doctor_honorific
+        from doctors.services.specialty_resolver import detect_language
+        cleaned = strip_doctor_honorific(value)
+        if not cleaned:
+            raise serializers.ValidationError("Doctor name cannot be empty.")
+        if detect_language(cleaned) == 'bn':
+            raise serializers.ValidationError("Doctor name must be in English.")
+        return cleaned
+
     @transaction.atomic
     def create(self, validated_data):
         phone = validated_data["phone_number"]

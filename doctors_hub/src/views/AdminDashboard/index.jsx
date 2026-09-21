@@ -1,12 +1,13 @@
-import React from 'react';
+import React, { useState } from 'react';
 import { 
   ShieldAlert, RefreshCw, CheckCircle, AlertCircle, LogOut, 
-  User, Stethoscope, Building2, FlaskConical, Crown, Home 
+  User, Stethoscope, Building2, FlaskConical, Crown, Home, Menu, X 
 } from 'lucide-react';
 import { AdminProvider, useAdminContext } from './context/AdminContext';
 
 import AdminLoginForm from './components/AdminLoginForm';
 import AdminSidebar from './components/AdminSidebar';
+import AdminNavStrip from './components/AdminNavStrip';
 import OverviewTab from './components/OverviewTab';
 import HospitalsTab from './components/HospitalsTab';
 import DiagnosticsTab from './components/DiagnosticsTab';
@@ -26,6 +27,7 @@ import AssignRolesTab from './components/AssignRolesTab';
 import FacilityProfile from './components/facility/FacilityProfile';
 
 function AdminDashboardContent({ onNavigate, onAdminLoggedIn }) {
+  const [mobileMenuOpen, setMobileMenuOpen] = useState(false);
 
   const {
     isStaff,
@@ -89,38 +91,48 @@ function AdminDashboardContent({ onNavigate, onAdminLoggedIn }) {
     <div className="min-h-screen bg-slate-950 text-slate-100 pb-20">
       
       {/* Top Sticky Header */}
-      <header className="bg-slate-900/95 backdrop-blur-md border-b border-slate-800 py-3.5 px-4 sm:px-6 sticky top-0 z-30 shadow-lg">
-        <div className="max-w-7xl mx-auto flex flex-wrap items-center justify-between gap-4">
+      <header className="bg-slate-900/95 backdrop-blur-md border-b border-slate-800 py-3 px-3 sm:py-3.5 sm:px-6 sticky top-0 z-30 shadow-lg">
+        <div className="max-w-7xl mx-auto flex items-center justify-between gap-2 sm:gap-4">
           
           {/* Brand & Context Title */}
-          <div className="flex items-center gap-3">
-            <div className={`p-2.5 rounded-2xl ${isFacilityAdmin ? (hospitals?.length > 0 ? 'bg-emerald-500/10 border border-emerald-500/20 text-emerald-400' : 'bg-cyan-500/10 border border-cyan-500/20 text-cyan-400') : 'bg-teal-500/10 border border-teal-500/20 text-teal-400'} shrink-0`}>
-              <RoleIcon className="w-5 h-5" />
+          <div className="flex items-center gap-2 sm:gap-3 min-w-0">
+            {/* Mobile menu toggle */}
+            <button
+              type="button"
+              onClick={() => setMobileMenuOpen(prev => !prev)}
+              aria-label="Toggle navigation drawer"
+              className="md:hidden p-2 bg-slate-800/80 hover:bg-slate-700 text-slate-300 rounded-xl border border-slate-700/60 transition cursor-pointer shrink-0"
+            >
+              {mobileMenuOpen ? <X className="w-5 h-5" /> : <Menu className="w-5 h-5" />}
+            </button>
+
+            <div className={`p-2 sm:p-2.5 rounded-xl sm:rounded-2xl ${isFacilityAdmin ? (hospitals?.length > 0 ? 'bg-emerald-500/10 border border-emerald-500/20 text-emerald-400' : 'bg-cyan-500/10 border border-cyan-500/20 text-cyan-400') : 'bg-teal-500/10 border border-teal-500/20 text-teal-400'} shrink-0`}>
+              <RoleIcon className="w-4 h-4 sm:w-5 sm:h-5" />
             </div>
-            <div>
-              <div className="flex flex-wrap items-center gap-2">
-                <h1 className="font-extrabold text-white text-base sm:text-lg leading-tight">
+            <div className="min-w-0">
+              <div className="flex flex-wrap items-center gap-1.5 sm:gap-2">
+                <h1 className="font-extrabold text-white text-sm sm:text-lg leading-tight truncate">
                   {headerFacilityName ? (
                     <span>
                       {headerFacilityName} 
                     </span>
                   ) : (
-                    'DoctorsHub Admin Console'
+                    'DoctorsHub Admin'
                   )}
                 </h1>
-                <span className={`inline-flex items-center gap-1 px-2.5 py-0.5 rounded-full border text-[11px] font-bold ${roleColor}`}>
-                  <RoleIcon className="w-3 h-3" />
+                <span className={`inline-flex items-center gap-1 px-2 py-0.5 rounded-full border text-[10px] sm:text-[11px] font-bold ${roleColor}`}>
+                  <RoleIcon className="w-2.5 h-2.5 sm:w-3 sm:h-3" />
                   <span>{roleTitle}</span>
                 </span>
               </div>
-              <p className="text-[11px] text-slate-400 mt-0.5">
+              <p className="text-[10px] sm:text-[11px] text-slate-400 mt-0.5 truncate hidden sm:block">
                 Logged in as <span className="font-mono text-slate-300 font-semibold">{userPhone}</span>
               </p>
             </div>
           </div>
 
           {/* Action & Session Controls */}
-          <div className="flex items-center gap-2 sm:gap-3">
+          <div className="flex items-center gap-1.5 sm:gap-3 shrink-0">
             
             {/* Refresh */}
             <button
@@ -136,7 +148,7 @@ function AdminDashboardContent({ onNavigate, onAdminLoggedIn }) {
             <button
               onClick={() => onNavigate('home')}
               title="Exit to Public Portal"
-              className="px-3 py-2 bg-slate-800/80 hover:bg-slate-700 text-slate-300 rounded-xl text-xs font-semibold flex items-center gap-1.5 border border-slate-700/60 transition cursor-pointer"
+              className="p-2 sm:px-3 sm:py-2 bg-slate-800/80 hover:bg-slate-700 text-slate-300 rounded-xl text-xs font-semibold flex items-center gap-1.5 border border-slate-700/60 transition cursor-pointer"
             >
               <Home className="w-3.5 h-3.5 text-slate-400" />
               <span className="hidden sm:inline">Public Site</span>
@@ -146,30 +158,69 @@ function AdminDashboardContent({ onNavigate, onAdminLoggedIn }) {
             <button
               onClick={handleLogout}
               title="Log out of admin session"
-              className="px-3.5 py-2 bg-rose-500/15 hover:bg-rose-500/25 border border-rose-500/30 text-rose-300 hover:text-rose-200 rounded-xl text-xs font-bold transition flex items-center gap-1.5 shadow-sm cursor-pointer"
+              className="px-2.5 py-2 sm:px-3.5 sm:py-2 bg-rose-500/15 hover:bg-rose-500/25 border border-rose-500/30 text-rose-300 hover:text-rose-200 rounded-xl text-xs font-bold transition flex items-center gap-1.5 shadow-sm cursor-pointer"
             >
               <LogOut className="w-3.5 h-3.5 text-rose-400" />
-              <span>Log Out</span>
+              <span className="hidden sm:inline">Log Out</span>
             </button>
 
           </div>
         </div>
       </header>
 
-      {/* Main Container */}
-      <main className="max-w-7xl mx-auto flex gap-6 px-4 sm:px-6 pt-6">
+      {/* Mobile Navigation Drawer */}
+      {mobileMenuOpen && (
+        <div className="fixed inset-0 z-50 md:hidden flex">
+          {/* Backdrop */}
+          <div 
+            className="fixed inset-0 bg-slate-950/80 backdrop-blur-sm transition-opacity" 
+            onClick={() => setMobileMenuOpen(false)}
+          />
+          
+          {/* Drawer Content */}
+          <div className="relative flex-1 flex flex-col max-w-xs w-full bg-slate-900 border-r border-slate-800 shadow-2xl z-10 animate-in slide-in-from-left duration-200">
+            {/* Drawer Header */}
+            <div className="flex items-center justify-between p-4 border-b border-slate-800">
+              <div className="flex items-center gap-2">
+                <div className={`p-2 rounded-xl ${isFacilityAdmin ? 'bg-emerald-500/10 text-emerald-400' : 'bg-teal-500/10 text-teal-400'}`}>
+                  <RoleIcon className="w-4 h-4" />
+                </div>
+                <div>
+                  <span className="font-bold text-xs text-white block">{roleTitle}</span>
+                  <span className="text-[10px] text-slate-400 block font-mono">{userPhone}</span>
+                </div>
+              </div>
+              <button
+                type="button"
+                onClick={() => setMobileMenuOpen(false)}
+                className="p-1.5 text-slate-400 hover:text-white rounded-lg hover:bg-slate-800 transition cursor-pointer"
+              >
+                <X className="w-5 h-5" />
+              </button>
+            </div>
 
-        {/* SIDEBAR */}
+            {/* Drawer Body */}
+            <div className="flex-1 overflow-y-auto">
+              <AdminSidebar onTabSelect={() => setMobileMenuOpen(false)} isMobile={true} />
+            </div>
+          </div>
+        </div>
+      )}
+
+      {/* Main Container */}
+      <main className="max-w-7xl mx-auto flex gap-6 px-3 sm:px-6 pt-4 sm:pt-6">
+
+        {/* SIDEBAR (Desktop) */}
         <div className="hidden md:block">
           <AdminSidebar />
         </div>
 
         {/* ACTIVE TAB VIEWS */}
-        <div className="flex-1 space-y-6 min-w-0">
+        <div className="flex-1 space-y-4 sm:space-y-6 min-w-0">
 
-          {/* MOBILE NAV (optional but keeping simple for now) */}
-          <div className="md:hidden overflow-x-auto pb-2">
-            <AdminSidebar />
+          {/* MOBILE QUICK NAV STRIP */}
+          <div className="md:hidden">
+            <AdminNavStrip />
           </div>
 
           {activeTab === 'overview' && <OverviewTab />}
