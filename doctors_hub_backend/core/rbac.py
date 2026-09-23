@@ -19,8 +19,9 @@ def get_user_permissions(user):
         
     perms = {}
     
-    # Super admins have all permissions with global scope
-    if getattr(user, 'is_superuser', False) or getattr(user, 'is_super_admin', False):
+    # System Super admins have all permissions with global scope
+    is_system_super = getattr(user, 'is_superuser', False) or user.user_roles.filter(role__is_system=True, role__name="Super Admin").exists()
+    if is_system_super:
         from accounts.models import Permission
         for p in Permission.objects.all():
             perms[f"{p.module}.{p.action}"] = [Role.ScopeType.GLOBAL]

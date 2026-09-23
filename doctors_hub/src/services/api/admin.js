@@ -131,3 +131,22 @@ export async function createPlatformAdmin(data) {
   });
   return handleResponse(res);
 }
+
+// User Management (Admin CRUD)
+export async function createUser(userData) {
+  const res = await fetchWithTimeout(`${BASE_URL}/users/`, {
+    method: 'POST',
+    headers: getHeaders(),
+    body: JSON.stringify(userData),
+  });
+  return handleResponse(res);
+}
+
+export async function getUsers(params = {}) {
+  const query = new URLSearchParams(params).toString();
+  const res = await fetchWithTimeout(`${BASE_URL}/users/${query ? `?${query}` : ''}`, {
+    headers: getHeaders(),
+  });
+  return handleResponse(res);
+}
+

@@ -95,7 +95,8 @@ export function AdminProvider({ children, currentUser, onLogout, showToast }) {
   const isSuperAdmin = Boolean(storedUser) && Boolean(
     storedUser?.is_superuser || 
     storedUser?.is_super_admin || 
-    storedUser?.role === 'super_admin'
+    storedUser?.role === 'super_admin' ||
+    (Array.isArray(storedUser?.roles) && storedUser.roles.some(r => r.toLowerCase().includes('admin') || r.toLowerCase().includes('super')))
   );
   const isFacilityAdmin = Boolean(storedUser) && Boolean(
     storedUser?.is_facility_admin || 
@@ -354,123 +355,145 @@ export function AdminProvider({ children, currentUser, onLogout, showToast }) {
 
   // Delete helpers
   const handleDeleteHospital = async (id, name) => {
-    if (!window.confirm(`Delete Hospital "${name}"?`)) return;
+    if (!window.confirm(`Delete Hospital "${name}"?`)) return false;
     try {
       await api.deleteHospital(id);
       showNotification(`Hospital "${name}" removed.`);
       loadInitialData();
+      return true;
     } catch (err) {
       if (showToast) showToast(`Error deleting hospital: ${err.message}`, 'error');
+      return false;
     }
   };
 
   const handleDeleteDiagnostic = async (id, name) => {
-    if (!window.confirm(`Delete Diagnostic Center "${name}"?`)) return;
+    if (!window.confirm(`Delete Diagnostic Center "${name}"?`)) return false;
     try {
       await api.deleteDiagnosticCenter(id);
       showNotification(`Diagnostic Center "${name}" removed.`);
       loadInitialData();
+      return true;
     } catch (err) {
       if (showToast) showToast(`Error deleting center: ${err.message}`, 'error');
+      return false;
     }
   };
 
   const handleDeleteDoctor = async (id, name) => {
-    if (!window.confirm(`Remove Dr. ${name}?`)) return;
+    if (!window.confirm(`Remove Dr. ${name}?`)) return false;
     try {
       await api.deleteDoctor(id);
       showNotification(`Dr. ${name} removed.`);
       loadInitialData();
+      return true;
     } catch (err) {
       if (showToast) showToast(`Failed to delete doctor: ${err.message}`, 'error');
+      return false;
     }
   };
 
   const handleDeleteTest = async (id, name) => {
-    if (!window.confirm(`Delete Base Test "${name}"?`)) return;
+    if (!window.confirm(`Delete Base Test "${name}"?`)) return false;
     try {
-      await api.deleteTest(id).catch(() => null);
+      await api.deleteTest(id);
       setTests(prev => prev.filter(t => String(t.id) !== String(id)));
       showNotification(`Test "${name}" deleted.`);
+      return true;
     } catch (err) {
       if (showToast) showToast(`Error deleting test: ${err.message}`, 'error');
+      return false;
     }
   };
 
   const handleDeleteTestCat = async (id, name) => {
-    if (!window.confirm(`Delete Test Category "${name}"?`)) return;
+    if (!window.confirm(`Delete Test Category "${name}"?`)) return false;
     try {
-      await api.deleteTestCategory(id).catch(() => null);
+      await api.deleteTestCategory(id);
       setTestCategories(prev => prev.filter(tc => String(tc.id) !== String(id)));
       showNotification(`Test Category "${name}" deleted.`);
+      return true;
     } catch (err) {
       if (showToast) showToast(`Error deleting category: ${err.message}`, 'error');
+      return false;
     }
   };
 
   const handleDeleteBranchTest = async (id) => {
-    if (!window.confirm("Remove this test offering?")) return;
+    if (!window.confirm("Remove this test offering?")) return false;
     try {
-      await api.deleteDiagnosticCenterTest(id).catch(() => null);
+      await api.deleteDiagnosticCenterTest(id);
       showNotification("Test offering removed.");
       setBranchTests(prev => prev.filter(bt => String(bt.id) !== String(id)));
+      return true;
     } catch (err) {
       if (showToast) showToast(`Failed to remove: ${err.message}`, 'error');
+      return false;
     }
   };
 
   const handleDeleteDoctorSpec = async (id, name) => {
-    if (!window.confirm(`Delete Doctor Specialty "${name}"?`)) return;
+    if (!window.confirm(`Delete Doctor Specialty "${name}"?`)) return false;
     try {
-      await api.deleteSpecialty(id).catch(() => null);
+      await api.deleteSpecialty(id);
       setDoctorSpecialties(prev => prev.filter(s => String(s.id) !== String(id)));
       showNotification(`Doctor Specialty "${name}" deleted.`);
+      return true;
     } catch (err) {
       if (showToast) showToast(`Error deleting specialty: ${err.message}`, 'error');
+      return false;
     }
   };
 
   const handleDeleteHospitalCat = async (id, name) => {
-    if (!window.confirm(`Delete Hospital Category "${name}"?`)) return;
+    if (!window.confirm(`Delete Hospital Category "${name}"?`)) return false;
     try {
-      await api.deleteHospitalCategory(id).catch(() => null);
+      await api.deleteHospitalCategory(id);
       setHospitalCategories(prev => prev.filter(c => String(c.id) !== String(id)));
       showNotification(`Hospital Category "${name}" deleted.`);
+      return true;
     } catch (err) {
       if (showToast) showToast(`Error deleting category: ${err.message}`, 'error');
+      return false;
     }
   };
 
   const handleDeleteDiagCat = async (id, name) => {
-    if (!window.confirm(`Delete Diagnostic Category "${name}"?`)) return;
+    if (!window.confirm(`Delete Diagnostic Category "${name}"?`)) return false;
     try {
-      await api.deleteDiagnosticCenterCategory(id).catch(() => null);
+      await api.deleteDiagnosticCenterCategory(id);
       setDiagnosticCategories(prev => prev.filter(c => String(c.id) !== String(id)));
       showNotification(`Diagnostic Category "${name}" deleted.`);
+      return true;
     } catch (err) {
       if (showToast) showToast(`Error deleting category: ${err.message}`, 'error');
+      return false;
     }
   };
 
   const handleDeleteHospService = async (id, name) => {
-    if (!window.confirm(`Delete Hospital Service "${name}"?`)) return;
+    if (!window.confirm(`Delete Hospital Service "${name}"?`)) return false;
     try {
-      await api.deleteHospitalService(id).catch(() => null);
+      await api.deleteHospitalService(id);
       setHospitalServices(prev => prev.filter(s => String(s.id) !== String(id)));
       showNotification(`Hospital Service "${name}" deleted.`);
+      return true;
     } catch (err) {
       if (showToast) showToast(`Error deleting service: ${err.message}`, 'error');
+      return false;
     }
   };
 
   const handleDeleteDiagService = async (id, name) => {
-    if (!window.confirm(`Delete Diagnostic Service "${name}"?`)) return;
+    if (!window.confirm(`Delete Diagnostic Service "${name}"?`)) return false;
     try {
-      await api.deleteDiagnosticService(id).catch(() => null);
+      await api.deleteDiagnosticService(id);
       setDiagnosticServices(prev => prev.filter(s => String(s.id) !== String(id)));
       showNotification(`Diagnostic Service "${name}" deleted.`);
+      return true;
     } catch (err) {
       if (showToast) showToast(`Error deleting service: ${err.message}`, 'error');
+      return false;
     }
   };
 

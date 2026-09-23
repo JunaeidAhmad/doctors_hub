@@ -11,14 +11,14 @@ export default function StatusBadge({ status, type = 'status', className = '' })
       case 'active':
       case 'completed':
         return {
-          bg: 'bg-emerald-500/15 border-emerald-500/30 text-emerald-400',
+          bg: 'bg-emerald-50 border-emerald-200 text-emerald-800',
           icon: CheckCircle2,
           label: normalized === 'verified' ? 'Verified' : normalized === 'confirmed' ? 'Confirmed' : normalized === 'completed' ? 'Completed' : 'Active'
         };
       case 'pending':
       case 'processing':
         return {
-          bg: 'bg-amber-500/15 border-amber-500/30 text-amber-400',
+          bg: 'bg-amber-50 border-amber-200 text-amber-800',
           icon: Clock,
           label: 'Pending'
         };
@@ -26,22 +26,22 @@ export default function StatusBadge({ status, type = 'status', className = '' })
       case 'rejected':
       case 'inactive':
         return {
-          bg: 'bg-rose-500/15 border-rose-500/30 text-rose-400',
+          bg: 'bg-rose-50 border-rose-200 text-rose-800',
           icon: XCircle,
           label: normalized === 'cancelled' ? 'Cancelled' : normalized === 'rejected' ? 'Rejected' : 'Inactive'
         };
       case 'no_show':
       case 'noshow':
         return {
-          bg: 'bg-purple-500/15 border-purple-500/30 text-purple-400',
+          bg: 'bg-purple-50 border-purple-200 text-purple-800',
           icon: AlertTriangle,
           label: 'No Show'
         };
       default:
         return {
-          bg: 'bg-slate-700/30 border-slate-600/40 text-slate-300',
+          bg: 'bg-[#f0eeef] border-[#d1d5dc] text-slate-700',
           icon: ShieldCheck,
-          label: status || 'Unknown'
+          label: status || 'Standard'
         };
     }
   };
@@ -49,9 +49,10 @@ export default function StatusBadge({ status, type = 'status', className = '' })
   const { bg, icon: Icon, label } = getStyle();
 
   return (
-    <span className={`inline-flex items-center gap-1.5 px-2.5 py-1 rounded-lg border text-[11px] font-bold tracking-wide ${bg} ${className}`}>
-      <Icon className="w-3.5 h-3.5" />
-      <span className="capitalize">{label}</span>
+    <span className={`inline-flex items-center gap-1 px-2 py-0.5 rounded-sm border font-label text-[10px] font-semibold tracking-wider uppercase ${bg} ${className}`}>
+      <Icon className="w-3 h-3 shrink-0" />
+      <span>{label}</span>
     </span>
   );
 }
+

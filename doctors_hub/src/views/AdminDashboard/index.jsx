@@ -88,59 +88,68 @@ function AdminDashboardContent({ onNavigate, onAdminLoggedIn }) {
   const userPhone = storedUser?.phone_number || storedUser?.phone || '';
 
   return (
-    <div className="min-h-screen bg-slate-950 text-slate-100 pb-20">
+    <div className="min-h-screen bg-[#faf9fa] text-[#1b1c1d] pb-20 font-body selection:bg-[#e7ebff] selection:text-[#094cb2]">
       
-      {/* Top Sticky Header */}
-      <header className="bg-slate-900/95 backdrop-blur-md border-b border-slate-800 py-3 px-3 sm:py-3.5 sm:px-6 sticky top-0 z-30 shadow-lg">
-        <div className="max-w-7xl mx-auto flex items-center justify-between gap-2 sm:gap-4">
+      {/* Top Sticky Institutional Masthead Header (Alexandria Style) */}
+      <header className="w-full bg-white border-b border-[#d1d5dc] py-2.5 px-3 sm:px-6 sticky top-0 z-40 shadow-subtle">
+        <div className="max-w-[1600px] mx-auto flex items-center justify-between gap-3 sm:gap-4">
           
-          {/* Brand & Context Title */}
-          <div className="flex items-center gap-2 sm:gap-3 min-w-0">
+          {/* Left Cluster: DoctorsHub Seal & Registry Authority Indicators */}
+          <div className="flex items-center gap-3 sm:gap-5 min-w-0">
             {/* Mobile menu toggle */}
             <button
               type="button"
               onClick={() => setMobileMenuOpen(prev => !prev)}
               aria-label="Toggle navigation drawer"
-              className="md:hidden p-2 bg-slate-800/80 hover:bg-slate-700 text-slate-300 rounded-xl border border-slate-700/60 transition cursor-pointer shrink-0"
+              className="md:hidden p-2 rounded-sm bg-[#f7f6f7] hover:bg-[#f0eeef] text-slate-700 border border-[#d1d5dc] transition cursor-pointer shrink-0"
             >
               {mobileMenuOpen ? <X className="w-5 h-5" /> : <Menu className="w-5 h-5" />}
             </button>
 
-            <div className={`p-2 sm:p-2.5 rounded-xl sm:rounded-2xl ${isFacilityAdmin ? (hospitals?.length > 0 ? 'bg-emerald-500/10 border border-emerald-500/20 text-emerald-400' : 'bg-cyan-500/10 border border-cyan-500/20 text-cyan-400') : 'bg-teal-500/10 border border-teal-500/20 text-teal-400'} shrink-0`}>
-              <RoleIcon className="w-4 h-4 sm:w-5 sm:h-5" />
-            </div>
-            <div className="min-w-0">
-              <div className="flex flex-wrap items-center gap-1.5 sm:gap-2">
-                <h1 className="font-extrabold text-white text-sm sm:text-lg leading-tight truncate">
-                  {headerFacilityName ? (
-                    <span>
-                      {headerFacilityName} 
-                    </span>
-                  ) : (
-                    'DoctorsHub Admin'
-                  )}
-                </h1>
-                <span className={`inline-flex items-center gap-1 px-2 py-0.5 rounded-full border text-[10px] sm:text-[11px] font-bold ${roleColor}`}>
-                  <RoleIcon className="w-2.5 h-2.5 sm:w-3 sm:h-3" />
-                  <span>{roleTitle}</span>
+            {/* Brand & Seal */}
+            <div className="flex items-center gap-3 cursor-pointer group" onClick={() => onNavigate('home')}>
+              <div className="w-9 h-9 rounded-sm bg-[#094cb2] flex items-center justify-center text-white shadow-sm ring-1 ring-[#094cb2]/20 shrink-0 group-hover:bg-[#083e91] transition-all">
+                <RoleIcon className="w-5 h-5" />
+              </div>
+              <div className="flex flex-col min-w-0">
+                <div className="flex items-center gap-2">
+                  <span className="font-headline font-serif text-base sm:text-lg font-bold text-slate-900 tracking-tight truncate">
+                    DoctorsHub
+                  </span>
+                  <span className="text-[10px] font-label font-semibold px-2 py-0.5 rounded-full bg-[#e7ebff] text-[#094cb2] uppercase tracking-wider shrink-0 border border-[#094cb2]/20">
+                    {roleTitle}
+                  </span>
+                </div>
+                <span className="text-[10px] font-label tracking-wide text-slate-500 truncate hidden xs:block">
+                  {headerFacilityName || 'Bangladesh Medical Directorate • Central Registry'}
                 </span>
               </div>
-              <p className="text-[10px] sm:text-[11px] text-slate-400 mt-0.5 truncate hidden sm:block">
-                Logged in as <span className="font-mono text-slate-300 font-semibold">{userPhone}</span>
-              </p>
             </div>
+
+            <div className="h-6 w-px bg-[#e3e5ea] hidden xl:block"></div>
+
+            {/* System Status Indicators (Alexandria Telemetry) */}
+            <nav className="hidden lg:flex items-center gap-4 text-[11px] font-label">
+              <span className="flex items-center gap-1.5 text-slate-700 font-medium">
+                <span className="w-2 h-2 rounded-full bg-emerald-600 animate-pulse"></span>
+                SYS.STATUS: <span className="text-emerald-700 font-semibold">OPTIMAL</span>
+              </span>
+              <span className="text-slate-500 hover:text-slate-800 font-medium transition-colors flex items-center gap-1">
+                <ShieldAlert className="w-3.5 h-3.5 text-[#094cb2]" />
+                BMDC Sync: Active
+              </span>
+            </nav>
           </div>
 
-          {/* Action & Session Controls */}
-          <div className="flex items-center gap-1.5 sm:gap-3 shrink-0">
-            
+          {/* Right Cluster: Action & Session Controls */}
+          <div className="flex items-center gap-1.5 sm:gap-2.5 shrink-0">
             {/* Refresh */}
             <button
               onClick={loadAllData}
               title="Refresh Data"
-              className="p-2 sm:px-3 sm:py-2 bg-slate-800/80 hover:bg-slate-700 text-slate-300 rounded-xl text-xs font-semibold flex items-center gap-1.5 border border-slate-700/60 transition cursor-pointer"
+              className="inline-flex items-center gap-1.5 px-3 py-1.5 rounded-sm border border-[#d1d5dc] bg-white hover:bg-[#f7f6f7] text-slate-700 font-label font-medium text-xs shadow-subtle transition-all cursor-pointer"
             >
-              <RefreshCw className={`w-3.5 h-3.5 ${loading ? 'animate-spin' : ''}`} />
+              <RefreshCw className={`w-3.5 h-3.5 text-slate-500 ${loading ? 'animate-spin' : ''}`} />
               <span className="hidden sm:inline">Refresh</span>
             </button>
 
@@ -148,9 +157,9 @@ function AdminDashboardContent({ onNavigate, onAdminLoggedIn }) {
             <button
               onClick={() => onNavigate('home')}
               title="Exit to Public Portal"
-              className="p-2 sm:px-3 sm:py-2 bg-slate-800/80 hover:bg-slate-700 text-slate-300 rounded-xl text-xs font-semibold flex items-center gap-1.5 border border-slate-700/60 transition cursor-pointer"
+              className="inline-flex items-center gap-1.5 px-3 py-1.5 rounded-sm border border-[#d1d5dc] bg-white hover:bg-[#f7f6f7] text-slate-700 font-label font-medium text-xs shadow-subtle transition-all cursor-pointer"
             >
-              <Home className="w-3.5 h-3.5 text-slate-400" />
+              <Home className="w-3.5 h-3.5 text-slate-500" />
               <span className="hidden sm:inline">Public Site</span>
             </button>
 
@@ -158,49 +167,61 @@ function AdminDashboardContent({ onNavigate, onAdminLoggedIn }) {
             <button
               onClick={handleLogout}
               title="Log out of admin session"
-              className="px-2.5 py-2 sm:px-3.5 sm:py-2 bg-rose-500/15 hover:bg-rose-500/25 border border-rose-500/30 text-rose-300 hover:text-rose-200 rounded-xl text-xs font-bold transition flex items-center gap-1.5 shadow-sm cursor-pointer"
+              className="inline-flex items-center gap-1.5 px-3 py-1.5 rounded-sm border border-rose-200 bg-rose-50 hover:bg-rose-100 text-rose-800 font-label font-medium text-xs shadow-subtle transition-all cursor-pointer"
             >
-              <LogOut className="w-3.5 h-3.5 text-rose-400" />
-              <span className="hidden sm:inline">Log Out</span>
+              <LogOut className="w-3.5 h-3.5 text-rose-700" />
+              <span className="hidden sm:inline">Sign Out</span>
             </button>
 
+            {/* Chief Officer / Admin Avatar */}
+            {userPhone && (
+              <div className="hidden md:flex items-center gap-2 pl-2 border-l border-[#e3e5ea]">
+                <div className="w-7 h-7 rounded-sm bg-[#e7ebff] border border-[#094cb2]/20 flex items-center justify-center text-[#094cb2] font-mono text-[10px] font-bold">
+                  {userPhone.slice(-2)}
+                </div>
+                <div className="hidden xl:flex flex-col text-left leading-none">
+                  <span className="text-[11px] font-semibold text-slate-900 font-label">{roleTitle}</span>
+                  <span className="text-[10px] text-slate-500 font-mono mt-0.5">{userPhone}</span>
+                </div>
+              </div>
+            )}
           </div>
         </div>
       </header>
 
-      {/* Mobile Navigation Drawer */}
+      {/* Mobile Navigation Drawer (Alexandria White Surface) */}
       {mobileMenuOpen && (
         <div className="fixed inset-0 z-50 md:hidden flex">
           {/* Backdrop */}
           <div 
-            className="fixed inset-0 bg-slate-950/80 backdrop-blur-sm transition-opacity" 
+            className="fixed inset-0 bg-slate-900/50 backdrop-blur-sm transition-opacity" 
             onClick={() => setMobileMenuOpen(false)}
           />
           
           {/* Drawer Content */}
-          <div className="relative flex-1 flex flex-col max-w-xs w-full bg-slate-900 border-r border-slate-800 shadow-2xl z-10 animate-in slide-in-from-left duration-200">
+          <div className="relative flex-1 flex flex-col max-w-xs w-full bg-white border-r border-[#d1d5dc] shadow-elevated z-10 animate-in slide-in-from-left duration-200">
             {/* Drawer Header */}
-            <div className="flex items-center justify-between p-4 border-b border-slate-800">
-              <div className="flex items-center gap-2">
-                <div className={`p-2 rounded-xl ${isFacilityAdmin ? 'bg-emerald-500/10 text-emerald-400' : 'bg-teal-500/10 text-teal-400'}`}>
+            <div className="flex items-center justify-between p-4 border-b border-[#e3e5ea] bg-[#f7f6f7]">
+              <div className="flex items-center gap-2.5">
+                <div className="w-8 h-8 rounded-sm bg-[#094cb2] text-white flex items-center justify-center font-bold">
                   <RoleIcon className="w-4 h-4" />
                 </div>
                 <div>
-                  <span className="font-bold text-xs text-white block">{roleTitle}</span>
-                  <span className="text-[10px] text-slate-400 block font-mono">{userPhone}</span>
+                  <span className="font-headline font-serif font-bold text-xs text-slate-900 block">{roleTitle}</span>
+                  <span className="text-[10px] text-slate-500 block font-mono">{userPhone}</span>
                 </div>
               </div>
               <button
                 type="button"
                 onClick={() => setMobileMenuOpen(false)}
-                className="p-1.5 text-slate-400 hover:text-white rounded-lg hover:bg-slate-800 transition cursor-pointer"
+                className="p-1.5 text-slate-500 hover:text-slate-900 rounded hover:bg-slate-200 transition cursor-pointer"
               >
                 <X className="w-5 h-5" />
               </button>
             </div>
 
             {/* Drawer Body */}
-            <div className="flex-1 overflow-y-auto">
+            <div className="flex-1 overflow-y-auto admin-scrollbar p-2">
               <AdminSidebar onTabSelect={() => setMobileMenuOpen(false)} isMobile={true} />
             </div>
           </div>
@@ -208,9 +229,9 @@ function AdminDashboardContent({ onNavigate, onAdminLoggedIn }) {
       )}
 
       {/* Main Container */}
-      <main className="max-w-7xl mx-auto flex gap-6 px-3 sm:px-6 pt-4 sm:pt-6">
+      <main className="max-w-[1600px] mx-auto flex gap-6 px-3 sm:px-6 pt-4 sm:pt-6">
 
-        {/* SIDEBAR (Desktop) */}
+        {/* SIDEBAR (Desktop Alexandria Master Directory) */}
         <div className="hidden md:block">
           <AdminSidebar />
         </div>

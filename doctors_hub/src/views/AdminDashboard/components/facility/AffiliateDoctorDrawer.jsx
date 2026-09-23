@@ -251,8 +251,8 @@ export default function AffiliateDoctorDrawer({
       onClose={handleClose}
       title={
         <div className="flex items-center gap-2">
-          <Stethoscope className="w-5 h-5 text-teal-400" />
-          <span>Affiliate Specialist Doctor</span>
+          <Stethoscope className="w-4 h-4 text-[#094cb2]" />
+          <span className="font-serif font-bold text-base text-[#1b1c1d]">Affiliate Specialist Physician</span>
         </div>
       }
       footer={
@@ -260,7 +260,7 @@ export default function AffiliateDoctorDrawer({
           <button
             type="button"
             onClick={handleClose}
-            className="px-4 py-2 bg-slate-800 text-slate-300 font-bold rounded-xl hover:bg-slate-700 cursor-pointer"
+            className="px-3.5 py-2 border border-[#d1d5dc] bg-white hover:bg-[#f7f6f7] text-slate-700 font-label text-xs font-semibold rounded-sm transition cursor-pointer"
           >
             Cancel
           </button>
@@ -268,38 +268,38 @@ export default function AffiliateDoctorDrawer({
             type="submit"
             form="affiliate-doctor-form"
             disabled={isSaving}
-            className="px-5 py-2 bg-teal-600 hover:bg-teal-500 text-white font-bold rounded-xl shadow-lg shadow-teal-600/20 flex items-center gap-2 disabled:opacity-50 cursor-pointer"
+            className="px-4 py-2 bg-[#094cb2] hover:bg-[#083e91] text-white font-label text-xs font-semibold rounded-sm shadow-sm flex items-center gap-2 disabled:opacity-50 transition cursor-pointer"
           >
-            {isSaving ? <RefreshCw className="w-4 h-4 animate-spin" /> : <CheckCircle2 className="w-4 h-4" />}
-            <span>{mode === 'existing' ? 'Attach Doctor' : 'Onboard & Attach'}</span>
+            {isSaving ? <RefreshCw className="w-3.5 h-3.5 animate-spin" /> : <CheckCircle2 className="w-3.5 h-3.5" />}
+            <span>{mode === 'existing' ? 'Attach Physician' : 'Onboard & Attach'}</span>
           </button>
         </>
       }
     >
-      <form id="affiliate-doctor-form" onSubmit={handleSubmit} className="space-y-5 text-xs">
+      <form id="affiliate-doctor-form" onSubmit={handleSubmit} className="space-y-4 text-xs font-body">
         
         {/* FACILITY CONTEXT CHIP */}
-        <div className="p-3 bg-slate-950 border border-slate-800 rounded-xl flex items-center justify-between">
-          <span className="text-slate-400 font-medium">Affiliating to Facility:</span>
-          <span className="font-bold text-teal-300">{facilityName || 'Your Facility'}</span>
+        <div className="p-3 bg-[#faf9fa] border border-[#d1d5dc] rounded-sm flex items-center justify-between">
+          <span className="text-slate-500 font-label text-[11px]">Affiliating to Facility:</span>
+          <span className="font-serif font-bold text-sm text-[#094cb2]">{facilityName || 'Your Facility'}</span>
         </div>
 
         {errorMsg && (
-          <div className="p-3 bg-rose-500/15 border border-rose-500/30 text-rose-300 rounded-xl flex items-center gap-2 animate-fadeIn">
-            <AlertCircle className="w-4 h-4 shrink-0 text-rose-400" />
+          <div className="p-3 bg-rose-50 border border-rose-200 text-rose-800 rounded-sm flex items-center gap-2 font-body">
+            <AlertCircle className="w-4 h-4 shrink-0 text-rose-600" />
             <span>{errorMsg}</span>
           </div>
         )}
 
         {/* MODE TABS (Attach Existing vs Onboard New) */}
-        <div className="grid grid-cols-2 gap-2 p-1 bg-slate-950 border border-slate-800 rounded-xl">
+        <div className="grid grid-cols-2 gap-1 p-1 bg-[#faf9fa] border border-[#d1d5dc] rounded-sm">
           <button
             type="button"
             onClick={() => setMode('existing')}
-            className={`py-2 px-3 rounded-lg font-bold flex items-center justify-center gap-1.5 transition cursor-pointer ${
+            className={`py-1.5 px-3 rounded-xs font-label text-xs font-semibold flex items-center justify-center gap-1.5 transition cursor-pointer ${
               mode === 'existing'
-                ? 'bg-teal-600 text-white shadow-md'
-                : 'text-slate-400 hover:text-white'
+                ? 'bg-[#094cb2] text-white shadow-xs'
+                : 'text-slate-600 hover:text-slate-900'
             }`}
           >
             <Link2 className="w-3.5 h-3.5" />
@@ -308,10 +308,10 @@ export default function AffiliateDoctorDrawer({
           <button
             type="button"
             onClick={() => setMode('new')}
-            className={`py-2 px-3 rounded-lg font-bold flex items-center justify-center gap-1.5 transition cursor-pointer ${
+            className={`py-1.5 px-3 rounded-xs font-label text-xs font-semibold flex items-center justify-center gap-1.5 transition cursor-pointer ${
               mode === 'new'
-                ? 'bg-teal-600 text-white shadow-md'
-                : 'text-slate-400 hover:text-white'
+                ? 'bg-[#094cb2] text-white shadow-xs'
+                : 'text-slate-600 hover:text-slate-900'
             }`}
           >
             <UserPlus className="w-3.5 h-3.5" />
@@ -321,9 +321,9 @@ export default function AffiliateDoctorDrawer({
 
         {/* MODE 1: ATTACH EXISTING DOCTOR */}
         {mode === 'existing' && (
-          <div className="space-y-4 animate-fadeIn">
+          <div className="space-y-3.5">
             <div>
-              <label className="block text-slate-300 font-semibold mb-1.5">
+              <label className="block text-slate-700 font-label font-semibold text-xs mb-1">
                 Search Platform Doctors *
               </label>
               <SearchSelect
@@ -339,34 +339,30 @@ export default function AffiliateDoctorDrawer({
             </div>
 
             {selectedDoctorObj && (
-              <div className="p-3.5 bg-slate-950 border border-teal-500/30 rounded-xl space-y-2 animate-fadeIn">
-                {/* 1. Designation */}
+              <div className="p-3 bg-[#faf9fa] border border-[#094cb2]/30 rounded-sm space-y-1.5">
                 {selectedDoctorObj.academic_title && (
-                  <p className="text-xs font-bold text-teal-300 flex items-center gap-1">
-                    <Award className="w-3.5 h-3.5 text-teal-400 shrink-0" />
+                  <p className="text-xs font-label font-semibold text-[#094cb2] flex items-center gap-1">
+                    <Award className="w-3.5 h-3.5 text-[#094cb2] shrink-0" />
                     <span>{selectedDoctorObj.academic_title}</span>
                   </p>
                 )}
-                {/* 2. Institute Name */}
                 {selectedDoctorObj.institution && (
-                  <p className="text-[11px] text-slate-400 flex items-center gap-1">
-                    <Building2 className="w-3 h-3 text-slate-500 shrink-0" />
+                  <p className="text-[11px] text-slate-500 flex items-center gap-1 font-body">
+                    <Building2 className="w-3 h-3 text-slate-400 shrink-0" />
                     <span>{selectedDoctorObj.institution}</span>
                   </p>
                 )}
-                {/* 3. Doctor Name */}
                 <div className="flex items-center justify-between pt-0.5">
-                  <span className="font-bold text-white text-sm">{selectedDoctorObj.name}</span>
+                  <span className="font-serif font-bold text-[#1b1c1d] text-sm">{selectedDoctorObj.name}</span>
                   {selectedDoctorObj.experience && (
-                    <span className="text-[10px] bg-slate-800 text-teal-400 px-2 py-0.5 rounded-full font-semibold">
+                    <span className="text-[10px] bg-[#e7ebff] text-[#094cb2] px-1.5 py-0.5 rounded-xs font-label font-semibold">
                       {selectedDoctorObj.experience}
                     </span>
                   )}
                 </div>
-                {/* 4. Rest of info */}
-                <p className="text-slate-400 text-[11px]">{selectedDoctorObj.qualification}</p>
+                <p className="text-slate-600 text-[11px] font-body">{selectedDoctorObj.qualification}</p>
                 {selectedDoctorObj.bmdc_number && (
-                  <p className="text-slate-500 text-[10px] font-mono">BMDC: {selectedDoctorObj.bmdc_number}</p>
+                  <p className="text-slate-400 text-[10px] font-mono">BMDC: {selectedDoctorObj.bmdc_number}</p>
                 )}
               </div>
             )}
@@ -375,7 +371,7 @@ export default function AffiliateDoctorDrawer({
 
         {/* MODE 2: ONBOARD NEW DOCTOR */}
         {mode === 'new' && (
-          <div className="space-y-4 animate-fadeIn">
+          <div className="space-y-3.5">
             <EditableField
               label="Doctor Full Name"
               required
@@ -422,10 +418,10 @@ export default function AffiliateDoctorDrawer({
             />
 
             <div>
-              <label className="block text-slate-300 font-semibold mb-1.5">
+              <label className="block text-slate-700 font-label font-semibold text-xs mb-1">
                 Doctor Specialties (Select multiple)
               </label>
-              <div className="flex flex-wrap gap-1.5 max-h-36 overflow-y-auto p-2.5 bg-slate-950 border border-slate-800 rounded-xl">
+              <div className="flex flex-wrap gap-1 max-h-36 overflow-y-auto p-2 bg-[#faf9fa] border border-[#d1d5dc] rounded-sm">
                 {doctorSpecialties.map(spec => {
                   const isSelected = newDoctor.specialty_ids.includes(spec.id);
                   return (
@@ -433,13 +429,13 @@ export default function AffiliateDoctorDrawer({
                       key={spec.id}
                       type="button"
                       onClick={() => toggleSpecialty(spec.id)}
-                      className={`px-2.5 py-1 rounded-lg border text-[11px] font-bold transition flex items-center gap-1 cursor-pointer ${
+                      className={`px-2 py-0.5 rounded-xs border text-[11px] font-label font-medium transition flex items-center gap-1 cursor-pointer ${
                         isSelected 
-                          ? 'bg-teal-500/20 text-teal-300 border-teal-500/50' 
-                          : 'bg-slate-900 text-slate-400 border-slate-800 hover:border-slate-700'
+                          ? 'bg-[#e7ebff] text-[#094cb2] border-[#094cb2]/40 shadow-xs' 
+                          : 'bg-white text-slate-600 border-[#d1d5dc] hover:border-slate-400'
                       }`}
                     >
-                      <CheckCircle2 className={`w-3 h-3 ${isSelected ? 'opacity-100' : 'opacity-0'}`} />
+                      <CheckCircle2 className={`w-3 h-3 ${isSelected ? 'opacity-100 text-[#094cb2]' : 'opacity-0'}`} />
                       <span>{spec.name}</span>
                     </button>
                   );
@@ -459,14 +455,13 @@ export default function AffiliateDoctorDrawer({
         )}
 
         {/* AFFILIATION PARAMETERS */}
-        <div className="pt-3 border-t border-slate-800 space-y-3">
-          <h4 className="font-bold text-white text-xs uppercase tracking-wider text-slate-400">
-            Consultation fee at this Facility
+        <div className="pt-3 border-t border-[#d1d5dc] space-y-2.5">
+          <h4 className="font-label font-semibold text-xs uppercase tracking-wider text-slate-500">
+            Consultation Fee at this Facility
           </h4>
           <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
-
             <div>
-              <label className="block text-slate-300 font-semibold mb-1">Visiting Fee (৳) *</label>
+              <label className="block text-slate-700 font-label font-semibold text-xs mb-1">Visiting Fee (৳) *</label>
               <input
                 type="number"
                 min="0"
@@ -474,24 +469,24 @@ export default function AffiliateDoctorDrawer({
                 required
                 value={affiliation.fee}
                 onChange={e => setAffiliation({ ...affiliation, fee: e.target.value })}
-                className="w-full bg-slate-950 border border-slate-800 rounded-xl px-3 py-2 text-white font-mono font-bold focus:outline-none focus:border-teal-500"
+                className="w-full bg-white border border-[#d1d5dc] rounded-sm px-3 py-1.5 text-[#1b1c1d] font-body text-xs focus:outline-none focus:border-[#094cb2]"
               />
             </div>
           </div>
         </div>
 
         {/* VISITING SCHEDULE SLOTS */}
-        <div className="pt-3 border-t border-slate-800 space-y-3">
-          <div className="bg-slate-950/70 border border-slate-800/60 rounded-xl p-3 space-y-2.5">
+        <div className="pt-3 border-t border-[#d1d5dc] space-y-2.5">
+          <div className="bg-[#faf9fa] border border-[#d1d5dc] rounded-sm p-3 space-y-2">
             <div className="flex items-center justify-between">
-              <div className="flex items-center gap-1.5 text-[11px] font-bold text-slate-300">
-                <Clock className="w-3.5 h-3.5 text-teal-400" />
+              <div className="flex items-center gap-1.5 text-xs font-label font-semibold text-slate-700">
+                <Clock className="w-3.5 h-3.5 text-[#094cb2]" />
                 <span>Visiting Days & Schedule Slots</span>
               </div>
               <button
                 type="button"
                 onClick={handleAddScheduleSlot}
-                className="px-2 py-0.5 bg-slate-800 hover:bg-slate-700 text-teal-300 border border-teal-500/20 rounded-lg text-[10px] font-bold flex items-center gap-1 transition cursor-pointer"
+                className="px-2 py-0.5 bg-white hover:bg-slate-50 text-[#094cb2] border border-[#094cb2]/30 rounded-xs text-[10px] font-label font-semibold flex items-center gap-1 transition cursor-pointer"
               >
                 <Plus className="w-3 h-3" />
                 <span>Add Time Slot</span>
@@ -499,20 +494,20 @@ export default function AffiliateDoctorDrawer({
             </div>
 
             {schedules.length === 0 ? (
-              <div className="text-[11px] text-slate-500 italic py-1">
+              <div className="text-xs text-slate-400 italic py-1 font-body">
                 No schedule slots added yet. Click &quot;Add Time Slot&quot; above.
               </div>
             ) : (
-              <div className="space-y-2">
+              <div className="space-y-1.5">
                 {schedules.map((s, sIdx) => (
-                  <div key={s.id || sIdx} className="bg-slate-900 border border-slate-800/80 rounded-xl p-2.5 flex flex-wrap items-center gap-2 text-xs">
+                  <div key={s.id || sIdx} className="bg-white border border-[#d1d5dc] rounded-xs p-2 flex flex-wrap items-center gap-2 text-xs">
                     
                     <div className="flex-1 min-w-[110px]">
-                      <label className="block text-[10px] text-slate-400 font-semibold mb-0.5">Day</label>
+                      <label className="block text-[10px] text-slate-500 font-label font-semibold mb-0.5">Day</label>
                       <select
                         value={s.day_of_week}
                         onChange={e => handleUpdateScheduleSlot(sIdx, 'day_of_week', e.target.value)}
-                        className="w-full bg-slate-950 border border-slate-800 rounded-lg px-2 py-1.5 text-white text-[11px] focus:outline-none focus:border-teal-500"
+                        className="w-full bg-white border border-[#d1d5dc] rounded-xs px-2 py-1 text-[#1b1c1d] text-xs font-body focus:outline-none focus:border-[#094cb2]"
                       >
                         {DAYS_OF_WEEK.map(day => (
                           <option key={day} value={day}>{day}</option>
@@ -521,32 +516,32 @@ export default function AffiliateDoctorDrawer({
                     </div>
 
                     <div className="w-24">
-                      <label className="block text-[10px] text-slate-400 font-semibold mb-0.5">Start Time</label>
+                      <label className="block text-[10px] text-slate-500 font-label font-semibold mb-0.5">Start Time</label>
                       <input
                         type="time"
                         required
                         value={s.start_time ? s.start_time.slice(0, 5) : '17:00'}
                         onChange={e => handleUpdateScheduleSlot(sIdx, 'start_time', e.target.value)}
-                        className="w-full bg-slate-950 border border-slate-800 rounded-lg px-2 py-1.5 text-white text-[11px] focus:outline-none focus:border-teal-500"
+                        className="w-full bg-white border border-[#d1d5dc] rounded-xs px-2 py-1 text-[#1b1c1d] text-xs font-body focus:outline-none focus:border-[#094cb2]"
                       />
                     </div>
 
                     <div className="w-24">
-                      <label className="block text-[10px] text-slate-400 font-semibold mb-0.5">End Time</label>
+                      <label className="block text-[10px] text-slate-500 font-label font-semibold mb-0.5">End Time</label>
                       <input
                         type="time"
                         required
                         value={s.end_time ? s.end_time.slice(0, 5) : '20:00'}
                         onChange={e => handleUpdateScheduleSlot(sIdx, 'end_time', e.target.value)}
-                        className="w-full bg-slate-950 border border-slate-800 rounded-lg px-2 py-1.5 text-white text-[11px] focus:outline-none focus:border-teal-500"
+                        className="w-full bg-white border border-[#d1d5dc] rounded-xs px-2 py-1 text-[#1b1c1d] text-xs font-body focus:outline-none focus:border-[#094cb2]"
                       />
                     </div>
 
-                    <div className="self-end pb-1">
+                    <div className="self-end pb-0.5">
                       <button
                         type="button"
                         onClick={() => handleRemoveScheduleSlot(sIdx)}
-                        className="p-1.5 text-rose-400 hover:text-rose-300 hover:bg-rose-500/10 rounded-lg transition cursor-pointer"
+                        className="p-1 text-slate-400 hover:text-rose-600 rounded-xs transition cursor-pointer"
                         title="Remove slot"
                       >
                         <Trash2 className="w-3.5 h-3.5" />

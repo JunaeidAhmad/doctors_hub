@@ -52,7 +52,7 @@ export default function AdminNavStrip() {
     visibleTabs = [
       { id: 'overview', label: 'Overview', icon: Users },
       { id: 'verification-queue', label: 'Verification Queue', icon: ShieldCheck },
-      { id: 'platform-admins', label: 'Platform Admins', icon: Crown },
+      { id: 'platform-admins', label: 'Users & Roles', icon: Crown },
       { id: 'hospitals', label: `Hospitals (${counts.hospitals || 0})`, icon: Building2 },
       { id: 'hospital-specs', label: `Hospital Categories (${counts.hospitalSpecs || 0})`, icon: Building2 },
       { id: 'hosp-services', label: `Hospital Services (${counts.hospServices || 0})`, icon: Activity },
@@ -73,15 +73,16 @@ export default function AdminNavStrip() {
 
 
   return (
-    <div className="relative bg-slate-900/90 border border-slate-800/80 rounded-2xl p-2 shadow-xl backdrop-blur-md flex items-center gap-2">
+    <div className="relative bg-white border border-[#d1d5dc] rounded-sm p-1.5 shadow-subtle flex items-center gap-1.5 font-label">
       <button
         onClick={() => navSliderRef.current?.scrollBy({ left: -220, behavior: 'smooth' })}
-        className="p-2 bg-slate-800/80 hover:bg-slate-700 text-slate-300 rounded-xl hidden sm:flex shrink-0 border border-slate-700/50 cursor-pointer"
+        className="p-1.5 bg-[#f7f6f7] hover:bg-[#f0eeef] text-slate-600 rounded-sm hidden sm:flex shrink-0 border border-[#d1d5dc] cursor-pointer"
+        aria-label="Scroll left"
       >
         <ChevronLeft className="w-4 h-4" />
       </button>
 
-      <div ref={navSliderRef} className="admin-sliding-bar flex items-center gap-2 overflow-x-auto scroll-smooth py-1 px-1 text-xs w-full">
+      <div ref={navSliderRef} className="admin-scrollbar flex items-center gap-1.5 overflow-x-auto scroll-smooth py-0.5 px-0.5 text-xs w-full">
         {visibleTabs.map(tab => {
           const Icon = tab.icon;
           const isActive = activeTab === tab.id;
@@ -89,13 +90,13 @@ export default function AdminNavStrip() {
             <button
               key={tab.id}
               onClick={() => { setActiveTab(tab.id); if (setSearchTerm) setSearchTerm(''); }}
-              className={`px-4 py-2.5 font-bold rounded-xl border flex items-center gap-2 transition-all whitespace-nowrap shadow-sm cursor-pointer ${
+              className={`px-3 py-1.5 font-semibold rounded-sm border flex items-center gap-1.5 transition-all whitespace-nowrap cursor-pointer text-xs ${
                 isActive 
-                  ? 'border-teal-400/60 text-teal-300 bg-gradient-to-r from-teal-950/60 to-slate-900 shadow-teal-500/10' 
-                  : 'border-slate-800/80 text-slate-400 hover:text-slate-200 hover:bg-slate-800/50 hover:border-slate-700'
+                  ? 'border-[#094cb2]/30 text-[#094cb2] bg-[#e7ebff] shadow-subtle' 
+                  : 'border-transparent text-slate-600 hover:text-slate-900 hover:bg-[#f7f6f7]'
               }`}
             >
-              <Icon className={`w-4 h-4 ${isActive ? 'text-teal-400' : 'text-slate-400'}`} />
+              <Icon className={`w-3.5 h-3.5 ${isActive ? 'text-[#094cb2]' : 'text-slate-400'}`} />
               <span>{tab.label}</span>
             </button>
           );
@@ -104,7 +105,8 @@ export default function AdminNavStrip() {
 
       <button
         onClick={() => navSliderRef.current?.scrollBy({ left: 220, behavior: 'smooth' })}
-        className="p-2 bg-slate-800/80 hover:bg-slate-700 text-slate-300 rounded-xl hidden sm:flex shrink-0 border border-slate-700/50 cursor-pointer"
+        className="p-1.5 bg-[#f7f6f7] hover:bg-[#f0eeef] text-slate-600 rounded-sm hidden sm:flex shrink-0 border border-[#d1d5dc] cursor-pointer"
+        aria-label="Scroll right"
       >
         <ChevronRight className="w-4 h-4" />
       </button>

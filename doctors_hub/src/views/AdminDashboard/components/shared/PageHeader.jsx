@@ -1,29 +1,41 @@
 import React from 'react';
 
-export default function PageHeader({ title, description, actionButton, filters, icon: Icon, badge }) {
+export default function PageHeader({ title, description, actionButton, filters, icon: Icon, badge, indexCode = 'BD-HQ-NODE' }) {
   return (
-    <div className="bg-gradient-to-r from-slate-900 via-slate-800 to-slate-900 border border-slate-700/80 rounded-3xl p-6 shadow-xl flex flex-col md:flex-row md:items-center justify-between gap-6 mb-6">
-      <div>
-        {badge && (
-          <div className="inline-flex items-center gap-2 px-3 py-1 rounded-full bg-cyan-500/20 border border-cyan-500/30 text-cyan-300 text-xs font-bold uppercase tracking-wider mb-2">
-            {badge}
-          </div>
-        )}
-        <h2 className="text-2xl font-black text-white flex items-center gap-2">
-          {Icon && <Icon className="w-6 h-6 text-teal-400" />}
-          <span>{title}</span>
-        </h2>
+    <div className="flex flex-col lg:flex-row lg:items-end justify-between gap-4 pb-5 border-b border-[#d1d5dc] mb-6">
+      <div className="flex flex-col gap-1.5">
+        {/* Refined Scholarly Breadcrumb */}
+        <nav className="flex items-center gap-2 font-label text-xs tracking-wide text-slate-500">
+          <span className="hover:text-[#094cb2] transition-colors cursor-pointer">Central Operations</span>
+          <span className="text-slate-300">/</span>
+          <span className="hover:text-[#094cb2] transition-colors cursor-pointer">Master Directory</span>
+          <span className="text-slate-300">/</span>
+          <span className="text-[#094cb2] font-semibold">{title}</span>
+        </nav>
+
+        <div className="flex flex-wrap items-baseline gap-3 mt-1">
+          <h1 className="font-headline font-serif text-2xl md:text-3xl font-bold text-slate-900 tracking-tight flex items-center gap-2.5">
+            {Icon && <Icon className="w-6 h-6 md:w-7 md:h-7 text-[#094cb2] shrink-0" />}
+            <span>{title}</span>
+          </h1>
+          <span className="font-label text-[11px] font-semibold text-slate-600 bg-[#f0eeef] px-2.5 py-0.5 rounded-full border border-[#d1d5dc]">
+            {badge || `Index: ${indexCode}`}
+          </span>
+        </div>
+
         {description && (
-          <p className="text-xs text-slate-400 mt-1">
+          <p className="font-body text-xs md:text-sm text-slate-600 max-w-3xl leading-relaxed">
             {description}
           </p>
         )}
       </div>
 
-      <div className="flex items-center gap-3 self-start md:self-auto w-full md:w-auto">
+      {/* Header Action Controls */}
+      <div className="flex flex-wrap items-center gap-2.5 shrink-0 self-start lg:self-auto font-label">
         {filters}
         {actionButton}
       </div>
     </div>
   );
 }
+

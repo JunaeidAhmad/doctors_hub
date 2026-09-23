@@ -104,61 +104,92 @@ export default function CategoriesTab() {
   );
 
   return (
-    <>
-      <div className="bg-slate-900 border border-slate-800 rounded-2xl overflow-hidden shadow-xl">
-        <div className="p-5 border-b border-slate-800 flex flex-wrap items-center justify-between gap-4">
+    <div className="space-y-6">
+      {/* Editorial Page Header */}
+      <div className="flex flex-col sm:flex-row justify-between items-start sm:items-end gap-4 pb-2 border-b border-[#d1d5dc]">
+        <div>
+          <div className="flex items-center gap-2 mb-1.5">
+            <span className="text-[10px] font-label font-bold tracking-widest text-[#094cb2] uppercase bg-[#e7ebff] px-2 py-0.5 rounded-xs">
+              Platform Taxonomy
+            </span>
+            <span className="text-[10px] text-slate-400 font-label">• Classification Registry</span>
+          </div>
+          <h1 className="text-2xl md:text-3xl font-serif font-bold text-[#1b1c1d] tracking-tight">
+            {title}
+          </h1>
+          <p className="text-xs text-slate-500 font-body mt-1">
+            Institutional directory schemas for classification, clinical search tags, and patient filters.
+          </p>
+        </div>
+
+        <button
+          onClick={onAdd}
+          className="flex items-center gap-2 px-4 py-2 bg-[#094cb2] hover:bg-[#083e91] text-white font-label text-xs font-semibold rounded-sm transition shadow-sm cursor-pointer shrink-0"
+        >
+          <Plus className="w-3.5 h-3.5" /> 
+          <span>Add New {title.endsWith('ies') ? title.slice(0, -3) + 'y' : title.slice(0, -1)}</span>
+        </button>
+      </div>
+
+      <div className="bg-white border border-[#d1d5dc] rounded-sm shadow-card overflow-hidden">
+        <div className="p-3.5 border-b border-[#d1d5dc] bg-[#faf9fa] flex flex-wrap items-center justify-between gap-3">
           <div className="relative flex-1 min-w-[240px]">
-            <Search className="w-4 h-4 absolute left-3 top-3 text-slate-400" />
+            <Search className="w-3.5 h-3.5 absolute left-3 top-2.5 text-slate-400" />
             <input
               type="text"
               placeholder={`Search ${title.toLowerCase()}...`}
               value={searchTerm}
               onChange={(e) => setSearchTerm(e.target.value)}
-              className="w-full bg-slate-950 border border-slate-800 rounded-xl pl-9 pr-4 py-2 text-xs text-white focus:outline-none focus:border-teal-500"
+              className="w-full bg-white border border-[#d1d5dc] rounded-sm pl-8 pr-3 py-1.5 text-xs text-[#1b1c1d] focus:outline-none focus:border-[#094cb2] font-body"
             />
           </div>
-          <button
-            onClick={onAdd}
-            className="flex items-center gap-2 px-4 py-2.5 bg-teal-600 hover:bg-teal-500 text-white font-bold text-xs rounded-xl transition shadow-lg shadow-teal-600/20"
-          >
-            <Plus className="w-4 h-4" /> Add New {title.endsWith('ies') ? title.slice(0, -3) + 'y' : title.slice(0, -1)}
-          </button>
+          <span className="text-[11px] font-label text-slate-500">
+            Showing <span className="font-semibold text-slate-800">{filteredItems.length}</span> records
+          </span>
         </div>
 
         <div className="overflow-x-auto">
-          <table className="w-full text-left text-xs text-slate-300">
-            <thead className="bg-slate-950 text-slate-400 text-[11px] uppercase tracking-wider border-b border-slate-800">
+          <table className="w-full text-left text-xs font-body">
+            <thead className="bg-[#f7f6f7] border-b border-[#d1d5dc] text-slate-500 font-label text-[11px] uppercase tracking-wider">
               <tr>
-                <th className="py-3.5 px-4">Name</th>
-                <th className="py-3.5 px-4">Description</th>
-                <th className="py-3.5 px-4 text-right">Actions</th>
+                <th className="py-3 px-4 w-[35%] font-semibold">Name & Identity</th>
+                <th className="py-3 px-4 w-[50%] font-semibold">Description</th>
+                <th className="py-3 px-4 w-[15%] text-right font-semibold">Actions</th>
               </tr>
             </thead>
-            <tbody className="divide-y divide-slate-800/60">
+            <tbody className="divide-y divide-[#e3e5ea] text-slate-700">
               {filteredItems.length === 0 ? (
                 <tr>
-                  <td colSpan="3" className="py-8 text-center text-slate-500 text-xs">
-                    No items found matching your search.
+                  <td colSpan="3" className="py-12 text-center text-slate-400 text-xs font-body">
+                    No taxonomy items found matching your search.
                   </td>
                 </tr>
               ) : (
                 filteredItems.map(item => (
-                  <tr key={item.id} className="hover:bg-slate-800/40 transition">
-                    <td className="py-4 px-4 font-bold text-white">
-                      <div className="text-sm text-teal-400 flex items-center gap-2">
-                        <HeaderIcon className="w-4 h-4 text-teal-400" />
+                  <tr key={item.id} className="hover:bg-[#e7ebff]/25 transition-colors">
+                    <td className="py-3.5 px-4 font-serif font-bold text-sm text-[#1b1c1d]">
+                      <div className="flex items-center gap-2">
+                        <HeaderIcon className="w-4 h-4 text-[#094cb2]" />
                         <span>{item.name}</span>
                       </div>
                     </td>
-                    <td className="py-4 px-4 text-slate-400 text-[11px]">
+                    <td className="py-3.5 px-4 text-slate-500 text-xs font-body">
                       {item.description || 'Standard category / service definition'}
                     </td>
-                    <td className="py-4 px-4 text-right space-x-2 whitespace-nowrap">
-                      <button onClick={() => onEdit(item)} className="p-2 bg-slate-800 text-slate-300 rounded-lg hover:bg-slate-700 transition" title="Edit">
-                        <Edit className="w-4 h-4" />
+                    <td className="py-3.5 px-4 text-right space-x-1.5 whitespace-nowrap">
+                      <button 
+                        onClick={() => onEdit(item)} 
+                        className="p-1.5 border border-[#d1d5dc] bg-white hover:bg-[#f7f6f7] text-slate-700 rounded-sm transition cursor-pointer" 
+                        title="Edit"
+                      >
+                        <Edit className="w-3.5 h-3.5" />
                       </button>
-                      <button onClick={() => onDelete(item.id, item.name)} className="p-2 bg-rose-500/20 text-rose-400 rounded-lg hover:bg-rose-500/30 transition" title="Delete">
-                        <Trash2 className="w-4 h-4" />
+                      <button 
+                        onClick={() => onDelete(item.id, item.name)} 
+                        className="p-1.5 border border-rose-200 bg-rose-50 hover:bg-rose-100 text-rose-700 rounded-sm transition cursor-pointer" 
+                        title="Delete"
+                      >
+                        <Trash2 className="w-3.5 h-3.5" />
                       </button>
                     </td>
                   </tr>
@@ -170,6 +201,6 @@ export default function CategoriesTab() {
       </div>
 
       <CategoryModals />
-    </>
+    </div>
   );
 }

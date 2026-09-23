@@ -1,4 +1,4 @@
-import React from 'react';
+import React, { useState } from 'react';
 import { Stethoscope, Tag, AlertTriangle, Users, RefreshCw, Plus } from 'lucide-react';
 
 export default function TaxonomyHeaderStats({
@@ -13,36 +13,41 @@ export default function TaxonomyHeaderStats({
   onOpenReviewQueue
 }) {
   return (
-    <div className="bg-slate-900 border border-slate-800 rounded-2xl p-5 shadow-xl relative overflow-hidden">
-      <div className="flex flex-wrap items-center justify-between gap-4 relative z-10">
+    <div className="bg-white border border-[#d1d5dc] rounded-sm p-6 shadow-sm space-y-6">
+      
+      {/* Top Bar with Title & Actions */}
+      <div className="flex flex-wrap items-center justify-between gap-4">
         <div>
-          <div className="flex items-center gap-2.5">
-            <div className="p-2 bg-teal-500/10 border border-teal-500/20 text-teal-400 rounded-xl">
-              <Stethoscope className="w-5 h-5" />
-            </div>
-            <h2 className="text-lg font-extrabold text-white">Doctor Specialties & Taxonomy Manager</h2>
-            <span className="px-2.5 py-0.5 rounded-full text-[10px] font-bold bg-teal-500/10 text-teal-300 border border-teal-500/20">
-              Canonical Ring Architecture
+          <div className="flex items-center gap-2 mb-1.5">
+            <span className="font-label text-[10px] uppercase font-bold px-2 py-0.5 rounded-sm bg-[#e7ebff] text-[#094cb2] border border-[#cbd5e1] tracking-wider">
+              Clinical Taxonomy Architecture
+            </span>
+            <span className="font-label text-[10px] uppercase font-bold px-2 py-0.5 rounded-sm bg-[#f7f6f7] text-slate-600 border border-[#d1d5dc] tracking-wider">
+              Synonym Rings
             </span>
           </div>
-          <p className="text-xs text-slate-400 mt-1 max-w-2xl">
-            Strictly normalized canonical specialties, Bengali & English alias synonym rings, compound component trees, and unverified ingestion triage queue.
+          <h2 className="text-xl sm:text-2xl font-serif font-bold text-slate-900 flex items-center gap-2">
+            <Stethoscope className="w-5 h-5 text-[#094cb2]" />
+            <span>Doctor Specialties & Taxonomy Manager</span>
+          </h2>
+          <p className="text-xs font-body text-slate-500 mt-1 max-w-2xl">
+            Normalized canonical specialties, Bengali &amp; English synonym rings, compound component hierarchies, and unverified ingestion triage queue.
           </p>
         </div>
 
-        <div className="flex items-center gap-2">
+        <div className="flex items-center gap-2 flex-wrap">
           <button
             onClick={onRefresh}
             title="Refresh Taxonomy"
-            className="p-2.5 bg-slate-800 hover:bg-slate-700 text-slate-300 rounded-xl text-xs font-semibold flex items-center gap-1.5 border border-slate-700/60 transition cursor-pointer"
+            className="p-2 sm:px-3 sm:py-2 border border-[#d1d5dc] bg-white hover:bg-[#f7f6f7] text-slate-700 rounded-sm font-label text-xs font-semibold uppercase tracking-wider flex items-center gap-1.5 transition cursor-pointer"
           >
-            <RefreshCw className={`w-3.5 h-3.5 ${loading ? 'animate-spin' : ''}`} />
-            <span className="hidden sm:inline">Refresh</span>
+            <RefreshCw className={`w-3.5 h-3.5 text-slate-500 ${loading ? 'animate-spin' : ''}`} />
+            <span className="hidden sm:inline">Sync</span>
           </button>
 
           <button
             onClick={onAddCanonical}
-            className="px-3.5 py-2.5 bg-teal-600 hover:bg-teal-500 text-white font-bold text-xs rounded-xl transition shadow-lg shadow-teal-600/20 flex items-center gap-1.5 cursor-pointer"
+            className="px-3.5 py-2 bg-[#094cb2] hover:bg-[#083e91] text-white font-label text-xs font-semibold uppercase tracking-wider rounded-sm transition shadow-sm flex items-center gap-1.5 cursor-pointer"
           >
             <Plus className="w-4 h-4" />
             <span>Add Canonical</span>
@@ -50,75 +55,81 @@ export default function TaxonomyHeaderStats({
 
           <button
             onClick={onAddAlias}
-            className="px-3.5 py-2.5 bg-emerald-600 hover:bg-emerald-500 text-white font-bold text-xs rounded-xl transition shadow-lg shadow-emerald-600/20 flex items-center gap-1.5 cursor-pointer"
+            className="px-3.5 py-2 border border-[#d1d5dc] bg-white hover:bg-[#f7f6f7] text-slate-700 font-label text-xs font-semibold uppercase tracking-wider rounded-sm transition flex items-center gap-1.5 cursor-pointer"
           >
-            <Tag className="w-4 h-4" />
+            <Tag className="w-4 h-4 text-[#094cb2]" />
             <span>Add Alias</span>
           </button>
         </div>
       </div>
 
       {/* METRIC CARDS ROW */}
-      <div className="grid grid-cols-2 sm:grid-cols-4 gap-3 mt-5 pt-5 border-t border-slate-800/80">
-        <div className="bg-slate-950/60 border border-slate-800/60 rounded-xl p-3">
-          <div className="text-[11px] font-medium text-slate-400 flex items-center gap-1.5">
-            <Stethoscope className="w-3.5 h-3.5 text-teal-400" />
+      <div className="grid grid-cols-2 sm:grid-cols-4 gap-3 pt-5 border-t border-[#e3e5ea]">
+        
+        {/* Canonical Specialties */}
+        <div className="bg-[#f7f6f7] border border-[#d1d5dc] rounded-sm p-4">
+          <div className="font-label text-[10px] uppercase font-bold text-slate-500 tracking-wider flex items-center gap-1.5">
+            <Stethoscope className="w-3.5 h-3.5 text-[#094cb2]" />
             <span>Canonical Specialties</span>
           </div>
-          <div className="text-xl font-black text-white mt-1">
+          <div className="text-2xl font-serif font-bold text-slate-900 mt-1.5">
             {counts.canonical_specialties || canonicalCount}
           </div>
-          <div className="text-[10px] text-teal-400/80 mt-0.5">Strict single-source truth</div>
+          <div className="text-[10px] font-body text-slate-500 mt-1">Single-source clinical truth</div>
         </div>
 
-        <div className="bg-slate-950/60 border border-slate-800/60 rounded-xl p-3">
-          <div className="text-[11px] font-medium text-slate-400 flex items-center gap-1.5">
-            <Tag className="w-3.5 h-3.5 text-emerald-400" />
-            <span>Total Aliases Ring</span>
+        {/* Total Aliases */}
+        <div className="bg-[#f7f6f7] border border-[#d1d5dc] rounded-sm p-4">
+          <div className="font-label text-[10px] uppercase font-bold text-slate-500 tracking-wider flex items-center gap-1.5">
+            <Tag className="w-3.5 h-3.5 text-emerald-600" />
+            <span>Synonym Rings</span>
           </div>
-          <div className="text-xl font-black text-white mt-1">
+          <div className="text-2xl font-serif font-bold text-slate-900 mt-1.5">
             {counts.total_aliases || aliasesCount}
           </div>
-          <div className="text-[10px] text-emerald-400/80 mt-0.5">EN & Bengali variations</div>
+          <div className="text-[10px] font-body text-slate-500 mt-1">EN &amp; Bengali aliases</div>
         </div>
 
+        {/* Review Queue */}
         <div 
           onClick={onOpenReviewQueue} 
-          className={`bg-slate-950/60 border rounded-xl p-3 cursor-pointer transition ${
+          className={`border rounded-sm p-4 cursor-pointer transition ${
             counts.unverified_aliases > 0 
-              ? 'border-amber-500/40 hover:border-amber-500/70 shadow-sm shadow-amber-500/10' 
-              : 'border-slate-800/60 hover:border-slate-700'
+              ? 'bg-amber-50/70 border-amber-300 hover:border-amber-400' 
+              : 'bg-[#f7f6f7] border-[#d1d5dc] hover:border-slate-400'
           }`}
         >
-          <div className="text-[11px] font-medium text-slate-400 flex items-center justify-between">
+          <div className="font-label text-[10px] uppercase font-bold text-slate-500 tracking-wider flex items-center justify-between">
             <span className="flex items-center gap-1.5">
-              <AlertTriangle className={`w-3.5 h-3.5 ${counts.unverified_aliases > 0 ? 'text-amber-400 animate-pulse' : 'text-slate-500'}`} />
+              <AlertTriangle className={`w-3.5 h-3.5 ${counts.unverified_aliases > 0 ? 'text-amber-600' : 'text-slate-400'}`} />
               <span>Review Queue</span>
             </span>
             {counts.unverified_aliases > 0 && (
-              <span className="px-1.5 py-0.2 rounded-full text-[9px] font-black bg-amber-500/20 text-amber-300 border border-amber-500/40">
+              <span className="px-1.5 py-0.2 rounded-xs text-[9px] font-label font-bold bg-amber-200 text-amber-900">
                 Action
               </span>
             )}
           </div>
-          <div className={`text-xl font-black mt-1 ${counts.unverified_aliases > 0 ? 'text-amber-300' : 'text-slate-300'}`}>
+          <div className={`text-2xl font-serif font-bold mt-1.5 ${counts.unverified_aliases > 0 ? 'text-amber-900' : 'text-slate-900'}`}>
             {counts.unverified_aliases}
           </div>
-          <div className="text-[10px] text-slate-400 mt-0.5">
-            {counts.unverified_aliases > 0 ? 'Pending alias triage' : 'All aliases verified'}
+          <div className="text-[10px] font-body text-slate-500 mt-1">
+            {counts.unverified_aliases > 0 ? 'Pending alias triage' : 'All aliases verified live'}
           </div>
         </div>
 
-        <div className="bg-slate-950/60 border border-slate-800/60 rounded-xl p-3">
-          <div className="text-[11px] font-medium text-slate-400 flex items-center gap-1.5">
-            <Users className="w-3.5 h-3.5 text-cyan-400" />
-            <span>Doctor Tags</span>
+        {/* Doctor Tags */}
+        <div className="bg-[#f7f6f7] border border-[#d1d5dc] rounded-sm p-4">
+          <div className="font-label text-[10px] uppercase font-bold text-slate-500 tracking-wider flex items-center gap-1.5">
+            <Users className="w-3.5 h-3.5 text-[#094cb2]" />
+            <span>Doctor Mappings</span>
           </div>
-          <div className="text-xl font-black text-white mt-1">
+          <div className="text-2xl font-serif font-bold text-slate-900 mt-1.5">
             {totalDoctorsCovered}
           </div>
-          <div className="text-[10px] text-cyan-400/80 mt-0.5">Specialist mappings</div>
+          <div className="text-[10px] font-body text-slate-500 mt-1">Specialist allocations</div>
         </div>
+
       </div>
     </div>
   );

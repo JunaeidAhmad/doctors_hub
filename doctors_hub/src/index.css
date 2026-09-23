@@ -165,6 +165,38 @@
 .text-label-lg { font-size: 14px; line-height: 20px; }
 .text-label-md { font-size: 12px; line-height: 16px; }
 .text-label-sm { font-size: 11px; line-height: 14px; }
+.font-headline { font-family: 'Noto Serif', Georgia, serif; }
+.font-serif { font-family: 'Noto Serif', Georgia, serif; }
+.font-label { font-family: 'Public Sans', 'Inter', sans-serif; }
 
+.shadow-subtle {
+  box-shadow: 0 1px 3px 0 rgba(0, 0, 0, 0.04), 0 1px 2px -1px rgba(0, 0, 0, 0.03);
+}
+.shadow-card {
+  box-shadow: 0 2px 6px -1px rgba(15, 23, 42, 0.04), 0 1px 3px 0 rgba(15, 23, 42, 0.02);
+}
+.shadow-elevated {
+  box-shadow: 0 8px 20px -4px rgba(15, 23, 42, 0.06), 0 4px 8px -2px rgba(15, 23, 42, 0.03);
+}
 
+.skeleton-light {
+  background: linear-gradient(90deg, #f1f5f9 25%, #e2e8f0 37%, #f1f5f9 63%);
+  background-size: 200% 100%;
+  animation: shimmer 1.2s infinite linear;
+}
+
+.admin-scrollbar::-webkit-scrollbar {
+  width: 6px;
+  height: 6px;
+}
+.admin-scrollbar::-webkit-scrollbar-track {
+  background: #f7f6f7;
+}
+.admin-scrollbar::-webkit-scrollbar-thumb {
+  background: #cbd5e1;
+  border-radius: 4px;
+}
+.admin-scrollbar::-webkit-scrollbar-thumb:hover {
+  background: #94a3b8;
+}
 

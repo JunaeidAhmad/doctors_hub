@@ -103,7 +103,6 @@ export default function AddTestsToDiagnosticsTab() {
       if (center && Array.isArray(center.test_category_ids) && center.test_category_ids.length > 0) {
         setSelectedCatIds(center.test_category_ids.map(id => id.toString()));
       } else {
-        // Find categories of tests already in branchTests for this center
         const existingBranchTestIds = branchTests
           .filter(bt => String(bt.center?.id || bt.center || bt.location_id || bt.location || bt.location_details?.id) === String(selectedCenterId))
           .map(bt => bt.test?.id || bt.test);
@@ -138,115 +137,72 @@ export default function AddTestsToDiagnosticsTab() {
     }
   }, [facilityType, selectedCenterId, selectedHospitalId, diagnosticCenters, hospitals, branchTests, tests]);
 
-  // Fetch tests for this specific facility to ensure category pre-population is up-to-date
-  useEffect(() => {
-    let isMounted = true;
-    const targetId = facilityType === 'diagnostic_center' ? selectedCenterId : selectedHospitalId;
-    if (targetId) {
-      api.getDiagnosticCenterTests({ location: targetId })
-        .then(res => {
-          if (!isMounted) return;
-          const list = Array.isArray(res) ? res : (res?.results || []);
-          if (list.length > 0) {
-            const testIds = list.map(bt => bt.test?.id || bt.test || bt.test_id);
-            const foundCatIds = new Set();
-            tests.forEach(t => {
-              if (testIds.includes(t.id) || testIds.includes(String(t.id))) {
-                const cId = t.category || t.category_id;
-                if (cId) foundCatIds.add(String(cId));
-              }
-            });
-            if (foundCatIds.size > 0) {
-              setSelectedCatIds(prev => {
-                const combined = new Set([...prev, ...Array.from(foundCatIds)]);
-                return Array.from(combined);
-              });
-            }
-          }
-        })
-        .catch(err => console.warn('Could not prefetch facility tests:', err));
-    }
-    return () => { isMounted = false; };
-  }, [facilityType, selectedCenterId, selectedHospitalId, tests]);
-
-  const currentFacility = facilityType === 'diagnostic_center'
-    ? diagnosticCenters.find(dc => String(dc.id || dc.location_details?.id) === String(selectedCenterId))
-    : hospitals.find(h => String(h.id || h.location_details?.id) === String(selectedHospitalId));
-
-  const validTestCategories = testCategories.filter(c => c.id !== 'all');
-
-  // Toggle selection of a test category
   const toggleCategory = (catId) => {
     const stringId = catId.toString();
-    setSelectedCatIds(prev => 
-      prev.includes(stringId) 
-        ? prev.filter(id => id !== stringId)
-        : [...prev, stringId]
-    );
+    setSelectedCatIds(prev => {
+      if (prev.includes(stringId)) {
+        return prev.filter(id => id !== stringId);
+      } else {
+        return [...prev, stringId];
+      }
+    });
   };
 
+  const validTestCategories = (testCategories || []).filter(c => c && c.id !== 'all');
+
   const handleSelectAllCats = () => {
-    setSelectedCatIds(validTestCategories.map(c => c.id.toString()));
+    const allIds = validTestCategories.map(c => c.id.toString());
+    setSelectedCatIds(allIds);
   };
 
   const handleDeselectAllCats = () => {
     setSelectedCatIds([]);
   };
 
-  // Tests automatically associated under the selected categories
+  const selectedCategoriesList = validTestCategories.filter(c => 
+    selectedCatIds.includes(c.id.toString())
+  );
+
   const associatedTests = tests.filter(t => {
-    const catId = (t.category || t.category_id || '').toString();
-    return selectedCatIds.includes(catId);
+    const testCatId = (t.category || t.category_id || '').toString();
+    return selectedCatIds.includes(testCatId);
   });
 
-  // Selected Category objects
-  const selectedCategoriesList = validTestCategories.filter(c => selectedCatIds.includes(c.id.toString()));
+  const currentFacility = facilityType === 'diagnostic_center'
+    ? diagnosticCenters.find(dc => String(dc.id || dc.location_details?.id) === String(selectedCenterId))
+    : hospitals.find(h => String(h.id || h.location_details?.id) === String(selectedHospitalId));
 
-  // Handle Bulk Saving/Associating Test Categories to Facility
   const handleSaveAssociations = async () => {
     if (!currentFacility) {
-      alert("Please select a facility first.");
+      alert("Please select a valid facility branch.");
       return;
     }
+
+    const facilityId = facilityType === 'diagnostic_center' ? selectedCenterId : selectedHospitalId;
+    const isHosp = facilityType === 'hospital';
+    const facilityName = currentFacility.name || currentFacility.location_details?.name || 'Facility';
+    const facilityBranch = currentFacility.branch || currentFacility.location_details?.branch || 'Main Branch';
+
     setIsSaving(true);
     try {
-      const isHosp = facilityType === 'hospital';
-      const facilityId = currentFacility.id;
-      const facilityName = currentFacility.name;
-      const facilityBranch = currentFacility.branch || 'Main';
+      const existingBranchTestIds = new Set(
+        branchTests
+          .filter(bt => {
+            const btFacId = isHosp 
+              ? (bt.hospital?.id || bt.hospital || bt.hospital_id || bt.location_id || bt.location_details?.id)
+              : (bt.center?.id || bt.center || bt.center_id || bt.location_id || bt.location_details?.id);
+            return String(btFacId) === String(facilityId);
+          })
+          .map(bt => String(bt.test?.id || bt.test))
+      );
 
-      // 1. Update facility's test_category_ids state
-      if (!isHosp && setDiagnosticCenters) {
-        setDiagnosticCenters(prev => prev.map(dc => 
-          String(dc.id) === String(facilityId) 
-            ? { ...dc, test_category_ids: selectedCatIds } 
-            : dc
-        ));
-      } else if (isHosp && setHospitals) {
-        setHospitals(prev => prev.map(h => 
-          String(h.id) === String(facilityId) 
-            ? { ...h, test_category_ids: selectedCatIds } 
-            : h
-        ));
-      }
-
-      // 2. Attach associated tests into local branchTests array
+      const testsToCreatePayload = [];
       const newBranchTests = [...branchTests];
       let newAttachCount = 0;
-      const testsToCreatePayload = [];
 
       for (const testObj of associatedTests) {
         const testId = testObj.id;
-        const exists = newBranchTests.some(bt => {
-          const sameTest = String(bt.test?.id || bt.test) === String(testId);
-          if (isHosp) {
-            return sameTest && String(bt.hospital?.id || bt.hospital) === String(facilityId);
-          } else {
-            return sameTest && String(bt.center?.id || bt.center) === String(facilityId);
-          }
-        });
-
-        if (!exists) {
+        if (!existingBranchTestIds.has(String(testId))) {
           newAttachCount++;
           const entry = {
             id: `bt-${facilityType}-${facilityId}-${testId}-${Date.now()}`,
@@ -264,7 +220,7 @@ export default function AddTestsToDiagnosticsTab() {
             category: testObj.category || testObj.category_id || '',
             category_name: testObj.category_name || testObj.category || '',
             test_details: testObj,
-            price: testObj.price || testObj.price || 700,
+            price: testObj.price || 700,
             discount_percent: '20% OFF',
             calculated_price: testObj.calculated_price || 560
           };
@@ -275,14 +231,13 @@ export default function AddTestsToDiagnosticsTab() {
             hospital: isHosp ? facilityId : null,
             test: testId,
             calculated_price: testObj.calculated_price || 560,
-            price: testObj.price || testObj.price || 700,
+            price: testObj.price || 700,
             discount_percent: '20% OFF',
             is_available: true
           });
         }
       }
 
-      // Single HTTP request to persist all associated category tests in bulk!
       try {
         const prices = {};
         for (const testObj of associatedTests) {
@@ -295,7 +250,6 @@ export default function AddTestsToDiagnosticsTab() {
           await api.patchHospital(facilityId, { test_category_ids: selectedCatIds, prices });
         }
       } catch (e) {
-        // Fallback to bulk payload if patch fails
         if (testsToCreatePayload.length > 0) {
           try {
             await api.createDiagnosticCenterTest(testsToCreatePayload);
@@ -306,7 +260,6 @@ export default function AddTestsToDiagnosticsTab() {
       }
 
       if (setBranchTests) {
-        // Only doing full reload to prevent state mismatches
         await loadAllData();
       }
 
@@ -339,24 +292,26 @@ export default function AddTestsToDiagnosticsTab() {
     <div className="space-y-6">
       
       {/* Top Banner */}
-      <div className="bg-gradient-to-r from-slate-900 via-cyan-950/40 to-slate-900 border border-slate-800 rounded-2xl p-6 shadow-xl flex flex-col md:flex-row md:items-center justify-between gap-6">
+      <div className="flex flex-col md:flex-row md:items-end justify-between gap-4 pb-2 border-b border-[#d1d5dc]">
         <div>
-          <div className="inline-flex items-center gap-2 px-3 py-1 rounded-full bg-cyan-500/20 border border-cyan-500/30 text-cyan-300 text-xs font-bold uppercase tracking-wider mb-2">
-            <Sparkles className="w-3.5 h-3.5" />
-            <span>Category-Based Test Association</span>
+          <div className="flex items-center gap-2 mb-1.5">
+            <span className="text-[10px] font-label font-bold tracking-widest text-[#094cb2] uppercase bg-[#e7ebff] px-2 py-0.5 rounded-xs">
+              Catalog Provisioning
+            </span>
+            <span className="text-[10px] text-slate-400 font-label">• Bulk Category Mapper</span>
           </div>
-          <h2 className="text-2xl font-black text-white">
+          <h1 className="text-2xl md:text-3xl font-serif font-bold text-[#1b1c1d] tracking-tight">
             {isSuperAdmin ? 'Add Test Categories to Diagnostics & Labs' : 'Add Diagnostic Tests to Facility'}
-          </h2>
-          <p className="text-xs text-slate-400 mt-1">
+          </h1>
+          <p className="text-xs text-slate-500 font-body mt-1 max-w-2xl">
             {isSuperAdmin 
-              ? 'Assign entire test categories to a diagnostic center or hospital lab. All tests under selected categories will automatically be associated with that facility.'
+              ? 'Assign entire pathology departments to a diagnostic center or hospital lab. All tests under selected categories will automatically be provisioned.'
               : `Assign test categories and customize offer pricing for ${currentFacility?.name || 'your facility'} (${currentFacility?.branch || 'Main'}).`}
           </p>
 
           {!isSuperAdmin && currentFacility && (
-            <div className="mt-3 inline-flex items-center gap-2 px-3 py-1.5 bg-slate-950 border border-teal-500/30 rounded-xl text-xs font-bold text-teal-300">
-              {facilityType === 'hospital' ? <Building2 className="w-4 h-4 text-emerald-400" /> : <FlaskConical className="w-4 h-4 text-cyan-400" />}
+            <div className="mt-2.5 inline-flex items-center gap-2 px-2.5 py-1 bg-[#faf9fa] border border-[#d1d5dc] rounded-xs text-xs font-label font-semibold text-[#094cb2]">
+              {facilityType === 'hospital' ? <Building2 className="w-3.5 h-3.5 text-[#094cb2]" /> : <FlaskConical className="w-3.5 h-3.5 text-cyan-700" />}
               <span>Facility: {currentFacility.name} ({currentFacility.branch || 'Main Branch'})</span>
             </div>
           )}
@@ -364,142 +319,142 @@ export default function AddTestsToDiagnosticsTab() {
 
         <button
           onClick={() => setActiveTab && setActiveTab('branch-tests')}
-          className="px-4 py-2.5 bg-slate-800 hover:bg-slate-700 text-slate-200 font-bold text-xs rounded-xl flex items-center gap-2 border border-slate-700 transition shrink-0 cursor-pointer"
+          className="px-3.5 py-2 border border-[#d1d5dc] bg-white hover:bg-[#f7f6f7] text-slate-700 font-label text-xs font-semibold rounded-sm flex items-center gap-2 shadow-sm transition shrink-0 cursor-pointer"
         >
-          <TestTube className="w-4 h-4 text-cyan-400" />
-          <span>View All Test Offerings & Price List</span>
-          <ArrowRight className="w-3.5 h-3.5" />
+          <TestTube className="w-3.5 h-3.5 text-[#094cb2]" />
+          <span>View All Offerings</span>
+          <ArrowRight className="w-3 h-3" />
         </button>
       </div>
 
       {/* STEP 1: FACILITY SELECTION CARD (SUPER ADMIN ONLY) */}
       {isSuperAdmin && (
-        <div className="bg-slate-900 border border-slate-800 rounded-2xl p-6 shadow-xl space-y-4 animate-fadeIn">
-          <div className="flex items-center gap-2 text-sm font-bold text-white uppercase tracking-wider border-b border-slate-800 pb-3">
-            <Building2 className="w-4 h-4 text-cyan-400" />
+        <div className="bg-white border border-[#d1d5dc] rounded-sm p-4 md:p-5 shadow-card space-y-3.5">
+          <div className="flex items-center gap-2 text-xs font-label font-bold text-slate-900 uppercase tracking-wider border-b border-[#d1d5dc] pb-2.5">
+            <Building2 className="w-4 h-4 text-[#094cb2]" />
             <span>Step 1: Select Facility Type & Facility</span>
           </div>
 
-        <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
-          {/* Facility Type Selector Toggle */}
-          <div>
-            <label className="block text-slate-300 text-xs font-bold mb-1.5">Facility Type</label>
-            <div className="grid grid-cols-2 gap-2 p-1 bg-slate-950 border border-slate-800 rounded-xl">
-              <button
-                type="button"
-                onClick={() => {
-                  setFacilityType('diagnostic_center');
-                  const firstId = diagnosticCenters[0]?.id || diagnosticCenters[0]?.location_details?.id;
-                  if (firstId) setSelectedCenterId(String(firstId));
-                }}
-                className={`py-2 px-3 rounded-lg text-xs font-bold flex items-center justify-center gap-1.5 transition ${
-                  facilityType === 'diagnostic_center'
-                    ? 'bg-cyan-600 text-white shadow-md'
-                    : 'text-slate-400 hover:text-white'
-                }`}
-              >
-                <FlaskConical className="w-3.5 h-3.5" /> Diagnostic Center
-              </button>
-              <button
-                type="button"
-                onClick={() => {
-                  setFacilityType('hospital');
-                  const firstId = hospitals[0]?.id || hospitals[0]?.location_details?.id;
-                  if (firstId) setSelectedHospitalId(String(firstId));
-                }}
-                className={`py-2 px-3 rounded-lg text-xs font-bold flex items-center justify-center gap-1.5 transition ${
-                  facilityType === 'hospital'
-                    ? 'bg-emerald-600 text-white shadow-md'
-                    : 'text-slate-400 hover:text-white'
-                }`}
-              >
-                <Building2 className="w-3.5 h-3.5" /> Hospital Lab
-              </button>
-            </div>
-          </div>
-
-          {/* Facility Selector Dropdown */}
-          <div className="md:col-span-2">
-            <label className="block text-slate-300 text-xs font-bold mb-1.5">
-              Select {facilityType === 'diagnostic_center' ? 'Diagnostic Center Branch' : 'Hospital Lab'}
-            </label>
-            {facilityType === 'diagnostic_center' ? (
-              <select
-                value={selectedCenterId}
-                onChange={e => setSelectedCenterId(e.target.value)}
-                className="w-full bg-slate-950 border border-cyan-500/50 rounded-xl px-4 py-2.5 text-xs text-white font-bold focus:outline-none focus:border-cyan-400"
-              >
-                {diagnosticCenters.map(dc => {
-                  const dcId = dc.id || dc.location_details?.id;
-                  const dcName = dc.name || dc.location_details?.name || 'Diagnostic Center';
-                  const dcBranch = dc.branch || dc.location_details?.branch || 'Main Branch';
-                  const dcDistrict = dc.district || dc.location_details?.district || 'Dhaka';
-                  return (
-                    <option key={dcId} value={dcId}>
-                      {formatFacilityName(dcName, dcBranch)} — {dcDistrict}
-                    </option>
-                  );
-                })}
-              </select>
-            ) : (
-              <select
-                value={selectedHospitalId}
-                onChange={e => setSelectedHospitalId(e.target.value)}
-                className="w-full bg-slate-950 border border-emerald-500/50 rounded-xl px-4 py-2.5 text-xs text-white font-bold focus:outline-none focus:border-emerald-400"
-              >
-                {hospitals.map(h => {
-                  const hId = h.id || h.location_details?.id;
-                  const hName = h.name || h.location_details?.name || 'Hospital';
-                  const hBranch = h.branch || h.location_details?.branch || 'Main Branch';
-                  const hDistrict = h.district || h.location_details?.district || 'Dhaka';
-                  return (
-                    <option key={hId} value={hId}>
-                      {formatFacilityName(hName, hBranch)} — {hDistrict}
-                    </option>
-                  );
-                })}
-              </select>
-            )}
-          </div>
-        </div>
-
-        {/* Selected Facility Status Summary Pill */}
-        {currentFacility && (
-          <div className="p-3 bg-slate-950/80 border border-slate-800 rounded-xl flex items-center justify-between text-xs">
-            <div className="flex items-center gap-2.5">
-              {facilityType === 'diagnostic_center' ? (
-                <div className="p-2 rounded-lg bg-cyan-500/10 text-cyan-400 border border-cyan-500/20">
-                  <FlaskConical className="w-4 h-4" />
-                </div>
-              ) : (
-                <div className="p-2 rounded-lg bg-emerald-500/10 text-emerald-400 border border-emerald-500/20">
-                  <Building2 className="w-4 h-4" />
-                </div>
-              )}
-              <div>
-                <span className="text-white font-black">{currentFacility.name}</span>
-                <span className="text-slate-400 font-semibold ml-2">({currentFacility.branch || 'Main'})</span>
-                <span className="text-slate-500 ml-2">• {currentFacility.address || currentFacility.district}</span>
+          <div className="grid grid-cols-1 md:grid-cols-3 gap-3.5 font-body">
+            {/* Facility Type Selector Toggle */}
+            <div>
+              <label className="block text-slate-700 text-xs font-label font-semibold mb-1">Facility Type</label>
+              <div className="grid grid-cols-2 gap-1 p-1 bg-[#faf9fa] border border-[#d1d5dc] rounded-sm">
+                <button
+                  type="button"
+                  onClick={() => {
+                    setFacilityType('diagnostic_center');
+                    const firstId = diagnosticCenters[0]?.id || diagnosticCenters[0]?.location_details?.id;
+                    if (firstId) setSelectedCenterId(String(firstId));
+                  }}
+                  className={`py-1.5 px-2 rounded-xs text-xs font-label font-semibold flex items-center justify-center gap-1 transition cursor-pointer ${
+                    facilityType === 'diagnostic_center'
+                      ? 'bg-[#094cb2] text-white shadow-xs'
+                      : 'text-slate-600 hover:text-slate-900'
+                  }`}
+                >
+                  <FlaskConical className="w-3.5 h-3.5" /> Diagnostic Center
+                </button>
+                <button
+                  type="button"
+                  onClick={() => {
+                    setFacilityType('hospital');
+                    const firstId = hospitals[0]?.id || hospitals[0]?.location_details?.id;
+                    if (firstId) setSelectedHospitalId(String(firstId));
+                  }}
+                  className={`py-1.5 px-2 rounded-xs text-xs font-label font-semibold flex items-center justify-center gap-1 transition cursor-pointer ${
+                    facilityType === 'hospital'
+                      ? 'bg-[#094cb2] text-white shadow-xs'
+                      : 'text-slate-600 hover:text-slate-900'
+                  }`}
+                >
+                  <Building2 className="w-3.5 h-3.5" /> Hospital Lab
+                </button>
               </div>
             </div>
-            <div className="flex items-center gap-2">
-              <span className="px-2.5 py-1 bg-cyan-500/20 text-cyan-300 border border-cyan-500/30 rounded-lg font-bold text-[11px]">
-                {selectedCatIds.length} Categories Selected
-              </span>
-              <span className="px-2.5 py-1 bg-teal-500/20 text-teal-300 border border-teal-500/30 rounded-lg font-bold text-[11px]">
-                {associatedTests.length} Tests Auto-Associated
-              </span>
+
+            {/* Facility Selector Dropdown */}
+            <div className="md:col-span-2">
+              <label className="block text-slate-700 text-xs font-label font-semibold mb-1">
+                Select {facilityType === 'diagnostic_center' ? 'Diagnostic Center Branch' : 'Hospital Lab'}
+              </label>
+              {facilityType === 'diagnostic_center' ? (
+                <select
+                  value={selectedCenterId}
+                  onChange={e => setSelectedCenterId(e.target.value)}
+                  className="w-full bg-white border border-[#d1d5dc] rounded-sm px-3 py-1.5 text-xs text-[#1b1c1d] focus:outline-none focus:border-[#094cb2]"
+                >
+                  {diagnosticCenters.map(dc => {
+                    const dcId = dc.id || dc.location_details?.id;
+                    const dcName = dc.name || dc.location_details?.name || 'Diagnostic Center';
+                    const dcBranch = dc.branch || dc.location_details?.branch || 'Main Branch';
+                    const dcDistrict = dc.district || dc.location_details?.district || 'Dhaka';
+                    return (
+                      <option key={dcId} value={dcId}>
+                        {formatFacilityName(dcName, dcBranch)} — {dcDistrict}
+                      </option>
+                    );
+                  })}
+                </select>
+              ) : (
+                <select
+                  value={selectedHospitalId}
+                  onChange={e => setSelectedHospitalId(e.target.value)}
+                  className="w-full bg-white border border-[#d1d5dc] rounded-sm px-3 py-1.5 text-xs text-[#1b1c1d] focus:outline-none focus:border-[#094cb2]"
+                >
+                  {hospitals.map(h => {
+                    const hId = h.id || h.location_details?.id;
+                    const hName = h.name || h.location_details?.name || 'Hospital';
+                    const hBranch = h.branch || h.location_details?.branch || 'Main Branch';
+                    const hDistrict = h.district || h.location_details?.district || 'Dhaka';
+                    return (
+                      <option key={hId} value={hId}>
+                        {formatFacilityName(hName, hBranch)} — {hDistrict}
+                      </option>
+                    );
+                  })}
+                </select>
+              )}
             </div>
           </div>
-        )}
-      </div>
+
+          {/* Selected Facility Status Summary Pill */}
+          {currentFacility && (
+            <div className="p-3 bg-[#faf9fa] border border-[#d1d5dc] rounded-sm flex items-center justify-between text-xs font-body">
+              <div className="flex items-center gap-2">
+                {facilityType === 'diagnostic_center' ? (
+                  <div className="p-1.5 rounded-xs bg-[#e7ebff] text-[#094cb2]">
+                    <FlaskConical className="w-3.5 h-3.5" />
+                  </div>
+                ) : (
+                  <div className="p-1.5 rounded-xs bg-emerald-50 text-emerald-800 border border-emerald-200">
+                    <Building2 className="w-3.5 h-3.5" />
+                  </div>
+                )}
+                <div>
+                  <span className="font-serif font-bold text-slate-900">{currentFacility.name}</span>
+                  <span className="text-slate-500 font-label ml-1">({currentFacility.branch || 'Main'})</span>
+                  <span className="text-slate-400 ml-1.5">• {currentFacility.address || currentFacility.district}</span>
+                </div>
+              </div>
+              <div className="flex items-center gap-2">
+                <span className="px-2 py-0.5 bg-[#e7ebff] text-[#094cb2] border border-[#094cb2]/20 rounded-xs font-label font-semibold text-[10px]">
+                  {selectedCatIds.length} Categories Selected
+                </span>
+                <span className="px-2 py-0.5 bg-emerald-50 text-emerald-800 border border-emerald-200 rounded-xs font-label font-semibold text-[10px]">
+                  {associatedTests.length} Tests Mapped
+                </span>
+              </div>
+            </div>
+          )}
+        </div>
       )}
 
       {/* STEP 2: CATEGORY MULTI-SELECT SECTION */}
-      <div className="bg-slate-900 border border-slate-800 rounded-2xl p-6 shadow-xl space-y-4">
-        <div className="flex flex-wrap items-center justify-between gap-4 border-b border-slate-800 pb-3">
-          <div className="flex items-center gap-2 text-sm font-bold text-white uppercase tracking-wider">
-            <Layers className="w-4 h-4 text-teal-400" />
+      <div className="bg-white border border-[#d1d5dc] rounded-sm p-4 md:p-5 shadow-card space-y-3.5">
+        <div className="flex flex-wrap items-center justify-between gap-3 border-b border-[#d1d5dc] pb-2.5">
+          <div className="flex items-center gap-2 text-xs font-label font-bold text-slate-900 uppercase tracking-wider">
+            <Layers className="w-4 h-4 text-[#094cb2]" />
             <span>Step 2: Select Test Categories to Associate</span>
           </div>
 
@@ -507,14 +462,14 @@ export default function AddTestsToDiagnosticsTab() {
             <button
               type="button"
               onClick={handleSelectAllCats}
-              className="px-3 py-1.5 bg-teal-500/10 hover:bg-teal-500/20 text-teal-300 border border-teal-500/30 rounded-xl text-xs font-bold transition"
+              className="px-2.5 py-1 bg-[#e7ebff] hover:bg-[#d9e2ff] text-[#094cb2] rounded-xs text-xs font-label font-semibold transition cursor-pointer"
             >
               Select All ({validTestCategories.length})
             </button>
             <button
               type="button"
               onClick={handleDeselectAllCats}
-              className="px-3 py-1.5 bg-slate-800 hover:bg-slate-700 text-slate-400 border border-slate-700 rounded-xl text-xs font-semibold transition"
+              className="px-2.5 py-1 border border-[#d1d5dc] bg-white hover:bg-[#f7f6f7] text-slate-600 rounded-xs text-xs font-label font-medium transition cursor-pointer"
             >
               Clear Selection
             </button>
@@ -527,7 +482,6 @@ export default function AddTestsToDiagnosticsTab() {
             const stringId = cat.id.toString();
             const isSelected = selectedCatIds.includes(stringId);
 
-            // Count tests under this category
             const categoryTestsCount = cat.test_count !== undefined 
               ? cat.test_count 
               : tests.filter(t => (t.category || t.category_id || '').toString() === stringId).length;
@@ -536,42 +490,42 @@ export default function AddTestsToDiagnosticsTab() {
               <div
                 key={cat.id}
                 onClick={() => toggleCategory(cat.id)}
-                className={`p-4 rounded-2xl border cursor-pointer transition-all duration-200 flex flex-col justify-between select-none ${
+                className={`p-3.5 rounded-sm border cursor-pointer transition flex flex-col justify-between select-none ${
                   isSelected 
-                    ? 'bg-gradient-to-br from-teal-950/70 to-slate-900 border-teal-500/60 shadow-lg shadow-teal-500/10 scale-[1.01]' 
-                    : 'bg-slate-950/60 border-slate-800/80 hover:border-slate-700 hover:bg-slate-800/40 text-slate-400'
+                    ? 'bg-[#e7ebff]/40 border-[#094cb2] shadow-xs' 
+                    : 'bg-[#faf9fa] border-[#d1d5dc] hover:border-slate-400 text-slate-700'
                 }`}
               >
                 <div className="flex items-start justify-between gap-2 mb-2">
                   <div className="flex items-center gap-2">
-                    <div className={`p-2 rounded-xl border ${
+                    <div className={`p-1.5 rounded-xs border ${
                       isSelected 
-                        ? 'bg-teal-500/20 border-teal-500/40 text-teal-300' 
-                        : 'bg-slate-900 border-slate-800 text-slate-400'
+                        ? 'bg-[#094cb2] text-white border-[#094cb2]' 
+                        : 'bg-white border-[#d1d5dc] text-slate-500'
                     }`}>
-                      <TestTube className="w-4 h-4" />
+                      <TestTube className="w-3.5 h-3.5" />
                     </div>
                     <div>
-                      <h4 className={`text-xs font-bold ${isSelected ? 'text-white' : 'text-slate-200'}`}>
+                      <h4 className={`text-xs font-label font-bold ${isSelected ? 'text-[#094cb2]' : 'text-slate-900'}`}>
                         {cat.name}
                       </h4>
-                      <p className="text-[10px] text-slate-400">
-                        {categoryTestsCount} base tests under this category
+                      <p className="text-[10px] text-slate-500 font-body">
+                        {categoryTestsCount} catalog tests
                       </p>
                     </div>
                   </div>
 
-                  <div className={`w-5 h-5 rounded-lg border flex items-center justify-center transition-colors shrink-0 ${
+                  <div className={`w-4 h-4 rounded-xs border flex items-center justify-center transition-colors shrink-0 ${
                     isSelected 
-                      ? 'bg-teal-500 border-teal-400 text-slate-950' 
-                      : 'border-slate-700 bg-slate-900 text-transparent'
+                      ? 'bg-[#094cb2] border-[#094cb2] text-white' 
+                      : 'border-[#d1d5dc] bg-white text-transparent'
                   }`}>
-                    <Check className="w-3.5 h-3.5 stroke-[3]" />
+                    <Check className="w-3 h-3 stroke-[3]" />
                   </div>
                 </div>
 
                 {cat.description && (
-                  <p className="text-[10px] text-slate-500 truncate pt-1 border-t border-slate-800/60 mt-1">
+                  <p className="text-[10px] text-slate-500 truncate pt-1 border-t border-[#e3e5ea] mt-1 font-body">
                     {cat.description}
                   </p>
                 )}
@@ -581,48 +535,48 @@ export default function AddTestsToDiagnosticsTab() {
         </div>
       </div>
 
-      {/* STEP 3: LIVE PREVIEW OF AUTO-ASSOCIATED [] */}
-      <div className="bg-slate-900 border border-slate-800 rounded-2xl overflow-hidden shadow-xl space-y-4">
-        <div className="p-5 border-b border-slate-800 flex flex-wrap items-center justify-between gap-4">
+      {/* STEP 3: LIVE PREVIEW OF AUTO-ASSOCIATED TESTS */}
+      <div className="bg-white border border-[#d1d5dc] rounded-sm overflow-hidden shadow-card space-y-3.5">
+        <div className="p-3.5 border-b border-[#d1d5dc] bg-[#faf9fa] flex flex-wrap items-center justify-between gap-3">
           <div>
-            <div className="flex items-center gap-2 text-sm font-bold text-white uppercase tracking-wider">
-              <TestTube className="w-4 h-4 text-amber-400" />
+            <div className="flex items-center gap-2 text-xs font-label font-bold text-slate-900 uppercase tracking-wider">
+              <TestTube className="w-4 h-4 text-[#094cb2]" />
               <span>Step 3: Auto-Associated Tests Preview ({associatedTests.length} Tests)</span>
             </div>
-            <p className="text-xs text-slate-400 mt-0.5">
-              These tests belong to the selected test categories and will be associated with {currentFacility?.name || 'this facility'}.
+            <p className="text-[11px] text-slate-500 mt-0.5 font-body">
+              These tests belong to the selected categories and will be provisioned to {currentFacility?.name || 'this facility'}.
             </p>
           </div>
 
           <div className="relative flex-1 max-w-xs">
-            <Search className="w-4 h-4 absolute left-3 top-3 text-slate-400" />
+            <Search className="w-3.5 h-3.5 absolute left-3 top-2.5 text-slate-400" />
             <input
               type="text"
               placeholder="Search associated tests..."
               value={searchTerm}
               onChange={e => setSearchTerm(e.target.value)}
-              className="w-full bg-slate-950 border border-slate-800 rounded-xl pl-9 pr-4 py-2 text-xs text-white placeholder-slate-500 focus:outline-none focus:border-amber-500"
+              className="w-full bg-white border border-[#d1d5dc] rounded-sm pl-8 pr-3 py-1.5 text-xs text-[#1b1c1d] placeholder-slate-400 focus:outline-none focus:border-[#094cb2] font-body"
             />
           </div>
         </div>
 
         <div className="overflow-x-auto max-h-80">
-          <table className="w-full text-left text-xs text-slate-300">
-            <thead className="bg-slate-950 text-slate-400 text-[11px] uppercase tracking-wider border-b border-slate-800 sticky top-0 z-10">
+          <table className="w-full text-left text-xs font-body">
+            <thead className="bg-[#f7f6f7] text-slate-500 font-label text-[11px] uppercase tracking-wider border-b border-[#d1d5dc] sticky top-0 z-10">
               <tr>
-                <th className="py-3 px-4">Test Name</th>
-                <th className="py-3 px-4">Category</th>
-                <th className="py-3 px-4">Fasting Required</th>
-                <th className="py-3 px-4">Est. Original Price</th>
-                <th className="py-3 px-4">Offer Price (20% OFF)</th>
-                <th className="py-3 px-4 text-right">Association Status</th>
+                <th className="py-2.5 px-4 font-semibold">Test Name</th>
+                <th className="py-2.5 px-4 font-semibold">Category</th>
+                <th className="py-2.5 px-4 font-semibold">Fasting Required</th>
+                <th className="py-2.5 px-4 font-semibold">Est. Regular Price</th>
+                <th className="py-2.5 px-4 font-semibold">Offer Price (20% OFF)</th>
+                <th className="py-2.5 px-4 text-right font-semibold">Status</th>
               </tr>
             </thead>
-            <tbody className="divide-y divide-slate-800/60">
+            <tbody className="divide-y divide-[#e3e5ea] text-slate-700">
               {associatedTests.length === 0 ? (
                 <tr>
-                  <td colSpan="6" className="py-8 text-center text-slate-500 text-xs font-semibold">
-                    No test categories selected yet. Select test categories above to auto-associate tests.
+                  <td colSpan="6" className="py-8 text-center text-slate-400 text-xs font-body">
+                    No test categories selected yet. Select categories above to auto-associate tests.
                   </td>
                 </tr>
               ) : (
@@ -631,40 +585,39 @@ export default function AddTestsToDiagnosticsTab() {
                   .map(t => {
                     const calculated_price = t.calculated_price || 560;
                     return (
-                    <tr key={t.id} className="hover:bg-slate-800/40 transition">
-                      <td className="py-3 px-4 font-bold text-white">
-                        <div className="flex items-center gap-1.5">
-                          <TestTube className="w-3.5 h-3.5 text-amber-400" />
+                    <tr key={t.id} className="hover:bg-[#e7ebff]/25 transition-colors">
+                      <td className="py-3 px-4">
+                        <div className="font-serif font-bold text-[#1b1c1d] flex items-center gap-1.5">
+                          <TestTube className="w-3.5 h-3.5 text-[#094cb2]" />
                           <span>{t.name}</span>
                         </div>
                       </td>
-                      <td className="py-3 px-4 text-teal-300 font-semibold">
+                      <td className="py-3 px-4 text-slate-700 font-body">
                         {t.category_name || t.category || 'General'}
                       </td>
                       <td className="py-3 px-4">
                         {t.fasting_required ? (
-                          <span className="px-2 py-0.5 bg-rose-500/20 text-rose-300 border border-rose-500/30 rounded text-[10px] font-bold">Yes (Fasting)</span>
+                          <span className="px-1.5 py-0.5 bg-amber-50 text-amber-800 border border-amber-200 rounded-xs text-[10px] font-label font-bold">Yes (Fasting)</span>
                         ) : (
-                          <span className="px-2 py-0.5 bg-slate-800 text-slate-400 border border-slate-700 rounded text-[10px]">No</span>
+                          <span className="text-slate-400 text-[11px]">No</span>
                         )}
                       </td>
-                      <td className="py-3 px-4 line-through text-slate-500 font-mono">
+                      <td className="py-3 px-4 line-through text-slate-400 font-mono text-xs">
                         ৳{t.price || 700}
                       </td>
                       <td className="py-3 px-4">
                         <input
                           type="number"
-                          className="w-20 bg-slate-950 border border-emerald-500/50 rounded px-2 py-1 text-emerald-400 font-black font-mono text-xs"
+                          className="w-20 bg-white border border-[#d1d5dc] rounded-xs px-2 py-0.5 text-[#094cb2] font-serif font-bold text-xs focus:outline-none focus:border-[#094cb2]"
                           value={calculated_price}
                           onChange={e => {
                             t.calculated_price = e.target.value;
-                            // Trigger re-render by doing a shallow copy of tests? Just mutating is fine here since it's a bulk form
                           }}
                         />
                       </td>
                       <td className="py-3 px-4 text-right">
-                        <span className="inline-flex items-center gap-1 px-2.5 py-1 bg-emerald-500/20 text-emerald-300 border border-emerald-500/30 rounded-lg text-[10px] font-bold">
-                          <CheckCircle className="w-3 h-3 text-emerald-400" /> Auto-Associated
+                        <span className="inline-flex items-center gap-1 px-2 py-0.5 bg-emerald-50 text-emerald-800 border border-emerald-200 rounded-xs text-[10px] font-label font-bold">
+                          <CheckCircle className="w-3 h-3 text-emerald-600" /> Auto-Associated
                         </span>
                       </td>
                     </tr>
@@ -676,13 +629,13 @@ export default function AddTestsToDiagnosticsTab() {
       </div>
 
       {/* SAVE / ASSOCIATE BAR */}
-      <div className="bg-slate-900 border border-slate-800 rounded-2xl p-5 shadow-2xl flex flex-wrap items-center justify-between gap-4 sticky bottom-4 z-20 backdrop-blur-xl bg-slate-900/90">
+      <div className="bg-white border border-[#d1d5dc] rounded-sm p-4 shadow-elevated flex flex-wrap items-center justify-between gap-4 sticky bottom-4 z-20 backdrop-blur-md">
         <div>
-          <div className="text-white font-bold text-sm flex items-center gap-2">
-            <ShieldCheck className="w-4 h-4 text-teal-400" />
+          <div className="text-[#1b1c1d] font-serif font-bold text-sm flex items-center gap-2">
+            <ShieldCheck className="w-4 h-4 text-[#094cb2]" />
             <span>Ready to Associate Categories</span>
           </div>
-          <p className="text-xs text-slate-400 mt-0.5">
+          <p className="text-xs text-slate-500 mt-0.5 font-body">
             Associating {selectedCatIds.length} categories ({associatedTests.length} tests) to {currentFacility?.name || 'selected facility'}.
           </p>
         </div>
@@ -691,12 +644,12 @@ export default function AddTestsToDiagnosticsTab() {
           type="button"
           disabled={isSaving || !currentFacility || selectedCatIds.length === 0}
           onClick={() => setShowConfirmModal(true)}
-          className="px-6 py-3 bg-gradient-to-r from-teal-600 to-cyan-600 hover:from-teal-500 hover:to-cyan-500 text-white font-bold text-xs rounded-xl shadow-lg shadow-teal-600/30 transition flex items-center gap-2 disabled:opacity-50 cursor-pointer"
+          className="px-5 py-2.5 bg-[#094cb2] hover:bg-[#083e91] text-white font-label font-semibold text-xs rounded-sm shadow-sm transition flex items-center gap-2 disabled:opacity-50 cursor-pointer"
         >
           {isSaving ? (
-            <RefreshCw className="w-4 h-4 animate-spin" />
+            <RefreshCw className="w-3.5 h-3.5 animate-spin" />
           ) : (
-            <Plus className="w-4 h-4" />
+            <Plus className="w-3.5 h-3.5" />
           )}
           <span>Associate {selectedCatIds.length} Categories ({associatedTests.length} Tests) to {currentFacility?.branch || 'Facility'}</span>
         </button>
@@ -704,43 +657,43 @@ export default function AddTestsToDiagnosticsTab() {
 
       {/* PRE-SAVE CONFIRMATION MODAL */}
       {showConfirmModal && currentFacility && (
-        <div className="fixed inset-0 z-50 flex items-center justify-center p-4 bg-slate-950/80 backdrop-blur-md animate-fadeIn">
-          <div className="bg-slate-900 border border-slate-700 rounded-3xl p-6 sm:p-8 max-w-lg w-full shadow-2xl space-y-6">
+        <div className="fixed inset-0 z-50 flex items-center justify-center p-4 bg-slate-900/40 backdrop-blur-xs">
+          <div className="bg-white border border-[#d1d5dc] rounded-sm p-5 max-w-lg w-full shadow-elevated space-y-4">
             
-            <div className="flex items-center gap-3 border-b border-slate-800 pb-4">
-              <div className="w-12 h-12 rounded-2xl bg-cyan-500/10 border border-cyan-500/30 flex items-center justify-center text-cyan-400 shrink-0">
-                <ShieldCheck className="w-6 h-6" />
+            <div className="flex items-center gap-3 border-b border-[#d1d5dc] pb-3">
+              <div className="w-10 h-10 rounded-sm bg-[#e7ebff] text-[#094cb2] flex items-center justify-center shrink-0">
+                <ShieldCheck className="w-5 h-5" />
               </div>
               <div>
-                <h3 className="text-lg font-black text-white">Confirm Association</h3>
-                <p className="text-xs text-slate-400">Please review before saving test categories</p>
+                <h3 className="text-base font-serif font-bold text-[#1b1c1d]">Confirm Category Association</h3>
+                <p className="text-xs text-slate-500 font-body">Please review parameters before publishing tests to catalog.</p>
               </div>
             </div>
 
-            <div className="space-y-3 bg-slate-950/70 p-4 rounded-2xl border border-slate-800 text-xs">
-              <div className="flex items-center justify-between py-1 border-b border-slate-800/60">
-                <span className="text-slate-400 font-medium">Target Facility:</span>
-                <span className="font-extrabold text-white">{currentFacility.name} ({currentFacility.branch || 'Main'})</span>
+            <div className="space-y-2 bg-[#faf9fa] p-3.5 rounded-sm border border-[#d1d5dc] text-xs font-body">
+              <div className="flex items-center justify-between py-1 border-b border-[#e3e5ea]">
+                <span className="text-slate-500 font-label">Target Facility:</span>
+                <span className="font-serif font-bold text-slate-900">{currentFacility.name} ({currentFacility.branch || 'Main'})</span>
               </div>
-              <div className="flex items-center justify-between py-1 border-b border-slate-800/60">
-                <span className="text-slate-400 font-medium">Facility Type:</span>
-                <span className="font-bold text-cyan-300 capitalize">{facilityType.replace('_', ' ')}</span>
+              <div className="flex items-center justify-between py-1 border-b border-[#e3e5ea]">
+                <span className="text-slate-500 font-label">Facility Type:</span>
+                <span className="font-label font-semibold text-[#094cb2] capitalize">{facilityType.replace('_', ' ')}</span>
               </div>
-              <div className="flex items-center justify-between py-1 border-b border-slate-800/60">
-                <span className="text-slate-400 font-medium">Selected Categories:</span>
-                <span className="font-extrabold text-teal-300">{selectedCatIds.length} Categories</span>
+              <div className="flex items-center justify-between py-1 border-b border-[#e3e5ea]">
+                <span className="text-slate-500 font-label">Selected Categories:</span>
+                <span className="font-serif font-bold text-slate-900">{selectedCatIds.length} Categories</span>
               </div>
               <div className="flex items-center justify-between py-1">
-                <span className="text-slate-400 font-medium">Associated Tests:</span>
-                <span className="font-extrabold text-emerald-400">{associatedTests.length} Tests</span>
+                <span className="text-slate-500 font-label">Associated Tests:</span>
+                <span className="font-serif font-bold text-emerald-800">{associatedTests.length} Tests</span>
               </div>
 
               {/* List preview of categories */}
-              <div className="pt-2 border-t border-slate-800">
-                <span className="block text-[11px] text-slate-400 font-bold mb-1.5">Categories to attach:</span>
-                <div className="flex flex-wrap gap-1.5">
+              <div className="pt-2 border-t border-[#e3e5ea]">
+                <span className="block text-[11px] text-slate-500 font-label font-semibold mb-1">Categories to attach:</span>
+                <div className="flex flex-wrap gap-1">
                   {selectedCategoriesList.map(cat => (
-                    <span key={cat.id} className="px-2.5 py-1 bg-teal-950/80 text-teal-200 border border-teal-700/50 rounded-lg text-[10px] font-bold">
+                    <span key={cat.id} className="px-2 py-0.5 bg-[#e7ebff] text-[#094cb2] border border-[#094cb2]/20 rounded-xs text-[10px] font-label font-semibold">
                       {cat.name}
                     </span>
                   ))}
@@ -748,12 +701,12 @@ export default function AddTestsToDiagnosticsTab() {
               </div>
             </div>
 
-            <div className="flex items-center justify-end gap-3 pt-2">
+            <div className="flex items-center justify-end gap-2 pt-2 border-t border-[#d1d5dc]">
               <button
                 type="button"
                 disabled={isSaving}
                 onClick={() => setShowConfirmModal(false)}
-                className="px-5 py-2.5 bg-slate-800 hover:bg-slate-700 text-slate-300 font-bold text-xs rounded-xl transition"
+                className="px-3.5 py-1.5 border border-[#d1d5dc] bg-white hover:bg-[#f7f6f7] text-slate-700 font-label font-semibold text-xs rounded-sm transition cursor-pointer"
               >
                 Cancel
               </button>
@@ -761,9 +714,9 @@ export default function AddTestsToDiagnosticsTab() {
                 type="button"
                 disabled={isSaving}
                 onClick={handleSaveAssociations}
-                className="px-6 py-2.5 bg-gradient-to-r from-teal-600 to-cyan-600 hover:from-teal-500 hover:to-cyan-500 text-white font-black text-xs rounded-xl shadow-lg shadow-teal-600/30 transition flex items-center gap-2"
+                className="px-4 py-1.5 bg-[#094cb2] hover:bg-[#083e91] text-white font-label font-semibold text-xs rounded-sm shadow-sm transition flex items-center gap-1.5 cursor-pointer"
               >
-                {isSaving ? <RefreshCw className="w-4 h-4 animate-spin" /> : <CheckCircle className="w-4 h-4" />}
+                {isSaving ? <RefreshCw className="w-3.5 h-3.5 animate-spin" /> : <CheckCircle className="w-3.5 h-3.5" />}
                 <span>Confirm & Save Associations</span>
               </button>
             </div>
@@ -774,35 +727,35 @@ export default function AddTestsToDiagnosticsTab() {
 
       {/* POST-SAVE SUCCESS CONFIRMATION MODAL */}
       {showSuccessModal && savedSummary && (
-        <div className="fixed inset-0 z-50 flex items-center justify-center p-4 bg-slate-950/80 backdrop-blur-md animate-fadeIn">
-          <div className="bg-slate-900 border border-emerald-500/40 rounded-3xl p-6 sm:p-8 max-w-lg w-full shadow-2xl space-y-6 text-center">
+        <div className="fixed inset-0 z-50 flex items-center justify-center p-4 bg-slate-900/40 backdrop-blur-xs">
+          <div className="bg-white border border-[#d1d5dc] rounded-sm p-6 max-w-lg w-full shadow-elevated space-y-4 text-center">
             
-            <div className="w-16 h-16 rounded-full bg-emerald-500/20 border-2 border-emerald-500 flex items-center justify-center text-emerald-400 mx-auto animate-bounce">
-              <CheckCircle className="w-10 h-10" />
+            <div className="w-12 h-12 rounded-full bg-emerald-50 border border-emerald-200 flex items-center justify-center text-emerald-600 mx-auto">
+              <CheckCircle className="w-7 h-7" />
             </div>
 
             <div>
-              <h3 className="text-xl font-black text-white">Associations Confirmed!</h3>
-              <p className="text-xs text-slate-300 mt-1">
-                Successfully assigned test categories to <strong className="text-emerald-400">{savedSummary.facilityName} ({savedSummary.facilityBranch})</strong>.
+              <h3 className="text-lg font-serif font-bold text-[#1b1c1d]">Associations Confirmed!</h3>
+              <p className="text-xs text-slate-500 mt-1 font-body">
+                Successfully assigned test categories to <strong className="text-slate-900">{savedSummary.facilityName} ({savedSummary.facilityBranch})</strong>.
               </p>
             </div>
 
-            <div className="bg-slate-950/80 p-4 rounded-2xl border border-slate-800 text-left space-y-3 text-xs">
-              <div className="flex items-center justify-between border-b border-slate-800/80 pb-2">
-                <span className="text-slate-400">Total Categories:</span>
-                <span className="font-extrabold text-teal-300">{savedSummary.categoriesCount} Categories</span>
+            <div className="bg-[#faf9fa] p-3.5 rounded-sm border border-[#d1d5dc] text-left space-y-2 text-xs font-body">
+              <div className="flex items-center justify-between border-b border-[#e3e5ea] pb-1.5">
+                <span className="text-slate-500 font-label">Total Categories:</span>
+                <span className="font-serif font-bold text-slate-900">{savedSummary.categoriesCount} Categories</span>
               </div>
-              <div className="flex items-center justify-between border-b border-slate-800/80 pb-2">
-                <span className="text-slate-400">Total Tests Associated:</span>
-                <span className="font-extrabold text-emerald-400">{savedSummary.testsCount} Tests</span>
+              <div className="flex items-center justify-between border-b border-[#e3e5ea] pb-1.5">
+                <span className="text-slate-500 font-label">Total Tests Associated:</span>
+                <span className="font-serif font-bold text-emerald-800">{savedSummary.testsCount} Tests</span>
               </div>
 
               <div>
-                <span className="block text-[11px] text-slate-400 font-bold mb-1.5">Associated Categories:</span>
-                <div className="flex flex-wrap gap-1.5 max-h-28 overflow-y-auto pr-1">
+                <span className="block text-[11px] text-slate-500 font-label font-semibold mb-1">Associated Categories:</span>
+                <div className="flex flex-wrap gap-1 max-h-24 overflow-y-auto pr-1">
                   {savedSummary.categoryNames.map((name, i) => (
-                    <span key={i} className="px-2.5 py-1 bg-emerald-950/80 text-emerald-200 border border-emerald-700/50 rounded-lg text-[10px] font-bold">
+                    <span key={i} className="px-2 py-0.5 bg-emerald-50 text-emerald-800 border border-emerald-200 rounded-xs text-[10px] font-label font-semibold">
                       {name}
                     </span>
                   ))}
@@ -810,22 +763,22 @@ export default function AddTestsToDiagnosticsTab() {
               </div>
             </div>
 
-            <div className="flex flex-col sm:flex-row items-center justify-center gap-3 pt-2">
+            <div className="flex flex-col sm:flex-row items-center justify-center gap-2 pt-2 border-t border-[#d1d5dc]">
               <button
                 type="button"
                 onClick={() => {
                   setShowSuccessModal(false);
                   if (setActiveTab) setActiveTab('branch-tests');
                 }}
-                className="w-full sm:w-auto px-5 py-2.5 bg-slate-800 hover:bg-slate-700 text-cyan-300 font-bold text-xs rounded-xl border border-slate-700 flex items-center justify-center gap-2 transition"
+                className="w-full sm:w-auto px-4 py-1.5 border border-[#d1d5dc] bg-white hover:bg-[#f7f6f7] text-[#094cb2] font-label font-semibold text-xs rounded-sm flex items-center justify-center gap-1.5 transition cursor-pointer"
               >
-                <TestTube className="w-4 h-4" />
+                <TestTube className="w-3.5 h-3.5" />
                 <span>View Full Test Offerings</span>
               </button>
               <button
                 type="button"
                 onClick={() => setShowSuccessModal(false)}
-                className="w-full sm:w-auto px-6 py-2.5 bg-emerald-600 hover:bg-emerald-500 text-white font-black text-xs rounded-xl shadow-lg transition"
+                className="w-full sm:w-auto px-5 py-1.5 bg-[#094cb2] hover:bg-[#083e91] text-white font-label font-semibold text-xs rounded-sm shadow-sm transition cursor-pointer"
               >
                 Done
               </button>

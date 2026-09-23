@@ -56,7 +56,7 @@ export const navConfig = {
       group: 'ACCESS CONTROL',
       items: [
         { id: 'roles', label: 'Roles & Permissions', icon: ShieldCheck },
-        { id: 'assign-roles', label: 'Assign Roles', icon: UserCheck },
+        { id: 'assign-roles', label: 'Users & Roles', icon: UserCheck },
         { id: 'staff', label: 'Team & Staff', icon: Users }
       ]
     }

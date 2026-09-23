@@ -13,9 +13,10 @@ from .views import (
     VerificationApproveRejectAPIView,
     PlatformAdminListCreateAPIView
 )
-from .views_roles import my_permissions, RoleViewSet, UserRoleViewSet, PermissionViewSet
+from .views_roles import my_permissions, RoleViewSet, UserRoleViewSet, PermissionViewSet, UserViewSet
 
 router = DefaultRouter()
+router.register(r'users', UserViewSet, basename='users')
 router.register(r'roles', RoleViewSet, basename='roles')
 router.register(r'user-roles', UserRoleViewSet, basename='user-roles')
 router.register(r'permissions-catalog', PermissionViewSet, basename='permissions-catalog')

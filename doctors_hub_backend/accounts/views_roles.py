@@ -3,6 +3,7 @@ from rest_framework.decorators import api_view, permission_classes
 from rest_framework.response import Response
 from .models import Role, UserRole, Permission
 from .serializers_roles import RoleSerializer, UserRoleSerializer, PermissionSerializer
+from .serializers import UserSerializer, UserCreateSerializer
 from core.permissions import HasPagePermission
 from core.rbac import get_user_permissions
 from core.scoping import RoleScopedQuerysetMixin
@@ -49,6 +50,12 @@ class RoleViewSet(RoleScopedQuerysetMixin, viewsets.ModelViewSet):
     def get_queryset(self):
         qs = Role.objects.all().prefetch_related('permissions')
         return self.get_scoped_queryset(qs)
+
+    def perform_destroy(self, instance):
+        from rest_framework import exceptions
+        if instance.is_system:
+            raise exceptions.ValidationError("System roles cannot be deleted.")
+        super().perform_destroy(instance)
 
 class UserRoleViewSet(RoleScopedQuerysetMixin, viewsets.ModelViewSet):
     """
@@ -124,3 +131,47 @@ class PermissionViewSet(viewsets.ReadOnlyModelViewSet):
         if not getattr(user, 'is_superuser', False) and not getattr(user, 'is_super_admin', False):
             qs = qs.filter(is_facility_grantable=True)
         return qs
+
+
+class UserViewSet(RoleScopedQuerysetMixin, viewsets.ModelViewSet):
+    """
+    ViewSet for managing Users.
+    Uses HasPagePermission('users') to enforce access.
+    """
+    permission_classes = [HasPagePermission]
+    required_module = 'users'
+    serializer_class = UserSerializer
+    pagination_class = None
+
+    scope_location_field = "user_roles__facility__in"
+    always_scoped = True
+
+    def get_serializer_class(self):
+        if self.action == 'create':
+            return UserCreateSerializer
+        return UserSerializer
+
+    def get_queryset(self):
+        from .models import User
+        from django.db.models import Q
+        user = self.request.user
+        qs = User.objects.all().prefetch_related('user_roles__role', 'user_roles__facility').order_by('-date_joined')
+
+        if getattr(user, 'is_superuser', False) or getattr(user, 'is_super_admin', False):
+            scoped_qs = qs
+        elif getattr(user, 'is_facility_admin', False):
+            managed_ids = getattr(user, 'managed_location_ids', [])
+            scoped_qs = qs.filter(user_roles__facility__in=managed_ids).distinct()
+        else:
+            scoped_qs = qs.filter(id=user.id)
+
+        search_term = self.request.query_params.get('search', '').strip()
+        if search_term:
+            scoped_qs = scoped_qs.filter(
+                Q(phone_number__icontains=search_term) |
+                Q(first_name__icontains=search_term) |
+                Q(last_name__icontains=search_term)
+            )
+
+        return scoped_qs
+

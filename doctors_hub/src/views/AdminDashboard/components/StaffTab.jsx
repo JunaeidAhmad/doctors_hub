@@ -104,25 +104,28 @@ export default function StaffTab() {
     <div className="space-y-6">
       
       {/* Top Header Card */}
-      <div className="bg-slate-900 border border-slate-800 rounded-3xl p-6 flex flex-col sm:flex-row items-start sm:items-center justify-between gap-4 shadow-xl">
+      <div className="flex flex-col sm:flex-row justify-between items-start sm:items-end gap-4 pb-2 border-b border-[#d1d5dc]">
         <div>
-          <div className="flex items-center gap-2">
-            <div className="p-2 rounded-xl bg-teal-500/10 border border-teal-500/20 text-teal-400">
-              <Users className="w-5 h-5" />
-            </div>
-            <h2 className="text-xl font-black text-white">Delegated Staff Management</h2>
+          <div className="flex items-center gap-2 mb-1.5">
+            <span className="text-[10px] font-label font-bold tracking-widest text-[#094cb2] uppercase bg-[#e7ebff] px-2 py-0.5 rounded-xs">
+              Facility Operations
+            </span>
+            <span className="text-[10px] text-slate-400 font-label">• Delegated Personnel</span>
           </div>
-          <p className="text-xs text-slate-400 mt-1">
-            Manage receptionists, lab technicians, and billing operators for your facility branches
+          <h1 className="text-2xl md:text-3xl font-serif font-bold text-[#1b1c1d] tracking-tight">
+            Delegated Facility Staff
+          </h1>
+          <p className="text-xs text-slate-500 font-body mt-1">
+            Manage receptionists, lab technicians, and billing operators assigned to your facility branches.
           </p>
         </div>
 
-        <div className="flex items-center gap-3 w-full sm:w-auto">
+        <div className="flex flex-wrap items-center gap-2.5 w-full sm:w-auto shrink-0">
           {managedFacilities.length > 1 && (
             <select
               value={selectedFacilityId}
               onChange={e => setSelectedFacilityId(e.target.value)}
-              className="bg-slate-950 border border-slate-800 rounded-xl px-3 py-2 text-xs text-white focus:outline-none focus:border-teal-500"
+              className="bg-white border border-[#d1d5dc] rounded-sm px-3 py-1.5 text-xs text-[#1b1c1d] focus:outline-none focus:border-[#094cb2] font-body"
             >
               {managedFacilities.map(f => (
                 <option key={f.id} value={f.id}>{f.name} ({f.type})</option>
@@ -133,89 +136,90 @@ export default function StaffTab() {
           <button
             type="button"
             onClick={handleOpenAddModal}
-            className="bg-gradient-to-r from-teal-600 to-emerald-600 hover:from-teal-500 hover:to-emerald-500 text-white font-bold px-4 py-2.5 rounded-xl shadow-lg shadow-teal-600/20 text-xs flex items-center gap-2 transition cursor-pointer"
+            className="bg-[#094cb2] hover:bg-[#083e91] text-white font-label font-semibold px-3.5 py-2 rounded-sm text-xs flex items-center gap-1.5 transition shadow-sm cursor-pointer"
           >
-            <UserPlus className="w-4 h-4" />
+            <UserPlus className="w-3.5 h-3.5" />
             <span>Add Staff Member</span>
           </button>
         </div>
       </div>
 
       {/* Staff Table */}
-      <div className="bg-slate-900 border border-slate-800 rounded-3xl overflow-hidden shadow-xl">
-        <div className="p-4 sm:p-6 border-b border-slate-800 flex items-center justify-between">
-          <h3 className="font-bold text-white text-sm flex items-center gap-2">
-            <UserCheck className="w-4 h-4 text-teal-400" />
+      <div className="bg-white border border-[#d1d5dc] rounded-sm shadow-card overflow-hidden">
+        <div className="p-3.5 border-b border-[#d1d5dc] bg-[#faf9fa] flex items-center justify-between">
+          <h3 className="font-serif font-bold text-slate-900 text-sm flex items-center gap-2">
+            <UserCheck className="w-4 h-4 text-[#094cb2]" />
             <span>Active Team Members ({staffList.length})</span>
           </h3>
           <button
             type="button"
             onClick={() => loadStaff(selectedFacilityId)}
-            className="text-slate-400 hover:text-slate-200 text-xs flex items-center gap-1.5 transition cursor-pointer"
+            className="text-slate-500 hover:text-slate-800 text-xs font-label flex items-center gap-1.5 transition cursor-pointer"
           >
-            <RefreshCw className={`w-3.5 h-3.5 ${loading ? 'animate-spin' : ''}`} />
+            <RefreshCw className={`w-3.5 h-3.5 ${loading ? 'animate-spin text-[#094cb2]' : ''}`} />
             <span>Refresh</span>
           </button>
         </div>
 
         {loading ? (
           <div className="p-12 text-center text-slate-400 text-xs">
-            <RefreshCw className="w-6 h-6 animate-spin mx-auto text-teal-400 mb-2" />
-            <span>Loading team members...</span>
+            <RefreshCw className="w-6 h-6 animate-spin mx-auto text-[#094cb2] mb-2" />
+            <span className="font-serif text-sm text-slate-700">Loading team members...</span>
           </div>
         ) : staffList.length === 0 ? (
-          <div className="p-12 text-center text-slate-400 text-xs space-y-3">
-            <Users className="w-10 h-10 mx-auto text-slate-600" />
-            <p className="font-semibold text-slate-300">No staff members added yet</p>
-            <p className="text-[11px] text-slate-500 max-w-sm mx-auto">
+          <div className="p-12 text-center text-slate-400 text-xs space-y-2">
+            <Users className="w-8 h-8 mx-auto text-slate-300" />
+            <p className="font-serif text-sm text-slate-700">No staff members added yet</p>
+            <p className="text-[11px] text-slate-400 max-w-sm mx-auto font-body">
               Add receptionists or lab operators to grant them access to process appointments and reports.
             </p>
             <button
               type="button"
               onClick={handleOpenAddModal}
-              className="mt-2 bg-teal-500/10 hover:bg-teal-500/20 text-teal-300 border border-teal-500/30 px-3.5 py-2 rounded-xl text-xs font-bold transition cursor-pointer"
+              className="mt-2 bg-[#e7ebff] text-[#094cb2] hover:bg-[#d9e2ff] border border-[#094cb2]/30 px-3 py-1.5 rounded-sm text-xs font-label font-semibold transition cursor-pointer inline-flex items-center gap-1"
             >
-              + Add First Staff Member
+              <UserPlus className="w-3.5 h-3.5" />
+              <span>Add First Staff Member</span>
             </button>
           </div>
         ) : (
           <div className="overflow-x-auto">
-            <table className="w-full text-left text-xs">
-              <thead className="bg-slate-950/60 text-slate-400 font-bold border-b border-slate-800">
+            <table className="w-full text-left text-xs font-body">
+              <thead className="bg-[#f7f6f7] border-b border-[#d1d5dc] text-slate-500 font-label text-[11px] uppercase tracking-wider">
                 <tr>
-                  <th className="py-3.5 px-6">Name</th>
-                  <th className="py-3.5 px-6">Phone (Login ID)</th>
-                  <th className="py-3.5 px-6">Role</th>
-                  <th className="py-3.5 px-6">Status</th>
-                  <th className="py-3.5 px-6 text-right">Actions</th>
+                  <th className="py-3 px-4 w-[30%] font-semibold">Name</th>
+                  <th className="py-3 px-4 w-[25%] font-semibold">Phone (Login ID)</th>
+                  <th className="py-3 px-4 w-[20%] font-semibold">Role</th>
+                  <th className="py-3 px-4 w-[15%] font-semibold">Status</th>
+                  <th className="py-3 px-4 w-[10%] text-right font-semibold">Actions</th>
                 </tr>
               </thead>
-              <tbody className="divide-y divide-slate-800/60 font-medium">
+              <tbody className="divide-y divide-[#e3e5ea] text-slate-700">
                 {staffList.map(staff => (
-                  <tr key={staff.user_id || staff.membership_id} className="hover:bg-slate-800/40 transition">
-                    <td className="py-3.5 px-6 text-white font-bold flex items-center gap-2">
-                      <div className="w-7 h-7 rounded-full bg-teal-500/20 border border-teal-500/40 text-teal-300 flex items-center justify-center font-black text-xs">
+                  <tr key={staff.user_id || staff.membership_id} className="hover:bg-[#e7ebff]/25 transition-colors">
+                    <td className="py-3.5 px-4 font-serif font-bold text-sm text-[#1b1c1d] flex items-center gap-2">
+                      <div className="w-7 h-7 rounded-sm bg-[#e7ebff] text-[#094cb2] flex items-center justify-center font-serif font-bold text-xs shrink-0">
                         {(staff.first_name || 'S')[0].toUpperCase()}
                       </div>
                       <span>{staff.first_name} {staff.last_name}</span>
                     </td>
-                    <td className="py-3.5 px-6 font-mono text-teal-300">{staff.phone_number}</td>
-                    <td className="py-3.5 px-6">
-                      <span className="px-2.5 py-1 rounded-full bg-teal-500/10 border border-teal-500/30 text-teal-300 text-[10px] font-bold uppercase">
+                    <td className="py-3.5 px-4 font-mono text-[#094cb2] text-xs font-semibold">{staff.phone_number}</td>
+                    <td className="py-3.5 px-4">
+                      <span className="px-2 py-0.5 rounded-xs bg-[#e7ebff] text-[#094cb2] border border-[#094cb2]/20 text-[10px] font-label font-bold uppercase">
                         {staff.role || 'Facility Staff'}
                       </span>
                     </td>
-                    <td className="py-3.5 px-6">
-                      <span className="inline-flex items-center gap-1.5 text-emerald-400 font-bold text-[11px]">
-                        <span className="w-1.5 h-1.5 rounded-full bg-emerald-400"></span>
+                    <td className="py-3.5 px-4">
+                      <span className="inline-flex items-center gap-1.5 text-emerald-800 font-label font-bold text-[11px]">
+                        <span className="w-1.5 h-1.5 rounded-full bg-emerald-600"></span>
                         <span>Active</span>
                       </span>
                     </td>
-                    <td className="py-3.5 px-6 text-right">
+                    <td className="py-3.5 px-4 text-right">
                       <button
                         type="button"
                         onClick={() => handleDeleteStaff(staff.user_id, `${staff.first_name} ${staff.last_name}`)}
-                        className="p-1.5 rounded-lg bg-rose-500/10 hover:bg-rose-500/20 text-rose-400 border border-rose-500/20 hover:border-rose-500/40 transition cursor-pointer"
+                        className="p-1.5 rounded-sm border border-rose-200 bg-rose-50 hover:bg-rose-100 text-rose-700 transition cursor-pointer"
                         title="Revoke Access"
                       >
                         <Trash2 className="w-3.5 h-3.5" />
@@ -231,50 +235,52 @@ export default function StaffTab() {
 
       {/* Add Staff Modal */}
       {isAddModalOpen && (
-        <div className="fixed inset-0 z-50 bg-slate-950/80 backdrop-blur-sm flex items-center justify-center p-4">
-          <div className="max-w-md w-full bg-slate-900 border border-slate-800 rounded-3xl p-6 shadow-2xl space-y-4">
-            <div className="flex items-center justify-between pb-3 border-b border-slate-800">
+        <div className="fixed inset-0 z-50 bg-slate-900/40 backdrop-blur-xs flex items-center justify-center p-4">
+          <div className="max-w-md w-full bg-white border border-[#d1d5dc] rounded-sm p-5 shadow-elevated space-y-4">
+            <div className="flex items-center justify-between pb-3 border-b border-[#d1d5dc]">
               <div className="flex items-center gap-2">
-                <UserPlus className="w-5 h-5 text-teal-400" />
-                <h3 className="font-black text-white text-base">Add Facility Staff</h3>
+                <div className="p-1.5 rounded-xs bg-[#e7ebff] text-[#094cb2]">
+                  <UserPlus className="w-4 h-4" />
+                </div>
+                <h3 className="font-serif font-bold text-slate-900 text-base">Add Facility Staff</h3>
               </div>
               <button
                 type="button"
                 onClick={() => setIsAddModalOpen(false)}
-                className="text-slate-400 hover:text-white p-1"
+                className="text-slate-400 hover:text-slate-700 p-1"
               >
-                <X className="w-5 h-5" />
+                <X className="w-4 h-4" />
               </button>
             </div>
 
-            <form onSubmit={handleAddStaff} className="space-y-3.5 text-xs">
+            <form onSubmit={handleAddStaff} className="space-y-3.5 text-xs font-body">
               <div className="grid grid-cols-2 gap-3">
                 <div>
-                  <label className="block text-slate-300 font-semibold mb-1">First Name *</label>
+                  <label className="block text-slate-700 font-label font-semibold mb-1">First Name *</label>
                   <input
                     type="text"
                     required
                     placeholder="e.g. Rahim"
                     value={addForm.first_name}
                     onChange={e => setAddForm({ ...addForm, first_name: e.target.value })}
-                    className="w-full bg-slate-950 border border-slate-800 rounded-xl px-3 py-2.5 text-white focus:outline-none focus:border-teal-500"
+                    className="w-full bg-white border border-[#d1d5dc] rounded-sm px-3 py-2 text-[#1b1c1d] focus:outline-none focus:border-[#094cb2]"
                   />
                 </div>
                 <div>
-                  <label className="block text-slate-300 font-semibold mb-1">Last Name</label>
+                  <label className="block text-slate-700 font-label font-semibold mb-1">Last Name</label>
                   <input
                     type="text"
                     placeholder="e.g. Ahmed"
                     value={addForm.last_name}
                     onChange={e => setAddForm({ ...addForm, last_name: e.target.value })}
-                    className="w-full bg-slate-950 border border-slate-800 rounded-xl px-3 py-2.5 text-white focus:outline-none focus:border-teal-500"
+                    className="w-full bg-white border border-[#d1d5dc] rounded-sm px-3 py-2 text-[#1b1c1d] focus:outline-none focus:border-[#094cb2]"
                   />
                 </div>
               </div>
 
               <div>
-                <label className="block text-slate-300 font-semibold mb-1 flex items-center gap-1">
-                  <Phone className="w-3.5 h-3.5 text-teal-400" />
+                <label className="block text-slate-700 font-label font-semibold mb-1 flex items-center gap-1">
+                  <Phone className="w-3.5 h-3.5 text-[#094cb2]" />
                   <span>Phone Number (Login ID) *</span>
                 </label>
                 <input
@@ -283,13 +289,13 @@ export default function StaffTab() {
                   placeholder="017xxxxxxxx"
                   value={addForm.phone_number}
                   onChange={e => setAddForm({ ...addForm, phone_number: e.target.value })}
-                  className="w-full bg-slate-950 border border-slate-800 rounded-xl px-3 py-2.5 text-white focus:outline-none focus:border-teal-500 font-mono"
+                  className="w-full bg-white border border-[#d1d5dc] rounded-sm px-3 py-2 text-[#1b1c1d] focus:outline-none focus:border-[#094cb2] font-mono"
                 />
               </div>
 
               <div>
-                <label className="block text-slate-300 font-semibold mb-1 flex items-center gap-1">
-                  <Lock className="w-3.5 h-3.5 text-teal-400" />
+                <label className="block text-slate-700 font-label font-semibold mb-1 flex items-center gap-1">
+                  <Lock className="w-3.5 h-3.5 text-[#094cb2]" />
                   <span>Password *</span>
                 </label>
                 <input
@@ -298,66 +304,59 @@ export default function StaffTab() {
                   placeholder="Min 6 characters"
                   value={addForm.password}
                   onChange={e => setAddForm({ ...addForm, password: e.target.value })}
-                  className="w-full bg-slate-950 border border-slate-800 rounded-xl px-3 py-2.5 text-white focus:outline-none focus:border-teal-500"
+                  className="w-full bg-white border border-[#d1d5dc] rounded-sm px-3 py-2 text-[#1b1c1d] focus:outline-none focus:border-[#094cb2]"
                 />
               </div>
 
               <div>
-                <label className="block text-slate-300 font-semibold mb-2 flex items-center gap-1">
-                  <ShieldCheck className="w-3.5 h-3.5 text-teal-400" />
+                <label className="block text-slate-700 font-label font-semibold mb-1.5 flex items-center gap-1">
+                  <ShieldCheck className="w-3.5 h-3.5 text-[#094cb2]" />
                   <span>Assign Roles *</span>
                 </label>
-                <div className="space-y-2 max-h-32 overflow-y-auto bg-slate-950/50 p-3 rounded-xl border border-slate-800">
+                <div className="space-y-1.5 max-h-32 overflow-y-auto bg-[#faf9fa] p-2.5 rounded-sm border border-[#d1d5dc]">
                   {rolesList.length === 0 ? (
-                    <div className="text-slate-500 text-xs text-center py-2">No roles available</div>
+                    <div className="text-slate-400 text-xs text-center py-2">No roles available</div>
                   ) : (
                     rolesList.map(r => (
                       <label key={r.id} className="flex items-center gap-2 cursor-pointer group">
-                        <div className="relative flex items-center justify-center">
-                          <input
-                            type="checkbox"
-                            checked={(addForm.role_ids || []).includes(r.id)}
-                            onChange={(e) => {
-                              const checked = e.target.checked;
-                              setAddForm(prev => {
-                                const currentIds = prev.role_ids || [];
-                                return {
-                                  ...prev,
-                                  role_ids: checked 
-                                    ? [...currentIds, r.id] 
-                                    : currentIds.filter(id => id !== r.id)
-                                };
-                              });
-                            }}
-                            className="peer appearance-none w-4 h-4 border border-slate-700 rounded bg-slate-900 checked:bg-teal-500 checked:border-teal-500 cursor-pointer transition-all"
-                          />
-                          <div className="absolute opacity-0 peer-checked:opacity-100 pointer-events-none text-white">
-                            <svg className="w-3 h-3" viewBox="0 0 20 20" fill="currentColor">
-                              <path fillRule="evenodd" d="M16.707 5.293a1 1 0 010 1.414l-8 8a1 1 0 01-1.414 0l-4-4a1 1 0 011.414-1.414L8 12.586l7.293-7.293a1 1 0 011.414 0z" clipRule="evenodd" />
-                            </svg>
-                          </div>
-                        </div>
-                        <span className="text-xs text-slate-300 group-hover:text-white transition-colors">{r.name}</span>
+                        <input
+                          type="checkbox"
+                          checked={(addForm.role_ids || []).includes(r.id)}
+                          onChange={(e) => {
+                            const checked = e.target.checked;
+                            setAddForm(prev => {
+                              const currentIds = prev.role_ids || [];
+                              return {
+                                ...prev,
+                                role_ids: checked 
+                                  ? [...currentIds, r.id] 
+                                  : currentIds.filter(id => id !== r.id)
+                              };
+                            });
+                          }}
+                          className="w-4 h-4 rounded-xs border-[#d1d5dc] text-[#094cb2] focus:ring-[#094cb2] cursor-pointer"
+                        />
+                        <span className="text-xs text-slate-700 font-body">{r.name}</span>
                       </label>
                     ))
                   )}
                 </div>
               </div>
 
-              <div className="pt-2 flex items-center justify-end gap-2">
+              <div className="pt-2 flex items-center justify-end gap-2 border-t border-[#d1d5dc]">
                 <button
                   type="button"
                   onClick={() => setIsAddModalOpen(false)}
-                  className="px-4 py-2.5 rounded-xl border border-slate-700 text-slate-300 hover:bg-slate-800 font-bold transition cursor-pointer"
+                  className="px-3.5 py-1.5 rounded-sm border border-[#d1d5dc] text-slate-700 hover:bg-[#f7f6f7] font-label font-semibold text-xs transition cursor-pointer"
                 >
                   Cancel
                 </button>
                 <button
                   type="submit"
                   disabled={addingLoading}
-                  className="bg-gradient-to-r from-teal-600 to-emerald-600 hover:from-teal-500 hover:to-emerald-500 text-white font-bold px-5 py-2.5 rounded-xl shadow-lg shadow-teal-600/30 transition flex items-center gap-2 cursor-pointer disabled:opacity-50"
+                  className="bg-[#094cb2] hover:bg-[#083e91] text-white font-label font-semibold px-4 py-1.5 rounded-sm shadow-sm transition flex items-center gap-1.5 cursor-pointer disabled:opacity-50 text-xs"
                 >
-                  {addingLoading ? <RefreshCw className="w-4 h-4 animate-spin" /> : 'Create Staff Member'}
+                  {addingLoading ? <RefreshCw className="w-3.5 h-3.5 animate-spin" /> : 'Create Staff Member'}
                 </button>
               </div>
             </form>

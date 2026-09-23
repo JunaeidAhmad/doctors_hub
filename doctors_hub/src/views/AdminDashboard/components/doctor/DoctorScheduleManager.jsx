@@ -1,7 +1,7 @@
 import React, { useState } from 'react';
 import { 
   Clock, Calendar, Plus, Trash2, Building2, 
-  CheckCircle, AlertCircle, RefreshCw, X 
+  CheckCircle, AlertCircle, RefreshCw, X, ShieldAlert 
 } from 'lucide-react';
 import { useAdminContext } from '../../context/AdminContext';
 import { api } from '../../../../services/api';
@@ -14,7 +14,6 @@ import {
   checkScheduleConflict
 } from '../../../../utils/scheduleUtils';
 import { formatFacilityName } from '../../../../utils/facilityUtils';
-
 
 export default function DoctorScheduleManager() {
   const {
@@ -116,21 +115,26 @@ export default function DoctorScheduleManager() {
   return (
     <div className="space-y-6">
       
-      {/* Header */}
-      <div className="bg-gradient-to-r from-slate-900 via-slate-800 to-slate-900 border border-slate-700/80 rounded-3xl p-6 shadow-xl flex flex-col sm:flex-row sm:items-center justify-between gap-4">
+      {/* Editorial Header */}
+      <div className="bg-white border border-[#d1d5dc] rounded-sm p-6 shadow-sm flex flex-col sm:flex-row sm:items-center justify-between gap-4">
         <div>
-          <h2 className="text-2xl font-black text-white flex items-center gap-2">
-            <Clock className="w-6 h-6 text-cyan-400" />
+          <div className="flex items-center gap-2 mb-1.5">
+            <span className="font-label text-[10px] uppercase font-bold px-2 py-0.5 rounded-sm bg-[#e7ebff] text-[#094cb2] border border-[#cbd5e1] tracking-wider">
+              Consultation Availability
+            </span>
+          </div>
+          <h2 className="text-xl sm:text-2xl font-serif font-bold text-slate-900 flex items-center gap-2">
+            <Clock className="w-5 h-5 text-[#094cb2]" />
             <span>Weekly Consultation Schedule Builder</span>
           </h2>
-          <p className="text-xs text-slate-400 mt-1">
-            Configure visiting days, consultation hours, and time slots per hospital OPD and chamber.
+          <p className="text-xs font-body text-slate-500 mt-1 max-w-2xl">
+            Configure visiting days, OPD consultation hours, and appointment time slots across hospital OPDs and chamber clinics.
           </p>
         </div>
 
         <button
           onClick={() => handleOpenAddModal()}
-          className="px-4 py-2.5 bg-cyan-600 hover:bg-cyan-500 text-white font-bold text-xs rounded-xl flex items-center gap-2 shadow-lg shadow-cyan-600/20 transition cursor-pointer self-start sm:self-auto"
+          className="px-4 py-2 bg-[#094cb2] hover:bg-[#083e91] text-white font-label text-xs font-semibold uppercase tracking-wider rounded-sm flex items-center gap-2 shadow-sm transition cursor-pointer self-start sm:self-auto"
         >
           <Plus className="w-4 h-4" />
           <span>Add Weekly Slot</span>
@@ -142,22 +146,30 @@ export default function DoctorScheduleManager() {
         {affiliations.map((aff, idx) => {
           const schedules = Array.isArray(aff.schedules) ? aff.schedules : [];
           return (
-            <div key={aff.id || idx} className="bg-slate-900 border border-slate-800 rounded-3xl p-6 shadow-xl space-y-4">
+            <div key={aff.id || idx} className="bg-white border border-[#d1d5dc] rounded-sm p-6 shadow-sm space-y-4">
               
-              <div className="flex items-center justify-between border-b border-slate-800 pb-4">
+              <div className="flex items-center justify-between border-b border-[#e3e5ea] pb-4">
                 <div className="flex items-center gap-3">
-                  <div className="p-2.5 rounded-xl bg-teal-500/10 border border-teal-500/20 text-teal-400">
-                    <Building2 className="w-5 h-5" />
+                  <div className="w-9 h-9 rounded-sm bg-[#e7ebff] border border-[#cbd5e1] text-[#094cb2] flex items-center justify-center shrink-0">
+                    <Building2 className="w-4 h-4" />
                   </div>
                   <div>
-                    <h3 className="text-lg font-bold text-white">
+                    <h3 className="text-base font-serif font-bold text-slate-900 leading-tight">
                       {aff.hospital?.name || aff.diagnostic_center?.name || aff.chamber_name || aff.facility_name || 'Consultation Location'}
                     </h3>
-                    <p className="text-xs text-slate-400">
-                      Fee: ৳{aff.fee || 1500}
+                    <p className="text-xs font-body text-slate-500">
+                      Standard Fee: <span className="font-semibold text-slate-800">৳{aff.fee || 1500}</span>
                     </p>
                   </div>
                 </div>
+
+                <button
+                  onClick={() => handleOpenAddModal(aff.id)}
+                  className="px-2.5 py-1 text-xs font-label font-semibold text-[#094cb2] hover:bg-[#e7ebff] border border-[#cbd5e1] rounded-sm transition flex items-center gap-1"
+                >
+                  <Plus className="w-3.5 h-3.5" />
+                  <span>Add Slot</span>
+                </button>
               </div>
 
               {/* Weekly Days Grid */}
@@ -165,16 +177,19 @@ export default function DoctorScheduleManager() {
                 {schedules.map((s, sIdx) => {
                   const duration = calculateSlotDuration(s.start_time, s.end_time);
                   return (
-                    <div key={s.id || sIdx} className="p-3.5 rounded-2xl bg-slate-950 border border-slate-800/80 hover:border-cyan-500/40 transition flex items-center justify-between text-xs">
+                    <div 
+                      key={s.id || sIdx} 
+                      className="p-3.5 rounded-sm bg-[#f7f6f7] border border-[#d1d5dc] hover:border-[#094cb2] transition flex items-center justify-between text-xs"
+                    >
                       <div>
-                        <div className="font-bold text-cyan-300 flex items-center gap-1.5">
-                          <Calendar className="w-3.5 h-3.5 text-cyan-400" />
+                        <div className="font-serif font-bold text-slate-900 flex items-center gap-1.5">
+                          <Calendar className="w-3.5 h-3.5 text-[#094cb2]" />
                           <span>{s.day_of_week}</span>
                         </div>
-                        <div className="text-slate-300 text-[11px] font-mono mt-1 flex items-center gap-1.5 flex-wrap">
+                        <div className="text-slate-600 text-[11px] font-mono mt-1.5 flex items-center gap-1.5 flex-wrap">
                           <span>{formatDisplayTime(s.start_time)} - {formatDisplayTime(s.end_time)}</span>
                           {duration && (
-                            <span className="text-[10px] font-sans text-cyan-400/80 bg-cyan-950/80 border border-cyan-800/40 px-1.5 py-0.5 rounded-md">
+                            <span className="text-[10px] font-sans text-[#094cb2] bg-[#e7ebff] border border-[#cbd5e1] px-1.5 py-0.2 rounded-xs">
                               {duration}
                             </span>
                           )}
@@ -183,7 +198,7 @@ export default function DoctorScheduleManager() {
 
                       <button
                         onClick={() => setScheduleToDelete(s)}
-                        className="p-1.5 text-slate-500 hover:text-rose-400 rounded-lg hover:bg-rose-500/20 transition cursor-pointer"
+                        className="p-1.5 text-slate-400 hover:text-rose-600 rounded-sm hover:bg-rose-50 transition cursor-pointer"
                         title="Delete Slot"
                       >
                         <Trash2 className="w-4 h-4" />
@@ -193,8 +208,8 @@ export default function DoctorScheduleManager() {
                 })}
 
                 {schedules.length === 0 && (
-                  <div className="col-span-full py-6 text-center text-slate-500 text-xs">
-                    No visiting schedule slots configured for this location yet. Click "Add Weekly Slot" to configure visiting hours.
+                  <div className="col-span-full py-8 text-center text-slate-400 text-xs font-body">
+                    No visiting schedule slots configured for this location yet. Click &quot;Add Weekly Slot&quot; to configure visiting hours.
                   </div>
                 )}
               </div>
@@ -204,54 +219,59 @@ export default function DoctorScheduleManager() {
         })}
 
         {affiliations.length === 0 && (
-          <div className="bg-slate-900 border border-slate-800 rounded-2xl p-12 text-center text-slate-500 text-xs">
-            No chambers or hospitals found. Please add a Practice Location under the "Chambers & Affiliations" tab first.
+          <div className="bg-white border border-[#d1d5dc] rounded-sm p-12 text-center text-slate-400 text-xs font-body">
+            No chambers or hospitals found. Please add a Practice Location under the &quot;Chambers &amp; Affiliations&quot; tab first.
           </div>
         )}
       </div>
 
       {/* Add Slot Modal */}
       {showModal && (
-        <div className="fixed inset-0 bg-slate-950/80 backdrop-blur-sm z-50 flex items-center justify-center p-4">
-          <div className="bg-slate-900 border border-slate-800 rounded-3xl max-w-lg w-full p-6 shadow-2xl space-y-4 max-h-[90vh] overflow-y-auto">
-            <div className="flex items-center justify-between border-b border-slate-800 pb-3">
+        <div className="fixed inset-0 bg-slate-900/60 backdrop-blur-xs z-50 flex items-center justify-center p-4">
+          <div className="bg-white border border-[#d1d5dc] rounded-sm max-w-lg w-full p-6 shadow-xl space-y-4 max-h-[90vh] overflow-y-auto">
+            <div className="flex items-center justify-between border-b border-[#e3e5ea] pb-3">
               <div className="flex items-center gap-2">
-                <div className="p-2 rounded-xl bg-cyan-500/10 border border-cyan-500/20 text-cyan-400">
+                <div className="w-8 h-8 rounded-sm bg-[#e7ebff] border border-[#cbd5e1] text-[#094cb2] flex items-center justify-center">
                   <Clock className="w-4 h-4" />
                 </div>
-                <h3 className="font-bold text-white text-base">Add Weekly Visiting Slot</h3>
+                <h3 className="font-serif font-bold text-slate-900 text-base">Add Weekly Visiting Slot</h3>
               </div>
-              <button onClick={() => setShowModal(false)} className="text-slate-400 hover:text-white p-1 rounded-lg hover:bg-slate-800 transition cursor-pointer">
+              <button 
+                onClick={() => setShowModal(false)} 
+                className="text-slate-400 hover:text-slate-700 p-1 rounded-sm transition cursor-pointer"
+              >
                 <X className="w-5 h-5" />
               </button>
             </div>
 
             {/* Error Display */}
             {localErr && (
-              <div className="p-3 bg-rose-500/20 border border-rose-500/40 text-rose-300 text-xs rounded-xl flex items-start gap-2">
-                <AlertCircle className="w-4 h-4 text-rose-400 shrink-0 mt-0.5" />
+              <div className="p-3 bg-rose-50 border border-rose-200 text-rose-700 text-xs rounded-sm flex items-start gap-2">
+                <AlertCircle className="w-4 h-4 text-rose-600 shrink-0 mt-0.5" />
                 <span>{localErr}</span>
               </div>
             )}
 
             {/* Real-time Conflict Alert */}
             {!localErr && conflictCheck.hasConflict && (
-              <div className="p-3 bg-amber-500/10 border border-amber-500/30 text-amber-300 text-xs rounded-xl flex items-start gap-2">
-                <AlertCircle className="w-4 h-4 text-amber-400 shrink-0 mt-0.5" />
+              <div className="p-3 bg-amber-50 border border-amber-200 text-amber-800 text-xs rounded-sm flex items-start gap-2">
+                <ShieldAlert className="w-4 h-4 text-amber-600 shrink-0 mt-0.5" />
                 <div>
-                  <span className="font-bold block">Schedule Conflict Detected</span>
-                  <span className="text-[11px] text-amber-200/90">{conflictCheck.error}</span>
+                  <span className="font-bold block font-serif">Schedule Conflict Detected</span>
+                  <span className="text-[11px] text-amber-700">{conflictCheck.error}</span>
                 </div>
               </div>
             )}
 
-            <form onSubmit={handleSaveSchedule} className="space-y-4 text-xs">
+            <form onSubmit={handleSaveSchedule} className="space-y-4 text-xs font-body">
               <div>
-                <label className="block text-slate-300 font-bold mb-1.5">Select Practice Location</label>
+                <label className="block text-slate-700 font-label font-bold uppercase text-[11px] mb-1.5">
+                  Select Practice Location *
+                </label>
                 <select
                   value={selectedAffiliationId}
                   onChange={e => setSelectedAffiliationId(e.target.value)}
-                  className="w-full bg-slate-950 border border-slate-800 rounded-xl px-4 py-2.5 text-white focus:outline-none focus:border-cyan-500 cursor-pointer"
+                  className="w-full bg-white border border-[#d1d5dc] rounded-sm px-3 py-2 text-slate-800 focus:outline-none focus:border-[#094cb2] cursor-pointer"
                 >
                   {affiliations.map(aff => (
                     <option key={aff.id} value={aff.id}>
@@ -262,14 +282,16 @@ export default function DoctorScheduleManager() {
               </div>
 
               <div>
-                <label className="block text-slate-300 font-bold mb-1.5">Day of Week</label>
+                <label className="block text-slate-700 font-label font-bold uppercase text-[11px] mb-1.5">
+                  Day of Week *
+                </label>
                 <select
                   value={dayOfWeek}
                   onChange={e => {
                     setDayOfWeek(e.target.value);
                     setLocalErr('');
                   }}
-                  className="w-full bg-slate-950 border border-slate-800 rounded-xl px-4 py-2.5 text-white focus:outline-none focus:border-cyan-500 cursor-pointer"
+                  className="w-full bg-white border border-[#d1d5dc] rounded-sm px-3 py-2 text-slate-800 focus:outline-none focus:border-[#094cb2] cursor-pointer"
                 >
                   {DAYS_OF_WEEK.map(d => (
                     <option key={d} value={d}>{d}</option>
@@ -278,29 +300,28 @@ export default function DoctorScheduleManager() {
               </div>
 
               {/* Existing schedule on this day */}
-              <div className="p-3 bg-slate-950/60 rounded-xl border border-slate-800/80 space-y-1.5">
-                <div className="text-[11px] font-bold text-slate-400 flex items-center justify-between">
+              <div className="p-3 bg-[#f7f6f7] rounded-sm border border-[#d1d5dc] space-y-1.5">
+                <div className="text-[11px] font-label uppercase font-bold text-slate-500 flex items-center justify-between">
                   <span>Current Schedule on {dayOfWeek}:</span>
-                  <span className="text-[10px] text-slate-500 font-normal">
+                  <span className="text-[10px] text-slate-400 font-normal">
                     {dayExistingSlots.length} slot{dayExistingSlots.length === 1 ? '' : 's'}
                   </span>
                 </div>
                 {dayExistingSlots.length === 0 ? (
-                  <div className="text-[10px] text-emerald-400 font-medium flex items-center gap-1.5">
-                    <CheckCircle className="w-3.5 h-3.5" />
-                    <span>No slots on {dayOfWeek}. Day is available!</span>
+                  <div className="text-[11px] text-emerald-700 font-medium flex items-center gap-1.5">
+                    <CheckCircle className="w-3.5 h-3.5 text-emerald-600" />
+                    <span>No slots configured on {dayOfWeek}. Day is fully open!</span>
                   </div>
                 ) : (
                   <div className="flex flex-wrap gap-1.5 pt-0.5">
                     {dayExistingSlots.map((s, idx) => (
-                      <span key={idx} className="px-2 py-0.5 rounded-lg bg-slate-900 border border-slate-700/60 text-[10px] text-slate-300 font-mono">
-                        {formatDisplayTime(s.start_time)} - {formatDisplayTime(s.end_time)} <span className="text-slate-500">({s.loc})</span>
+                      <span key={idx} className="px-2 py-0.5 rounded-sm bg-white border border-[#d1d5dc] text-[10px] text-slate-700 font-mono">
+                        {formatDisplayTime(s.start_time)} - {formatDisplayTime(s.end_time)} <span className="text-slate-400">({s.loc})</span>
                       </span>
                     ))}
                   </div>
                 )}
               </div>
-
 
               {/* Start Time and End Time Pickers */}
               <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
@@ -325,43 +346,43 @@ export default function DoctorScheduleManager() {
               </div>
 
               {/* Live Time Range & Duration Summary Bar */}
-              <div className={`p-3 rounded-xl border flex items-center justify-between transition-colors ${
+              <div className={`p-3 rounded-sm border flex items-center justify-between transition-colors ${
                 conflictCheck.hasConflict
-                  ? 'bg-amber-500/10 border-amber-500/30 text-amber-300'
-                  : 'bg-slate-950/70 border-slate-800/80 text-slate-300'
+                  ? 'bg-amber-50 border-amber-200 text-amber-800'
+                  : 'bg-[#f7f6f7] border-[#d1d5dc] text-slate-700'
               }`}>
                 <div className="flex items-center gap-2">
-                  <Clock className="w-4 h-4 text-cyan-400 shrink-0" />
+                  <Clock className="w-4 h-4 text-[#094cb2] shrink-0" />
                   <div className="text-xs">
-                    <span className="font-bold text-white font-mono">{formatDisplayTime(startTime)}</span>
-                    <span className="text-slate-500 mx-1.5 font-bold">➔</span>
-                    <span className="font-bold text-white font-mono">{formatDisplayTime(endTime)}</span>
+                    <span className="font-bold text-slate-900 font-mono">{formatDisplayTime(startTime)}</span>
+                    <span className="text-slate-400 mx-1.5 font-bold">➔</span>
+                    <span className="font-bold text-slate-900 font-mono">{formatDisplayTime(endTime)}</span>
                   </div>
                 </div>
 
                 {currentDuration ? (
-                  <span className="px-2.5 py-0.5 rounded-lg bg-teal-500/15 border border-teal-500/30 text-teal-300 text-[11px] font-bold">
-                    ⏱️ {currentDuration}
+                  <span className="px-2 py-0.5 rounded-sm bg-[#e7ebff] border border-[#cbd5e1] text-[#094cb2] text-[11px] font-bold font-mono">
+                    {currentDuration}
                   </span>
                 ) : (
-                  <span className="px-2 py-0.5 rounded-lg bg-rose-500/15 border border-rose-500/30 text-rose-300 text-[10px] font-bold">
+                  <span className="px-2 py-0.5 rounded-sm bg-rose-50 border border-rose-200 text-rose-700 text-[10px] font-bold">
                     Invalid Slot Duration
                   </span>
                 )}
               </div>
 
-              <div className="flex justify-end gap-2 pt-3 border-t border-slate-800">
+              <div className="flex justify-end gap-2 pt-3 border-t border-[#e3e5ea]">
                 <button
                   type="button"
                   onClick={() => setShowModal(false)}
-                  className="px-4 py-2 bg-slate-800 text-slate-300 rounded-xl font-bold hover:bg-slate-700 cursor-pointer"
+                  className="px-4 py-2 border border-[#d1d5dc] bg-white hover:bg-[#f7f6f7] text-slate-700 rounded-sm font-label text-xs font-semibold uppercase tracking-wider cursor-pointer"
                 >
                   Cancel
                 </button>
                 <button
                   type="submit"
                   disabled={saving || conflictCheck.hasConflict}
-                  className="px-4 py-2 bg-cyan-600 hover:bg-cyan-500 text-white rounded-xl font-bold flex items-center gap-1.5 shadow-md disabled:opacity-50 disabled:cursor-not-allowed cursor-pointer"
+                  className="px-4 py-2 bg-[#094cb2] hover:bg-[#083e91] text-white rounded-sm font-label text-xs font-semibold uppercase tracking-wider flex items-center gap-1.5 shadow-sm disabled:opacity-50 disabled:cursor-not-allowed cursor-pointer"
                 >
                   {saving ? <RefreshCw className="w-3.5 h-3.5 animate-spin" /> : 'Save Slot'}
                 </button>
@@ -373,28 +394,28 @@ export default function DoctorScheduleManager() {
 
       {/* Delete Slot Confirmation Modal */}
       {scheduleToDelete && (
-        <div className="fixed inset-0 bg-slate-950/80 backdrop-blur-sm z-50 flex items-center justify-center p-4">
-          <div className="bg-slate-900 border border-slate-700/80 rounded-3xl max-w-md w-full p-6 shadow-2xl space-y-4">
-            <div className="flex items-center gap-3 border-b border-slate-800 pb-4">
-              <div className="w-12 h-12 rounded-2xl bg-rose-500/10 border border-rose-500/30 flex items-center justify-center text-rose-400 shrink-0">
-                <Trash2 className="w-6 h-6" />
+        <div className="fixed inset-0 bg-slate-900/60 backdrop-blur-xs z-50 flex items-center justify-center p-4">
+          <div className="bg-white border border-[#d1d5dc] rounded-sm max-w-md w-full p-6 shadow-xl space-y-4">
+            <div className="flex items-center gap-3 border-b border-[#e3e5ea] pb-3">
+              <div className="w-10 h-10 rounded-sm bg-rose-50 border border-rose-200 flex items-center justify-center text-rose-600 shrink-0">
+                <Trash2 className="w-5 h-5" />
               </div>
               <div>
-                <h3 className="text-base font-bold text-white">Delete Visiting Slot</h3>
-                <p className="text-xs text-slate-400">This action cannot be undone.</p>
+                <h3 className="text-base font-serif font-bold text-slate-900">Delete Visiting Slot</h3>
+                <p className="text-xs text-slate-500 font-body">This will remove this consultation time slot.</p>
               </div>
             </div>
 
-            <div className="bg-slate-950/70 p-4 rounded-2xl border border-slate-800/80 text-xs space-y-2">
-              <p className="text-slate-300">
-                Are you sure you want to delete this visiting schedule slot?
+            <div className="bg-[#f7f6f7] p-3.5 rounded-sm border border-[#d1d5dc] text-xs space-y-2 font-body">
+              <p className="text-slate-700">
+                Are you sure you want to remove this consultation schedule slot from your active visiting timetable?
               </p>
-              <div className="flex items-center gap-2 text-cyan-300 font-bold mt-2 pt-2 border-t border-slate-800/60">
-                <Calendar className="w-4 h-4 text-cyan-400" />
+              <div className="flex items-center gap-2 text-slate-900 font-bold mt-2 pt-2 border-t border-[#e3e5ea]">
+                <Calendar className="w-4 h-4 text-[#094cb2]" />
                 <span>{scheduleToDelete.day_of_week}</span>
-                <span className="text-slate-500">•</span>
-                <Clock className="w-4 h-4 text-cyan-400" />
-                <span className="font-mono">{formatDisplayTime(scheduleToDelete.start_time)} - {formatDisplayTime(scheduleToDelete.end_time)}</span>
+                <span className="text-slate-300">•</span>
+                <Clock className="w-4 h-4 text-[#094cb2]" />
+                <span className="font-mono text-slate-700">{formatDisplayTime(scheduleToDelete.start_time)} - {formatDisplayTime(scheduleToDelete.end_time)}</span>
               </div>
             </div>
 
@@ -403,7 +424,7 @@ export default function DoctorScheduleManager() {
                 type="button"
                 disabled={isDeleting}
                 onClick={() => setScheduleToDelete(null)}
-                className="px-4 py-2 bg-slate-800 hover:bg-slate-700 text-slate-300 rounded-xl font-bold text-xs transition cursor-pointer"
+                className="px-4 py-2 border border-[#d1d5dc] bg-white hover:bg-[#f7f6f7] text-slate-700 rounded-sm font-label text-xs font-semibold uppercase tracking-wider cursor-pointer"
               >
                 Cancel
               </button>
@@ -411,7 +432,7 @@ export default function DoctorScheduleManager() {
                 type="button"
                 disabled={isDeleting}
                 onClick={handleConfirmDelete}
-                className="px-4 py-2 bg-rose-600 hover:bg-rose-500 text-white rounded-xl font-bold text-xs flex items-center gap-1.5 shadow-lg shadow-rose-600/30 transition disabled:opacity-50 cursor-pointer"
+                className="px-4 py-2 bg-rose-600 hover:bg-rose-700 text-white rounded-sm font-label text-xs font-semibold uppercase tracking-wider flex items-center gap-1.5 shadow-sm transition disabled:opacity-50 cursor-pointer"
               >
                 {isDeleting ? (
                   <>

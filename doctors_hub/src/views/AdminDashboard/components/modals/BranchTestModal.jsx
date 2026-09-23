@@ -1,5 +1,5 @@
 import React, { useState, useEffect } from 'react';
-import { XCircle, Calculator, Building2, FlaskConical, CheckCircle2, Circle, Clock, TestTube } from 'lucide-react';
+import { X, Calculator, Building2, FlaskConical, CheckCircle2, Circle, Clock, TestTube } from 'lucide-react';
 import { useAdminContext } from '../../context/AdminContext';
 import { api } from '../../../../services/api';
 import { calculateFinalPrice } from '../../utils/adminHelpers';
@@ -125,35 +125,47 @@ export default function BranchTestModal() {
       title={isEditing ? 'Edit Offered Test' : 'Add Offered Test'}
       footer={
         <>
-          <button type="button" onClick={() => setShowBranchTestModal(false)} className="px-5 py-2.5 bg-slate-800 text-slate-300 font-bold rounded-xl hover:bg-slate-700">Cancel</button>
-          <button type="submit" form="drawer-form" className="px-6 py-2.5 bg-teal-600 hover:bg-teal-500 text-white font-bold rounded-xl shadow-lg shadow-teal-600/20">Save</button>
+          <button 
+            type="button" 
+            onClick={() => setShowBranchTestModal(false)} 
+            className="px-4 py-2 border border-[#d1d5dc] bg-white hover:bg-[#f7f6f7] text-slate-700 font-label text-xs font-semibold uppercase tracking-wider rounded-sm transition cursor-pointer"
+          >
+            Cancel
+          </button>
+          <button 
+            type="submit" 
+            form="drawer-form" 
+            className="px-5 py-2 bg-[#094cb2] hover:bg-[#083e91] text-white font-label text-xs font-semibold uppercase tracking-wider rounded-sm shadow-sm transition cursor-pointer"
+          >
+            Save Offering
+          </button>
         </>
       }
     >
-      <form id="drawer-form" onSubmit={handleSaveBranchTest} className="space-y-4 text-sm">
+      <form id="drawer-form" onSubmit={handleSaveBranchTest} className="space-y-4 text-xs font-body">
         {/* EDITING TEST HEADER BANNER */}
         {isEditing && (
-          <div className="p-4 bg-gradient-to-r from-amber-500/10 via-slate-900 to-slate-900 border border-amber-500/20 rounded-2xl">
+          <div className="p-4 bg-[#f7f6f7] border border-[#d1d5dc] rounded-sm">
             <div className="flex items-start gap-3">
-              <div className="p-2.5 rounded-xl bg-amber-500/20 border border-amber-500/30 text-amber-400 shrink-0">
+              <div className="w-9 h-9 rounded-sm bg-[#e7ebff] border border-[#cbd5e1] text-[#094cb2] flex items-center justify-center shrink-0">
                 <TestTube className="w-5 h-5" />
               </div>
               <div className="min-w-0 flex-1">
-                <div className="text-[10px] font-extrabold text-amber-400 uppercase tracking-wider">Offered Test</div>
-                <h4 className="text-white font-bold text-base leading-tight mt-0.5">{testName}</h4>
-                <div className="flex flex-wrap items-center gap-2 mt-2">
+                <div className="font-label text-[10px] font-bold text-[#094cb2] uppercase tracking-wider">Offered Test Details</div>
+                <h4 className="text-slate-900 font-serif font-bold text-base leading-tight mt-0.5">{testName}</h4>
+                <div className="flex flex-wrap items-center gap-1.5 mt-2">
                   {categoryName && (
-                    <span className="px-2 py-0.5 rounded-md bg-slate-800 border border-slate-700 text-[10px] font-semibold text-slate-300">
+                    <span className="px-2 py-0.5 rounded-sm bg-white border border-[#d1d5dc] text-[10px] font-semibold text-slate-600">
                       {categoryName}
                     </span>
                   )}
                   {sampleType && (
-                    <span className="px-2 py-0.5 rounded-md bg-slate-800 border border-slate-700 text-[10px] font-medium text-slate-400">
+                    <span className="px-2 py-0.5 rounded-sm bg-white border border-[#d1d5dc] text-[10px] font-medium text-slate-500">
                       Sample: {sampleType}
                     </span>
                   )}
                   {facilityName && (
-                    <span className="px-2 py-0.5 rounded-md bg-slate-800/80 text-[10px] font-medium text-slate-400">
+                    <span className="px-2 py-0.5 rounded-sm bg-white border border-[#d1d5dc] text-[10px] font-medium text-slate-500">
                       {facilityName} {branchName ? `(${branchName})` : ''}
                     </span>
                   )}
@@ -168,20 +180,20 @@ export default function BranchTestModal() {
           <>
             {/* FACILITY TYPE SELECTOR */}
             <div>
-              <label className="block text-slate-300 font-semibold mb-1">Facility Type *</label>
+              <label className="block text-slate-700 font-label font-bold uppercase text-[11px] mb-1">Facility Type *</label>
               {isFacilityAdmin ? (
-                <div className="px-3 py-2 bg-slate-950 border border-slate-800 rounded-xl text-slate-400 cursor-not-allowed">
+                <div className="px-3 py-2 bg-[#f7f6f7] border border-[#d1d5dc] rounded-sm text-slate-600 font-semibold cursor-not-allowed">
                   {branchTestForm.facility_type === 'hospital' ? 'Hospital Lab' : 'Diagnostic Center'}
                 </div>
               ) : (
-                <div className="grid grid-cols-2 gap-2 p-1 bg-slate-950 border border-slate-800 rounded-xl">
+                <div className="grid grid-cols-2 gap-2 p-1 bg-[#f7f6f7] border border-[#d1d5dc] rounded-sm">
                   <button
                     type="button"
                     onClick={() => setBranchTestForm({ ...branchTestForm, facility_type: 'diagnostic_center', hospital: '' })}
-                    className={`py-2 px-3 rounded-lg font-bold flex items-center justify-center gap-1.5 transition ${
+                    className={`py-2 px-3 rounded-sm font-label text-xs uppercase font-bold flex items-center justify-center gap-1.5 transition ${
                       branchTestForm.facility_type === 'diagnostic_center'
-                        ? 'bg-cyan-600 text-white shadow-md'
-                        : 'text-slate-400 hover:text-white'
+                        ? 'bg-[#094cb2] text-white shadow-xs'
+                        : 'text-slate-600 hover:text-slate-900 bg-white border border-[#d1d5dc]'
                     }`}
                   >
                     <FlaskConical className="w-3.5 h-3.5" /> Diagnostic Center
@@ -189,10 +201,10 @@ export default function BranchTestModal() {
                   <button
                     type="button"
                     onClick={() => setBranchTestForm({ ...branchTestForm, facility_type: 'hospital', center: '' })}
-                    className={`py-2 px-3 rounded-lg font-bold flex items-center justify-center gap-1.5 transition ${
+                    className={`py-2 px-3 rounded-sm font-label text-xs uppercase font-bold flex items-center justify-center gap-1.5 transition ${
                       branchTestForm.facility_type === 'hospital'
-                        ? 'bg-emerald-600 text-white shadow-md'
-                        : 'text-slate-400 hover:text-white'
+                        ? 'bg-[#094cb2] text-white shadow-xs'
+                        : 'text-slate-600 hover:text-slate-900 bg-white border border-[#d1d5dc]'
                     }`}
                   >
                     <Building2 className="w-3.5 h-3.5" /> Hospital Lab
@@ -204,13 +216,13 @@ export default function BranchTestModal() {
             {/* TARGET SELECTION DEPENDING ON FACILITY TYPE */}
             {branchTestForm.facility_type === 'diagnostic_center' ? (
               <div>
-                <label className="block text-slate-300 font-semibold mb-1">Select Standalone Diagnostic Center *</label>
+                <label className="block text-slate-700 font-label font-bold uppercase text-[11px] mb-1">Select Diagnostic Center *</label>
                 <select
                   required
                   disabled={isFacilityAdmin}
                   value={branchTestForm.center}
                   onChange={e => setBranchTestForm({ ...branchTestForm, center: e.target.value })}
-                  className="w-full bg-slate-950 border border-slate-800 rounded-xl px-3 py-2 text-white font-bold disabled:opacity-50 disabled:cursor-not-allowed"
+                  className="w-full bg-white border border-[#d1d5dc] rounded-sm px-3 py-2 text-slate-800 font-semibold focus:outline-none focus:border-[#094cb2] disabled:opacity-50 disabled:cursor-not-allowed"
                 >
                   <option value="">Select Diagnostic Center</option>
                   {(diagnosticCenters || []).map(dc => (
@@ -220,13 +232,13 @@ export default function BranchTestModal() {
               </div>
             ) : (
               <div>
-                <label className="block text-slate-300 font-semibold mb-1">Select Hospital (Internal Diagnostics) *</label>
+                <label className="block text-slate-700 font-label font-bold uppercase text-[11px] mb-1">Select Hospital (Internal Diagnostics) *</label>
                 <select
                   required
                   disabled={isFacilityAdmin}
                   value={branchTestForm.hospital}
                   onChange={e => setBranchTestForm({ ...branchTestForm, hospital: e.target.value })}
-                  className="w-full bg-slate-950 border border-slate-800 rounded-xl px-3 py-2 text-white font-bold disabled:opacity-50 disabled:cursor-not-allowed"
+                  className="w-full bg-white border border-[#d1d5dc] rounded-sm px-3 py-2 text-slate-800 font-semibold focus:outline-none focus:border-[#094cb2] disabled:opacity-50 disabled:cursor-not-allowed"
                 >
                   <option value="">Select Hospital Branch</option>
                   {(hospitals || []).map(h => (
@@ -238,12 +250,12 @@ export default function BranchTestModal() {
 
             {/* SELECT TEST */}
             <div>
-              <label className="block text-slate-300 font-semibold mb-1">Select Test *</label>
+              <label className="block text-slate-700 font-label font-bold uppercase text-[11px] mb-1">Select Diagnostic Test *</label>
               <select
                 required
                 value={branchTestForm.test}
                 onChange={e => setBranchTestForm({ ...branchTestForm, test: e.target.value })}
-                className="w-full bg-slate-950 border border-slate-800 rounded-xl px-3 py-2 text-white font-bold"
+                className="w-full bg-white border border-[#d1d5dc] rounded-sm px-3 py-2 text-slate-800 font-semibold focus:outline-none focus:border-[#094cb2]"
               >
                 <option value="">Select Diagnostic Test</option>
                 {(tests || []).map(t => (
@@ -257,7 +269,7 @@ export default function BranchTestModal() {
         {/* PRICING FIELDS */}
         <div className="grid grid-cols-2 gap-3">
           <div>
-            <label className="block text-slate-300 font-semibold mb-1">Original Price (৳) *</label>
+            <label className="block text-slate-700 font-label font-bold uppercase text-[11px] mb-1">Original Price (৳) *</label>
             <input
               type="number"
               required
@@ -267,11 +279,11 @@ export default function BranchTestModal() {
                 const calcPrice = calculateFinalPrice(newOrig, branchTestForm.discount_percent);
                 setBranchTestForm({ ...branchTestForm, price: newOrig, calculated_price: calcPrice });
               }}
-              className="w-full bg-slate-950 border border-slate-800 rounded-xl px-3 py-2 text-white font-mono"
+              className="w-full bg-white border border-[#d1d5dc] rounded-sm px-3 py-2 text-slate-900 font-mono focus:outline-none focus:border-[#094cb2]"
             />
           </div>
           <div>
-            <label className="block text-slate-300 font-semibold mb-1">Discount Tag</label>
+            <label className="block text-slate-700 font-label font-bold uppercase text-[11px] mb-1">Discount Tag</label>
             <input
               type="text"
               placeholder="e.g. 25% OFF"
@@ -281,41 +293,41 @@ export default function BranchTestModal() {
                 const calcPrice = calculateFinalPrice(branchTestForm.price, newDist);
                 setBranchTestForm({ ...branchTestForm, discount_percent: newDist, calculated_price: calcPrice });
               }}
-              className="w-full bg-slate-950 border border-slate-800 rounded-xl px-3 py-2 text-white"
+              className="w-full bg-white border border-[#d1d5dc] rounded-sm px-3 py-2 text-slate-900 focus:outline-none focus:border-[#094cb2]"
             />
           </div>
         </div>
 
         <div>
-          <label className="block text-emerald-400 font-bold mb-1">Final Discounted Offer Price (৳) *</label>
+          <label className="block text-slate-700 font-label font-bold uppercase text-[11px] mb-1">Final Discounted Offer Price (৳) *</label>
           <input
             type="number"
             required
             value={branchTestForm.calculated_price}
             onChange={e => setBranchTestForm({ ...branchTestForm, calculated_price: e.target.value })}
-            className="w-full bg-slate-950 border border-emerald-500/50 rounded-xl px-3 py-2 text-emerald-300 font-bold font-mono"
+            className="w-full bg-white border border-[#d1d5dc] rounded-sm px-3 py-2 text-[#094cb2] font-serif font-bold text-sm focus:outline-none focus:border-[#094cb2]"
           />
         </div>
 
         {/* REPORT DELIVERY TIME FIELD */}
         <div>
-          <label className="block text-slate-300 font-semibold mb-1">Report Delivery Time</label>
+          <label className="block text-slate-700 font-label font-bold uppercase text-[11px] mb-1">Report Delivery Time</label>
           <div className="relative">
             <input
               type="text"
               placeholder="e.g. Same Day (6-8 Hours), 24 Hours, 2-3 Days"
               value={branchTestForm.report_time}
               onChange={e => setBranchTestForm({ ...branchTestForm, report_time: e.target.value })}
-              className="w-full bg-slate-950 border border-slate-800 rounded-xl px-3.5 py-2 text-white text-xs placeholder-slate-500 focus:outline-none focus:border-teal-500 transition pr-9"
+              className="w-full bg-white border border-[#d1d5dc] rounded-sm px-3.5 py-2 text-slate-900 text-xs placeholder-slate-400 focus:outline-none focus:border-[#094cb2] transition pr-9"
             />
-            <div className="absolute right-3 top-1/2 -translate-y-1/2 pointer-events-none text-slate-500">
+            <div className="absolute right-3 top-1/2 -translate-y-1/2 pointer-events-none text-slate-400">
               <Clock className="w-4 h-4" />
             </div>
           </div>
         </div>
 
         {/* AVAILABILITY CHECKBOXES */}
-        <div className="flex items-center gap-4 mt-2 pt-2 border-t border-slate-800/80">
+        <div className="flex items-center gap-4 mt-2 pt-2 border-t border-[#e3e5ea]">
           <label className="flex items-center gap-2 cursor-pointer">
             <input 
               type="checkbox" 
@@ -323,8 +335,8 @@ export default function BranchTestModal() {
               onChange={e => setBranchTestForm({...branchTestForm, is_available: e.target.checked})} 
               className="hidden" 
             />
-            {branchTestForm.is_available ? <CheckCircle2 className="w-5 h-5 text-emerald-400" /> : <Circle className="w-5 h-5 text-slate-500" />}
-            <span className="text-slate-300 font-semibold">Available</span>
+            {branchTestForm.is_available ? <CheckCircle2 className="w-4 h-4 text-[#094cb2]" /> : <Circle className="w-4 h-4 text-slate-300" />}
+            <span className="text-slate-700 font-semibold text-xs">Available for Booking</span>
           </label>
 
           <label className="flex items-center gap-2 cursor-pointer">
@@ -334,8 +346,8 @@ export default function BranchTestModal() {
               onChange={e => setBranchTestForm({...branchTestForm, home_sample_collection: e.target.checked})} 
               className="hidden" 
             />
-            {branchTestForm.home_sample_collection ? <CheckCircle2 className="w-5 h-5 text-emerald-400" /> : <Circle className="w-5 h-5 text-slate-500" />}
-            <span className="text-slate-300 font-semibold">Home Collection</span>
+            {branchTestForm.home_sample_collection ? <CheckCircle2 className="w-4 h-4 text-[#094cb2]" /> : <Circle className="w-4 h-4 text-slate-300" />}
+            <span className="text-slate-700 font-semibold text-xs">Home Sample Collection</span>
           </label>
         </div>
       </form>

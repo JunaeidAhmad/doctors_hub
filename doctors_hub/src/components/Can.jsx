@@ -21,14 +21,14 @@ export default function Can({
   const isAllowed = useMemo(() => {
     try {
       const user = getCurrentUser();
-      if (user?.is_superuser || user?.is_super_admin || user?.role === 'super_admin') {
+      if (user?.is_superuser) {
         return true;
       }
 
       const permissionsData = getCurrentPermissions();
       if (!permissionsData) {
         // If permissions data is not yet loaded in localStorage, fallback to true if superuser
-        return Boolean(user?.is_superuser || user?.is_staff);
+        return Boolean(user?.is_superuser);
       }
 
       if (permissionsData.is_super_admin) {
@@ -38,10 +38,6 @@ export default function Can({
       const scopes = Array.isArray(permissionsData.scopes) ? permissionsData.scopes : [];
       if (checkScopeOnly) {
         return scopes.includes(scope);
-      }
-
-      if (scopes.includes('global')) {
-        return true;
       }
 
       // Check module and action

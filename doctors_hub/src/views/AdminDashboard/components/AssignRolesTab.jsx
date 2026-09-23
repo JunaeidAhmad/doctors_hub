@@ -1,24 +1,26 @@
 import React, { useState, useEffect, useMemo, useCallback } from 'react';
 import { 
-  UserCheck, Plus, Trash2, Search, Globe, 
-  Building2, RefreshCw, Eye, User, X
+  UserCheck, UserPlus, Plus, Trash2, Search, Globe, 
+  Building2, RefreshCw, Eye, User, X, ShieldCheck
 } from 'lucide-react';
 import api, { ensureArray } from '../../../services/api';
 import { useAdminContext } from '../context/AdminContext';
 import Can from '../../../components/Can';
 import AssignRoleModal from './roles/AssignRoleModal';
+import CreateUserModal from './roles/CreateUserModal';
 import InspectPermissionsModal from './roles/InspectPermissionsModal';
 import RevokeAssignmentModal from './roles/RevokeAssignmentModal';
 
 export default function AssignRolesTab() {
-  const { hospitals, diagnosticCenters, showToast } = useAdminContext();
+  const { hospitals, diagnosticCenters, showToast, refreshTrigger } = useAdminContext();
   
   // Data States
   const [assignments, setAssignments] = useState([]);
+  const [users, setUsers] = useState([]);
   const [roles, setRoles] = useState([]);
   const [loading, setLoading] = useState(false);
   const [searchTerm, setSearchTerm] = useState('');
-  const [scopeFilter, setScopeFilter] = useState('all'); // 'all' | 'global' | 'facility'
+  const [scopeFilter, setScopeFilter] = useState('all'); // 'all' | 'assigned' | 'unassigned' | 'global' | 'facility' | 'self'
   const [roleFilter, setRoleFilter] = useState('all');
 
   // Assign Modal States
@@ -29,6 +31,10 @@ export default function AssignRolesTab() {
   const [selectedUser, setSelectedUser] = useState(null);
   const [selectedRoleId, setSelectedRoleId] = useState('');
   const [selectedFacilityId, setSelectedFacilityId] = useState('');
+
+  // Create User Modal States
+  const [isCreateUserModalOpen, setIsCreateUserModalOpen] = useState(false);
+  const [initialCreatePhone, setInitialCreatePhone] = useState('');
 
   // Inspect Permissions Modal State
   const [inspectUser, setInspectUser] = useState(null);
@@ -59,12 +65,14 @@ export default function AssignRolesTab() {
   const loadData = useCallback(async () => {
     setLoading(true);
     try {
-      const [assignmentsRes, rolesRes] = await Promise.all([
+      const [assignmentsRes, rolesRes, usersRes] = await Promise.all([
         api.getUserRoles(),
-        api.getRoles()
+        api.getRoles(),
+        api.getUsers()
       ]);
       setAssignments(ensureArray(assignmentsRes));
       setRoles(ensureArray(rolesRes));
+      setUsers(ensureArray(usersRes));
     } catch (err) {
       console.error(err);
       if (showToast) showToast('Failed to load role assignments.', 'error');
@@ -75,7 +83,7 @@ export default function AssignRolesTab() {
 
   useEffect(() => {
     loadData();
-  }, [loadData]);
+  }, [loadData, refreshTrigger]);
 
   // Search users with debounce
   useEffect(() => {
@@ -99,9 +107,14 @@ export default function AssignRolesTab() {
     return roles.find(r => String(r.id) === String(selectedRoleId));
   }, [roles, selectedRoleId]);
 
-  const handleOpenAssignModal = () => {
-    setSelectedUser(null);
-    setUserQuery('');
+  const handleOpenAssignModal = (preselectedUser = null) => {
+    if (preselectedUser) {
+      setSelectedUser(preselectedUser);
+      setUserQuery(preselectedUser.phone_number || '');
+    } else {
+      setSelectedUser(null);
+      setUserQuery('');
+    }
     setUserSuggestions([]);
     setSelectedRoleId(roles[0]?.id || '');
     setSelectedFacilityId('');
@@ -187,12 +200,55 @@ export default function AssignRolesTab() {
     }
   };
 
-  // Filtered Assignments
-  const filteredAssignments = useMemo(() => {
-    return assignments.filter(item => {
-      const user = item.user_details || {};
-      const role = item.role_details || {};
-      const facility = item.facility_details || {};
+  // Combined Directory Items: Explicit Role Allocations + Unassigned Platform Users
+  const combinedItems = useMemo(() => {
+    const assignedUserIds = new Set(
+      assignments.map(a => String(a.user_details?.id || a.user)).filter(Boolean)
+    );
+
+    const items = [];
+
+    // 1. Explicit role allocations
+    assignments.forEach(assignment => {
+      items.push({
+        id: `assignment-${assignment.id}`,
+        type: 'assignment',
+        assignmentId: assignment.id,
+        user: assignment.user_details || {},
+        role: assignment.role_details || {},
+        facility: assignment.facility_details || null,
+        isAssigned: true,
+        scopeType: assignment.role_details?.scope_type || 'unassigned',
+        rawAssignment: assignment
+      });
+    });
+
+    // 2. Users without explicit role allocations (e.g. newly created/registered users)
+    users.forEach(u => {
+      if (!assignedUserIds.has(String(u.id))) {
+        items.push({
+          id: `unassigned-${u.id}`,
+          type: 'unassigned_user',
+          assignmentId: null,
+          user: u,
+          role: null,
+          facility: null,
+          isAssigned: false,
+          scopeType: 'unassigned',
+          rawAssignment: null
+        });
+      }
+    });
+
+    return items;
+  }, [assignments, users]);
+
+  // Filtered Directory Items
+  const filteredItems = useMemo(() => {
+    return combinedItems.filter(item => {
+      const user = item.user || {};
+      const role = item.role || {};
+      const facility = item.facility || {};
 
       // Search matching
       const query = searchTerm.toLowerCase();
@@ -200,111 +256,137 @@ export default function AssignRolesTab() {
         user.phone_number?.toLowerCase().includes(query) ||
         user.first_name?.toLowerCase().includes(query) ||
         user.last_name?.toLowerCase().includes(query) ||
-        role.name?.toLowerCase().includes(query) ||
-        facility.name?.toLowerCase().includes(query);
+        (item.isAssigned && role.name?.toLowerCase().includes(query)) ||
+        (item.isAssigned && facility.name?.toLowerCase().includes(query));
 
-      // Scope filter
-      const matchesScope = scopeFilter === 'all' || role.scope_type === scopeFilter;
+      // Scope filter: 'all' | 'assigned' | 'unassigned' | 'global' | 'facility' | 'self'
+      let matchesScope = true;
+      if (scopeFilter === 'assigned') {
+        matchesScope = item.isAssigned;
+      } else if (scopeFilter === 'unassigned') {
+        matchesScope = !item.isAssigned;
+      } else if (scopeFilter === 'global') {
+        matchesScope = item.scopeType === 'global';
+      } else if (scopeFilter === 'facility') {
+        matchesScope = item.scopeType === 'facility';
+      } else if (scopeFilter === 'self') {
+        matchesScope = item.scopeType === 'self';
+      }
 
       // Role filter
-      const matchesRole = roleFilter === 'all' || String(role.id) === String(roleFilter);
+      const matchesRole = roleFilter === 'all' || 
+        (item.isAssigned && String(role.id) === String(roleFilter));
 
       return matchesSearch && matchesScope && matchesRole;
     });
-  }, [assignments, searchTerm, scopeFilter, roleFilter]);
+  }, [combinedItems, searchTerm, scopeFilter, roleFilter]);
 
   // Summary Metrics
   const metrics = useMemo(() => {
-    const total = assignments.length;
+    const totalAssignments = assignments.length;
     const globalCount = assignments.filter(a => a.role_details?.scope_type === 'global').length;
     const facilityCount = assignments.filter(a => a.role_details?.scope_type === 'facility').length;
-    const uniqueUsers = new Set(assignments.map(a => a.user_details?.id || a.user)).size;
-    return { total, globalCount, facilityCount, uniqueUsers };
-  }, [assignments]);
+    const totalUsers = users.length;
+    const unassignedCount = combinedItems.filter(i => !i.isAssigned).length;
+    return { totalAssignments, globalCount, facilityCount, totalUsers, unassignedCount };
+  }, [assignments, users, combinedItems]);
 
   return (
     <div className="space-y-6">
       
       {/* 1. Header & Summary Statistics Cards */}
-      <div className="bg-slate-900 border border-slate-800 rounded-3xl p-6 shadow-xl relative overflow-hidden">
-        <div className="flex flex-col sm:flex-row justify-between items-start sm:items-center gap-4 relative z-10">
-          <div>
-            <div className="flex items-center gap-2.5">
-              <div className="p-2.5 rounded-2xl bg-teal-500/10 border border-teal-500/20 text-teal-400">
-                <UserCheck className="w-6 h-6" />
-              </div>
-              <div>
-                <h2 className="text-xl font-bold text-white tracking-tight flex items-center gap-2">
-                  User Role Assignments & IAM
-                </h2>
-                <p className="text-xs text-slate-400 mt-0.5">
-                  Manage user role delegations across global platform authorities and facility-scoped permissions.
-                </p>
-              </div>
-            </div>
+      <div className="flex flex-col md:flex-row md:items-end justify-between gap-4 pb-2 border-b border-[#d1d5dc]">
+        <div>
+          <div className="flex items-center gap-2 mb-1.5">
+            <span className="text-[10px] font-label font-bold tracking-widest text-[#094cb2] uppercase bg-[#e7ebff] px-2 py-0.5 rounded-xs">
+              Access Governance & IAM
+            </span>
+            <span className="text-[10px] text-slate-400 font-label">• Delegated Permissions</span>
           </div>
-
-          <Can requiredModule="users" requiredAction="create">
-            <button
-              onClick={handleOpenAssignModal}
-              className="px-4 py-2.5 bg-gradient-to-r from-teal-600 to-emerald-600 hover:from-teal-500 hover:to-emerald-500 text-white font-bold rounded-xl text-xs flex items-center gap-2 shadow-lg shadow-teal-500/20 transition cursor-pointer"
-            >
-              <Plus className="w-4 h-4" />
-              <span>Assign Roles to User</span>
-            </button>
-          </Can>
+          <h1 className="text-2xl md:text-3xl font-serif font-bold text-[#1b1c1d] tracking-tight">
+            Role Allocations & Personnel Directory
+          </h1>
+          <p className="text-xs text-slate-500 font-body mt-1 max-w-2xl">
+            Manage granular role delegations across global platform authorities and facility-scoped operational teams.
+          </p>
         </div>
 
-        {/* Stats Grid */}
-        <div className="grid grid-cols-2 sm:grid-cols-4 gap-3.5 mt-6 pt-6 border-t border-slate-800/80">
-          <div className="bg-slate-950/60 border border-slate-800/80 rounded-2xl p-3.5">
-            <div className="text-[11px] font-semibold text-slate-400 uppercase tracking-wider">Total Assignments</div>
-            <div className="text-2xl font-black text-white mt-1">{metrics.total}</div>
-          </div>
+        <Can requiredModule="users" requiredAction="create">
+          <div className="flex flex-wrap items-center gap-2 shrink-0">
+            <button
+              onClick={() => {
+                setInitialCreatePhone('');
+                setIsCreateUserModalOpen(true);
+              }}
+              className="px-3.5 py-2 border border-[#d1d5dc] bg-white hover:bg-[#f7f6f7] text-slate-700 font-label text-xs font-semibold rounded-sm flex items-center gap-1.5 shadow-sm transition cursor-pointer"
+            >
+              <UserPlus className="w-3.5 h-3.5 text-[#094cb2]" />
+              <span>Create New User</span>
+            </button>
 
-          <div className="bg-slate-950/60 border border-slate-800/80 rounded-2xl p-3.5">
-            <div className="text-[11px] font-semibold text-amber-400 uppercase tracking-wider flex items-center gap-1">
-              <Globe className="w-3 h-3" />
-              <span>Global Admins</span>
-            </div>
-            <div className="text-2xl font-black text-amber-300 mt-1">{metrics.globalCount}</div>
+            <button
+              onClick={handleOpenAssignModal}
+              className="px-4 py-2 bg-[#094cb2] hover:bg-[#083e91] text-white font-label text-xs font-semibold rounded-sm flex items-center gap-1.5 shadow-sm transition cursor-pointer"
+            >
+              <Plus className="w-3.5 h-3.5" />
+              <span>Assign Role to User</span>
+            </button>
           </div>
+        </Can>
+      </div>
 
-          <div className="bg-slate-950/60 border border-slate-800/80 rounded-2xl p-3.5">
-            <div className="text-[11px] font-semibold text-emerald-400 uppercase tracking-wider flex items-center gap-1">
-              <Building2 className="w-3 h-3" />
-              <span>Facility Users</span>
-            </div>
-            <div className="text-2xl font-black text-emerald-300 mt-1">{metrics.facilityCount}</div>
+      {/* Telemetry Stats Grid */}
+      <div className="grid grid-cols-2 sm:grid-cols-4 gap-3.5">
+        <div className="bg-white border border-[#d1d5dc] rounded-sm p-3.5 shadow-card">
+          <div className="text-[11px] font-label font-semibold text-[#094cb2] uppercase tracking-wider flex items-center gap-1">
+            <User className="w-3 h-3 text-[#094cb2]" />
+            <span>Total Personnel</span>
           </div>
+          <div className="text-2xl font-serif font-bold text-[#1b1c1d] mt-1">{metrics.totalUsers}</div>
+        </div>
 
-          <div className="bg-slate-950/60 border border-slate-800/80 rounded-2xl p-3.5">
-            <div className="text-[11px] font-semibold text-cyan-400 uppercase tracking-wider flex items-center gap-1">
-              <User className="w-3 h-3" />
-              <span>Unique Users</span>
-            </div>
-            <div className="text-2xl font-black text-cyan-300 mt-1">{metrics.uniqueUsers}</div>
+        <div className="bg-white border border-[#d1d5dc] rounded-sm p-3.5 shadow-card">
+          <div className="text-[11px] font-label font-semibold text-slate-500 uppercase tracking-wider flex items-center gap-1">
+            <ShieldCheck className="w-3 h-3 text-slate-600" />
+            <span>Role Allocations</span>
           </div>
+          <div className="text-2xl font-serif font-bold text-[#1b1c1d] mt-1">{metrics.totalAssignments}</div>
+        </div>
+
+        <div className="bg-white border border-[#d1d5dc] rounded-sm p-3.5 shadow-card">
+          <div className="text-[11px] font-label font-semibold text-amber-700 uppercase tracking-wider flex items-center gap-1">
+            <Globe className="w-3 h-3 text-amber-600" />
+            <span>Global Admins</span>
+          </div>
+          <div className="text-2xl font-serif font-bold text-amber-800 mt-1">{metrics.globalCount}</div>
+        </div>
+
+        <div className="bg-white border border-[#d1d5dc] rounded-sm p-3.5 shadow-card">
+          <div className="text-[11px] font-label font-semibold text-slate-600 uppercase tracking-wider flex items-center gap-1">
+            <UserCheck className="w-3 h-3 text-slate-500" />
+            <span>Unassigned Accounts</span>
+          </div>
+          <div className="text-2xl font-serif font-bold text-slate-700 mt-1">{metrics.unassignedCount}</div>
         </div>
       </div>
 
       {/* 2. Search & Filter Bar */}
-      <div className="bg-slate-900 border border-slate-800 rounded-2xl p-4 flex flex-wrap items-center justify-between gap-3 shadow-sm">
+      <div className="bg-white border border-[#d1d5dc] rounded-sm p-3.5 flex flex-wrap items-center justify-between gap-3 shadow-card">
         <div className="flex flex-wrap items-center gap-3 flex-1 min-w-[280px]">
           {/* Search Input */}
-          <div className="relative flex-1 min-w-[200px]">
-            <Search className="w-4 h-4 text-slate-400 absolute left-3.5 top-1/2 -translate-y-1/2" />
+          <div className="relative flex-1 min-w-[220px]">
+            <Search className="w-3.5 h-3.5 text-slate-400 absolute left-3 top-1/2 -translate-y-1/2" />
             <input
               type="text"
               placeholder="Search by phone, name, role, facility..."
               value={searchTerm}
               onChange={e => setSearchTerm(e.target.value)}
-              className="w-full bg-slate-950 border border-slate-800 rounded-xl pl-9 pr-3.5 py-2 text-xs text-white placeholder-slate-500 focus:outline-none focus:border-teal-500 transition"
+              className="w-full bg-[#faf9fa] border border-[#d1d5dc] rounded-sm pl-8 pr-8 py-1.5 text-xs text-[#1b1c1d] placeholder-slate-400 focus:outline-none focus:border-[#094cb2] font-body"
             />
             {searchTerm && (
               <button 
                 onClick={() => setSearchTerm('')}
-                className="absolute right-3 top-1/2 -translate-y-1/2 text-slate-500 hover:text-slate-300"
+                className="absolute right-2.5 top-1/2 -translate-y-1/2 text-slate-400 hover:text-slate-700 cursor-pointer"
               >
                 <X className="w-3.5 h-3.5" />
               </button>
@@ -312,41 +394,48 @@ export default function AssignRolesTab() {
           </div>
 
           {/* Scope Filter */}
-          <div className="flex items-center gap-1.5 bg-slate-950 p-1 rounded-xl border border-slate-800 text-xs">
+          <div className="flex items-center gap-1 bg-[#faf9fa] p-1 rounded-sm border border-[#d1d5dc] text-xs overflow-x-auto">
             <button
               onClick={() => setScopeFilter('all')}
-              className={`px-3 py-1.5 rounded-lg font-semibold transition ${
-                scopeFilter === 'all' ? 'bg-slate-800 text-white' : 'text-slate-400 hover:text-slate-200'
+              className={`px-2.5 py-1 rounded-xs font-label text-xs font-semibold whitespace-nowrap transition cursor-pointer ${
+                scopeFilter === 'all' ? 'bg-[#094cb2] text-white shadow-xs' : 'text-slate-600 hover:text-slate-900'
               }`}
             >
-              All Scopes
+              All ({combinedItems.length})
+            </button>
+            <button
+              onClick={() => setScopeFilter('assigned')}
+              className={`px-2.5 py-1 rounded-xs font-label text-xs font-semibold whitespace-nowrap transition cursor-pointer ${
+                scopeFilter === 'assigned' ? 'bg-[#094cb2] text-white shadow-xs' : 'text-slate-600 hover:text-slate-900'
+              }`}
+            >
+              Assigned ({assignments.length})
+            </button>
+            <button
+              onClick={() => setScopeFilter('unassigned')}
+              className={`px-2.5 py-1 rounded-xs font-label text-xs font-semibold whitespace-nowrap transition cursor-pointer ${
+                scopeFilter === 'unassigned' ? 'bg-amber-100 text-amber-900 border border-amber-300' : 'text-slate-600 hover:text-slate-900'
+              }`}
+            >
+              Unassigned ({metrics.unassignedCount})
             </button>
             <button
               onClick={() => setScopeFilter('global')}
-              className={`px-3 py-1.5 rounded-lg font-semibold flex items-center gap-1 transition ${
-                scopeFilter === 'global' ? 'bg-amber-500/20 text-amber-300 border border-amber-500/30' : 'text-slate-400 hover:text-slate-200'
+              className={`px-2.5 py-1 rounded-xs font-label text-xs font-semibold flex items-center gap-1 whitespace-nowrap transition cursor-pointer ${
+                scopeFilter === 'global' ? 'bg-amber-100 text-amber-900 border border-amber-300' : 'text-slate-600 hover:text-slate-900'
               }`}
             >
-              <Globe className="w-3 h-3" />
+              <Globe className="w-3 h-3 text-amber-600" />
               <span>Global</span>
             </button>
             <button
               onClick={() => setScopeFilter('facility')}
-              className={`px-3 py-1.5 rounded-lg font-semibold flex items-center gap-1 transition ${
-                scopeFilter === 'facility' ? 'bg-emerald-500/20 text-emerald-300 border border-emerald-500/30' : 'text-slate-400 hover:text-slate-200'
+              className={`px-2.5 py-1 rounded-xs font-label text-xs font-semibold flex items-center gap-1 whitespace-nowrap transition cursor-pointer ${
+                scopeFilter === 'facility' ? 'bg-emerald-100 text-emerald-900 border border-emerald-300' : 'text-slate-600 hover:text-slate-900'
               }`}
             >
-              <Building2 className="w-3 h-3" />
+              <Building2 className="w-3 h-3 text-emerald-600" />
               <span>Facility</span>
-            </button>
-            <button
-              onClick={() => setScopeFilter('self')}
-              className={`px-3 py-1.5 rounded-lg font-semibold flex items-center gap-1 transition ${
-                scopeFilter === 'self' ? 'bg-purple-500/20 text-purple-300 border border-purple-500/30' : 'text-slate-400 hover:text-slate-200'
-              }`}
-            >
-              <User className="w-3 h-3" />
-              <span>Self</span>
             </button>
           </div>
 
@@ -354,7 +443,7 @@ export default function AssignRolesTab() {
           <select
             value={roleFilter}
             onChange={e => setRoleFilter(e.target.value)}
-            className="bg-slate-950 border border-slate-800 rounded-xl px-3 py-2 text-xs text-slate-300 focus:outline-none focus:border-teal-500 cursor-pointer"
+            className="bg-white border border-[#d1d5dc] rounded-sm px-2.5 py-1.5 text-xs text-slate-700 focus:outline-none focus:border-[#094cb2] font-body cursor-pointer"
           >
             <option value="all">All Roles</option>
             {roles.map(r => (
@@ -367,141 +456,178 @@ export default function AssignRolesTab() {
         <button
           onClick={loadData}
           disabled={loading}
-          className="p-2 bg-slate-800/80 hover:bg-slate-700 text-slate-300 rounded-xl text-xs border border-slate-700 transition cursor-pointer disabled:opacity-50"
-          title="Refresh assignments"
+          className="p-1.5 border border-[#d1d5dc] bg-white hover:bg-[#f7f6f7] text-slate-700 rounded-sm text-xs transition cursor-pointer disabled:opacity-50"
+          title="Refresh directory"
         >
-          <RefreshCw className={`w-4 h-4 ${loading ? 'animate-spin text-teal-400' : ''}`} />
+          <RefreshCw className={`w-3.5 h-3.5 ${loading ? 'animate-spin text-[#094cb2]' : 'text-slate-500'}`} />
         </button>
       </div>
 
       {/* 3. Directory Table */}
-      <div className="bg-slate-900 border border-slate-800 rounded-3xl shadow-xl overflow-hidden">
-        {loading && assignments.length === 0 ? (
+      <div className="bg-white border border-[#d1d5dc] rounded-sm shadow-card overflow-hidden">
+        {loading && combinedItems.length === 0 ? (
           <div className="p-12 text-center text-slate-400 flex flex-col items-center justify-center">
-            <RefreshCw className="w-6 h-6 animate-spin mb-3 text-teal-400" />
-            <p className="text-sm font-medium">Loading user role assignments...</p>
+            <RefreshCw className="w-6 h-6 animate-spin mb-3 text-[#094cb2]" />
+            <p className="font-serif text-sm text-slate-700">Loading personnel and roles directory...</p>
           </div>
-        ) : filteredAssignments.length === 0 ? (
-          <div className="p-12 text-center text-slate-400">
-            <UserCheck className="w-8 h-8 mx-auto mb-2 text-slate-600" />
-            <p className="text-sm font-bold text-slate-300">No role assignments found</p>
-            <p className="text-xs text-slate-500 mt-1">
+        ) : filteredItems.length === 0 ? (
+          <div className="p-12 text-center text-slate-500">
+            <UserCheck className="w-8 h-8 mx-auto mb-2 text-slate-300" />
+            <p className="font-serif text-sm text-slate-700">No personnel records found</p>
+            <p className="text-xs text-slate-400 mt-1">
               {searchTerm || scopeFilter !== 'all' || roleFilter !== 'all' 
                 ? 'Try adjusting your search query or filters.'
-                : 'Click "Assign Roles to User" to add your first role assignment.'}
+                : 'Click "Assign Role to User" or "Create New User" to add your first user.'}
             </p>
           </div>
         ) : (
           <div className="overflow-x-auto">
-            <table className="w-full text-left border-collapse text-xs">
-              <thead>
-                <tr className="bg-slate-800/50 border-b border-slate-800 text-slate-400 uppercase tracking-wider font-semibold text-[10px]">
-                  <th className="px-5 py-4">User Account</th>
-                  <th className="px-5 py-4">Assigned Role</th>
-                  <th className="px-5 py-4">Scope & Location</th>
-                  <th className="px-5 py-4 text-center">Permissions</th>
-                  <th className="px-5 py-4 text-right">Actions</th>
+            <table className="w-full text-left text-xs font-body">
+              <thead className="bg-[#f7f6f7] border-b border-[#d1d5dc] text-slate-500 font-label text-[11px] uppercase tracking-wider">
+                <tr>
+                  <th className="py-3 px-4 w-[28%] font-semibold">User Account</th>
+                  <th className="py-3 px-4 w-[24%] font-semibold">Assigned Role</th>
+                  <th className="py-3 px-4 w-[26%] font-semibold">Scope & Location</th>
+                  <th className="py-3 px-4 w-[12%] text-center font-semibold">Permissions</th>
+                  <th className="py-3 px-4 w-[10%] text-right font-semibold">Actions</th>
                 </tr>
               </thead>
-              <tbody className="divide-y divide-slate-800/60">
-                {filteredAssignments.map(assignment => {
-                  const user = assignment.user_details || {};
-                  const role = assignment.role_details || {};
-                  const facility = assignment.facility_details;
-                  const isGlobal = role.scope_type === 'global';
+              <tbody className="divide-y divide-[#e3e5ea] text-slate-700">
+                {filteredItems.map(item => {
+                  const user = item.user || {};
+                  const role = item.role || {};
+                  const facility = item.facility;
+                  const isGlobal = role?.scope_type === 'global';
 
                   return (
-                    <tr key={assignment.id} className="hover:bg-slate-800/30 transition-colors">
+                    <tr key={item.id} className="hover:bg-[#e7ebff]/25 transition-colors">
                       
                       {/* User Column */}
-                      <td className="px-5 py-4 align-middle">
-                        <div className="flex items-center gap-3">
-                          <div className="w-8 h-8 rounded-xl bg-gradient-to-tr from-slate-800 to-slate-700 border border-slate-700 flex items-center justify-center font-bold text-teal-400 text-xs shrink-0">
+                      <td className="py-3 px-4 align-middle">
+                        <div className="flex items-center gap-2.5">
+                          <div className={`w-7 h-7 rounded-sm flex items-center justify-center font-serif font-bold text-xs shrink-0 ${
+                            item.isAssigned ? 'bg-[#e7ebff] text-[#094cb2]' : 'bg-slate-100 text-slate-600 border border-[#d1d5dc]'
+                          }`}>
                             {(user.first_name?.[0] || user.phone_number?.[0] || 'U').toUpperCase()}
                           </div>
                           <div>
-                            <div className="font-bold text-slate-200">
-                              {user.first_name || user.last_name 
-                                ? `${user.first_name || ''} ${user.last_name || ''}`.trim()
-                                : 'Unnamed User'}
+                            <div className="flex items-center gap-2">
+                              <span className="font-serif font-bold text-sm text-[#1b1c1d]">
+                                {user.first_name || user.last_name 
+                                  ? `${user.first_name || ''} ${user.last_name || ''}`.trim()
+                                  : 'Unnamed User'}
+                              </span>
+                              {!item.isAssigned && (
+                                <span className="text-[9px] font-label font-bold px-1.5 py-0.2 rounded-xs bg-amber-50 text-amber-700 border border-amber-200">
+                                  No Role
+                                </span>
+                              )}
                             </div>
-                            <div className="font-mono text-slate-400 text-[11px] mt-0.5">
-                              {user.phone_number || assignment.user}
+                            <div className="font-mono text-slate-500 text-[11px]">
+                              {user.phone_number || (typeof item.rawAssignment?.user === 'string' ? item.rawAssignment.user : '')}
                             </div>
                           </div>
                         </div>
                       </td>
 
                       {/* Role Column */}
-                      <td className="px-5 py-4 align-middle">
-                        <div className="flex items-center gap-2">
-                          <span className="font-semibold text-slate-200">{role.name || 'Custom Role'}</span>
-                          {role.is_system ? (
-                            <span className="px-2 py-0.5 rounded text-[9px] font-bold bg-slate-800 text-slate-400 border border-slate-700">
-                              SYSTEM
-                            </span>
-                          ) : (
-                            <span className="px-2 py-0.5 rounded text-[9px] font-bold bg-teal-500/10 text-teal-300 border border-teal-500/20">
-                              CUSTOM
-                            </span>
-                          )}
-                        </div>
-                        {role.description && (
-                          <div className="text-slate-500 text-[11px] mt-0.5 line-clamp-1">
-                            {role.description}
+                      <td className="py-3 px-4 align-middle">
+                        {item.isAssigned ? (
+                          <>
+                            <div className="flex items-center gap-1.5">
+                              <span className="font-label font-semibold text-slate-900">{role.name || 'Custom Role'}</span>
+                              {role.is_system ? (
+                                <span className="px-1.5 py-0.5 rounded-xs text-[9px] font-label font-bold bg-slate-100 text-slate-600 border border-[#d1d5dc]">
+                                  SYSTEM
+                                </span>
+                              ) : (
+                                <span className="px-1.5 py-0.5 rounded-xs text-[9px] font-label font-bold bg-[#e7ebff] text-[#094cb2] border border-[#094cb2]/20">
+                                  CUSTOM
+                                </span>
+                              )}
+                            </div>
+                            {role.description && (
+                              <div className="text-slate-400 text-[11px] mt-0.5 line-clamp-1">
+                                {role.description}
+                              </div>
+                            )}
+                          </>
+                        ) : (
+                          <div>
+                            <span className="text-slate-600 font-medium text-xs font-body">Standard Platform User</span>
+                            <div className="text-slate-400 text-[11px]">No elevated administrative permissions assigned</div>
                           </div>
                         )}
                       </td>
 
                       {/* Scope & Location Column */}
-                      <td className="px-5 py-4 align-middle">
-                        {isGlobal ? (
-                          <span className="inline-flex items-center gap-1.5 px-2.5 py-1 rounded-lg text-[10px] font-bold uppercase tracking-wider bg-amber-500/10 text-amber-300 border border-amber-500/25">
-                            <Globe className="w-3 h-3 text-amber-400" />
-                            <span>Global Platform</span>
-                          </span>
-                        ) : role.scope_type === 'self' ? (
-                          <span className="inline-flex items-center gap-1.5 px-2.5 py-1 rounded-lg text-[10px] font-bold uppercase tracking-wider bg-purple-500/10 text-purple-300 border border-purple-500/25">
-                            <User className="w-3 h-3 text-purple-400" />
-                            <span>Self / Individual</span>
-                          </span>
-                        ) : (
-                          <div className="inline-flex flex-col gap-0.5">
-                            <span className="inline-flex items-center gap-1.5 px-2.5 py-1 rounded-lg text-[10px] font-bold uppercase tracking-wider bg-emerald-500/10 text-emerald-300 border border-emerald-500/25 w-fit">
-                              <Building2 className="w-3 h-3 text-emerald-400" />
-                              <span>Facility Scoped</span>
+                      <td className="py-3 px-4 align-middle">
+                        {item.isAssigned ? (
+                          isGlobal ? (
+                            <span className="inline-flex items-center gap-1 px-2 py-0.5 rounded-xs text-[10px] font-label font-bold uppercase tracking-wider bg-amber-50 text-amber-800 border border-amber-200">
+                              <Globe className="w-3 h-3 text-amber-600" />
+                              <span>Global Platform</span>
                             </span>
-                            {facility && (
-                              <span className="text-slate-300 font-medium text-[11px] pl-1">
-                                {facility.name} {facility.branch ? `(${facility.branch})` : ''}
+                          ) : role.scope_type === 'self' ? (
+                            <span className="inline-flex items-center gap-1 px-2 py-0.5 rounded-xs text-[10px] font-label font-bold uppercase tracking-wider bg-purple-50 text-purple-800 border border-purple-200">
+                              <User className="w-3 h-3 text-purple-600" />
+                              <span>Self / Individual</span>
+                            </span>
+                          ) : (
+                            <div className="inline-flex flex-col gap-0.5">
+                              <span className="inline-flex items-center gap-1 px-2 py-0.5 rounded-xs text-[10px] font-label font-bold uppercase tracking-wider bg-emerald-50 text-emerald-800 border border-emerald-200 w-fit">
+                                <Building2 className="w-3 h-3 text-emerald-600" />
+                                <span>Facility Scoped</span>
                               </span>
-                            )}
-                          </div>
+                              {facility && (
+                                <span className="text-slate-700 font-medium text-[11px] pl-0.5">
+                                  {facility.name} {facility.branch ? `(${facility.branch})` : ''}
+                                </span>
+                              )}
+                            </div>
+                          )
+                        ) : (
+                          <span className="inline-flex items-center gap-1 px-2 py-0.5 rounded-xs text-[10px] font-label font-medium bg-[#faf9fa] text-slate-500 border border-[#d1d5dc]">
+                            <span>Default Account</span>
+                          </span>
                         )}
                       </td>
 
                       {/* Permissions Inspect Button */}
-                      <td className="px-5 py-4 align-middle text-center">
+                      <td className="py-3 px-4 align-middle text-center">
                         <button
                           onClick={() => handleInspectPermissions(user)}
-                          className="px-2.5 py-1.5 bg-slate-800 hover:bg-slate-700 text-slate-300 hover:text-white rounded-lg transition text-[11px] font-medium inline-flex items-center gap-1.5 cursor-pointer border border-slate-700/60"
+                          className="px-2 py-1 bg-white hover:bg-[#faf9fa] text-slate-700 rounded-sm transition text-[11px] font-label font-semibold inline-flex items-center gap-1 cursor-pointer border border-[#d1d5dc]"
                         >
-                          <Eye className="w-3.5 h-3.5 text-teal-400" />
+                          <Eye className="w-3.5 h-3.5 text-[#094cb2]" />
                           <span>View Matrix</span>
                         </button>
                       </td>
 
                       {/* Actions */}
-                      <td className="px-5 py-4 align-middle text-right">
-                        <Can requiredModule="users" requiredAction="delete">
-                          <button
-                            onClick={() => setRevokingAssignment(assignment)}
-                            className="p-1.5 text-slate-400 hover:text-rose-400 bg-slate-800 hover:bg-rose-950/40 border border-slate-700/80 hover:border-rose-500/40 rounded-lg transition cursor-pointer"
-                            title="Revoke Role Assignment"
-                          >
-                            <Trash2 className="w-4 h-4" />
-                          </button>
-                        </Can>
+                      <td className="py-3 px-4 align-middle text-right">
+                        {item.isAssigned ? (
+                          <Can requiredModule="users" requiredAction="delete">
+                            <button
+                              onClick={() => setRevokingAssignment(item.rawAssignment)}
+                              className="p-1.5 text-slate-400 hover:text-rose-700 border border-transparent hover:border-rose-200 hover:bg-rose-50 rounded-sm transition cursor-pointer"
+                              title="Revoke Role Assignment"
+                            >
+                              <Trash2 className="w-3.5 h-3.5" />
+                            </button>
+                          </Can>
+                        ) : (
+                          <Can requiredModule="users" requiredAction="change">
+                            <button
+                              onClick={() => handleOpenAssignModal(user)}
+                              className="px-2.5 py-1 bg-[#094cb2] hover:bg-[#083e91] text-white rounded-xs text-xs font-label font-semibold inline-flex items-center gap-1 shadow-xs transition cursor-pointer"
+                              title="Assign Role to User"
+                            >
+                              <UserPlus className="w-3 h-3" />
+                              <span>Assign Role</span>
+                            </button>
+                          </Can>
+                        )}
                       </td>
 
                     </tr>
@@ -532,6 +658,26 @@ export default function AssignRolesTab() {
         selectedFacilityId={selectedFacilityId}
         setSelectedFacilityId={setSelectedFacilityId}
         allFacilities={allFacilities}
+        onCreateNewUser={(phone) => {
+          handleCloseAssignModal();
+          setInitialCreatePhone(phone);
+          setIsCreateUserModalOpen(true);
+        }}
+      />
+
+      {/* MODAL: CREATE NEW USER */}
+      <CreateUserModal
+        isOpen={isCreateUserModalOpen}
+        onClose={() => {
+          setIsCreateUserModalOpen(false);
+          setInitialCreatePhone('');
+        }}
+        onUserCreated={async () => {
+          await loadData();
+        }}
+        roles={roles}
+        allFacilities={allFacilities}
+        initialPhone={initialCreatePhone}
       />
 
       {/* MODAL: INSPECT EFFECTIVE PERMISSIONS */}

@@ -19,8 +19,8 @@ export default function Toggle({
     >
       {(label || description) && (
         <div className="min-w-0 flex-1">
-          {label && <p className="text-xs font-semibold text-slate-200 select-none">{label}</p>}
-          {description && <p className="text-[11px] text-slate-400 mt-0.5 select-none">{description}</p>}
+          {label && <p className="text-xs font-semibold text-slate-800 select-none">{label}</p>}
+          {description && <p className="text-[11px] text-slate-500 mt-0.5 select-none">{description}</p>}
         </div>
       )}
 
@@ -33,7 +33,7 @@ export default function Toggle({
           disabled={disabled}
           className="sr-only peer"
         />
-        <div className={`w-11 h-6 bg-slate-800 border border-slate-700 peer-focus:outline-none rounded-full peer peer-checked:after:translate-x-full peer-checked:after:border-white after:content-[''] after:absolute after:top-[2px] after:left-[2px] after:bg-white after:rounded-full after:h-5 after:w-5 after:transition-all peer-checked:${activeColor} transition-colors duration-200`} />
+        <div className="w-11 h-6 bg-slate-200 border border-slate-300 peer-focus:outline-none rounded-full peer peer-checked:after:translate-x-full peer-checked:after:border-white after:content-[''] after:absolute after:top-[2px] after:left-[2px] after:bg-white after:rounded-full after:h-5 after:w-5 after:transition-all peer-checked:bg-[#094cb2] peer-checked:border-[#094cb2] transition-colors duration-200" />
       </div>
     </label>
   );

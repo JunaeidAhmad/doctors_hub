@@ -1,4 +1,5 @@
 import React, { useState, useEffect } from 'react';
+import { X } from 'lucide-react';
 import { useAdminContext } from '../../context/AdminContext';
 import { api } from '../../../../services/api';
 
@@ -43,7 +44,6 @@ export default function CategoryModals() {
       setDiagCatForm({ id: '', name: '', icon: 'Building2', description: '' });
     }
   }, [editingDiagCat, showDiagCatModal]);
-
 
   useEffect(() => {
     if (editingHospService) {
@@ -162,7 +162,6 @@ export default function CategoryModals() {
         return [...prev, newCat];
       });
 
-
       showNotification(`Diagnostic Category "${diagCatForm.name}" ${editingDiagCat ? 'updated' : 'created'}.`);
       setShowDiagCatModal(false);
     } catch (err) {
@@ -271,17 +270,41 @@ export default function CategoryModals() {
     <>
       {/* MODAL: DOCTOR SPECIALTY */}
       {showDoctorSpecModal && (
-        <div className="fixed inset-0 z-50 bg-slate-950/80 backdrop-blur-md flex items-center justify-center p-4">
-          <div className="bg-slate-900 border border-slate-800 rounded-2xl p-6 max-w-md w-full space-y-4">
-            <h3 className="text-base font-bold text-white">{editingDoctorSpec ? 'Edit Doctor Specialty' : 'Add Doctor Specialty'}</h3>
-            <form onSubmit={handleSaveDoctorSpec} className="space-y-3 text-xs">
+        <div className="fixed inset-0 z-50 bg-slate-900/60 backdrop-blur-xs flex items-center justify-center p-4">
+          <div className="bg-white border border-[#d1d5dc] rounded-sm p-6 max-w-md w-full space-y-4 shadow-xl">
+            <div className="flex items-center justify-between border-b border-[#e3e5ea] pb-3">
+              <h3 className="text-base font-serif font-bold text-slate-900">
+                {editingDoctorSpec ? 'Edit Doctor Specialty' : 'Add Doctor Specialty'}
+              </h3>
+              <button onClick={() => setShowDoctorSpecModal(false)} className="text-slate-400 hover:text-slate-700 p-1">
+                <X className="w-4 h-4" />
+              </button>
+            </div>
+            <form onSubmit={handleSaveDoctorSpec} className="space-y-3.5 text-xs font-body">
               <div>
-                <label className="block text-slate-300 mb-1">Specialty Name *</label>
-                <input type="text" required value={doctorSpecForm.name} onChange={e => setDoctorSpecForm({ ...doctorSpecForm, name: e.target.value })} className="w-full bg-slate-950 border border-slate-800 rounded-xl px-3 py-2 text-white" />
+                <label className="block text-slate-700 font-label font-bold uppercase text-[11px] mb-1">Specialty Name *</label>
+                <input 
+                  type="text" 
+                  required 
+                  value={doctorSpecForm.name} 
+                  onChange={e => setDoctorSpecForm({ ...doctorSpecForm, name: e.target.value })} 
+                  className="w-full bg-white border border-[#d1d5dc] rounded-sm px-3 py-2 text-slate-900 font-semibold focus:outline-none focus:border-[#094cb2]" 
+                />
               </div>
-              <div className="flex justify-end gap-2 pt-2">
-                <button type="button" onClick={() => setShowDoctorSpecModal(false)} className="px-3 py-1.5 bg-slate-800 text-slate-300 font-bold rounded-xl">Cancel</button>
-                <button type="submit" className="px-4 py-1.5 bg-teal-600 text-white font-bold rounded-xl">Save</button>
+              <div className="flex justify-end gap-2 pt-3 border-t border-[#e3e5ea]">
+                <button 
+                  type="button" 
+                  onClick={() => setShowDoctorSpecModal(false)} 
+                  className="px-4 py-2 border border-[#d1d5dc] bg-white hover:bg-[#f7f6f7] text-slate-700 font-label text-xs font-semibold uppercase tracking-wider rounded-sm transition cursor-pointer"
+                >
+                  Cancel
+                </button>
+                <button 
+                  type="submit" 
+                  className="px-5 py-2 bg-[#094cb2] hover:bg-[#083e91] text-white font-label text-xs font-semibold uppercase tracking-wider rounded-sm shadow-sm transition cursor-pointer"
+                >
+                  Save Specialty
+                </button>
               </div>
             </form>
           </div>
@@ -290,17 +313,41 @@ export default function CategoryModals() {
 
       {/* MODAL: HOSPITAL CATEGORY */}
       {showHospitalCatModal && (
-        <div className="fixed inset-0 z-50 bg-slate-950/80 backdrop-blur-md flex items-center justify-center p-4">
-          <div className="bg-slate-900 border border-slate-800 rounded-2xl p-6 max-w-md w-full space-y-4">
-            <h3 className="text-base font-bold text-white">{editingHospitalCat ? 'Edit Hospital Category' : 'Add Hospital Category'}</h3>
-            <form onSubmit={handleSaveHospitalCat} className="space-y-3 text-xs">
+        <div className="fixed inset-0 z-50 bg-slate-900/60 backdrop-blur-xs flex items-center justify-center p-4">
+          <div className="bg-white border border-[#d1d5dc] rounded-sm p-6 max-w-md w-full space-y-4 shadow-xl">
+            <div className="flex items-center justify-between border-b border-[#e3e5ea] pb-3">
+              <h3 className="text-base font-serif font-bold text-slate-900">
+                {editingHospitalCat ? 'Edit Hospital Category' : 'Add Hospital Category'}
+              </h3>
+              <button onClick={() => setShowHospitalCatModal(false)} className="text-slate-400 hover:text-slate-700 p-1">
+                <X className="w-4 h-4" />
+              </button>
+            </div>
+            <form onSubmit={handleSaveHospitalCat} className="space-y-3.5 text-xs font-body">
               <div>
-                <label className="block text-slate-300 mb-1">Category Name *</label>
-                <input type="text" required value={hospitalCatForm.name} onChange={e => setHospitalCatForm({ ...hospitalCatForm, name: e.target.value })} className="w-full bg-slate-950 border border-slate-800 rounded-xl px-3 py-2 text-white" />
+                <label className="block text-slate-700 font-label font-bold uppercase text-[11px] mb-1">Category Name *</label>
+                <input 
+                  type="text" 
+                  required 
+                  value={hospitalCatForm.name} 
+                  onChange={e => setHospitalCatForm({ ...hospitalCatForm, name: e.target.value })} 
+                  className="w-full bg-white border border-[#d1d5dc] rounded-sm px-3 py-2 text-slate-900 font-semibold focus:outline-none focus:border-[#094cb2]" 
+                />
               </div>
-              <div className="flex justify-end gap-2 pt-2">
-                <button type="button" onClick={() => setShowHospitalCatModal(false)} className="px-3 py-1.5 bg-slate-800 text-slate-300 font-bold rounded-xl">Cancel</button>
-                <button type="submit" className="px-4 py-1.5 bg-emerald-600 text-white font-bold rounded-xl">Save</button>
+              <div className="flex justify-end gap-2 pt-3 border-t border-[#e3e5ea]">
+                <button 
+                  type="button" 
+                  onClick={() => setShowHospitalCatModal(false)} 
+                  className="px-4 py-2 border border-[#d1d5dc] bg-white hover:bg-[#f7f6f7] text-slate-700 font-label text-xs font-semibold uppercase tracking-wider rounded-sm transition cursor-pointer"
+                >
+                  Cancel
+                </button>
+                <button 
+                  type="submit" 
+                  className="px-5 py-2 bg-[#094cb2] hover:bg-[#083e91] text-white font-label text-xs font-semibold uppercase tracking-wider rounded-sm shadow-sm transition cursor-pointer"
+                >
+                  Save Category
+                </button>
               </div>
             </form>
           </div>
@@ -309,40 +356,52 @@ export default function CategoryModals() {
 
       {/* MODAL: DIAGNOSTIC CATEGORY */}
       {showDiagCatModal && (
-        <div className="fixed inset-0 z-50 bg-slate-950/80 backdrop-blur-md flex items-center justify-center p-4">
-          <div className="bg-slate-900 border border-slate-800 rounded-2xl p-6 max-w-md w-full space-y-4">
-            <h3 className="text-base font-bold text-white">
-              {editingDiagCat ? 'Edit Diagnostic Category' : 'Add Diagnostic Category'}
-            </h3>
-            <form onSubmit={handleSaveDiagCat} className="space-y-3 text-xs">
+        <div className="fixed inset-0 z-50 bg-slate-900/60 backdrop-blur-xs flex items-center justify-center p-4">
+          <div className="bg-white border border-[#d1d5dc] rounded-sm p-6 max-w-md w-full space-y-4 shadow-xl">
+            <div className="flex items-center justify-between border-b border-[#e3e5ea] pb-3">
+              <h3 className="text-base font-serif font-bold text-slate-900">
+                {editingDiagCat ? 'Edit Diagnostic Category' : 'Add Diagnostic Category'}
+              </h3>
+              <button onClick={() => setShowDiagCatModal(false)} className="text-slate-400 hover:text-slate-700 p-1">
+                <X className="w-4 h-4" />
+              </button>
+            </div>
+            <form onSubmit={handleSaveDiagCat} className="space-y-3.5 text-xs font-body">
               <div>
-                <label className="block text-slate-300 mb-1 font-semibold">Category Name *</label>
+                <label className="block text-slate-700 font-label font-bold uppercase text-[11px] mb-1">Category Name *</label>
                 <input
                   type="text"
                   required
                   value={diagCatForm.name}
                   onChange={e => setDiagCatForm({ ...diagCatForm, name: e.target.value })}
-                  className="w-full bg-slate-950 border border-slate-800 rounded-xl px-3 py-2 text-white"
+                  className="w-full bg-white border border-[#d1d5dc] rounded-sm px-3 py-2 text-slate-900 font-semibold focus:outline-none focus:border-[#094cb2]"
                   placeholder="e.g. Clinical Pathology or Radiology & Imaging"
                 />
               </div>
               <div>
-                <label className="block text-slate-300 mb-1 font-semibold">Description (Optional)</label>
+                <label className="block text-slate-700 font-label font-bold uppercase text-[11px] mb-1">Description (Optional)</label>
                 <input
                   type="text"
                   value={diagCatForm.description || ''}
                   onChange={e => setDiagCatForm({ ...diagCatForm, description: e.target.value })}
-                  className="w-full bg-slate-950 border border-slate-800 rounded-xl px-3 py-2 text-white"
+                  className="w-full bg-white border border-[#d1d5dc] rounded-sm px-3 py-2 text-slate-900 focus:outline-none focus:border-[#094cb2]"
                   placeholder="Brief description..."
                 />
               </div>
 
-              <div className="flex justify-end gap-2 pt-2">
-                <button type="button" onClick={() => setShowDiagCatModal(false)} className="px-3 py-1.5 bg-slate-800 text-slate-300 font-bold rounded-xl">
+              <div className="flex justify-end gap-2 pt-3 border-t border-[#e3e5ea]">
+                <button 
+                  type="button" 
+                  onClick={() => setShowDiagCatModal(false)} 
+                  className="px-4 py-2 border border-[#d1d5dc] bg-white hover:bg-[#f7f6f7] text-slate-700 font-label text-xs font-semibold uppercase tracking-wider rounded-sm transition cursor-pointer"
+                >
                   Cancel
                 </button>
-                <button type="submit" className="px-4 py-1.5 bg-cyan-600 text-white font-bold rounded-xl">
-                  Save
+                <button 
+                  type="submit" 
+                  className="px-5 py-2 bg-[#094cb2] hover:bg-[#083e91] text-white font-label text-xs font-semibold uppercase tracking-wider rounded-sm shadow-sm transition cursor-pointer"
+                >
+                  Save Category
                 </button>
               </div>
             </form>
@@ -352,17 +411,41 @@ export default function CategoryModals() {
 
       {/* MODAL: HOSPITAL SERVICE */}
       {showHospServiceModal && (
-        <div className="fixed inset-0 z-50 bg-slate-950/80 backdrop-blur-md flex items-center justify-center p-4">
-          <div className="bg-slate-900 border border-slate-800 rounded-2xl p-6 max-w-md w-full space-y-4">
-            <h3 className="text-base font-bold text-white">{editingHospService ? 'Edit Hospital Service' : 'Add Hospital Service'}</h3>
-            <form onSubmit={handleSaveHospService} className="space-y-3 text-xs">
+        <div className="fixed inset-0 z-50 bg-slate-900/60 backdrop-blur-xs flex items-center justify-center p-4">
+          <div className="bg-white border border-[#d1d5dc] rounded-sm p-6 max-w-md w-full space-y-4 shadow-xl">
+            <div className="flex items-center justify-between border-b border-[#e3e5ea] pb-3">
+              <h3 className="text-base font-serif font-bold text-slate-900">
+                {editingHospService ? 'Edit Hospital Service' : 'Add Hospital Service'}
+              </h3>
+              <button onClick={() => setShowHospServiceModal(false)} className="text-slate-400 hover:text-slate-700 p-1">
+                <X className="w-4 h-4" />
+              </button>
+            </div>
+            <form onSubmit={handleSaveHospService} className="space-y-3.5 text-xs font-body">
               <div>
-                <label className="block text-slate-300 mb-1">Service Name *</label>
-                <input type="text" required value={hospServiceForm.name} onChange={e => setHospServiceForm({ ...hospServiceForm, name: e.target.value })} className="w-full bg-slate-950 border border-slate-800 rounded-xl px-3 py-2 text-white" />
+                <label className="block text-slate-700 font-label font-bold uppercase text-[11px] mb-1">Service Name *</label>
+                <input 
+                  type="text" 
+                  required 
+                  value={hospServiceForm.name} 
+                  onChange={e => setHospServiceForm({ ...hospServiceForm, name: e.target.value })} 
+                  className="w-full bg-white border border-[#d1d5dc] rounded-sm px-3 py-2 text-slate-900 font-semibold focus:outline-none focus:border-[#094cb2]" 
+                />
               </div>
-              <div className="flex justify-end gap-2 pt-2">
-                <button type="button" onClick={() => setShowHospServiceModal(false)} className="px-3 py-1.5 bg-slate-800 text-slate-300 font-bold rounded-xl">Cancel</button>
-                <button type="submit" className="px-4 py-1.5 bg-amber-600 text-white font-bold rounded-xl">Save</button>
+              <div className="flex justify-end gap-2 pt-3 border-t border-[#e3e5ea]">
+                <button 
+                  type="button" 
+                  onClick={() => setShowHospServiceModal(false)} 
+                  className="px-4 py-2 border border-[#d1d5dc] bg-white hover:bg-[#f7f6f7] text-slate-700 font-label text-xs font-semibold uppercase tracking-wider rounded-sm transition cursor-pointer"
+                >
+                  Cancel
+                </button>
+                <button 
+                  type="submit" 
+                  className="px-5 py-2 bg-[#094cb2] hover:bg-[#083e91] text-white font-label text-xs font-semibold uppercase tracking-wider rounded-sm shadow-sm transition cursor-pointer"
+                >
+                  Save Service
+                </button>
               </div>
             </form>
           </div>
@@ -371,17 +454,41 @@ export default function CategoryModals() {
 
       {/* MODAL: DIAGNOSTIC SERVICE */}
       {showDiagServiceModal && (
-        <div className="fixed inset-0 z-50 bg-slate-950/80 backdrop-blur-md flex items-center justify-center p-4">
-          <div className="bg-slate-900 border border-slate-800 rounded-2xl p-6 max-w-md w-full space-y-4">
-            <h3 className="text-base font-bold text-white">{editingDiagService ? 'Edit Diagnostic Service' : 'Add Diagnostic Service'}</h3>
-            <form onSubmit={handleSaveDiagService} className="space-y-3 text-xs">
+        <div className="fixed inset-0 z-50 bg-slate-900/60 backdrop-blur-xs flex items-center justify-center p-4">
+          <div className="bg-white border border-[#d1d5dc] rounded-sm p-6 max-w-md w-full space-y-4 shadow-xl">
+            <div className="flex items-center justify-between border-b border-[#e3e5ea] pb-3">
+              <h3 className="text-base font-serif font-bold text-slate-900">
+                {editingDiagService ? 'Edit Diagnostic Service' : 'Add Diagnostic Service'}
+              </h3>
+              <button onClick={() => setShowDiagServiceModal(false)} className="text-slate-400 hover:text-slate-700 p-1">
+                <X className="w-4 h-4" />
+              </button>
+            </div>
+            <form onSubmit={handleSaveDiagService} className="space-y-3.5 text-xs font-body">
               <div>
-                <label className="block text-slate-300 mb-1">Service Name *</label>
-                <input type="text" required value={diagServiceForm.name} onChange={e => setDiagServiceForm({ ...diagServiceForm, name: e.target.value })} className="w-full bg-slate-950 border border-slate-800 rounded-xl px-3 py-2 text-white" />
+                <label className="block text-slate-700 font-label font-bold uppercase text-[11px] mb-1">Service Name *</label>
+                <input 
+                  type="text" 
+                  required 
+                  value={diagServiceForm.name} 
+                  onChange={e => setDiagServiceForm({ ...diagServiceForm, name: e.target.value })} 
+                  className="w-full bg-white border border-[#d1d5dc] rounded-sm px-3 py-2 text-slate-900 font-semibold focus:outline-none focus:border-[#094cb2]" 
+                />
               </div>
-              <div className="flex justify-end gap-2 pt-2">
-                <button type="button" onClick={() => setShowDiagServiceModal(false)} className="px-3 py-1.5 bg-slate-800 text-slate-300 font-bold rounded-xl">Cancel</button>
-                <button type="submit" className="px-4 py-1.5 bg-purple-600 text-white font-bold rounded-xl">Save</button>
+              <div className="flex justify-end gap-2 pt-3 border-t border-[#e3e5ea]">
+                <button 
+                  type="button" 
+                  onClick={() => setShowDiagServiceModal(false)} 
+                  className="px-4 py-2 border border-[#d1d5dc] bg-white hover:bg-[#f7f6f7] text-slate-700 font-label text-xs font-semibold uppercase tracking-wider rounded-sm transition cursor-pointer"
+                >
+                  Cancel
+                </button>
+                <button 
+                  type="submit" 
+                  className="px-5 py-2 bg-[#094cb2] hover:bg-[#083e91] text-white font-label text-xs font-semibold uppercase tracking-wider rounded-sm shadow-sm transition cursor-pointer"
+                >
+                  Save Service
+                </button>
               </div>
             </form>
           </div>
@@ -390,17 +497,41 @@ export default function CategoryModals() {
 
       {/* MODAL: TEST CATEGORY */}
       {showTestCatModal && (
-        <div className="fixed inset-0 z-50 bg-slate-950/80 backdrop-blur-md flex items-center justify-center p-4">
-          <div className="bg-slate-900 border border-slate-800 rounded-2xl p-6 max-w-md w-full space-y-4">
-            <h3 className="text-base font-bold text-white">{editingTestCat ? 'Edit Test Category' : 'Add Test Category'}</h3>
-            <form onSubmit={handleSaveTestCat} className="space-y-3 text-xs">
+        <div className="fixed inset-0 z-50 bg-slate-900/60 backdrop-blur-xs flex items-center justify-center p-4">
+          <div className="bg-white border border-[#d1d5dc] rounded-sm p-6 max-w-md w-full space-y-4 shadow-xl">
+            <div className="flex items-center justify-between border-b border-[#e3e5ea] pb-3">
+              <h3 className="text-base font-serif font-bold text-slate-900">
+                {editingTestCat ? 'Edit Test Category' : 'Add Test Category'}
+              </h3>
+              <button onClick={() => setShowTestCatModal(false)} className="text-slate-400 hover:text-slate-700 p-1">
+                <X className="w-4 h-4" />
+              </button>
+            </div>
+            <form onSubmit={handleSaveTestCat} className="space-y-3.5 text-xs font-body">
               <div>
-                <label className="block text-slate-300 mb-1">Category Name *</label>
-                <input type="text" required value={testCatForm.name} onChange={e => setTestCatForm({ ...testCatForm, name: e.target.value })} className="w-full bg-slate-950 border border-slate-800 rounded-xl px-3 py-2 text-white" />
+                <label className="block text-slate-700 font-label font-bold uppercase text-[11px] mb-1">Category Name *</label>
+                <input 
+                  type="text" 
+                  required 
+                  value={testCatForm.name} 
+                  onChange={e => setTestCatForm({ ...testCatForm, name: e.target.value })} 
+                  className="w-full bg-white border border-[#d1d5dc] rounded-sm px-3 py-2 text-slate-900 font-semibold focus:outline-none focus:border-[#094cb2]" 
+                />
               </div>
-              <div className="flex justify-end gap-2 pt-2">
-                <button type="button" onClick={() => setShowTestCatModal(false)} className="px-3 py-1.5 bg-slate-800 text-slate-300 font-bold rounded-xl">Cancel</button>
-                <button type="submit" className="px-4 py-1.5 bg-teal-600 text-white font-bold rounded-xl">Save</button>
+              <div className="flex justify-end gap-2 pt-3 border-t border-[#e3e5ea]">
+                <button 
+                  type="button" 
+                  onClick={() => setShowTestCatModal(false)} 
+                  className="px-4 py-2 border border-[#d1d5dc] bg-white hover:bg-[#f7f6f7] text-slate-700 font-label text-xs font-semibold uppercase tracking-wider rounded-sm transition cursor-pointer"
+                >
+                  Cancel
+                </button>
+                <button 
+                  type="submit" 
+                  className="px-5 py-2 bg-[#094cb2] hover:bg-[#083e91] text-white font-label text-xs font-semibold uppercase tracking-wider rounded-sm shadow-sm transition cursor-pointer"
+                >
+                  Save Category
+                </button>
               </div>
             </form>
           </div>

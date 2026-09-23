@@ -24,31 +24,34 @@ export default function AdminPagination({ page, totalPages, onPageChange }) {
   });
 
   return (
-    <nav className="flex items-center justify-between p-4 bg-slate-950 border-t border-slate-800 flex-wrap gap-3" aria-label="Pagination">
-      <div className="text-xs text-slate-400">
-        Page <span className="font-bold text-white">{current}</span> of <span className="font-bold text-white">{total}</span>
+    <nav className="flex flex-col sm:flex-row items-center justify-between p-3.5 bg-[#f7f6f7] border-t border-[#d1d5dc] gap-3 font-label text-xs text-slate-600" aria-label="Pagination">
+      <div className="flex items-center gap-1.5">
+        <span>Showing Page</span>
+        <strong className="text-slate-900 font-semibold">{current}</strong>
+        <span>of</span>
+        <strong className="text-slate-900 font-semibold">{total}</strong>
       </div>
-      <div className="flex items-center gap-1.5 flex-wrap">
+      <div className="flex items-center gap-1">
         <button
           onClick={() => onPageChange(current - 1)}
           disabled={current <= 1}
           aria-label="Previous page"
-          className="p-2 rounded-xl border border-slate-700 bg-slate-900 text-slate-400 disabled:opacity-40 hover:border-emerald-500 hover:text-emerald-400 disabled:cursor-not-allowed transition-colors cursor-pointer"
+          className="p-1.5 rounded-sm border border-[#d1d5dc] bg-white text-slate-600 hover:bg-[#f0eeef] disabled:opacity-40 disabled:cursor-not-allowed transition-colors shadow-subtle cursor-pointer"
         >
-          <ChevronLeft className="w-4 h-4" />
+          <ChevronLeft className="w-3.5 h-3.5" />
         </button>
         {items.map((it) =>
           it.type === 'ellipsis' ? (
-            <span key={it.key} className="px-1 text-slate-500 select-none">…</span>
+            <span key={it.key} className="px-1 text-slate-400 select-none">…</span>
           ) : (
             <button
               key={it.key}
               onClick={() => onPageChange(it.page)}
               aria-current={it.page === current ? 'page' : undefined}
-              className={`min-w-9 h-9 px-3 rounded-xl text-xs font-bold transition-all cursor-pointer ${
+              className={`w-7 h-7 rounded-sm text-xs font-medium transition-all flex items-center justify-center cursor-pointer ${
                 it.page === current
-                  ? 'bg-emerald-600 text-white border border-emerald-500 shadow-sm'
-                  : 'bg-slate-900 text-slate-400 border border-slate-700 hover:border-emerald-500 hover:text-emerald-400'
+                  ? 'bg-[#094cb2] text-white shadow-sm font-semibold'
+                  : 'bg-white text-slate-700 border border-[#d1d5dc] hover:bg-[#f0eeef] shadow-subtle'
               }`}
             >
               {it.page}
@@ -59,11 +62,12 @@ export default function AdminPagination({ page, totalPages, onPageChange }) {
           onClick={() => onPageChange(current + 1)}
           disabled={current >= total}
           aria-label="Next page"
-          className="p-2 rounded-xl border border-slate-700 bg-slate-900 text-slate-400 disabled:opacity-40 hover:border-emerald-500 hover:text-emerald-400 disabled:cursor-not-allowed transition-colors cursor-pointer"
+          className="p-1.5 rounded-sm border border-[#d1d5dc] bg-white text-slate-600 hover:bg-[#f0eeef] disabled:opacity-40 disabled:cursor-not-allowed transition-colors shadow-subtle cursor-pointer"
         >
-          <ChevronRight className="w-4 h-4" />
+          <ChevronRight className="w-3.5 h-3.5" />
         </button>
       </div>
     </nav>
   );
 }
+

@@ -1,5 +1,5 @@
 import React, { useState, useEffect } from 'react';
-import { XCircle, CheckCircle } from 'lucide-react';
+import { X, CheckCircle } from 'lucide-react';
 import { useAdminContext } from '../../context/AdminContext';
 import { api } from '../../../../services/api';
 import { 
@@ -173,295 +173,306 @@ export default function HospitalModal() {
   const currentThanas = getThanasForDistrict(hospitalForm.district);
 
   return (
-    <div className="fixed inset-0 z-50 bg-slate-950/80 backdrop-blur-md flex items-center justify-center p-4 overflow-y-auto">
-      <div className="bg-slate-900 border border-slate-800 rounded-3xl max-w-2xl w-full my-auto shadow-2xl max-h-[90vh] flex flex-col overflow-hidden">
-        <div className="flex items-center justify-between border-b border-slate-800 px-6 py-4 shrink-0">
-          <h3 className="text-lg font-bold text-white">
-            {editingHospital ? 'Edit Hospital' : 'Add New Hospital Branch'}
+    <div className="fixed inset-0 z-50 bg-slate-900/60 backdrop-blur-xs flex items-center justify-center p-4 overflow-y-auto">
+      <div className="bg-white border border-[#d1d5dc] rounded-sm max-w-2xl w-full my-auto shadow-xl max-h-[90vh] flex flex-col overflow-hidden">
+        <div className="flex items-center justify-between border-b border-[#e3e5ea] px-6 py-4 shrink-0 bg-white">
+          <h3 className="text-lg font-serif font-bold text-slate-900">
+            {editingHospital ? 'Edit Hospital Facility' : 'Register New Hospital Branch'}
           </h3>
           <button
             onClick={() => setShowHospitalModal(false)}
-            className="text-slate-400 hover:text-white transition cursor-pointer"
+            className="text-slate-400 hover:text-slate-700 transition cursor-pointer p-1"
           >
-            <XCircle className="w-6 h-6" />
+            <X className="w-5 h-5" />
           </button>
         </div>
 
         <form onSubmit={handleSaveHospital} className="flex flex-col min-h-0 flex-1 overflow-hidden">
-          <div className="overflow-y-auto px-6 py-4 space-y-4 text-xs flex-1">
+          <div className="overflow-y-auto px-6 py-4 space-y-4 text-xs font-body flex-1">
           
+            <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
+              <div>
+                <label className="block text-slate-700 font-label font-bold uppercase text-[11px] mb-1">Ownership Type *</label>
+                <select
+                  required
+                  value={hospitalForm.ownership_type}
+                  onChange={e => setHospitalForm({ ...hospitalForm, ownership_type: e.target.value })}
+                  className="w-full bg-white border border-[#d1d5dc] rounded-sm px-3 py-2 text-slate-800 font-bold focus:outline-none focus:border-[#094cb2]"
+                >
+                  <option value="private">Private Hospital / Clinic</option>
+                  <option value="government">Government / Public Hospital</option>
+                </select>
+              </div>
+
+              <div>
+                <label className="block text-slate-700 font-label font-bold uppercase text-[11px] mb-1">Hospital Category</label>
+                <select
+                  value={hospitalForm.category_id}
+                  onChange={e => setHospitalForm({ ...hospitalForm, category_id: e.target.value })}
+                  className="w-full bg-white border border-[#d1d5dc] rounded-sm px-3 py-2 text-slate-800 font-bold focus:outline-none focus:border-[#094cb2]"
+                >
+                  <option value="">-- None / Select Category --</option>
+                  {hospitalCategories.map(cat => (
+                    <option key={cat.id} value={cat.id}>{cat.name}</option>
+                  ))}
+                </select>
+              </div>
+            </div>
+
             <div>
-              <label className="block text-slate-300 font-semibold mb-1">Ownership Type *</label>
-              <select
+              <label className="block text-slate-700 font-label font-bold uppercase text-[11px] mb-1">Hospital Name *</label>
+              <input
+                type="text"
                 required
-                value={hospitalForm.ownership_type}
-                onChange={e => setHospitalForm({ ...hospitalForm, ownership_type: e.target.value })}
-                className="w-full bg-slate-950 border border-slate-800 rounded-xl px-3 py-2.5 text-white font-bold"
-              >
-                <option value="private">Private</option>
-                <option value="government">Government</option>
-              </select>
+                placeholder="e.g. Ibn Sina Healthcare Group"
+                value={hospitalForm.name}
+                onChange={e => setHospitalForm({ ...hospitalForm, name: e.target.value })}
+                className="w-full bg-white border border-[#d1d5dc] rounded-sm px-3 py-2 text-slate-900 font-semibold focus:outline-none focus:border-[#094cb2]"
+              />
+            </div>
+
+            {/* 3-LEVEL LOCATION NARROWING: Division -> District -> Area (Thana) */}
+            <div className="bg-[#f7f6f7] p-3.5 rounded-sm border border-[#d1d5dc] space-y-3">
+              <div className="text-[10px] font-label font-bold uppercase tracking-wider text-[#094cb2]">
+                Location &amp; Branch Geography (Division &gt; District &gt; Thana)
+              </div>
+
+              <div className="grid grid-cols-1 sm:grid-cols-3 gap-3">
+                {/* Division */}
+                <div>
+                  <label className="block text-slate-700 font-label font-bold uppercase text-[10px] mb-1">1. Division *</label>
+                  <select
+                    required
+                    value={hospitalForm.division}
+                    onChange={e => {
+                      const newDiv = e.target.value;
+                      const dists = getDistrictsForDivision(newDiv);
+                      const newDist = dists[0] || 'Dhaka';
+                      const thanas = getThanasForDistrict(newDist);
+                      setHospitalForm({
+                        ...hospitalForm,
+                        division: newDiv,
+                        district: newDist,
+                        area: thanas[0] || '',
+                        branch: thanas[0] || 'Main',
+                        isCustomBranch: false,
+                        customBranch: ''
+                      });
+                    }}
+                    className="w-full bg-white border border-[#d1d5dc] rounded-sm px-2.5 py-1.5 text-slate-800 font-bold focus:outline-none focus:border-[#094cb2]"
+                  >
+                    {DIVISIONS.map(div => (
+                      <option key={div} value={div}>{div} Division</option>
+                    ))}
+                  </select>
+                </div>
+
+                {/* District */}
+                <div>
+                  <label className="block text-slate-700 font-label font-bold uppercase text-[10px] mb-1">2. District *</label>
+                  <select
+                    required
+                    value={hospitalForm.district}
+                    onChange={e => {
+                      const newDist = e.target.value;
+                      const thanas = getThanasForDistrict(newDist);
+                      setHospitalForm({
+                        ...hospitalForm,
+                        district: newDist,
+                        area: thanas[0] || '',
+                        branch: thanas[0] || 'Main',
+                        isCustomBranch: false,
+                        customBranch: ''
+                      });
+                    }}
+                    className="w-full bg-white border border-[#d1d5dc] rounded-sm px-2.5 py-1.5 text-slate-800 font-bold focus:outline-none focus:border-[#094cb2]"
+                  >
+                    {currentDistricts.map(dist => (
+                      <option key={dist} value={dist}>{dist}</option>
+                    ))}
+                  </select>
+                </div>
+
+                {/* Area / Thana */}
+                <div>
+                  <label className="block text-slate-700 font-label font-bold uppercase text-[10px] mb-1">3. Thana / Branch *</label>
+                  <select
+                    required
+                    value={hospitalForm.isCustomBranch ? 'Other' : hospitalForm.branch}
+                    onChange={e => {
+                      const val = e.target.value;
+                      if (val === 'Other') {
+                        setHospitalForm({ ...hospitalForm, isCustomBranch: true, branch: 'Other' });
+                      } else {
+                        setHospitalForm({ 
+                          ...hospitalForm, 
+                          isCustomBranch: false, 
+                          branch: val, 
+                          area: val,
+                          customBranch: '' 
+                        });
+                      }
+                    }}
+                    className="w-full bg-white border border-[#d1d5dc] rounded-sm px-2.5 py-1.5 text-slate-800 font-bold focus:outline-none focus:border-[#094cb2]"
+                  >
+                    {currentThanas.map(th => (
+                      <option key={th} value={th}>{th}</option>
+                    ))}
+                    <option value="Other">+ Custom Branch Name</option>
+                  </select>
+                </div>
+              </div>
+
+              {hospitalForm.isCustomBranch && (
+                <div className="mt-2">
+                  <label className="block text-slate-700 font-label font-bold uppercase text-[10px] mb-1">Custom Branch / Area Name *</label>
+                  <input
+                    type="text"
+                    required
+                    placeholder="e.g. Rampura Main Branch"
+                    value={hospitalForm.customBranch}
+                    onChange={e => setHospitalForm({ 
+                      ...hospitalForm, 
+                      customBranch: e.target.value,
+                      area: e.target.value 
+                    })}
+                    className="w-full bg-white border border-[#d1d5dc] rounded-sm px-3 py-1.5 text-slate-800 focus:outline-none focus:border-[#094cb2]"
+                  />
+                </div>
+              )}
             </div>
 
             <div>
-              <label className="block text-slate-300 font-semibold mb-1">Hospital Category</label>
-              <select
-                value={hospitalForm.category_id}
-                onChange={e => setHospitalForm({ ...hospitalForm, category_id: e.target.value })}
-                className="w-full bg-slate-950 border border-slate-800 rounded-xl px-3 py-2.5 text-white font-bold"
-              >
-                <option value="">-- None / Select Category --</option>
-                {hospitalCategories.map(cat => (
-                  <option key={cat.id} value={cat.id}>{cat.name}</option>
-                ))}
-              </select>
+              <label className="block text-slate-700 font-label font-bold uppercase text-[11px] mb-1">Full Street Address</label>
+              <input
+                type="text"
+                placeholder="e.g. House 48, Road 9/A, Dhanmondi"
+                value={hospitalForm.address}
+                onChange={e => setHospitalForm({ ...hospitalForm, address: e.target.value })}
+                className="w-full bg-white border border-[#d1d5dc] rounded-sm px-3 py-2 text-slate-800 focus:outline-none focus:border-[#094cb2]"
+              />
             </div>
 
-          <div>
-            <label className="block text-slate-300 font-semibold mb-1">Hospital Name *</label>
-            <input
-              type="text"
-              required
-              placeholder="e.g. Ibn Sina Healthcare Group"
-              value={hospitalForm.name}
-              onChange={e => setHospitalForm({ ...hospitalForm, name: e.target.value })}
-              className="w-full bg-slate-950 border border-slate-800 rounded-xl px-3 py-2 text-white font-semibold"
-            />
-          </div>
-
-          {/* 3-LEVEL LOCATION NARROWING: Division -> District -> Area (Thana) */}
-          <div className="bg-slate-950/70 p-3.5 rounded-2xl border border-slate-800/80 space-y-3">
-            <div className="text-[11px] font-extrabold uppercase tracking-wider text-emerald-400">
-              Location & Branch Setup (Division &gt; District &gt; Thana)
-            </div>
-
-            <div className="grid grid-cols-1 sm:grid-cols-3 gap-3">
-              {/* Division */}
+            <div className="grid grid-cols-1 md:grid-cols-3 gap-3">
               <div>
-                <label className="block text-slate-300 font-semibold mb-1">1. Division *</label>
-                <select
-                  required
-                  value={hospitalForm.division}
-                  onChange={e => {
-                    const newDiv = e.target.value;
-                    const dists = getDistrictsForDivision(newDiv);
-                    const newDist = dists[0] || 'Dhaka';
-                    const thanas = getThanasForDistrict(newDist);
-                    setHospitalForm({
-                      ...hospitalForm,
-                      division: newDiv,
-                      district: newDist,
-                      area: thanas[0] || '',
-                      branch: thanas[0] || 'Main',
-                      isCustomBranch: false,
-                      customBranch: ''
-                    });
-                  }}
-                  className="w-full bg-slate-900 border border-emerald-500/40 rounded-xl px-2.5 py-2 text-white font-bold"
-                >
-                  {DIVISIONS.map(div => (
-                    <option key={div} value={div}>{div} Division</option>
-                  ))}
-                </select>
-              </div>
-
-              {/* District */}
-              <div>
-                <label className="block text-slate-300 font-semibold mb-1">2. District *</label>
-                <select
-                  required
-                  value={hospitalForm.district}
-                  onChange={e => {
-                    const newDist = e.target.value;
-                    const thanas = getThanasForDistrict(newDist);
-                    setHospitalForm({
-                      ...hospitalForm,
-                      district: newDist,
-                      area: thanas[0] || '',
-                      branch: thanas[0] || 'Main',
-                      isCustomBranch: false,
-                      customBranch: ''
-                    });
-                  }}
-                  className="w-full bg-slate-900 border border-emerald-500/40 rounded-xl px-2.5 py-2 text-white font-bold"
-                >
-                  {currentDistricts.map(dist => (
-                    <option key={dist} value={dist}>{dist}</option>
-                  ))}
-                </select>
-              </div>
-
-              {/* Area / Thana */}
-              <div>
-                <label className="block text-slate-300 font-semibold mb-1">3. Thana / Branch *</label>
-                <select
-                  required
-                  value={hospitalForm.isCustomBranch ? 'Other' : hospitalForm.branch}
-                  onChange={e => {
-                    const val = e.target.value;
-                    if (val === 'Other') {
-                      setHospitalForm({ ...hospitalForm, isCustomBranch: true, branch: 'Other' });
-                    } else {
-                      setHospitalForm({ 
-                        ...hospitalForm, 
-                        isCustomBranch: false, 
-                        branch: val, 
-                        area: val,
-                        customBranch: '' 
-                      });
-                    }
-                  }}
-                  className="w-full bg-slate-900 border border-emerald-500/40 rounded-xl px-2.5 py-2 text-white font-bold"
-                >
-                  {currentThanas.map(th => (
-                    <option key={th} value={th}>{th}</option>
-                  ))}
-                  <option value="Other">+ Custom Branch Name</option>
-                </select>
-              </div>
-            </div>
-
-            {hospitalForm.isCustomBranch && (
-              <div className="mt-2">
-                <label className="block text-slate-300 font-semibold mb-1">Custom Branch / Area Name *</label>
+                <label className="block text-slate-700 font-label font-bold uppercase text-[11px] mb-1">Contact Phone</label>
                 <input
                   type="text"
-                  required
-                  placeholder="e.g. Rampura Main Branch"
-                  value={hospitalForm.customBranch}
-                  onChange={e => setHospitalForm({ 
-                    ...hospitalForm, 
-                    customBranch: e.target.value,
-                    area: e.target.value 
-                  })}
-                  className="w-full bg-slate-900 border border-slate-700 rounded-xl px-3 py-2 text-white"
+                  value={hospitalForm.phone}
+                  onChange={e => setHospitalForm({ ...hospitalForm, phone: e.target.value })}
+                  className="w-full bg-white border border-[#d1d5dc] rounded-sm px-3 py-2 text-slate-800 font-mono focus:outline-none focus:border-[#094cb2]"
                 />
               </div>
-            )}
-          </div>
+              <div>
+                <label className="block text-slate-700 font-label font-bold uppercase text-[11px] mb-1">Email</label>
+                <input
+                  type="email"
+                  value={hospitalForm.email}
+                  onChange={e => setHospitalForm({ ...hospitalForm, email: e.target.value })}
+                  className="w-full bg-white border border-[#d1d5dc] rounded-sm px-3 py-2 text-slate-800 focus:outline-none focus:border-[#094cb2]"
+                />
+              </div>
+              <div>
+                <label className="block text-slate-700 font-label font-bold uppercase text-[11px] mb-1">Open Hours / Timing</label>
+                <input
+                  type="text"
+                  value={hospitalForm.open_timing}
+                  onChange={e => setHospitalForm({ ...hospitalForm, open_timing: e.target.value })}
+                  className="w-full bg-white border border-[#d1d5dc] rounded-sm px-3 py-2 text-slate-800 focus:outline-none focus:border-[#094cb2]"
+                />
+              </div>
+            </div>
 
-          <div>
-            <label className="block text-slate-300 font-semibold mb-1">Full Address</label>
-            <input
-              type="text"
-              placeholder="e.g. House 48, Road 9/A, Dhanmondi"
-              value={hospitalForm.address}
-              onChange={e => setHospitalForm({ ...hospitalForm, address: e.target.value })}
-              className="w-full bg-slate-950 border border-slate-800 rounded-xl px-3 py-2 text-white"
-            />
-          </div>
+            <div className="grid grid-cols-1 md:grid-cols-2 gap-3">
+              <div>
+                <label className="block text-slate-700 font-label font-bold uppercase text-[11px] mb-1">Tagline</label>
+                <input
+                  type="text"
+                  value={hospitalForm.tagline}
+                  onChange={e => setHospitalForm({ ...hospitalForm, tagline: e.target.value })}
+                  className="w-full bg-white border border-[#d1d5dc] rounded-sm px-3 py-2 text-slate-800 focus:outline-none focus:border-[#094cb2]"
+                />
+              </div>
+              <div>
+                <label className="block text-slate-700 font-label font-bold uppercase text-[11px] mb-1">Badge Tag</label>
+                <input
+                  type="text"
+                  value={hospitalForm.badge}
+                  onChange={e => setHospitalForm({ ...hospitalForm, badge: e.target.value })}
+                  className="w-full bg-white border border-[#d1d5dc] rounded-sm px-3 py-2 text-slate-800 focus:outline-none focus:border-[#094cb2]"
+                />
+              </div>
+            </div>
 
-          <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
             <div>
-              <label className="block text-slate-300 font-semibold mb-1">Contact Phone</label>
-              <input
-                type="text"
-                value={hospitalForm.phone}
-                onChange={e => setHospitalForm({ ...hospitalForm, phone: e.target.value })}
-                className="w-full bg-slate-950 border border-slate-800 rounded-xl px-3 py-2 text-white font-mono"
-              />
+              <label className="block text-slate-700 font-label font-bold uppercase text-[11px] mb-1">Hospital Description</label>
+              <textarea
+                rows="2"
+                value={hospitalForm.description}
+                onChange={e => setHospitalForm({ ...hospitalForm, description: e.target.value })}
+                className="w-full bg-white border border-[#d1d5dc] rounded-sm px-3 py-2 text-slate-800 focus:outline-none focus:border-[#094cb2] resize-y"
+              ></textarea>
             </div>
-            <div>
-              <label className="block text-slate-300 font-semibold mb-1">Email</label>
-              <input
-                type="email"
-                value={hospitalForm.email}
-                onChange={e => setHospitalForm({ ...hospitalForm, email: e.target.value })}
-                className="w-full bg-slate-950 border border-slate-800 rounded-xl px-3 py-2 text-white"
-              />
+
+            <div className="pt-2">
+              <label className="block text-slate-700 font-label font-bold uppercase text-[11px] mb-1.5">
+                Clinical Services &amp; Facilities (Click to Select / Deselect) *
+              </label>
+              <div className="flex flex-wrap gap-2 p-3 bg-[#f7f6f7] border border-[#d1d5dc] rounded-sm max-h-44 overflow-y-auto">
+                {hospitalServices.map(srv => {
+                  const isSelected = hospitalForm.service_ids.includes(srv.id);
+                  return (
+                    <button
+                      key={srv.id}
+                      type="button"
+                      onClick={() => toggleHospitalServiceSelection(srv.id)}
+                      className={`px-3 py-1.5 rounded-sm border text-xs font-body font-semibold transition flex items-center gap-1.5 ${
+                        isSelected 
+                          ? 'bg-[#e7ebff] text-[#094cb2] border-[#094cb2] shadow-xs' 
+                          : 'bg-white text-slate-600 border-[#d1d5dc] hover:border-slate-400'
+                      }`}
+                    >
+                      <CheckCircle className={`w-3.5 h-3.5 ${isSelected ? 'opacity-100 text-[#094cb2]' : 'opacity-0'}`} />
+                      <span>{srv.name}</span>
+                    </button>
+                  );
+                })}
+              </div>
             </div>
-            <div>
-              <label className="block text-slate-300 font-semibold mb-1">Open Hours / Timing</label>
+
+            <div className="flex items-center gap-2 pt-2">
               <input
-                type="text"
-                value={hospitalForm.open_timing}
-                onChange={e => setHospitalForm({ ...hospitalForm, open_timing: e.target.value })}
-                className="w-full bg-slate-950 border border-slate-800 rounded-xl px-3 py-2 text-white"
+                type="checkbox"
+                id="has_diagnostic_center"
+                checked={hospitalForm.has_diagnostic_center}
+                onChange={e => setHospitalForm({ ...hospitalForm, has_diagnostic_center: e.target.checked })}
+                className="w-4 h-4 text-[#094cb2] rounded-xs border-[#d1d5dc] focus:ring-[#094cb2]"
               />
+              <label htmlFor="has_diagnostic_center" className="text-slate-700 font-bold cursor-pointer text-xs">
+                Has Internal Diagnostic Center / Pathology Laboratory
+              </label>
             </div>
+
           </div>
 
-          <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-            <div>
-              <label className="block text-slate-300 font-semibold mb-1">Tagline</label>
-              <input
-                type="text"
-                value={hospitalForm.tagline}
-                onChange={e => setHospitalForm({ ...hospitalForm, tagline: e.target.value })}
-                className="w-full bg-slate-950 border border-slate-800 rounded-xl px-3 py-2 text-white"
-              />
-            </div>
-            <div>
-              <label className="block text-slate-300 font-semibold mb-1">Badge Tag</label>
-              <input
-                type="text"
-                value={hospitalForm.badge}
-                onChange={e => setHospitalForm({ ...hospitalForm, badge: e.target.value })}
-                className="w-full bg-slate-950 border border-slate-800 rounded-xl px-3 py-2 text-white"
-              />
-            </div>
+          <div className="flex justify-end gap-3 px-6 py-4 border-t border-[#e3e5ea] shrink-0 bg-[#faf9fa]">
+            <button 
+              type="button" 
+              onClick={() => setShowHospitalModal(false)} 
+              className="px-4 py-2 border border-[#d1d5dc] bg-white hover:bg-[#f7f6f7] text-slate-700 font-label text-xs font-semibold uppercase tracking-wider rounded-sm transition cursor-pointer"
+            >
+              Cancel
+            </button>
+            <button 
+              type="submit" 
+              className="px-5 py-2 bg-[#094cb2] hover:bg-[#083e91] text-white font-label text-xs font-semibold uppercase tracking-wider rounded-sm shadow-sm transition cursor-pointer"
+            >
+              Save Hospital
+            </button>
           </div>
 
-          <div>
-            <label className="block text-slate-300 font-semibold mb-1">Hospital Description</label>
-            <textarea
-              rows="2"
-              value={hospitalForm.description}
-              onChange={e => setHospitalForm({ ...hospitalForm, description: e.target.value })}
-              className="w-full bg-slate-950 border border-slate-800 rounded-xl px-3 py-2 text-white"
-            ></textarea>
-          </div>
-
-          <div className="pt-2">
-            <label className="block text-slate-300 font-semibold mb-1.5">Services & Facilities (Click to Select / Deselect) *</label>
-            <div className="flex flex-wrap gap-2 p-3 bg-slate-950 border border-slate-800 rounded-xl max-h-44 overflow-y-auto">
-              {hospitalServices.map(srv => {
-                const isSelected = hospitalForm.service_ids.includes(srv.id);
-                return (
-                  <button
-                    key={srv.id}
-                    type="button"
-                    onClick={() => toggleHospitalServiceSelection(srv.id)}
-                    className={`px-3 py-1.5 rounded-xl border text-xs font-bold transition flex items-center gap-1.5 ${
-                      isSelected 
-                        ? 'bg-emerald-500/20 text-emerald-300 border-emerald-500/50 shadow-sm shadow-emerald-500/20' 
-                        : 'bg-slate-900 text-slate-400 border-slate-800 hover:border-slate-700 hover:text-slate-200'
-                    }`}
-                  >
-                    <CheckCircle className={`w-3.5 h-3.5 ${isSelected ? 'opacity-100 text-emerald-400' : 'opacity-0'}`} />
-                    <span>{srv.name}</span>
-                  </button>
-                );
-              })}
-            </div>
-          </div>
-
-          <div className="flex items-center gap-2 pt-2">
-            <input
-              type="checkbox"
-              id="has_diagnostic_center"
-              checked={hospitalForm.has_diagnostic_center}
-              onChange={e => setHospitalForm({ ...hospitalForm, has_diagnostic_center: e.target.checked })}
-              className="w-4 h-4 text-emerald-500 bg-slate-950 border-slate-700 rounded focus:ring-emerald-500 focus:ring-offset-slate-900"
-            />
-            <label htmlFor="has_diagnostic_center" className="text-slate-300 font-bold cursor-pointer">
-              Has Internal Diagnostic Center / Lab
-            </label>
-          </div>
-
-        </div>
-
-        <div className="flex justify-end gap-3 px-6 py-4 border-t border-slate-800 shrink-0 bg-slate-900/90">
-          <button type="button" onClick={() => setShowHospitalModal(false)} className="px-4 py-2 bg-slate-800 hover:bg-slate-700 text-slate-300 font-bold rounded-xl transition cursor-pointer">
-            Cancel
-          </button>
-          <button type="submit" className="px-5 py-2 bg-emerald-600 hover:bg-emerald-500 text-white font-bold rounded-xl shadow-lg transition cursor-pointer">
-            Save Hospital
-          </button>
-        </div>
-
-      </form>
+        </form>
+      </div>
     </div>
-  </div>
-);
+  );
 }

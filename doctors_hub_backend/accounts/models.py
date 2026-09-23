@@ -111,7 +111,7 @@ class User(AbstractBaseUser, PermissionsMixin):
     # but their logic now relies on user_roles.
     @property
     def is_super_admin(self):
-        return self.is_superuser or self.user_roles.filter(role__is_system=True, role__scope_type=Role.ScopeType.GLOBAL, role__name="Super Admin").exists()
+        return self.is_superuser or self.user_roles.filter(role__is_active=True, role__scope_type=Role.ScopeType.GLOBAL).exists()
 
     @property
     def is_facility_admin(self):

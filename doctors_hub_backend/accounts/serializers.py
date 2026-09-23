@@ -179,3 +179,90 @@ class LoginSerializer(serializers.Serializer):
         if user and user.is_active:
             return user
         raise serializers.ValidationError("Incorrect Credentials")
+
+
+class UserCreateSerializer(serializers.ModelSerializer):
+    password = serializers.CharField(write_only=True, min_length=6)
+    role_id = serializers.UUIDField(required=False, allow_null=True, write_only=True, default=None)
+    facility_id = serializers.UUIDField(required=False, allow_null=True, write_only=True, default=None)
+
+    class Meta:
+        model = User
+        fields = (
+            'id', 'phone_number', 'password', 'first_name', 'last_name',
+            'is_active', 'is_verified', 'is_staff', 'is_superuser',
+            'role_id', 'facility_id'
+        )
+        read_only_fields = ('id',)
+
+    def validate_phone_number(self, value):
+        from core.validators import bangladesh_phone_validator
+        from django.core.exceptions import ValidationError as DjangoValidationError
+        phone = value.strip()
+        try:
+            bangladesh_phone_validator(phone)
+        except DjangoValidationError as e:
+            raise serializers.ValidationError(e.message)
+        if User.objects.filter(phone_number=phone).exists():
+            raise serializers.ValidationError("A user with this phone number already exists.")
+        return phone
+
+    def validate(self, attrs):
+        request_user = self.context.get('request').user if self.context.get('request') else None
+        is_creator_super = getattr(request_user, 'is_superuser', False) or getattr(request_user, 'is_super_admin', False)
+
+        # Superuser and Staff privileges can only be set by Super Admins
+        if attrs.get('is_superuser') and not is_creator_super:
+            raise serializers.ValidationError({"is_superuser": "Only Super Admins can create superusers."})
+        if attrs.get('is_staff') and not is_creator_super:
+            attrs['is_staff'] = False
+
+        role_id = attrs.get('role_id')
+        facility_id = attrs.get('facility_id')
+
+        if role_id:
+            role = Role.objects.filter(id=role_id, is_active=True).first()
+            if not role:
+                raise serializers.ValidationError({"role_id": "Selected role does not exist or is inactive."})
+            
+            if role.scope_type == Role.ScopeType.GLOBAL and not is_creator_super:
+                raise serializers.ValidationError({"role_id": "Only Super Admins can assign global roles."})
+
+            if role.scope_type == Role.ScopeType.FACILITY:
+                if not facility_id:
+                    raise serializers.ValidationError({"facility_id": "A facility is required for facility-scoped roles."})
+                from facilities.models import Location
+                loc = Location.objects.filter(id=facility_id, is_active=True).first()
+                if not loc:
+                    raise serializers.ValidationError({"facility_id": "Selected facility does not exist."})
+                if not is_creator_super and str(facility_id) not in [str(lid) for lid in getattr(request_user, 'managed_location_ids', [])]:
+                    raise serializers.ValidationError({"facility_id": "You can only assign roles for facilities you manage."})
+
+        return attrs
+
+    def create(self, validated_data):
+        password = validated_data.pop('password')
+        role_id = validated_data.pop('role_id', None)
+        facility_id = validated_data.pop('facility_id', None)
+
+        user = User.objects.create(
+            phone_number=validated_data.get('phone_number'),
+            first_name=validated_data.get('first_name', ''),
+            last_name=validated_data.get('last_name', ''),
+            is_active=validated_data.get('is_active', True),
+            is_verified=validated_data.get('is_verified', True),
+            is_staff=validated_data.get('is_staff', False),
+            is_superuser=validated_data.get('is_superuser', False)
+        )
+        user.set_password(password)
+        user.save()
+
+        if role_id:
+            from accounts.models import UserRole
+            from facilities.models import Location
+            role = Role.objects.get(id=role_id)
+            facility = Location.objects.filter(id=facility_id).first() if facility_id else None
+            UserRole.objects.create(user=user, role=role, facility=facility)
+
+        return user
+

@@ -19,12 +19,28 @@ export default function DoctorCard({
   const avatarUrl = doctor.image || defaultAvatar;
   const bmdcNo = doctor.bmdc_number;
   
-  // Format qualifications
-  const rawQual = doctor.qualification || '';
-  const specialtyName = typeof doctor.specialty === 'object' ? doctor.specialty?.name : doctor.specialty;
-  const qualification = (rawQual.toLowerCase().includes('specialist') || !specialtyName)
-    ? rawQual
-    : (rawQual ? `${rawQual}, Specialist in ${specialtyName}` : (specialtyName ? `Specialist in ${specialtyName}` : ''));
+  // Qualifications strictly from API
+  const qualification = doctor.qualification || '';
+
+  // Process specialties (handles array of objects, array of strings, or legacy specialty property)
+  const rawSpecialties = Array.isArray(doctor.specialties) && doctor.specialties.length > 0
+    ? doctor.specialties
+    : (doctor.specialty ? [doctor.specialty] : []);
+
+  const seenSpecialties = new Set();
+  const specialties = [];
+  for (const s of rawSpecialties) {
+    if (!s) continue;
+    const name = (typeof s === 'string' ? s : (s.name || s.canonical_name || '')).trim();
+    if (name && !seenSpecialties.has(name.toLowerCase())) {
+      seenSpecialties.add(name.toLowerCase());
+      specialties.push({
+        id: (typeof s === 'object' && s?.id) || name,
+        name,
+        bn_name: (typeof s === 'object' && s?.bn_name) || ''
+      });
+    }
+  }
 
   // Designation & Institution strictly from API
   const designation = doctor.designation || doctor.academic_title || '';
@@ -140,6 +156,25 @@ export default function DoctorCard({
                   {designation && <span className="text-slate-600 font-normal">{designation}{institution ? ', ' : ''}</span>}
                   {institution && <strong className="text-slate-900 font-bold">{institution}</strong>}
                 </span>
+              </div>
+            )}
+
+            {/* Specialties Row (placed below designation & institute) */}
+            {specialties.length > 0 && (
+              <div className="mt-2 flex items-center gap-1.5 flex-wrap">
+                <span className="material-symbols-outlined text-slate-400 text-[18px] shrink-0" title="Specialties">
+                  medical_services
+                </span>
+                <div className="flex flex-wrap items-center gap-1.5">
+                  {specialties.map((s, idx) => (
+                    <span
+                      key={s.id || idx}
+                      className="inline-flex items-center px-2.5 py-0.5 rounded-md text-xs font-semibold bg-teal-50 text-teal-800 border border-teal-200/70 shadow-2xs"
+                    >
+                      {s.name}
+                    </span>
+                  ))}
+                </div>
               </div>
             )}
 

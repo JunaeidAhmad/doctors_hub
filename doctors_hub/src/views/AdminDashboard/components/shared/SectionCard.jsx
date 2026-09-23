@@ -9,22 +9,20 @@ export default function SectionCard({
   className = '',
   color = 'teal'
 }) {
-  const accentBorder = color === 'emerald' ? 'border-emerald-500/20' : color === 'cyan' ? 'border-cyan-500/20' : 'border-slate-800';
-
   return (
-    <div className={`bg-slate-900 border ${accentBorder} rounded-2xl p-6 shadow-xl space-y-5 animate-fadeIn ${className}`}>
+    <div className={`bg-white border border-[#d1d5dc] rounded-sm sm:rounded-md p-4 sm:p-6 shadow-card space-y-4 animate-fadeIn ${className}`}>
       {(title || Icon || actions) && (
-        <div className="flex flex-wrap items-center justify-between gap-3 border-b border-slate-800/80 pb-4">
+        <div className="flex flex-wrap items-center justify-between gap-3 border-b border-[#e3e5ea] pb-3.5">
           <div className="flex items-center gap-3">
             {Icon && (
-              <div className="p-2.5 rounded-xl bg-slate-800/80 border border-slate-700/60 text-teal-400">
-                <Icon className="w-5 h-5" />
+              <div className="p-2 rounded-sm bg-[#e7ebff] border border-[#094cb2]/20 text-[#094cb2]">
+                <Icon className="w-4 h-4 sm:w-5 sm:h-5" />
               </div>
             )}
             <div>
-              <h3 className="text-base font-bold text-white">{title}</h3>
+              <h3 className="font-serif text-base font-bold text-slate-900">{title}</h3>
               {description && (
-                <p className="text-xs text-slate-400 mt-0.5">{description}</p>
+                <p className="font-body text-xs text-slate-500 mt-0.5">{description}</p>
               )}
             </div>
           </div>
@@ -41,3 +39,4 @@ export default function SectionCard({
     </div>
   );
 }
+
