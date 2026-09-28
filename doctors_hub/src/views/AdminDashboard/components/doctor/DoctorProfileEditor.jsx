@@ -1,7 +1,7 @@
 import React, { useState, useEffect } from 'react';
 import { 
   Stethoscope, CheckCircle, RefreshCw, Save, Sparkles, 
-  User, Award, Clock, BookOpen, AlertCircle, ShieldCheck 
+  User, Award, Clock, BookOpen, AlertCircle, ShieldCheck, Star 
 } from 'lucide-react';
 import { useAdminContext } from '../../context/AdminContext';
 import { api } from '../../../../services/api';
@@ -25,6 +25,9 @@ export default function DoctorProfileEditor() {
   const [qualification, setQualification] = useState('');
   const [experience, setExperience] = useState('');
   const [selectedSpecialtyIds, setSelectedSpecialtyIds] = useState([]);
+  const [specialtySource, setSpecialtySource] = useState('');
+  const [specialtySourceBn, setSpecialtySourceBn] = useState('');
+  const [primarySpecialtyId, setPrimarySpecialtyId] = useState('');
   const [description, setDescription] = useState('');
   const [saving, setSaving] = useState(false);
   const [localSuccess, setLocalSuccess] = useState('');
@@ -40,6 +43,8 @@ export default function DoctorProfileEditor() {
       setQualification(doctor.qualification || '');
       setExperience(doctor.experience || '');
       setDescription(doctor.description || '');
+      setSpecialtySource(doctor.specialty_source || '');
+      setSpecialtySourceBn(doctor.specialty_source_bn || '');
 
       const currentSpecIds = (doctor.specialties || []).map(s => {
         if (typeof s === 'object' && s !== null) return s.id;
@@ -48,16 +53,21 @@ export default function DoctorProfileEditor() {
       }).filter(Boolean);
 
       setSelectedSpecialtyIds(currentSpecIds);
+      const initPrimary = doctor.primary_specialty?.id || doctor.primary_specialty_id || '';
+      setPrimarySpecialtyId(initPrimary || currentSpecIds[0] || '');
     }
   }, [doctor, doctorSpecialties]);
 
   const toggleSpecialty = (specId) => {
     setSelectedSpecialtyIds(prev => {
-      if (prev.includes(specId)) {
-        return prev.filter(id => id !== specId);
-      } else {
-        return [...prev, specId];
+      const exists = prev.includes(specId);
+      const next = exists ? prev.filter(id => id !== specId) : [...prev, specId];
+      if (exists && primarySpecialtyId === specId) {
+        setPrimarySpecialtyId(next[0] || '');
+      } else if (!exists && next.length === 1) {
+        setPrimarySpecialtyId(specId);
       }
+      return next;
     });
   };
 
@@ -82,6 +92,9 @@ export default function DoctorProfileEditor() {
         qualification: qualification.trim(),
         experience: experience.trim(),
         description: description.trim(),
+        specialty_source: specialtySource.trim(),
+        specialty_source_bn: specialtySourceBn.trim(),
+        primary_specialty_id: primarySpecialtyId || (selectedSpecialtyIds[0] || null),
         specialty_ids: selectedSpecialtyIds,
       };
 
@@ -250,12 +263,49 @@ export default function DoctorProfileEditor() {
           />
         </div>
 
-        {/* Multi-Select Specialties */}
+        {/* Verbatim Visiting Card / Prescription Specialty */}
+        <div className="p-4 bg-[#f7f6f7] border border-[#d1d5dc] rounded-sm space-y-3">
+          <label className="block text-slate-700 font-label font-bold uppercase text-[11px] flex items-center gap-1.5">
+            <Sparkles className="w-3.5 h-3.5 text-[#094cb2]" />
+            <span>Visiting Card / Prescription Focus (Verbatim Printed Text)</span>
+          </label>
+          <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+            <div>
+              <label className="block text-slate-600 font-label text-[10px] uppercase font-semibold mb-1">
+                English (As Printed on Card / Pad)
+              </label>
+              <textarea
+                rows={2}
+                value={specialtySource}
+                onChange={(e) => setSpecialtySource(e.target.value)}
+                placeholder="e.g. Breast Health & Breast Surgery / Oncology&#10;Weight Management & Dietetics"
+                className="w-full bg-white border border-[#d1d5dc] rounded-sm px-3 py-2 text-xs text-slate-800 focus:outline-none focus:border-[#094cb2] resize-y"
+              />
+            </div>
+            <div>
+              <label className="block text-slate-600 font-label text-[10px] uppercase font-semibold mb-1">
+                বাংলা প্রেসক্রিপশন / প্যাড টেক্সট (ঐচ্ছিক)
+              </label>
+              <textarea
+                rows={2}
+                value={specialtySourceBn}
+                onChange={(e) => setSpecialtySourceBn(e.target.value)}
+                placeholder="e.g. ব্রেস্ট সার্জন · ক্যান্সার বিশেষজ্ঞ · পুষ্টিবিদ"
+                className="w-full bg-white border border-[#d1d5dc] rounded-sm px-3 py-2 text-xs text-slate-800 focus:outline-none focus:border-[#094cb2] resize-y font-serif"
+              />
+            </div>
+          </div>
+          <p className="text-[10px] text-slate-500">
+            This verbatim text displays prominently on your public doctor card exactly as written on your visiting card.
+          </p>
+        </div>
+
+        {/* Multi-Select Canonical Specialties */}
         <div>
           <label className="block text-slate-700 font-label font-bold uppercase text-[11px] mb-1.5 flex items-center justify-between">
             <span className="flex items-center gap-1.5">
               <Stethoscope className="w-3.5 h-3.5 text-[#094cb2]" />
-              <span>Select Medical Specializations</span>
+              <span>Select Medical Specializations (Canonical Tags)</span>
             </span>
             <span className="text-[#094cb2] font-mono text-[11px] font-bold">
               {selectedSpecialtyIds.length} Selected
@@ -282,6 +332,43 @@ export default function DoctorProfileEditor() {
             })}
           </div>
         </div>
+
+        {/* Primary Specialty Selection */}
+        {selectedSpecialtyIds.length > 0 && (
+          <div className="p-3 bg-[#e7ebff]/60 border border-[#094cb2]/30 rounded-sm space-y-2">
+            <label className="block text-[#094cb2] font-label font-bold text-xs flex items-center gap-1.5">
+              <Star className="w-4 h-4 fill-[#094cb2]" />
+              <span>Primary Specialization Focus *</span>
+            </label>
+            <p className="text-[11px] text-slate-600">
+              Select which specialization places you at the top (Tier 1 Rank #1) of patient search results:
+            </p>
+            <div className="flex flex-wrap gap-2 pt-1">
+              {selectedSpecialtyIds.map(specId => {
+                const specObj = doctorSpecialties.find(s => s.id === specId);
+                const isPrimary = primarySpecialtyId === specId;
+                return (
+                  <button
+                    key={specId}
+                    type="button"
+                    onClick={() => setPrimarySpecialtyId(specId)}
+                    className={`px-3 py-1.5 rounded-sm border text-xs font-label transition flex items-center gap-2 cursor-pointer ${
+                      isPrimary
+                        ? 'bg-[#094cb2] text-white border-[#094cb2] font-bold shadow-xs'
+                        : 'bg-white text-slate-700 border-[#cbd5e1] hover:border-[#094cb2]'
+                    }`}
+                  >
+                    <span className={`w-3 h-3 rounded-full border-2 flex items-center justify-center ${isPrimary ? 'border-white bg-white' : 'border-slate-400'}`}>
+                      {isPrimary && <span className="w-1.5 h-1.5 rounded-full bg-[#094cb2]" />}
+                    </span>
+                    <span>{specObj?.name || 'Specialty'}</span>
+                    {isPrimary && <span className="text-[10px] bg-white/20 px-1.5 py-0.2 rounded text-white font-mono">PRIMARY</span>}
+                  </button>
+                );
+              })}
+            </div>
+          </div>
+        )}
 
         {/* Bio / Description */}
         <div>

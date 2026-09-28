@@ -42,9 +42,11 @@ export function useSpecialtiesTaxonomy(initialTab = 'canonical') {
     name: '',
     canonical_name: '',
     bn_name: '',
+    formal_name: '',
     icon: 'Stethoscope',
     description: '',
-    component_ids: []
+    is_umbrella: false,
+    parent_ids: []
   });
 
   const [showAliasModal, setShowAliasModal] = useState(false);
@@ -156,14 +158,17 @@ export function useSpecialtiesTaxonomy(initialTab = 'canonical') {
   const handleOpenSpecModal = (spec = null) => {
     if (spec) {
       setEditingSpec(spec);
+      const parentIds = (spec.parents || spec.parent_categories || []).map(p => typeof p === 'object' ? p.id : p);
       setSpecForm({
         id: spec.id,
         name: spec.name || '',
         canonical_name: spec.canonical_name || '',
         bn_name: spec.bn_name || '',
+        formal_name: spec.formal_name || '',
         icon: spec.icon || 'Stethoscope',
         description: spec.description || '',
-        component_ids: (spec.components || []).map(c => c.id)
+        is_umbrella: Boolean(spec.is_umbrella),
+        parent_ids: parentIds
       });
     } else {
       setEditingSpec(null);
@@ -172,9 +177,11 @@ export function useSpecialtiesTaxonomy(initialTab = 'canonical') {
         name: '',
         canonical_name: '',
         bn_name: '',
+        formal_name: '',
         icon: 'Stethoscope',
         description: '',
-        component_ids: []
+        is_umbrella: false,
+        parent_ids: []
       });
     }
     setShowSpecModal(true);

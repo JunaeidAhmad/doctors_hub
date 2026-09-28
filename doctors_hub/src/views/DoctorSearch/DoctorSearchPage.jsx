@@ -274,12 +274,27 @@ export default function DoctorSearchPage({
     setCurrentPage(1);
   };
 
+  const specialtyDisplayName = useMemo(() => {
+    if (!specialty) return '';
+    if (searchMeta?.specialty) return searchMeta.specialty;
+    for (const grp of specialtyGroups) {
+      if (grp.slug === specialty || grp.name === specialty || grp.id === specialty) return grp.name;
+      for (const child of (grp.children || [])) {
+        if (child.slug === specialty || child.name === specialty || child.id === specialty) return child.name;
+      }
+    }
+    for (const s of specialties) {
+      if (typeof s === 'object' && (s.slug === specialty || s.name === specialty || s.id === specialty)) return s.name;
+    }
+    return specialty.replace(/-/g, ' ').replace(/\b\w/g, (l) => l.toUpperCase());
+  }, [specialty, searchMeta, specialtyGroups, specialties]);
+
   return (
     <div className="bg-background text-on-surface min-h-screen flex flex-col selection:bg-primary selection:text-on-primary">
       {/* 1. Sub-Header & Breadcrumb Bar */}
       <DoctorSearchHeader
-        specialty={specialty}
-        location={district !== 'All Districts' ? district : (division !== 'All Bangladesh' ? division : 'Dhaka')}
+        specialty={specialtyDisplayName}
+        location={district !== 'All Districts' ? district : (division !== 'All Bangladesh' ? division : 'Bangladesh')}
         onNavigateHome={onNavigateHome}
       />
 
@@ -289,6 +304,7 @@ export default function DoctorSearchPage({
         district={district}
         area={area}
         specialty={specialty}
+        specialtyName={specialtyDisplayName}
         facility={facility}
         facilityName={(() => {
           const found = facilities.find(f => String(f.id) === String(facility) || String(f.slug) === String(facility) || String(f.name) === String(facility));

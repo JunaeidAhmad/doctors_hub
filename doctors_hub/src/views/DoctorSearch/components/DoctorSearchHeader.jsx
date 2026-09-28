@@ -5,7 +5,14 @@ export default function DoctorSearchHeader({
   location = 'Bangladesh',
   onNavigateHome
 }) {
-  const displayLocation = location && location !== 'All Bangladesh' ? location : 'Bangladesh';
+  const normalizedLocation = (location || '').trim();
+  const isAllLocation =
+    !normalizedLocation ||
+    normalizedLocation === 'All Bangladesh' ||
+    normalizedLocation === 'All Districts' ||
+    normalizedLocation === 'All Areas' ||
+    normalizedLocation === 'All';
+  const displayLocation = isAllLocation ? 'Bangladesh' : normalizedLocation;
   const hierarchyLabel = specialty
     ? `${specialty} in ${displayLocation}`
     : `Doctors in ${displayLocation}`;

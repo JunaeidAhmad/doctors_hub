@@ -5,6 +5,7 @@ export default function DoctorActiveFiltersBar({
   district,
   area,
   specialty,
+  specialtyName,
   facility,
   facilityName,
   selectedDay,
@@ -86,7 +87,7 @@ export default function DoctorActiveFiltersBar({
             {/* Specialty Pill */}
             {specialty && (
               <span className="inline-flex items-center gap-1.5 bg-primary/10 border border-primary/30 rounded-lg px-2.5 py-1 text-label-sm text-primary font-semibold shadow-xs">
-                <span className="text-primary/70 font-normal">Specialty:</span> {specialty}
+                <span className="text-primary/70 font-normal">Specialty:</span> {specialtyName || specialty}
                 <button
                   onClick={onRemoveSpecialty}
                   className="text-primary hover:text-error transition-colors leading-none cursor-pointer ml-0.5"

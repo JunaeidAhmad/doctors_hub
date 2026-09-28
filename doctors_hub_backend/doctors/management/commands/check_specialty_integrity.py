@@ -5,10 +5,10 @@ from doctors.models import Doctor, DoctorSpecialty
 
 
 class Command(BaseCommand):
-    help = "Run 8 specialty taxonomy and doctor integrity checks. Aborts if any check returns > 0."
+    help = "Run 10 specialty taxonomy and doctor integrity checks. Aborts if any check returns > 0."
 
     def handle(self, *args, **options):
-        self.stdout.write("Running 8 specialty integrity checks...")
+        self.stdout.write("Running 10 specialty integrity checks...")
 
         failures = {}
 
@@ -41,8 +41,10 @@ class Command(BaseCommand):
         # 5. doctors whose primary_specialty is not in specialties
         doctors_prim_not_in_specs = 0
         for doc in Doctor.objects.prefetch_related('specialties').select_related('primary_specialty').all():
-            if doc.primary_specialty and not doc.specialties.filter(id=doc.primary_specialty.id).exists():
-                doctors_prim_not_in_specs += 1
+            if doc.primary_specialty_id:
+                spec_ids = {s.id for s in doc.specialties.all()}
+                if doc.primary_specialty_id not in spec_ids:
+                    doctors_prim_not_in_specs += 1
         failures['5. doctors whose primary_specialty is not in specialties'] = doctors_prim_not_in_specs
 
         # 6. doctors with empty specialty_source
@@ -63,6 +65,18 @@ class Command(BaseCommand):
         ).count()
         failures['8. nodes with empty slug'] = nodes_empty_slug
 
+        # 9. doctors with umbrella as primary_specialty
+        doctors_umbrella_primary = Doctor.objects.filter(
+            primary_specialty__is_umbrella=True
+        ).count()
+        failures['9. doctors with umbrella as primary_specialty'] = doctors_umbrella_primary
+
+        # 10. doctors with umbrella in specialties
+        doctors_umbrella_m2m = Doctor.objects.filter(
+            specialties__is_umbrella=True
+        ).distinct().count()
+        failures['10. doctors with umbrella in specialties'] = doctors_umbrella_m2m
+
         has_failure = False
         self.stdout.write("=" * 60)
         self.stdout.write("SPECIALTY INTEGRITY AUDIT RESULTS")
@@ -78,4 +92,4 @@ class Command(BaseCommand):
         if has_failure:
             raise CommandError("Integrity check failed: one or more checks returned > 0 violations!")
         else:
-            self.stdout.write(self.style.SUCCESS("All 8 integrity checks passed with 0 violations!"))
+            self.stdout.write(self.style.SUCCESS("All 10 integrity checks passed with 0 violations!"))

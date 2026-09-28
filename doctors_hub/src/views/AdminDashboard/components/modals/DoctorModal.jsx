@@ -41,6 +41,10 @@ export default function DoctorModal() {
   const [about, setAbout] = useState('');
   const [clinicalServices, setClinicalServices] = useState('');
   const [selectedSpecialties, setSelectedSpecialties] = useState([]);
+  const [specialtySource, setSpecialtySource] = useState('');
+  const [specialtySourceBn, setSpecialtySourceBn] = useState('');
+  const [primarySpecialtyId, setPrimarySpecialtyId] = useState('');
+  const [specialtySearchQuery, setSpecialtySearchQuery] = useState('');
   const [isVerified, setIsVerified] = useState(true);
   const [status, setStatus] = useState('Active');
   const [rating, setRating] = useState('4.90');
@@ -103,10 +107,15 @@ export default function DoctorModal() {
       setImageFile(null);
       setImagePreview(editingDoctor.image || '');
 
+      setSpecialtySource(editingDoctor.specialty_source || '');
+      setSpecialtySourceBn(editingDoctor.specialty_source_bn || '');
+      const initialPrimary = editingDoctor.primary_specialty?.id || editingDoctor.primary_specialty_id || '';
+
       const specIds = Array.isArray(editingDoctor.specialties) 
         ? editingDoctor.specialties.map(s => typeof s === 'object' && s !== null ? (s.id || s) : s)
         : [];
       setSelectedSpecialties(specIds);
+      setPrimarySpecialtyId(initialPrimary || specIds[0] || '');
 
       const allLocationIds = new Set(allLocations.map(l => String(l.id)));
       const managedAffiliations = (editingDoctor.affiliations || []).filter(a => {
@@ -185,7 +194,12 @@ export default function DoctorModal() {
       setReviewCount('120');
       setImageFile(null);
       setImagePreview('');
-      setSelectedSpecialties((doctorSpecialties || [])[0] ? [doctorSpecialties[0].id] : []);
+      setSpecialtySource('');
+      setSpecialtySourceBn('');
+      const defaultSpecId = (doctorSpecialties || [])[0] ? doctorSpecialties[0].id : '';
+      setSelectedSpecialties(defaultSpecId ? [defaultSpecId] : []);
+      setPrimarySpecialtyId(defaultSpecId);
+      setSpecialtySearchQuery('');
       setAffiliations([
         {
           id: `temp-aff-${Date.now()}`,
@@ -211,11 +225,16 @@ export default function DoctorModal() {
   if (!showDoctorModal) return null;
 
   const toggleSpecialty = (specId) => {
-    setSelectedSpecialties(prev => 
-      prev.includes(specId) 
-        ? prev.filter(id => id !== specId) 
-        : [...prev, specId]
-    );
+    setSelectedSpecialties(prev => {
+      const exists = prev.includes(specId);
+      const next = exists ? prev.filter(id => id !== specId) : [...prev, specId];
+      if (exists && primarySpecialtyId === specId) {
+        setPrimarySpecialtyId(next[0] || '');
+      } else if (!exists && next.length === 1) {
+        setPrimarySpecialtyId(specId);
+      }
+      return next;
+    });
   };
 
   const handleImageChange = (e) => {
@@ -381,10 +400,15 @@ export default function DoctorModal() {
         fd.append('is_verified', isVerified ? 'true' : 'false');
         fd.append('rating', parseFloat(rating) || 4.90);
         fd.append('review_count', parseInt(reviewCount, 10) || 120);
+        if (specialtySource.trim()) fd.append('specialty_source', specialtySource.trim());
+        if (specialtySourceBn.trim()) fd.append('specialty_source_bn', specialtySourceBn.trim());
+        const primaryToSave = primarySpecialtyId || (selectedSpecialties[0] || '');
+        if (primaryToSave) fd.append('primary_specialty_id', primaryToSave);
         selectedSpecialties.forEach(id => fd.append('specialty_ids', id));
         fd.append('image', imageFile);
         docPayload = fd;
       } else {
+        const primaryToSave = primarySpecialtyId || (selectedSpecialties[0] || null);
         docPayload = {
           name: name.trim(),
           bn_name: bnName.trim(),
@@ -395,6 +419,9 @@ export default function DoctorModal() {
           about: about.trim(),
           clinical_services: clinicalServices.trim(),
           bmdc_number: bmdcNumber.trim() || undefined,
+          specialty_source: specialtySource.trim(),
+          specialty_source_bn: specialtySourceBn.trim(),
+          primary_specialty_id: primaryToSave,
           gender,
           status,
           is_verified: isVerified,
@@ -822,34 +849,136 @@ export default function DoctorModal() {
             </div>
           </div>
 
-          {/* SECTION 2: Specialties */}
-          <div className="bg-[#f7f6f7] border border-[#d1d5dc] rounded-sm p-3.5 sm:p-4 space-y-2.5">
+          {/* SECTION 2: Specialties & Taxonomy Focus */}
+          <div className="bg-[#f7f6f7] border border-[#d1d5dc] rounded-sm p-3.5 sm:p-4 space-y-4">
             <h4 className="text-xs font-serif font-bold text-slate-900 flex items-center gap-2 border-b border-[#e3e5ea] pb-2">
               <Sparkles className="w-4 h-4 text-[#094cb2]" />
-              <span>Medical Specializations *</span>
+              <span>Specializations &amp; Practice Focus</span>
             </h4>
-            <p className="text-[11px] text-slate-500">Select all medical specializations that apply to this practitioner:</p>
-            <div className="flex flex-wrap gap-1.5 max-h-36 overflow-y-auto p-1 bg-white border border-[#d1d5dc] rounded-sm">
-              {doctorSpecialties.map(spec => {
-                const isSelected = selectedSpecialties.includes(spec.id);
-                return (
-                  <button
-                    key={spec.id}
-                    type="button"
-                    onClick={() => isSuperAdmin && toggleSpecialty(spec.id)}
-                    disabled={!isSuperAdmin}
-                    className={`px-3 py-1.5 rounded-sm border text-xs font-body transition flex items-center gap-1.5 cursor-pointer ${
-                      isSelected 
-                        ? 'bg-[#e7ebff] text-[#094cb2] border-[#094cb2] font-bold' 
-                        : 'bg-white text-slate-600 border-[#d1d5dc] hover:border-slate-400'
-                    }`}
-                  >
-                    <span>{spec.name}</span>
-                    {isSelected && <span className="text-[#094cb2]">✓</span>}
-                  </button>
-                );
-              })}
+
+            {/* 1. Verbatim Visiting Card / Prescription Text */}
+            <div className="space-y-3 bg-white border border-[#d1d5dc] rounded-sm p-3">
+              <div>
+                <label className="block text-slate-700 font-label font-bold uppercase text-[11px] mb-1">
+                  Visiting Card / Brochure Specialty (Verbatim English)
+                </label>
+                <textarea
+                  rows={2}
+                  placeholder="e.g. Breast Health & Breast Surgery / Oncology&#10;Weight Management & Dietetics"
+                  value={specialtySource}
+                  disabled={!isSuperAdmin}
+                  onChange={e => setSpecialtySource(e.target.value)}
+                  className="w-full bg-white border border-[#d1d5dc] rounded-sm px-3 py-2 text-slate-800 focus:outline-none focus:border-[#094cb2] transition resize-y font-body text-xs"
+                />
+                <p className="text-[10px] text-slate-500 mt-0.5">
+                  Exact text as printed on the doctor's visiting card, prescription pad, or brochure. Displayed prominently on doctor card.
+                </p>
+              </div>
+
+              <div>
+                <label className="block text-slate-700 font-label font-bold uppercase text-[11px] mb-1">
+                  Visiting Card Specialty (বাংলা প্রেসক্রিপশন / কার্ডের টেক্সট)
+                </label>
+                <input
+                  type="text"
+                  placeholder="e.g. ব্রেস্ট সার্জন · ক্যান্সার বিশেষজ্ঞ · পুষ্টিবিদ"
+                  value={specialtySourceBn}
+                  disabled={!isSuperAdmin}
+                  onChange={e => setSpecialtySourceBn(e.target.value)}
+                  className="w-full bg-white border border-[#d1d5dc] rounded-sm px-3 py-2 text-slate-800 focus:outline-none focus:border-[#094cb2] transition font-serif text-xs"
+                />
+              </div>
             </div>
+
+            {/* 2. Canonical Taxonomy Selector */}
+            <div className="space-y-2">
+              <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-1">
+                <label className="block text-slate-700 font-label font-bold uppercase text-[11px]">
+                  Taxonomy Indexing Tags * ({selectedSpecialties.length} Selected)
+                </label>
+                <input
+                  type="text"
+                  value={specialtySearchQuery}
+                  onChange={e => setSpecialtySearchQuery(e.target.value)}
+                  placeholder="Filter specialties..."
+                  className="bg-white border border-[#d1d5dc] rounded-sm px-2.5 py-1 text-xs text-slate-700 focus:outline-none focus:border-[#094cb2] w-full sm:w-52"
+                />
+              </div>
+              <p className="text-[11px] text-slate-500">
+                Select 1 to 5 canonical leaf specialties used for search matching and department categorization:
+              </p>
+
+              <div className="flex flex-wrap gap-1.5 max-h-40 overflow-y-auto p-2 bg-white border border-[#d1d5dc] rounded-sm">
+                {doctorSpecialties
+                  .filter(spec => {
+                    if (!specialtySearchQuery.trim()) return true;
+                    const q = specialtySearchQuery.toLowerCase();
+                    return (
+                      (spec.name || '').toLowerCase().includes(q) ||
+                      (spec.bn_name || '').toLowerCase().includes(q) ||
+                      (spec.slug || '').toLowerCase().includes(q)
+                    );
+                  })
+                  .map(spec => {
+                    const isSelected = selectedSpecialties.includes(spec.id);
+                    return (
+                      <button
+                        key={spec.id}
+                        type="button"
+                        onClick={() => isSuperAdmin && toggleSpecialty(spec.id)}
+                        disabled={!isSuperAdmin}
+                        className={`px-2.5 py-1.5 rounded-sm border text-xs font-body transition flex items-center gap-1.5 cursor-pointer ${
+                          isSelected 
+                            ? 'bg-[#e7ebff] text-[#094cb2] border-[#094cb2] font-bold' 
+                            : 'bg-white text-slate-600 border-[#d1d5dc] hover:border-slate-400'
+                        }`}
+                      >
+                        <span>{spec.name}</span>
+                        {spec.bn_name && <span className="text-[10px] text-slate-400">({spec.bn_name})</span>}
+                        {isSelected && <span className="text-[#094cb2] font-bold">✓</span>}
+                      </button>
+                    );
+                  })}
+              </div>
+            </div>
+
+            {/* 3. Primary Specialty Radio Selection */}
+            {selectedSpecialties.length > 0 && (
+              <div className="bg-[#e7ebff]/60 border border-[#094cb2]/30 rounded-sm p-3 space-y-2">
+                <div className="flex items-center gap-1.5 text-[#094cb2] font-label font-bold text-xs">
+                  <Star className="w-4 h-4 fill-[#094cb2]" />
+                  <span>Choose Primary Specialty Focus *</span>
+                </div>
+                <p className="text-[11px] text-slate-600">
+                  Select which specialization controls Tier 1 (Rank #1) top placement in patient search results:
+                </p>
+                <div className="flex flex-wrap gap-2 pt-1">
+                  {selectedSpecialties.map(specId => {
+                    const specObj = doctorSpecialties.find(s => s.id === specId);
+                    const isPrimary = primarySpecialtyId === specId;
+                    return (
+                      <button
+                        key={specId}
+                        type="button"
+                        onClick={() => isSuperAdmin && setPrimarySpecialtyId(specId)}
+                        disabled={!isSuperAdmin}
+                        className={`px-3 py-1.5 rounded-sm border text-xs font-label transition flex items-center gap-2 cursor-pointer ${
+                          isPrimary
+                            ? 'bg-[#094cb2] text-white border-[#094cb2] font-bold shadow-xs'
+                            : 'bg-white text-slate-700 border-[#cbd5e1] hover:border-[#094cb2]'
+                        }`}
+                      >
+                        <span className={`w-3 h-3 rounded-full border-2 flex items-center justify-center ${isPrimary ? 'border-white bg-white' : 'border-slate-400'}`}>
+                          {isPrimary && <span className="w-1.5 h-1.5 rounded-full bg-[#094cb2]" />}
+                        </span>
+                        <span>{specObj?.name || 'Specialty'}</span>
+                        {isPrimary && <span className="text-[10px] bg-white/20 px-1.5 py-0.2 rounded text-white font-mono">PRIMARY</span>}
+                      </button>
+                    );
+                  })}
+                </div>
+              </div>
+            )}
           </div>
 
           {/* SECTION 3: Chambers, Fees & Visiting Schedules */}

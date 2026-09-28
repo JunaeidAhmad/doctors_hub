@@ -1,3 +1,4 @@
+import React, { useMemo } from 'react';
 import { formatFacilityName } from '../../../utils/facilityUtils';
 
 export default function DoctorSearchBarStrip({
@@ -16,6 +17,24 @@ export default function DoctorSearchBarStrip({
     .slice()
     .sort((a, b) => (a.name || '').localeCompare(b.name || ''));
 
+  // Normalize specialty value to match option values whether slug or name was passed
+  const currentSpecialtyValue = useMemo(() => {
+    if (!specialty) return '';
+    for (const grp of specialtyGroups) {
+      const gSlug = grp.slug || grp.name;
+      if (specialty === gSlug || specialty === grp.name || specialty === grp.slug) {
+        return gSlug;
+      }
+      for (const child of (grp.children || [])) {
+        const cSlug = child.slug || child.name;
+        if (specialty === cSlug || specialty === child.name || specialty === child.slug) {
+          return cSlug;
+        }
+      }
+    }
+    return specialty;
+  }, [specialty, specialtyGroups]);
+
   const handleSubmit = (e) => {
     e.preventDefault();
     if (onSearchSubmit) onSearchSubmit();
@@ -33,25 +52,40 @@ export default function DoctorSearchBarStrip({
             <span className="material-symbols-outlined text-[20px]">stethoscope</span>
           </div>
           <select
-            value={specialty || ''}
+            value={currentSpecialtyValue}
             onChange={(e) => onSpecialtyChange && onSpecialtyChange(e.target.value)}
             className="w-full bg-surface-container-low border border-outline-variant/60 rounded-lg pl-10 pr-9 py-2.5 text-body-sm font-medium text-on-surface focus:border-primary focus:ring-1 focus:ring-primary appearance-none cursor-pointer truncate"
             style={{ WebkitAppearance: 'none', MozAppearance: 'none' }}
           >
             <option value="">All Specialties</option>
             {specialtyGroups.length > 0 ? (
-              specialtyGroups.map((grp) => (
-                <optgroup key={grp.id || grp.slug} label={grp.label || grp.name}>
-                  <option value={grp.slug || grp.name}>
-                    All {grp.name} Specialists
-                  </option>
-                  {(grp.children || []).map((child) => (
-                    <option key={child.id || child.slug} value={child.slug || child.name}>
-                      {child.label || child.name} {child.count ? `(${child.count})` : ''}
+              specialtyGroups.map((grp) => {
+                const grpVal = grp.slug || grp.name;
+                const grpLabel = `${grp.label || grp.name}${grp.count ? ` (${grp.count})` : ''}`;
+                return (
+                  <React.Fragment key={grp.id || grp.slug || grp.name}>
+                    <option
+                      value={grpVal}
+                      className="font-bold text-on-surface bg-surface-container-low"
+                    >
+                      {grpLabel}
                     </option>
-                  ))}
-                </optgroup>
-              ))
+                    {(grp.children || []).map((child) => {
+                      const childVal = child.slug || child.name;
+                      const childLabel = `${child.label || child.name}${child.count ? ` (${child.count})` : ''}`;
+                      return (
+                        <option
+                          key={child.id || child.slug || child.name}
+                          value={childVal}
+                          className="text-on-surface-variant"
+                        >
+                          {'\u00A0\u00A0\u00A0\u00A0'}{childLabel}
+                        </option>
+                      );
+                    })}
+                  </React.Fragment>
+                );
+              })
             ) : specialties.length > 0 ? (
               specialties.map((s) => {
                 const val = typeof s === 'object' ? (s.slug || s.name) : s;

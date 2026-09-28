@@ -96,42 +96,73 @@ export default function CanonicalSpecialtyModal({
             </div>
           </div>
 
-          <div>
-            <label className="block text-slate-700 font-label font-bold uppercase text-[11px] mb-1">
-              Compound Subspecialties Covered (Components)
+          {/* Umbrella Toggle */}
+          <div className="p-3 bg-[#f7f6f7] border border-[#d1d5dc] rounded-sm space-y-2">
+            <label className="flex items-center gap-2 cursor-pointer">
+              <input
+                type="checkbox"
+                checked={Boolean(specForm.is_umbrella)}
+                onChange={e => {
+                  const val = e.target.checked;
+                  setSpecForm(prev => ({
+                    ...prev,
+                    is_umbrella: val,
+                    parent_ids: val ? [] : prev.parent_ids
+                  }));
+                }}
+                className="rounded-xs border-[#d1d5dc] text-[#094cb2] focus:ring-[#094cb2] cursor-pointer"
+              />
+              <span className="font-label font-bold text-slate-900 text-xs">
+                Top-Level Hospital Clinical Centre (Umbrella)
+              </span>
             </label>
-            <p className="text-[11px] text-slate-500 mb-2">
-              If this is a compound specialty (e.g., &quot;Medicine, Allergy &amp; Chest&quot;), select the canonical specialties it includes so two-tier search ranks them accurately:
+            <p className="text-[10px] text-slate-500">
+              Check this if this node represents a major hospital department/centre (e.g. &quot;Cancer Care&quot;, &quot;Heart &amp; Vascular&quot;). Leave unchecked for specialist practitioner titles (e.g. &quot;Cardiologist&quot;).
             </p>
-            <div className="max-h-36 overflow-y-auto bg-[#f7f6f7] border border-[#d1d5dc] rounded-sm p-2 space-y-1">
-              {canonicalList
-                .filter(c => !editingSpec || c.id !== editingSpec.id)
-                .map(c => {
-                  const isSelected = specForm.component_ids.includes(c.id);
-                  return (
-                    <label
-                      key={c.id}
-                      className="flex items-center gap-2 p-1.5 rounded-sm hover:bg-white cursor-pointer text-slate-700"
-                    >
-                      <input
-                        type="checkbox"
-                        checked={isSelected}
-                        onChange={() => {
-                          setSpecForm(prev => ({
-                            ...prev,
-                            component_ids: isSelected
-                              ? prev.component_ids.filter(id => id !== c.id)
-                              : [...prev.component_ids, c.id]
-                          }));
-                        }}
-                        className="rounded-xs border-[#d1d5dc] text-[#094cb2] focus:ring-[#094cb2] cursor-pointer"
-                      />
-                      <span className="text-xs">{c.name} {c.bn_name ? `(${c.bn_name})` : ''}</span>
-                    </label>
-                  );
-                })}
-            </div>
           </div>
+
+          {/* Parent Hospital Centers (Only for non-umbrella leaves) */}
+          {!specForm.is_umbrella && (
+            <div>
+              <label className="block text-slate-700 font-label font-bold uppercase text-[11px] mb-1">
+                Parent Hospital Clinical Centres ({specForm.parent_ids?.length || 0} Selected)
+              </label>
+              <p className="text-[11px] text-slate-500 mb-2">
+                Select the hospital clinical centre(s) this specialist belongs to (supports multi-parenting):
+              </p>
+              <div className="max-h-36 overflow-y-auto bg-[#f7f6f7] border border-[#d1d5dc] rounded-sm p-2 space-y-1">
+                {canonicalList
+                  .filter(c => c.is_umbrella && (!editingSpec || c.id !== editingSpec.id))
+                  .map(c => {
+                    const isSelected = (specForm.parent_ids || []).includes(c.id);
+                    return (
+                      <label
+                        key={c.id}
+                        className="flex items-center gap-2 p-1.5 rounded-sm hover:bg-white cursor-pointer text-slate-700"
+                      >
+                        <input
+                          type="checkbox"
+                          checked={isSelected}
+                          onChange={() => {
+                            setSpecForm(prev => {
+                              const current = prev.parent_ids || [];
+                              return {
+                                ...prev,
+                                parent_ids: isSelected
+                                  ? current.filter(id => id !== c.id)
+                                  : [...current, c.id]
+                              };
+                            });
+                          }}
+                          className="rounded-xs border-[#d1d5dc] text-[#094cb2] focus:ring-[#094cb2] cursor-pointer"
+                        />
+                        <span className="text-xs font-medium">{c.name} {c.bn_name ? `(${c.bn_name})` : ''}</span>
+                      </label>
+                    );
+                  })}
+              </div>
+            </div>
+          )}
 
           <div>
             <label className="block text-slate-700 font-label font-bold uppercase text-[11px] mb-1">Clinical Scope &amp; Description</label>
