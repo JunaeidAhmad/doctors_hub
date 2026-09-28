@@ -114,6 +114,18 @@ export default function DoctorProfileModal({
           </div>
         )}
 
+        {/* Verbatim Card Specialty */}
+        {(doctor.specialty_display?.en || doctor.specialty_source) && (
+          <div className="py-4 border-b border-outline-variant">
+            <h3 className="text-xs font-bold uppercase tracking-wider text-outline mb-1.5">
+              Specialization &amp; Practice Focus
+            </h3>
+            <p className="text-xs sm:text-sm font-semibold text-slate-800 whitespace-pre-line leading-relaxed">
+              {doctor.specialty_display?.en || doctor.specialty_source}
+            </p>
+          </div>
+        )}
+
         {/* Specialties */}
         {doctor.specialties && doctor.specialties.length > 0 && (
           <div className="py-4 border-b border-outline-variant">

@@ -18,7 +18,7 @@ export default function DoctorFilterSidebar({
   onGenderChange,
   onResetAll,
   onApplyFilters,
-  onClose,
+  _onClose,
   className = 'hidden lg:block'
 }) {
   const districtList = useMemo(() => {

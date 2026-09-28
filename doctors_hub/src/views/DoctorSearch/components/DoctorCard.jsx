@@ -4,16 +4,19 @@ import { formatFacilityName } from '../../../utils/facilityUtils';
 import { displayName, formatDoctorTitle } from '../../../utils/doctorUtils';
 
 function getDoctorDefaultAvatar(doctor) {
-  const isFemale = String(doctor?.gender).toLowerCase() === 'female';
-  return isFemale ? '/default-doctor-female.svg' : '/default-doctor-male.svg';
+  const g = String(doctor?.gender || '').toLowerCase();
+  if (g === 'female') return '/default-doctor-female.svg';
+  if (g === 'male') return '/default-doctor-male.svg';
+  return '/default-doctor-neutral.svg';
 }
 
 export default function DoctorCard({
   doctor,
-  index = 0,
+  _index = 0,
   onBookDoctorSlot,
   onViewProfile,
-  onSelectHospital
+  onSelectHospital,
+  onSelectSpecialty
 }) {
   const defaultAvatar = getDoctorDefaultAvatar(doctor);
   const avatarUrl = doctor.image || defaultAvatar;
@@ -22,21 +25,28 @@ export default function DoctorCard({
   // Qualifications strictly from API
   const qualification = doctor.qualification || '';
 
-  // Process specialties (handles array of objects, array of strings, or legacy specialty property)
-  const rawSpecialties = Array.isArray(doctor.specialties) && doctor.specialties.length > 0
-    ? doctor.specialties
-    : (doctor.specialty ? [doctor.specialty] : []);
+  // Verbatim specialty text from card / API
+  const specialtyDisplay = doctor.specialty_display?.en || doctor.specialty_source || '';
+
+  // Process canonical specialties for chips
+  const rawSpecialties = Array.isArray(doctor.specialty_tags) && doctor.specialty_tags.length > 0
+    ? doctor.specialty_tags
+    : (Array.isArray(doctor.specialties) && doctor.specialties.length > 0
+      ? doctor.specialties
+      : (doctor.specialty ? [doctor.specialty] : []));
 
   const seenSpecialties = new Set();
   const specialties = [];
   for (const s of rawSpecialties) {
     if (!s) continue;
     const name = (typeof s === 'string' ? s : (s.name || s.canonical_name || '')).trim();
+    const slug = (typeof s === 'object' && s?.slug) || '';
     if (name && !seenSpecialties.has(name.toLowerCase())) {
       seenSpecialties.add(name.toLowerCase());
       specialties.push({
         id: (typeof s === 'object' && s?.id) || name,
         name,
+        slug,
         bn_name: (typeof s === 'object' && s?.bn_name) || ''
       });
     }
@@ -159,6 +169,13 @@ export default function DoctorCard({
               </div>
             )}
 
+            {/* Verbatim Card Specialty Line */}
+            {specialtyDisplay && (
+              <div className="mt-1.5 text-xs sm:text-sm font-medium text-slate-700 leading-snug">
+                {specialtyDisplay}
+              </div>
+            )}
+
             {/* Specialties Row (placed below designation & institute) */}
             {specialties.length > 0 && (
               <div className="mt-2 flex items-center gap-1.5 flex-wrap">
@@ -167,12 +184,19 @@ export default function DoctorCard({
                 </span>
                 <div className="flex flex-wrap items-center gap-1.5">
                   {specialties.map((s, idx) => (
-                    <span
-                      key={s.id || idx}
-                      className="inline-flex items-center px-2.5 py-0.5 rounded-md text-xs font-semibold bg-teal-50 text-teal-800 border border-teal-200/70 shadow-2xs"
+                    <button
+                      key={s.id || s.slug || idx}
+                      type="button"
+                      onClick={() => {
+                        if (onSelectSpecialty) {
+                          onSelectSpecialty(s.slug || s.name);
+                        }
+                      }}
+                      className="inline-flex items-center px-2.5 py-0.5 rounded-md text-xs font-semibold bg-teal-50 hover:bg-teal-100 text-teal-800 border border-teal-200/70 shadow-2xs transition-colors cursor-pointer"
+                      title={s.bn_name ? `${s.name} (${s.bn_name})` : s.name}
                     >
                       {s.name}
-                    </span>
+                    </button>
                   ))}
                 </div>
               </div>

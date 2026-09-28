@@ -18,6 +18,7 @@ urlpatterns = [
     path('api/redoc/', SpectacularRedocView.as_view(url_name='schema'), name='redoc'),
 
     path('api/search-metadata/', SearchMetadataAPIView.as_view(), name='search-metadata'),
+    path('api/search/metadata/', SearchMetadataAPIView.as_view(), name='search-metadata-slash'),
     path('api/search-facets/', SearchFacetsAPIView.as_view(), name='search-facets'),
     path('api/admin/dashboard-init/', AdminInitAPIView.as_view(), name='admin-dashboard-init'),
 

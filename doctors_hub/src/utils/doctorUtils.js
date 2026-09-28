@@ -2,7 +2,7 @@
  * Doctor name formatting and bilingual display utilities.
  */
 
-const HONORIFIC_PREFIX_RE = /^(?:Dr\.?|Dr\b|ডাক্তার|ডা[ঃ:\.]?)\s*/i;
+const HONORIFIC_PREFIX_RE = /^(?:Dr\.?|Dr\b|ডাক্তার|ডা[ঃ:.]?)\s*/i;
 
 /**
  * Strips common doctor honorifics from a name string.

@@ -32,7 +32,7 @@ export default function DoctorSearchPage({
   };
 
   // State
-  const [specialty, setSpecialty] = useState(() => getParam('spec', initialSpecialty));
+  const [specialty, setSpecialty] = useState(() => getParam('spec', getParam('specialty', initialSpecialty)));
   const [division, setDivision] = useState(() => {
     const urlDiv = getParam('division', '');
     if (urlDiv) return urlDiv;
@@ -66,6 +66,7 @@ export default function DoctorSearchPage({
   const [totalCount, setTotalCount] = useState(0);
   const [doctors, setDoctors] = useState([]);
   const [specialties, setSpecialties] = useState([]);
+  const [specialtyGroups, setSpecialtyGroups] = useState([]);
   const [facilities, setFacilities] = useState([]);
   const [isLoading, setIsLoading] = useState(false);
   const [selectedDoctorForProfile, setSelectedDoctorForProfile] = useState(null);
@@ -77,7 +78,7 @@ export default function DoctorSearchPage({
     if (lastParamsRef.current === searchParams.toString()) return;
     lastParamsRef.current = searchParams.toString();
 
-    setSpecialty(searchParams.get('spec') || '');
+    setSpecialty(searchParams.get('spec') || searchParams.get('specialty') || '');
     setDivision(searchParams.get('division') || 'All Bangladesh');
     setDistrict(searchParams.get('district') || 'All Districts');
     setArea(searchParams.get('area') || 'All Areas');
@@ -117,7 +118,12 @@ export default function DoctorSearchPage({
     api.getSearchMetadata()
       .then((meta) => {
         if (isMounted && meta) {
-          if (meta.specialties) setSpecialties(ensureArray(meta.specialties));
+          if (meta.specialty_groups) setSpecialtyGroups(ensureArray(meta.specialty_groups));
+          if (meta.specialties_az) {
+            setSpecialties(ensureArray(meta.specialties_az));
+          } else if (meta.specialties) {
+            setSpecialties(ensureArray(meta.specialties));
+          }
           if (meta.facilities) {
             setFacilities(ensureArray(meta.facilities));
           } else if (meta.hospitals || meta.diagnostic_centers) {
@@ -311,6 +317,7 @@ export default function DoctorSearchPage({
           specialty={specialty}
           onSpecialtyChange={(val) => { setSpecialty(val); setCurrentPage(1); }}
           specialties={specialties}
+          specialtyGroups={specialtyGroups}
           facility={facility}
           onFacilityChange={(val) => { setFacility(val); setCurrentPage(1); }}
           facilities={facilities}
@@ -447,6 +454,11 @@ export default function DoctorSearchPage({
                         window.scrollTo({ top: 0, behavior: 'smooth' });
                       }}
                       onSelectHospital={onSelectHospital}
+                      onSelectSpecialty={(specSlug) => {
+                        setSpecialty(specSlug);
+                        setCurrentPage(1);
+                        window.scrollTo({ top: 0, behavior: 'smooth' });
+                      }}
                     />
                   </React.Fragment>
                 );

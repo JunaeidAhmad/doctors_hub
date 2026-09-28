@@ -18,7 +18,7 @@ export const navConfig = {
       ]
     },
     {
-      group: 'DIRECTORY (super admin)',
+      group: 'DIRECTORY',
       items: [
         { id: 'hospitals', label: 'Hospitals', icon: Building2 },
         { id: 'diagnostics', label: 'Diagnostic Centers', icon: FlaskConical },
@@ -26,7 +26,7 @@ export const navConfig = {
       ]
     },
     {
-      group: 'CATALOG / TAXONOMY (super admin)',
+      group: 'CATALOG / TAXONOMY',
       items: [
         { id: 'doctor-specs', label: 'Doctor Specialties & Taxonomy', icon: Stethoscope },
         { id: 'specialty-aliases', label: 'Aliases & Review Queue', icon: Tag },

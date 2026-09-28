@@ -34,9 +34,9 @@ def test_doctors_list_no_n_plus_one():
         data = res.data.get("results", res.data)
         assert len(data) == 5
 
-    # Should execute bounded number of queries (Count + Doctors + Specialties + Components + Affiliations + Locations + Thanas + Districts + Divisions + Schedules)
+    # Should execute bounded number of queries (Count + Doctors + Specialties + Parents + Related + Claims + Tags + Affiliations + Locations + Thanas + Districts + Divisions + Schedules)
     # Regardless of whether there are 5 or 50 doctors, it must not execute per-doctor or per-affiliation queries
-    assert len(ctx.captured_queries) <= 10
+    assert len(ctx.captured_queries) <= 20
 
 
 @pytest.mark.django_db

@@ -20,3 +20,4 @@ dist-ssr/
 .vscode/
 .idea/
 .vercel
+.agent/

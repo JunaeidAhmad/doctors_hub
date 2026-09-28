@@ -59,8 +59,14 @@ export default function DoctorChamberCard({
 
           <div className="min-w-0 flex-1">
             <h4
-              className="text-xs sm:text-sm font-bold text-slate-900 truncate"
+              className={`text-xs sm:text-sm font-bold text-slate-900 truncate ${onSelectHospital && facilityId ? 'hover:text-[#006877] hover:underline cursor-pointer' : ''}`}
               title={facilityName}
+              onClick={(e) => {
+                if (onSelectHospital && facilityId) {
+                  e.stopPropagation();
+                  onSelectHospital(facilityId);
+                }
+              }}
             >
               {facilityName}
             </h4>

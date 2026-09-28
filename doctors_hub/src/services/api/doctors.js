@@ -258,6 +258,15 @@ export async function createAffiliationSchedule(data) {
   return handleResponse(res);
 }
 
+export async function updateAffiliationSchedule(id, data) {
+  const res = await fetchWithTimeout(`${BASE_URL}/schedules/${id}/`, {
+    method: 'PATCH',
+    headers: getHeaders(),
+    body: JSON.stringify(data),
+  });
+  return handleResponse(res);
+}
+
 export async function deleteAffiliationSchedule(id) {
   const res = await fetchWithTimeout(`${BASE_URL}/schedules/${id}/`, {
     method: 'DELETE',

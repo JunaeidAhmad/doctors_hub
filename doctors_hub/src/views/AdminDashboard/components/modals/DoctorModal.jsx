@@ -485,15 +485,15 @@ export default function DoctorModal() {
 
           for (const sched of (aff.schedules || [])) {
             const isTempSched = !sched.id || String(sched.id).startsWith('temp-');
+            const startTimeFormatted = sched.start_time?.length === 5 
+              ? `${sched.start_time}:00` 
+              : (sched.start_time || '17:00:00');
+            const endTimeFormatted = sched.end_time?.length === 5 
+              ? `${sched.end_time}:00` 
+              : (sched.end_time || '21:00:00');
+
             if (isTempSched) {
               try {
-                const startTimeFormatted = sched.start_time?.length === 5 
-                  ? `${sched.start_time}:00` 
-                  : (sched.start_time || '17:00:00');
-                const endTimeFormatted = sched.end_time?.length === 5 
-                  ? `${sched.end_time}:00` 
-                  : (sched.end_time || '21:00:00');
-
                 await api.createAffiliationSchedule({
                   affiliation_id: affId,
                   day_of_week: sched.day_of_week || 'Saturday',
@@ -502,6 +502,16 @@ export default function DoctorModal() {
                 });
               } catch (err) {
                 console.warn('Failed to create schedule slot:', err);
+              }
+            } else {
+              try {
+                await api.updateAffiliationSchedule(sched.id, {
+                  day_of_week: sched.day_of_week || 'Saturday',
+                  start_time: startTimeFormatted,
+                  end_time: endTimeFormatted
+                });
+              } catch (err) {
+                console.warn('Failed to update schedule slot:', sched.id, err);
               }
             }
           }

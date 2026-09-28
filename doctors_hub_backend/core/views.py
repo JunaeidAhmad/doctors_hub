@@ -79,14 +79,116 @@ class SearchMetadataAPIView(APIView):
         responses={200: SearchMetadataResponseSerializer}
     )
     def get(self, request, *args, **kwargs):
-        cached_data = cache.get('search_metadata_global')
+        cached_data = cache.get('search_metadata_global_v3')
         if cached_data is not None:
             return Response(cached_data)
 
         from doctors.models import SpecialtyAlias
         from doctors.serializers import SpecialtyOptionSerializer
+        from doctors.services.specialty_relations import specialty_doctor_counts
+
+        counts = specialty_doctor_counts()
+
+        all_specialties = list(
+            DoctorSpecialty.objects.prefetch_related('aliases', 'subspecialties').all()
+        )
+
+        def build_search_terms(node):
+            terms = []
+            seen = set()
+
+            def add_term(t):
+                if not t:
+                    return
+                t_clean = t.strip()
+                if not t_clean:
+                    return
+                key = t_clean.lower()
+                if key not in seen:
+                    seen.add(key)
+                    terms.append(t_clean)
+
+            add_term(node.name)
+            add_term(node.bn_name)
+            add_term(node.formal_name)
+            for alias in node.aliases.all():
+                if alias.is_verified:
+                    add_term(alias.name)
+            return terms
+
+        # 1. specialty_groups
+        umbrellas = [s for s in all_specialties if s.is_umbrella]
+        umbrellas.sort(key=lambda u: (u.display_order, u.name))
+
+        specialty_groups = []
+        for u in umbrellas:
+            u_count = counts.get(u.id, 0)
+            u_label = f"{u.name} · {u.bn_name}" if u.bn_name else u.name
+            children_nodes = list(u.subspecialties.all())
+            children = []
+            for c in children_nodes:
+                c_count = counts.get(c.id, 0)
+                c_label = f"{c.name} · {c.bn_name}" if c.bn_name else c.name
+                children.append({
+                    'id': str(c.id),
+                    'slug': c.slug,
+                    'name': c.name,
+                    'bn_name': c.bn_name,
+                    'label': c_label,
+                    'formal_name': c.formal_name,
+                    'count': c_count,
+                    'search_terms': build_search_terms(c),
+                })
+            children.sort(key=lambda x: (-x['count'], x['name']))
+
+            specialty_groups.append({
+                'id': str(u.id),
+                'slug': u.slug,
+                'name': u.name,
+                'bn_name': u.bn_name,
+                'label': u_label,
+                'icon': u.icon,
+                'count': u_count,
+                'search_terms': build_search_terms(u),
+                'children': children,
+            })
+
+        # 2. popular_specialties
+        popular_nodes = [s for s in all_specialties if s.is_popular]
+        popular_specialties = [
+            {
+                'id': str(s.id),
+                'slug': s.slug,
+                'name': s.name,
+                'bn_name': s.bn_name,
+                'count': counts.get(s.id, 0),
+            }
+            for s in popular_nodes
+        ]
+        popular_specialties.sort(key=lambda x: (-x['count'], x['name']))
+
+        # 3. specialties_az
+        specialties_az = [
+            {
+                'id': str(s.id),
+                'slug': s.slug,
+                'name': s.name,
+                'bn_name': s.bn_name,
+                'label': f"{s.name} · {s.bn_name}" if s.bn_name else s.name,
+                'is_umbrella': s.is_umbrella,
+                'count': counts.get(s.id, 0),
+                'search_terms': build_search_terms(s),
+            }
+            for s in all_specialties
+        ]
+        specialties_az.sort(key=lambda x: x['name'].lower())
+
+        # 4. provider_types (empty list for backwards compatibility)
+        provider_types = []
+
+        # 5. flat specialties for one release
         aliases = list(SpecialtyAlias.objects.filter(is_verified=True).select_related('specialty').order_by('name'))
-        specialties_data = SpecialtyOptionSerializer(aliases, many=True, context={'request': request}).data
+        specialties_data = SpecialtyOptionSerializer(aliases, many=True, context={'request': request, 'doctor_counts': counts}).data
 
         test_categories = TestCategory.objects.annotate(test_count=Count('tests', distinct=True)).order_by('name')
         hospital_categories = HospitalCategory.objects.annotate(hospital_count=Count('hospitals', distinct=True)).order_by('name')
@@ -96,6 +198,10 @@ class SearchMetadataAPIView(APIView):
         facilities_data = LocationSerializer(locations, many=True, context={'request': request}).data
 
         response_data = {
+            'specialty_groups': specialty_groups,
+            'popular_specialties': popular_specialties,
+            'specialties_az': specialties_az,
+            'provider_types': provider_types,
             'specialties': specialties_data,
             'test_categories': TestCategorySerializer(test_categories, many=True, context={'request': request}).data,
             'hospital_categories': HospitalCategorySerializer(hospital_categories, many=True, context={'request': request}).data,
@@ -104,7 +210,7 @@ class SearchMetadataAPIView(APIView):
             'hospitals': [f for f in facilities_data if f.get('location_type') == 'hospital'],
             'diagnostic_centers': [f for f in facilities_data if f.get('location_type') == 'diagnostic_center'],
         }
-        cache.set('search_metadata_global', response_data, timeout=300)
+        cache.set('search_metadata_global_v3', response_data, timeout=300)
         return Response(response_data)
 
 
@@ -169,10 +275,14 @@ class SearchFacetsAPIView(APIView):
                 models.Q(specialties__name__icontains=search_query)
             )
 
+        from doctors.services.specialty_relations import specialty_doctor_counts
+
         # Annotated specialties with count of matching doctors
-        specialties = DoctorSpecialty.objects.annotate(
-            doctor_count=Count('doctors', filter=models.Q(doctors__in=doc_qs), distinct=True)
-        ).order_by('-doctor_count', 'name')
+        counts = specialty_doctor_counts(doc_qs)
+        specialties = list(DoctorSpecialty.objects.all())
+        for s in specialties:
+            s.doctor_count = counts.get(s.id, 0)
+        specialties.sort(key=lambda s: (-s.doctor_count, s.name))
 
         # Filtered base hospital queryset
         hosp_qs = Hospital.objects.all()
@@ -280,7 +390,7 @@ class AdminInitAPIView(APIView):
             DoctorSpecialty.objects.annotate(
                 doctor_count=Count('doctors', distinct=True),
                 alias_count=Count('aliases', distinct=True)
-            ).prefetch_related('components').order_by('name'),
+            ).order_by('name'),
             many=True,
             context={'request': request}
         ).data

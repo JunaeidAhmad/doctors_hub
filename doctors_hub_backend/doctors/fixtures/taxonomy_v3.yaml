@@ -1,0 +1,1858 @@
+version: '3.0'
+umbrellas:
+- id: 1
+  name: Medicine & Primary Care
+  bn_name: মেডিসিন ও সাধারণ চিকিৎসা
+  formal_name: Internal Medicine & Primary Care
+  slug: medicine-primary-care
+  icon: Stethoscope
+  display_order: 1
+- id: 2
+  name: Heart & Vascular
+  bn_name: হৃদরোগ ও রক্তনালী
+  formal_name: Cardiology & Vascular Medicine
+  slug: heart-vascular
+  icon: Heart
+  display_order: 2
+- id: 3
+  name: Cancer Care
+  bn_name: ক্যান্সার
+  formal_name: Oncology & Cancer Care
+  slug: cancer-care
+  icon: Ribbon
+  display_order: 3
+- id: 4
+  name: Brain, Spine & Nerves
+  bn_name: মস্তিষ্ক, মেরুদণ্ড ও স্নায়ু
+  formal_name: Neurology & Neurosurgery
+  slug: brain-spine-nerves
+  icon: Brain
+  display_order: 4
+- id: 5
+  name: Bone & Joint
+  bn_name: হাড় ও জোড়া
+  formal_name: Orthopedics & Traumatology
+  slug: bone-joint
+  icon: Bone
+  display_order: 5
+- id: 6
+  name: Women's Health & Pregnancy
+  bn_name: নারী স্বাস্থ্য ও প্রসূতি
+  formal_name: Obstetrics & Gynecology
+  slug: womens-health-pregnancy
+  icon: Users
+  display_order: 6
+- id: 7
+  name: Child Health
+  bn_name: শিশু স্বাস্থ্য
+  formal_name: Pediatrics & Child Health
+  slug: child-health
+  icon: Baby
+  display_order: 7
+- id: 8
+  name: Kidney & Urinary
+  bn_name: কিডনি ও মূত্রনালী
+  formal_name: Nephrology & Urology
+  slug: kidney-urinary
+  icon: Droplet
+  display_order: 8
+- id: 9
+  name: Digestive & Liver
+  bn_name: পরিপাকতন্ত্র ও লিভার
+  formal_name: Gastroenterology & Hepatology
+  slug: digestive-liver
+  icon: Activity
+  display_order: 9
+- id: 10
+  name: Diabetes & Hormones
+  bn_name: ডায়াবেটিস ও হরমোন
+  formal_name: Endocrinology & Diabetology
+  slug: diabetes-hormones
+  icon: Activity
+  display_order: 10
+- id: 11
+  name: Chest & Lungs
+  bn_name: বক্ষব্যাধি
+  formal_name: Pulmonology & Respiratory Medicine
+  slug: chest-lungs
+  icon: Wind
+  display_order: 11
+- id: 12
+  name: Ear, Nose & Throat
+  bn_name: নাক-কান-গলা
+  formal_name: Otolaryngology (ENT)
+  slug: ent
+  icon: Ear
+  display_order: 12
+- id: 13
+  name: Eye Care
+  bn_name: চক্ষু
+  formal_name: Ophthalmology
+  slug: eye-care
+  icon: Eye
+  display_order: 13
+- id: 14
+  name: Skin & Sexual Health
+  bn_name: চর্ম ও যৌন স্বাস্থ্য
+  formal_name: Dermatology & Venereology
+  slug: skin-sexual-health
+  icon: Sparkles
+  display_order: 14
+- id: 15
+  name: Mental Health
+  bn_name: মানসিক স্বাস্থ্য
+  formal_name: Psychiatry & Behavioral Sciences
+  slug: mental-health
+  icon: Smile
+  display_order: 15
+- id: 16
+  name: General & Laparoscopic Surgery
+  bn_name: জেনারেল ও ল্যাপারোস্কোপিক সার্জারি
+  formal_name: General & Laparoscopic Surgery
+  slug: general-laparoscopic-surgery
+  icon: Scissors
+  display_order: 16
+- id: 17
+  name: Plastic, Burn & Cosmetic Surgery
+  bn_name: প্লাস্টিক ও বার্ন সার্জারি
+  formal_name: Plastic, Reconstructive & Aesthetic Surgery
+  slug: plastic-burn-surgery
+  icon: Scissors
+  display_order: 17
+- id: 18
+  name: Blood Disorders
+  bn_name: রক্তরোগ
+  formal_name: Hematology
+  slug: blood-disorders
+  icon: Droplet
+  display_order: 18
+- id: 19
+  name: Nutrition & Diet
+  bn_name: পুষ্টি ও ডায়েট
+  formal_name: Clinical Nutrition & Dietetics
+  slug: nutrition-diet
+  icon: Apple
+  display_order: 19
+- id: 20
+  name: Physical Medicine & Rehab
+  bn_name: ফিজিক্যাল মেডিসিন ও পুনর্বাসন
+  formal_name: Physical Medicine & Rehabilitation
+  slug: physical-medicine-rehab
+  icon: Accessibility
+  display_order: 20
+- id: 21
+  name: Pain, Anesthesia & ICU
+  bn_name: ব্যথা, অ্যানেস্থেসিয়া ও আইসিইউ
+  formal_name: Anesthesiology, Pain & Critical Care
+  slug: pain-anesthesia-icu
+  icon: Syringe
+  display_order: 21
+- id: 22
+  name: Dental & Oral Care
+  bn_name: দন্ত ও মুখ
+  formal_name: Dental Surgery & Oral Medicine
+  slug: dental-oral
+  icon: Smile
+  display_order: 22
+- id: 23
+  name: Diagnostics & Imaging
+  bn_name: রোগনির্ণয় ও ইমেজিং
+  formal_name: Radiology, Sonology & Pathology
+  slug: diagnostics-imaging
+  icon: Scan
+  display_order: 23
+- id: 24
+  name: Alternative Medicine
+  bn_name: বিকল্প চিকিৎসা
+  formal_name: Homeopathy & Alternative Medicine
+  slug: alternative-medicine
+  icon: Leaf
+  display_order: 24
+leaves:
+- name: Medicine Specialist
+  bn_name: মেডিসিন বিশেষজ্ঞ
+  formal_name: Internal Medicine
+  slug: medicine-specialist
+  parents:
+  - 1
+  related: []
+  provider_type: physician
+  aliases_en:
+  - Medicine
+  - Internal Medicine
+  - General Medicine
+  - elderly care
+  - fever
+  aliases_bn:
+  - মেডিসিন
+  - ইন্টারনাল মেডিসিন
+  display_order: 1
+  is_popular: true
+- name: Family Physician / GP
+  bn_name: জেনারেল প্র্যাকটিশনার
+  formal_name: Family Medicine
+  slug: family-physician-gp
+  parents:
+  - 1
+  related: []
+  provider_type: physician
+  aliases_en:
+  - General Physician
+  - Family Medicine
+  - GP
+  - forensic medicine
+  aliases_bn:
+  - জেনারেল ফিজিশিয়ান
+  - ফ্যামিলি মেডিসিন
+  display_order: 2
+  is_popular: false
+- name: Infectious Disease Specialist
+  bn_name: সংক্রামক রোগ বিশেষজ্ঞ
+  formal_name: Infectious Diseases
+  slug: infectious-disease-specialist
+  parents:
+  - 1
+  related: []
+  provider_type: physician
+  aliases_en:
+  - Tropical Medicine
+  - Infectious Diseases
+  aliases_bn:
+  - সংক্রামক ব্যাধি
+  display_order: 3
+  is_popular: false
+- name: Cardiologist
+  bn_name: হৃদরোগ বিশেষজ্ঞ
+  formal_name: Cardiology
+  slug: cardiologist
+  parents:
+  - 2
+  related: []
+  provider_type: physician
+  aliases_en:
+  - Cardiology
+  - Heart
+  - Cardiac
+  - clinical cardiology
+  - hypertension
+  aliases_bn:
+  - কার্ডিওলজি
+  - হৃদরোগ
+  display_order: 4
+  is_popular: true
+- name: Interventional Cardiologist
+  bn_name: ইন্টারভেনশনাল কার্ডিওলজিস্ট
+  formal_name: Interventional Cardiology
+  slug: interventional-cardiologist
+  parents:
+  - 2
+  related: []
+  provider_type: physician
+  aliases_en:
+  - Interventional Cardiology
+  aliases_bn:
+  - ইন্টারভেনশনাল কার্ডিওলজি
+  display_order: 5
+  is_popular: false
+- name: Cardiac Surgeon
+  bn_name: কার্ডিয়াক সার্জন
+  formal_name: Cardiovascular & Thoracic Surgery
+  slug: cardiac-surgeon
+  parents:
+  - 2
+  related: []
+  provider_type: physician
+  aliases_en:
+  - Cardiac Surgery
+  - CTVS
+  - Cardiovascular Surgery
+  - Cardiac MRI
+  - cardiovascular
+  aliases_bn:
+  - কার্ডিয়াক সার্জারি
+  - হার্ট সার্জারি
+  display_order: 6
+  is_popular: false
+- name: Vascular Surgeon
+  bn_name: ভাস্কুলার সার্জন
+  formal_name: Vascular Surgery
+  slug: vascular-surgeon
+  parents:
+  - 2
+  related:
+  - 16
+  provider_type: physician
+  aliases_en:
+  - Vascular Surgery
+  - Endovascular Surgery
+  aliases_bn:
+  - ভাসকুলার সার্জারি
+  display_order: 7
+  is_popular: false
+- name: Thoracic Surgeon
+  bn_name: থোরাসিক সার্জন
+  formal_name: Thoracic Surgery
+  slug: thoracic-surgeon
+  parents:
+  - 11
+  - 2
+  related: []
+  provider_type: physician
+  aliases_en:
+  - Thoracic Surgery
+  - Chest Surgery
+  aliases_bn:
+  - থোরাসিক সার্জারি
+  display_order: 8
+  is_popular: false
+- name: Pediatric Cardiologist
+  bn_name: শিশু হৃদরোগ বিশেষজ্ঞ
+  formal_name: Pediatric Cardiology
+  slug: pediatric-cardiologist
+  parents:
+  - 7
+  - 2
+  related: []
+  provider_type: physician
+  aliases_en:
+  - Pediatric Cardiology
+  - Paediatric Cardiology
+  aliases_bn:
+  - শিশু কার্ডিওলজি
+  display_order: 9
+  is_popular: false
+- name: Cancer Specialist
+  bn_name: ক্যান্সার বিশেষজ্ঞ
+  formal_name: Clinical Oncology
+  slug: cancer-specialist
+  parents:
+  - 3
+  related: []
+  provider_type: physician
+  aliases_en:
+  - Oncology
+  - Oncologist
+  - Medical Oncology
+  - Clinical Oncology
+  - Radiation Oncology
+  - Radiotherapy
+  - Cancer
+  - Cancer Medicine
+  - palliative care
+  aliases_bn:
+  - অনকোলজি
+  - অনকোলজিস্ট
+  - ক্যান্সার
+  - রেডিওথেরাপি
+  display_order: 10
+  is_popular: false
+- name: Cancer Surgeon
+  bn_name: ক্যান্সার সার্জন
+  formal_name: Surgical Oncology
+  slug: cancer-surgeon
+  parents:
+  - 3
+  - 16
+  related: []
+  provider_type: physician
+  aliases_en:
+  - Surgical Oncology
+  - Onco-surgery
+  - Cancer Surgery
+  - Oncology Surgery
+  aliases_bn:
+  - সার্জিক্যাল অনকোলজি
+  - ক্যান্সার সার্জারি
+  display_order: 11
+  is_popular: false
+- name: Breast Surgeon
+  bn_name: ব্রেস্ট সার্জন
+  formal_name: Breast Surgery
+  slug: breast-surgeon
+  parents:
+  - 3
+  - 16
+  related:
+  - 6
+  provider_type: physician
+  aliases_en:
+  - Breast Surgery
+  - Breast Cancer Surgery
+  - oncoplastic breast surgery
+  aliases_bn:
+  - ব্রেস্ট সার্জারি
+  - স্তন সার্জারি
+  display_order: 12
+  is_popular: false
+- name: Breast Health Specialist
+  bn_name: স্তন স্বাস্থ্য বিশেষজ্ঞ
+  formal_name: Breast Health & Oncology
+  slug: breast-health-specialist
+  parents:
+  - 3
+  - 6
+  related: []
+  provider_type: physician
+  aliases_en:
+  - Breast Health
+  - Breast Diseases
+  - Breast Cancer
+  aliases_bn:
+  - ব্রেস্ট রোগ
+  - স্তন রোগ
+  display_order: 13
+  is_popular: false
+- name: Gynecological Oncologist
+  bn_name: গাইনি ক্যান্সার বিশেষজ্ঞ
+  formal_name: Gynecologic Oncology
+  slug: gynecological-oncologist
+  parents:
+  - 3
+  - 6
+  related: []
+  provider_type: physician
+  aliases_en:
+  - Gynecological Oncology
+  - Gynae Oncology
+  - gynaecological oncology
+  aliases_bn:
+  - গাইনি অনকোলজি
+  display_order: 14
+  is_popular: false
+- name: Pediatric Oncologist
+  bn_name: শিশু ক্যান্সার বিশেষজ্ঞ
+  formal_name: Pediatric Hematology & Oncology
+  slug: pediatric-oncologist
+  parents:
+  - 3
+  - 7
+  - 18
+  related: []
+  provider_type: physician
+  aliases_en:
+  - Pediatric Oncology
+  - Pediatric Hemato-Oncology
+  - pediatric hematology
+  aliases_bn:
+  - শিশু ক্যান্সার
+  display_order: 15
+  is_popular: false
+- name: Neurologist
+  bn_name: নিউরোলজিস্ট
+  formal_name: Neurology
+  slug: neurologist
+  parents:
+  - 4
+  related: []
+  provider_type: physician
+  aliases_en:
+  - Neurology
+  - Neuromedicine
+  - Neuro-Medicine
+  - brain
+  - stroke
+  - parkinson's disease
+  - movement disorder
+  aliases_bn:
+  - নিউরোলজি
+  - নিউরোমেডিসিন
+  - স্নায়ুরোগ
+  display_order: 16
+  is_popular: true
+- name: Neurosurgeon
+  bn_name: নিউরোসার্জন
+  formal_name: Neurosurgery
+  slug: neurosurgeon
+  parents:
+  - 4
+  related: []
+  provider_type: physician
+  aliases_en:
+  - Neurosurgery
+  - Brain Surgery
+  aliases_bn:
+  - নিউরোসার্জারি
+  - মস্তিষ্ক সার্জারি
+  display_order: 17
+  is_popular: true
+- name: Spine Surgeon
+  bn_name: মেরুদণ্ড সার্জন
+  formal_name: Spine Surgery
+  slug: spine-surgeon
+  parents:
+  - 4
+  - 5
+  related: []
+  provider_type: physician
+  aliases_en:
+  - Spine Surgery
+  - Spinal Surgery
+  - spine
+  aliases_bn:
+  - স্পাইন সার্জারি
+  - মেরুদণ্ড সার্জারি
+  display_order: 18
+  is_popular: true
+- name: Pediatric Neurologist
+  bn_name: শিশু নিউরোলজিস্ট
+  formal_name: Pediatric Neurology
+  slug: pediatric-neurologist
+  parents:
+  - 7
+  - 4
+  related: []
+  provider_type: physician
+  aliases_en:
+  - Pediatric Neurology
+  - Child Neurology
+  - Autism
+  - paediatric neurology
+  aliases_bn:
+  - শিশু নিউরোলজি
+  - অটিজম
+  display_order: 19
+  is_popular: false
+- name: Orthopedic Surgeon
+  bn_name: হাড় ও জোড়া বিশেষজ্ঞ
+  formal_name: Orthopedics & Traumatology
+  slug: orthopedic-surgeon
+  parents:
+  - 5
+  related: []
+  provider_type: physician
+  aliases_en:
+  - Orthopedics
+  - Orthopaedic Surgery
+  - Trauma Surgery
+  - Arthroplasty
+  - Arthroscopy
+  - Bone And Joint
+  - Bone
+  - Joint
+  - Trauma
+  - Hand Surgery
+  - orthopedic surgery
+  - orthopaedics
+  - joint replacement surgery
+  - joint replacement
+  - arthroscopic surgery
+  - musculoskeletal
+  - foot care surgery
+  aliases_bn:
+  - অর্থোপেডিক
+  - অর্থোপেডিক সার্জারি
+  - হাড় ও জোড়া
+  - ট্রমা সার্জারি
+  display_order: 20
+  is_popular: true
+- name: Rheumatologist
+  bn_name: বাতরোগ বিশেষজ্ঞ
+  formal_name: Rheumatology
+  slug: rheumatologist
+  parents:
+  - 5
+  - 1
+  related: []
+  provider_type: physician
+  aliases_en:
+  - Rheumatology
+  - Arthritis
+  - Rheumatic Fever
+  - rheumatic diseases
+  - rheumatic disease
+  aliases_bn:
+  - বাতরোগ
+  - রিউমাটোলজি
+  display_order: 21
+  is_popular: false
+- name: Gynecologist & Obstetrician
+  bn_name: গাইনি বিশেষজ্ঞ
+  formal_name: Obstetrics & Gynecology
+  slug: gynecologist-obstetrician
+  parents:
+  - 6
+  related: []
+  provider_type: physician
+  aliases_en:
+  - Gynecology
+  - Obstetrics
+  - Obs & Gynae
+  - Gynaecology
+  - Obs
+  - Gynae
+  - urogynaecology
+  - pelvic floor surgery
+  aliases_bn:
+  - গাইনি
+  - গাইনী
+  - প্রসূতি
+  - স্ত্রীরোগ
+  - গাইনী এন্ড অবস্
+  display_order: 22
+  is_popular: true
+- name: Infertility Specialist
+  bn_name: বন্ধ্যাত্ব বিশেষজ্ঞ
+  formal_name: Reproductive Medicine & Infertility
+  slug: infertility-specialist
+  parents:
+  - 6
+  related:
+  - 8
+  provider_type: physician
+  aliases_en:
+  - Infertility
+  - Reproductive Medicine
+  - IVF
+  - Reproductive Endocrinology
+  aliases_bn:
+  - বন্ধ্যাত্ব
+  - আইভিএফ
+  display_order: 23
+  is_popular: false
+- name: Child Specialist
+  bn_name: শিশু বিশেষজ্ঞ
+  formal_name: Pediatrics
+  slug: child-specialist
+  parents:
+  - 7
+  related: []
+  provider_type: physician
+  aliases_en:
+  - Pediatrics
+  - Paediatrics
+  - Pediatrician
+  - Child Health
+  - Child
+  - child development
+  aliases_bn:
+  - শিশু রোগ
+  - পেডিয়াট্রিক্স
+  display_order: 24
+  is_popular: true
+- name: Neonatologist
+  bn_name: নবজাতক বিশেষজ্ঞ
+  formal_name: Neonatology
+  slug: neonatologist
+  parents:
+  - 7
+  related: []
+  provider_type: physician
+  aliases_en:
+  - Neonatology
+  - Newborn
+  aliases_bn:
+  - নবজাতক
+  display_order: 25
+  is_popular: false
+- name: Pediatric Surgeon
+  bn_name: শিশু সার্জন
+  formal_name: Pediatric Surgery
+  slug: pediatric-surgeon
+  parents:
+  - 7
+  - 16
+  related: []
+  provider_type: physician
+  aliases_en:
+  - Pediatric Surgery
+  - Neonatal Surgery
+  - paediatric surgery
+  aliases_bn:
+  - শিশু সার্জারি
+  display_order: 26
+  is_popular: false
+- name: Nephrologist
+  bn_name: কিডনি বিশেষজ্ঞ
+  formal_name: Nephrology
+  slug: nephrologist
+  parents:
+  - 8
+  related: []
+  provider_type: physician
+  aliases_en:
+  - Nephrology
+  - Kidney Diseases
+  - Dialysis
+  - Kidney
+  - Kidney Transplant
+  - kidney disease
+  - kidney medicine
+  aliases_bn:
+  - কিডনি রোগ
+  - নেফ্রোলজি
+  display_order: 27
+  is_popular: false
+- name: Urologist
+  bn_name: ইউরোলজিস্ট
+  formal_name: Urology
+  slug: urologist
+  parents:
+  - 8
+  related: []
+  provider_type: physician
+  aliases_en:
+  - Urology
+  - Female Urology
+  - laparoscopic urology
+  - genitourinary surgery
+  - kidney surgery
+  - kidney transplantation
+  - transplant
+  - uro-oncology
+  aliases_bn:
+  - ইউরোলজি
+  display_order: 28
+  is_popular: false
+- name: Andrologist
+  bn_name: এন্ড্রোলজিস্ট
+  formal_name: Andrology & Sexual Medicine
+  slug: andrologist
+  parents:
+  - 8
+  - 14
+  related: []
+  provider_type: physician
+  aliases_en:
+  - Andrology
+  - Male Infertility
+  aliases_bn:
+  - এন্ড্রোলজি
+  display_order: 29
+  is_popular: false
+- name: Gastroenterologist
+  bn_name: গ্যাস্ট্রোএন্টারোলজিস্ট
+  formal_name: Gastroenterology
+  slug: gastroenterologist
+  parents:
+  - 9
+  related: []
+  provider_type: physician
+  aliases_en:
+  - Gastroenterology
+  - Endoscopy
+  - GI
+  - colonoscopy
+  aliases_bn:
+  - গ্যাস্ট্রোএন্টারোলজি
+  - পরিপাকতন্ত্র
+  display_order: 30
+  is_popular: true
+- name: Hepatologist
+  bn_name: লিভার বিশেষজ্ঞ
+  formal_name: Hepatology
+  slug: hepatologist
+  parents:
+  - 9
+  related: []
+  provider_type: physician
+  aliases_en:
+  - Hepatology
+  - Liver Diseases
+  - Liver
+  - Liver Transplant
+  - liver disease
+  aliases_bn:
+  - হেপাটোলজি
+  - লিভার রোগ
+  display_order: 31
+  is_popular: false
+- name: Hepatobiliary Surgeon
+  bn_name: লিভার সার্জন
+  formal_name: Hepatobiliary & Pancreatic Surgery
+  slug: hepatobiliary-surgeon
+  parents:
+  - 9
+  - 16
+  related: []
+  provider_type: physician
+  aliases_en:
+  - HPB Surgery
+  - Hepatobiliary Surgery
+  - Pancreatic Surgery
+  - Liver Transplant Surgery
+  - hepato-biliary surgery
+  - liver surgery
+  - biliary surgery
+  - pancreatic diseases
+  aliases_bn:
+  - হেপাটোবিলিয়ারি সার্জারি
+  display_order: 32
+  is_popular: false
+- name: Colorectal Surgeon
+  bn_name: কোলোরেক্টাল সার্জন
+  formal_name: Colorectal Surgery
+  slug: colorectal-surgeon
+  parents:
+  - 16
+  - 9
+  related: []
+  provider_type: physician
+  aliases_en:
+  - Colorectal Surgery
+  - Proctology
+  - Piles
+  aliases_bn:
+  - কোলোরেক্টাল সার্জারি
+  - পাইলস
+  display_order: 33
+  is_popular: true
+- name: Diabetologist
+  bn_name: ডায়াবেটিস বিশেষজ্ঞ
+  formal_name: Diabetology
+  slug: diabetologist
+  parents:
+  - 10
+  related: []
+  provider_type: physician
+  aliases_en:
+  - Diabetology
+  - Diabetes
+  - Diabetic Foot
+  aliases_bn:
+  - ডায়াবেটিস
+  - ডায়াবেটোলজি
+  display_order: 34
+  is_popular: false
+- name: Endocrinologist
+  bn_name: হরমোন বিশেষজ্ঞ
+  formal_name: Endocrinology
+  slug: endocrinologist
+  parents:
+  - 10
+  related: []
+  provider_type: physician
+  aliases_en:
+  - Endocrinology
+  - Thyroid
+  - Hormone
+  - Diabetes & Endocrinology
+  - Metabolism
+  aliases_bn:
+  - এন্ডোক্রিনোলজি
+  - হরমোন
+  - থাইরয়েড
+  display_order: 35
+  is_popular: false
+- name: Chest Specialist
+  bn_name: বক্ষব্যাধি বিশেষজ্ঞ
+  formal_name: Pulmonology & Respiratory Medicine
+  slug: chest-specialist
+  parents:
+  - 11
+  related: []
+  provider_type: physician
+  aliases_en:
+  - Pulmonology
+  - Respiratory Medicine
+  - Chest Diseases
+  - Asthma
+  - TB
+  - Chest
+  - Chest Medicine
+  - copd
+  - respiratory
+  - chest disease
+  - sleep medicine
+  aliases_bn:
+  - বক্ষব্যাধি
+  - শ্বাসকষ্ট
+  - হাঁপানি
+  display_order: 36
+  is_popular: false
+- name: ENT Specialist
+  bn_name: নাক-কান-গলা বিশেষজ্ঞ
+  formal_name: Otolaryngology (ENT)
+  slug: ent-specialist
+  parents:
+  - 12
+  related: []
+  provider_type: physician
+  aliases_en:
+  - ENT
+  - Otolaryngology
+  - ENT (Otolaryngology)
+  - Otorhinolaryngology
+  aliases_bn:
+  - ইএনটি
+  - নাক কান গলা
+  display_order: 37
+  is_popular: false
+- name: Head & Neck Surgeon
+  bn_name: হেড এন্ড নেক সার্জন
+  formal_name: Head & Neck Surgery
+  slug: head-neck-surgeon
+  parents:
+  - 12
+  - 3
+  related: []
+  provider_type: physician
+  aliases_en:
+  - Head & Neck Surgery
+  - Head And Neck Surgery
+  - Head
+  - Neck Surgery
+  - head neck surgery
+  - head-neck surgery
+  aliases_bn:
+  - হেড এন্ড নেক সার্জারি
+  display_order: 38
+  is_popular: false
+- name: Eye Specialist
+  bn_name: চক্ষু বিশেষজ্ঞ
+  formal_name: Ophthalmology
+  slug: eye-specialist
+  parents:
+  - 13
+  related: []
+  provider_type: physician
+  aliases_en:
+  - Ophthalmology
+  - Ophthalmologist
+  - Eye
+  aliases_bn:
+  - চক্ষু
+  - চক্ষুরোগ
+  display_order: 39
+  is_popular: false
+- name: Dermatologist
+  bn_name: চর্মরোগ বিশেষজ্ঞ
+  formal_name: Dermatology
+  slug: dermatologist
+  parents:
+  - 14
+  related: []
+  provider_type: physician
+  aliases_en:
+  - Dermatology
+  - Skin
+  - Skin & VD
+  - Dermatology & Venereology
+  - clinical dermatology
+  aliases_bn:
+  - চর্মরোগ
+  - ডার্মাটোলজি
+  display_order: 40
+  is_popular: false
+- name: Sexologist
+  bn_name: যৌনরোগ বিশেষজ্ঞ
+  formal_name: Sexual Medicine & Venereology
+  slug: sexologist
+  parents:
+  - 14
+  related:
+  - 8
+  provider_type: physician
+  aliases_en:
+  - Sexual Medicine
+  - Venereology
+  - Sex Specialist
+  - Sexual Health
+  - vd
+  aliases_bn:
+  - যৌনরোগ
+  - যৌন স্বাস্থ্য
+  display_order: 41
+  is_popular: false
+- name: Psychiatrist
+  bn_name: মানসিক রোগ বিশেষজ্ঞ
+  formal_name: Psychiatry
+  slug: psychiatrist
+  parents:
+  - 15
+  related: []
+  provider_type: physician
+  aliases_en:
+  - Psychiatry
+  - Mental Health
+  - Psychotherapy
+  - neuropsychiatry
+  aliases_bn:
+  - মনোরোগ
+  - মানসিক স্বাস্থ্য
+  display_order: 42
+  is_popular: false
+- name: Psychologist
+  bn_name: সাইকোলজিস্ট
+  formal_name: Clinical Psychology
+  slug: psychologist
+  parents:
+  - 15
+  related: []
+  provider_type: allied
+  aliases_en:
+  - Clinical Psychology
+  - Counselling
+  - Psychology
+  aliases_bn:
+  - মনোবিজ্ঞান
+  display_order: 43
+  is_popular: false
+- name: General Surgeon
+  bn_name: জেনারেল সার্জন
+  formal_name: General Surgery
+  slug: general-surgeon
+  parents:
+  - 16
+  related: []
+  provider_type: physician
+  aliases_en:
+  - General Surgery
+  - Surgery
+  - gastrointestinal surgery
+  - general
+  aliases_bn:
+  - জেনারেল সার্জারি
+  - সার্জারি
+  display_order: 44
+  is_popular: true
+- name: Laparoscopic Surgeon
+  bn_name: ল্যাপারোস্কোপিক সার্জন
+  formal_name: Laparoscopic Surgery
+  slug: laparoscopic-surgeon
+  parents:
+  - 16
+  related: []
+  provider_type: physician
+  aliases_en:
+  - Laparoscopic Surgery
+  - Laser Surgery
+  - laparoscopy surgery
+  aliases_bn:
+  - ল্যাপারোস্কোপিক সার্জারি
+  display_order: 45
+  is_popular: true
+- name: Plastic Surgeon
+  bn_name: প্লাস্টিক সার্জন
+  formal_name: Plastic & Reconstructive Surgery
+  slug: plastic-surgeon
+  parents:
+  - 17
+  related: []
+  provider_type: physician
+  aliases_en:
+  - Plastic Surgery
+  - Burn
+  - Cosmetic Surgery
+  - Plastic
+  - Burn Surgery
+  - Reconstructive Surgery
+  - aesthetic surgery
+  - cosmetology
+  aliases_bn:
+  - প্লাস্টিক সার্জারি
+  - বার্ন সার্জারি
+  - কসমেটিক সার্জারি
+  display_order: 46
+  is_popular: false
+- name: Hematologist
+  bn_name: রক্তরোগ বিশেষজ্ঞ
+  formal_name: Hematology
+  slug: hematologist
+  parents:
+  - 18
+  related: []
+  provider_type: physician
+  aliases_en:
+  - Hematology
+  - Haematology
+  - Bone Marrow Transplant
+  - blood cancer
+  aliases_bn:
+  - হেমাটোলজি
+  - রক্তরোগ
+  display_order: 47
+  is_popular: false
+- name: Nutritionist / Dietitian
+  bn_name: পুষ্টিবিদ
+  formal_name: Clinical Nutrition & Dietetics
+  slug: nutritionist-dietitian
+  parents:
+  - 19
+  related: []
+  provider_type: allied
+  aliases_en:
+  - Dietetics
+  - Nutrition
+  - Dietician
+  - Clinical Nutrition
+  - Clinical Nutrition & Dietetics
+  aliases_bn:
+  - ডায়েটিশিয়ান
+  - পুষ্টিবিদ্যা
+  - ডায়েট
+  display_order: 48
+  is_popular: false
+- name: Weight Management Specialist
+  bn_name: ওজন নিয়ন্ত্রণ বিশেষজ্ঞ
+  formal_name: Obesity & Weight Management
+  slug: weight-management-specialist
+  parents:
+  - 19
+  related:
+  - 10
+  provider_type: physician
+  aliases_en:
+  - Weight Management
+  - Obesity
+  - obesity management
+  aliases_bn:
+  - ওজন নিয়ন্ত্রণ
+  display_order: 49
+  is_popular: false
+- name: Physical Medicine Specialist
+  bn_name: ফিজিক্যাল মেডিসিন বিশেষজ্ঞ
+  formal_name: Physical Medicine & Rehabilitation
+  slug: physical-medicine-specialist
+  parents:
+  - 20
+  related: []
+  provider_type: physician
+  aliases_en:
+  - Physical Medicine
+  - Rehabilitation
+  - Rehabilitation Medicine
+  - Neurology Rehabilitation
+  - neuro rehabilitation
+  - paralysis
+  aliases_bn:
+  - ফিজিক্যাল মেডিসিন
+  - পুনর্বাসন
+  display_order: 50
+  is_popular: false
+- name: Physiotherapist
+  bn_name: ফিজিওথেরাপিস্ট
+  formal_name: Physiotherapy
+  slug: physiotherapist
+  parents:
+  - 20
+  related: []
+  provider_type: allied
+  aliases_en:
+  - Physiotherapy
+  aliases_bn:
+  - ফিজিওথেরাপি
+  display_order: 51
+  is_popular: false
+- name: Pain Specialist
+  bn_name: ব্যথা বিশেষজ্ঞ
+  formal_name: Pain Medicine
+  slug: pain-specialist
+  parents:
+  - 21
+  related:
+  - 20
+  provider_type: physician
+  aliases_en:
+  - Pain Management
+  - Pain Medicine
+  - back pain
+  - pain
+  aliases_bn:
+  - পেইন মেডিসিন
+  display_order: 52
+  is_popular: false
+- name: Anesthesiologist
+  bn_name: অ্যানেস্থেসিওলজিস্ট
+  formal_name: Anesthesiology
+  slug: anesthesiologist
+  parents:
+  - 21
+  related: []
+  provider_type: physician
+  aliases_en:
+  - Anesthesia
+  - Anaesthesia
+  - Anesthesiology
+  - Anaesthesiology
+  aliases_bn:
+  - অ্যানেস্থেসিয়া
+  display_order: 53
+  is_popular: false
+- name: Critical Care Specialist
+  bn_name: ক্রিটিক্যাল কেয়ার বিশেষজ্ঞ
+  formal_name: Critical Care Medicine
+  slug: critical-care-specialist
+  parents:
+  - 21
+  related: []
+  provider_type: physician
+  aliases_en:
+  - ICU
+  - Critical Care
+  - Critical Care & ICU
+  - Critical Care Medicine
+  aliases_bn:
+  - ক্রিটিক্যাল কেয়ার
+  - আইসিইউ
+  display_order: 54
+  is_popular: false
+- name: Dentist
+  bn_name: দাঁতের ডাক্তার
+  formal_name: Dental Surgery
+  slug: dentist
+  parents:
+  - 22
+  related: []
+  provider_type: dental
+  aliases_en:
+  - Dental Surgery
+  - Dentistry
+  - Dental
+  - conservative dentistry
+  - endodontics
+  - oral
+  - cosmetic dentistry
+  aliases_bn:
+  - ডেন্টাল
+  - দন্ত চিকিৎসা
+  display_order: 55
+  is_popular: false
+- name: Maxillofacial Surgeon
+  bn_name: ম্যাক্সিলোফেসিয়াল সার্জন
+  formal_name: Oral & Maxillofacial Surgery
+  slug: maxillofacial-surgeon
+  parents:
+  - 22
+  related: []
+  provider_type: dental
+  aliases_en:
+  - Oral & Maxillofacial Surgery
+  - Maxillofacial Surgery
+  aliases_bn:
+  - ম্যাক্সিলোফেসিয়াল সার্জারি
+  display_order: 56
+  is_popular: false
+- name: Radiologist
+  bn_name: রেডিওলজিস্ট
+  formal_name: Radiology & Imaging
+  slug: radiologist
+  parents:
+  - 23
+  related: []
+  provider_type: physician
+  aliases_en:
+  - Radiology
+  - Imaging
+  - Radiology & Imaging
+  aliases_bn:
+  - রেডিওলজি
+  display_order: 57
+  is_popular: false
+- name: Sonologist
+  bn_name: সনোলজিস্ট
+  formal_name: Ultrasonography
+  slug: sonologist
+  parents:
+  - 23
+  related: []
+  provider_type: physician
+  aliases_en:
+  - Ultrasonography
+  - Sonology
+  - color doppler
+  aliases_bn:
+  - সনোলজি
+  - আল্ট্রাসনোগ্রাফি
+  display_order: 58
+  is_popular: false
+- name: Pathologist
+  bn_name: প্যাথলজিস্ট
+  formal_name: Pathology & Laboratory Medicine
+  slug: pathologist
+  parents:
+  - 23
+  related: []
+  provider_type: physician
+  aliases_en:
+  - Pathology
+  - Histopathology
+  aliases_bn:
+  - প্যাথলজি
+  display_order: 59
+  is_popular: false
+- name: Homeopathic Doctor
+  bn_name: হোমিওপ্যাথি ডাক্তার
+  formal_name: Homeopathic Medicine
+  slug: homeopathic-doctor
+  parents:
+  - 24
+  related: []
+  provider_type: alternative
+  aliases_en:
+  - Homeopathy
+  aliases_bn:
+  - হোমিওপ্যাথি
+  display_order: 60
+  is_popular: false
+- name: Allergist & Immunologist
+  bn_name: এলার্জি ও ইমিউনোলজি বিশেষজ্ঞ
+  formal_name: Allergy & Clinical Immunology
+  slug: allergy-immunologist
+  parents:
+  - 1
+  - 14
+  related: []
+  provider_type: physician
+  aliases_en:
+  - Allergy
+  - Immunology
+  - Allergy & Immunology
+  aliases_bn:
+  - এলার্জি
+  - ইমিউনোলজি
+  display_order: 61
+  is_popular: false
+- name: Interventional Neurologist
+  bn_name: ইন্টারভেনশনাল নিউরোলজিস্ট
+  formal_name: Interventional Neurology
+  slug: interventional-neurologist
+  parents:
+  - 4
+  related: []
+  provider_type: physician
+  aliases_en:
+  - Interventional Neurology
+  - neurointervention
+  aliases_bn:
+  - ইন্টারভেনশনাল নিউরোলজি
+  display_order: 62
+  is_popular: false
+- name: Pediatric Orthopedic Surgeon
+  bn_name: শিশু অর্থোপেডিক সার্জন
+  formal_name: Pediatric Orthopedics
+  slug: pediatric-orthopedic-surgeon
+  parents:
+  - 7
+  - 5
+  related: []
+  provider_type: physician
+  aliases_en:
+  - Pediatric Orthopedics
+  - Pediatric Orthopaedic Surgery
+  aliases_bn:
+  - শিশু অর্থোপেডিক
+  display_order: 63
+  is_popular: false
+- name: Pediatric Gastroenterologist
+  bn_name: শিশু গ্যাস্ট্রোএন্টারোলজিস্ট
+  formal_name: Pediatric Gastroenterology
+  slug: pediatric-gastroenterologist
+  parents:
+  - 7
+  - 9
+  related: []
+  provider_type: physician
+  aliases_en:
+  - Pediatric Gastroenterology
+  aliases_bn:
+  - শিশু গ্যাস্ট্রো
+  display_order: 64
+  is_popular: false
+- name: Pediatric Pulmonologist
+  bn_name: শিশু বক্ষব্যাধি বিশেষজ্ঞ
+  formal_name: Pediatric Pulmonology
+  slug: pediatric-pulmonologist
+  parents:
+  - 7
+  - 11
+  related: []
+  provider_type: physician
+  aliases_en:
+  - Pediatric Pulmonology
+  - paediatric pulmonology
+  aliases_bn:
+  - শিশু বক্ষব্যাধি
+  display_order: 65
+  is_popular: false
+- name: Nuclear Medicine Specialist
+  bn_name: নিউক্লিয়ার মেডিসিন বিশেষজ্ঞ
+  formal_name: Nuclear Medicine
+  slug: nuclear-medicine-specialist
+  parents:
+  - 23
+  related: []
+  provider_type: physician
+  aliases_en:
+  - Nuclear Medicine
+  aliases_bn:
+  - নিউক্লিয়ার মেডিসিন
+  display_order: 66
+  is_popular: false
+- name: Fetomaternal Medicine Specialist
+  bn_name: ফিটোম্যাটারনাল মেডিসিন বিশেষজ্ঞ
+  formal_name: Maternal Fetal Medicine
+  slug: fetomaternal-medicine-specialist
+  parents:
+  - 6
+  related: []
+  provider_type: physician
+  aliases_en:
+  - Fetomaternal Medicine
+  - Maternal Fetal Medicine
+  - feto maternal medicine
+  - feto-maternal medicine
+  - high-risk pregnancy
+  aliases_bn:
+  - ফিটোম্যাটারনাল মেডিসিন
+  display_order: 67
+  is_popular: false
+- name: Pediatric Neurosurgeon
+  bn_name: শিশু নিউরোসার্জন
+  formal_name: Pediatric Neurosurgery
+  slug: pediatric-neurosurgeon
+  parents:
+  - 7
+  - 4
+  related: []
+  provider_type: physician
+  aliases_en:
+  - Pediatric Neurosurgery
+  aliases_bn:
+  - শিশু নিউরোসার্জারি
+  display_order: 68
+  is_popular: false
+- name: Pediatric Urologist
+  bn_name: শিশু ইউরোলজিস্ট
+  formal_name: Pediatric Urology
+  slug: pediatric-urologist
+  parents:
+  - 7
+  - 8
+  related: []
+  provider_type: physician
+  aliases_en:
+  - Pediatric Urology
+  aliases_bn:
+  - শিশু ইউরোলজি
+  display_order: 69
+  is_popular: false
+- name: Sports Medicine Specialist
+  bn_name: স্পোর্টস মেডিসিন বিশেষজ্ঞ
+  formal_name: Sports Medicine
+  slug: sports-medicine-specialist
+  parents:
+  - 5
+  - 20
+  related: []
+  provider_type: physician
+  aliases_en:
+  - Sports Medicine
+  - Exercise Medicine
+  aliases_bn:
+  - স্পোর্টস মেডিসিন
+  display_order: 70
+  is_popular: false
+legacy_map:
+  Cardiology: cardiologist
+  cardiology: cardiologist
+  7780617c-e9be-5a08-b221-c474fe2dfa9a: cardiologist
+  Laparoscopic Surgery: laparoscopic-surgeon
+  laparoscopic-surgery: laparoscopic-surgeon
+  c66af408-bca5-4ceb-8f4c-0383a6202bfd: laparoscopic-surgeon
+  Laser Surgery: laparoscopic-surgeon
+  laser-surgery: laparoscopic-surgeon
+  67cfdebd-eaa8-40fc-801a-92111c34a7da: laparoscopic-surgeon
+  General Medicine: medicine-specialist
+  general-medicine: medicine-specialist
+  cfb72696-1642-4fdb-ac01-09b8dc9164ec: medicine-specialist
+  Ent: ent-specialist
+  ent: ent-specialist
+  67a1ea6e-7dc2-49fc-9f33-3a892d227b3b: ent-specialist
+  Otolaryngology: ent-specialist
+  otolaryngology: ent-specialist
+  85b156a9-026b-4d74-a592-3d49fdb808eb: ent-specialist
+  Head And Neck Surgery: head-neck-surgeon
+  head-and-neck-surgery: head-neck-surgeon
+  134902e8-1877-44bd-9484-203c18c77996: head-neck-surgeon
+  Internal Medicine: medicine-specialist
+  internal-medicine: medicine-specialist
+  f1531138-6d67-45c5-abdc-faf5d3f98246: medicine-specialist
+  Dermatology: dermatologist
+  dermatology: dermatologist
+  d177c4a7-4b1a-4e24-8265-2237af785659: dermatologist
+  Venereology: sexologist
+  venereology: sexologist
+  2b1a7cbc-d905-4c1a-a94f-3a80bdae790c: sexologist
+  Allergy: allergy-immunologist
+  allergy: allergy-immunologist
+  ffef8b0e-c4d0-45c9-800a-eccc6d3e9c8f: allergy-immunologist
+  Gynecology: gynecologist-obstetrician
+  gynecology: gynecologist-obstetrician
+  98748b8f-e077-48b5-b978-26635b19280d: gynecologist-obstetrician
+  Female Urology: urologist
+  female-urology: urologist
+  7a8cc644-eaf1-42e1-aa22-28323290dfd9: urologist
+  Medicine: medicine-specialist
+  medicine: medicine-specialist
+  e737363c-9fe6-441f-9059-90d0ee4bf36e: medicine-specialist
+  Arthroscopy: orthopedic-surgeon
+  arthroscopy: orthopedic-surgeon
+  23fc39d4-ebae-4302-a2a6-c4f3d70fd200: orthopedic-surgeon
+  Arthroplasty: orthopedic-surgeon
+  arthroplasty: orthopedic-surgeon
+  147fa6cd-ee4f-4a66-801d-d8cd768e74fa: orthopedic-surgeon
+  Endocrinology: endocrinologist
+  endocrinology: endocrinologist
+  9425ff1f-5c5e-4d4b-a82f-07aabef11d93: endocrinologist
+  Diabetology: diabetologist
+  diabetology: diabetologist
+  32a6faa4-3c00-4346-a94f-59c4305218e9: diabetologist
+  Diabetes: diabetologist
+  diabetes: diabetologist
+  f6af3a9d-e00c-4ef0-a61e-709a1107ac47: diabetologist
+  Chest Diseases: chest-specialist
+  chest-diseases: chest-specialist
+  515dfc6d-8897-40a8-8632-71b8b2d13b4d: chest-specialist
+  Pulmonology: chest-specialist
+  pulmonology: chest-specialist
+  e184da4f-a956-48d5-b58a-f4df090ccfca: chest-specialist
+  Fetomaternal Medicine: fetomaternal-medicine-specialist
+  fetomaternal-medicine: fetomaternal-medicine-specialist
+  370d30fe-015a-4458-a30e-ad2788f5ea23: fetomaternal-medicine-specialist
+  Physical Medicine: physical-medicine-specialist
+  physical-medicine: physical-medicine-specialist
+  d4982f9c-646a-49e2-a75c-24826c966d18: physical-medicine-specialist
+  Rehabilitation: physical-medicine-specialist
+  rehabilitation: physical-medicine-specialist
+  c4f4bd89-58e9-4312-b3b6-d15cc441017d: physical-medicine-specialist
+  Sports Medicine: sports-medicine-specialist
+  sports-medicine: sports-medicine-specialist
+  f21cf4c0-a18d-49c7-a18f-8571b443befa: sports-medicine-specialist
+  Gynecology & Obstetrics: medicine-specialist
+  gynecology-obstetrics: medicine-specialist
+  4d1a3cd2-4b16-504e-835b-b006bf5cae20: medicine-specialist
+  Infertility & Reproductive Medicine: medicine-specialist
+  infertility-reproductive-medicine: medicine-specialist
+  25714730-3eb1-4023-92cf-2d68889ea492: medicine-specialist
+  Diabetes & Endocrinology: endocrinologist
+  diabetes-endocrinology: endocrinologist
+  c7d07e16-efb8-40aa-b8b5-8f1263ac9849: endocrinologist
+  Neurosurgery: neurosurgeon
+  neurosurgery: neurosurgeon
+  61b375d3-890b-4989-8188-14e3ff64a7da: neurosurgeon
+  Hepatobiliary Surgery: hepatobiliary-surgeon
+  hepatobiliary-surgery: hepatobiliary-surgeon
+  ea580458-f715-430a-8c9c-457ba14517ef: hepatobiliary-surgeon
+  ENT (Otolaryngology): ent-specialist
+  ent-otolaryngology: ent-specialist
+  662fa83b-95a6-4a5a-9036-f06d3170d2f0: ent-specialist
+  Psychiatry & Mental Health: medicine-specialist
+  psychiatry-mental-health: medicine-specialist
+  91c974ba-733d-442b-abd2-9e64b16c985f: medicine-specialist
+  Pediatric Nephrology: medicine-specialist
+  pediatric-nephrology: medicine-specialist
+  8c6f782e-818f-497b-b62f-a32ed546670b: medicine-specialist
+  Dermatology & Venereology: dermatologist
+  dermatology-venereology: dermatologist
+  bca43b1d-7da9-4e4b-b72f-8b163368cf1d: dermatologist
+  Ophthalmology: eye-specialist
+  ophthalmology: eye-specialist
+  65fc0ad4-bacc-4e71-aa31-00a2103cad33: eye-specialist
+  Surgical Oncology: cancer-surgeon
+  surgical-oncology: cancer-surgeon
+  6dccb9d1-2487-46d4-a17d-60076c956988: cancer-surgeon
+  Hematology: hematologist
+  hematology: hematologist
+  e0695773-df48-4b50-9d31-d83eb109d945: hematologist
+  Physical Medicine & Rehabilitation: physical-medicine-specialist
+  physical-medicine-rehabilitation: physical-medicine-specialist
+  2cd1c033-9df2-4ace-9be2-0f1a5ba13210: physical-medicine-specialist
+  Pain Management: pain-specialist
+  pain-management: pain-specialist
+  5ccd0dbb-6c54-4069-8e27-ad029747e532: pain-specialist
+  Dentistry: dentist
+  dentistry: dentist
+  31360f8c-dc5a-4074-8ccc-d03b5dafffa4: dentist
+  Plastic & Cosmetic Surgery: medicine-specialist
+  plastic-cosmetic-surgery: medicine-specialist
+  8985ad6c-2ba8-4374-88c3-6a9a842e90aa: medicine-specialist
+  Critical Care & ICU: critical-care-specialist
+  critical-care-icu: critical-care-specialist
+  71705588-a26c-4f53-ae04-22ae3968839e: critical-care-specialist
+  Infertility: infertility-specialist
+  infertility: infertility-specialist
+  582a01ec-db02-427a-ab93-0717e41b4987: infertility-specialist
+  Interventional Cardiology: interventional-cardiologist
+  interventional-cardiology: interventional-cardiologist
+  18e20a5d-af78-455d-b037-bb6e22ac8969: interventional-cardiologist
+  Psychiatry: psychiatrist
+  psychiatry: psychiatrist
+  72a5a088-1134-4685-9ff1-1b68f2599453: psychiatrist
+  Psychotherapy: psychiatrist
+  psychotherapy: psychiatrist
+  55ffed40-e309-429b-ba82-56d184ddf421: psychiatrist
+  Asthma: chest-specialist
+  asthma: chest-specialist
+  862e2021-a854-43df-866c-067dc7e59007: chest-specialist
+  Liver: hepatologist
+  liver: hepatologist
+  0bd97555-bc41-4564-a249-309e2bf28623: hepatologist
+  Mental Health: psychiatrist
+  mental-health: psychiatrist
+  825a5cfd-bb3a-4533-bb80-d003a4665b2d: psychiatrist
+  Breast Surgery: breast-surgeon
+  breast-surgery: breast-surgeon
+  5cd56f67-568b-482e-b58d-2f96f45a766c: breast-surgeon
+  Plastic Surgery: plastic-surgeon
+  plastic-surgery: plastic-surgeon
+  421941a1-8cfd-4a4d-9358-898947a0a9ee: plastic-surgeon
+  Bone And Joint: orthopedic-surgeon
+  bone-and-joint: orthopedic-surgeon
+  3e144f52-3b67-40ee-b656-82dd5623f83d: orthopedic-surgeon
+  Thoracic Surgery: thoracic-surgeon
+  thoracic-surgery: thoracic-surgeon
+  ed2a4a77-72c1-40e2-ada3-a9ecc24d21c7: thoracic-surgeon
+  Cardiovascular Surgery: cardiac-surgeon
+  cardiovascular-surgery: cardiac-surgeon
+  df4b1034-5938-4e92-abe2-0c14f49e932c: cardiac-surgeon
+  Radiotherapy: cancer-specialist
+  radiotherapy: cancer-specialist
+  c2db1089-d1fb-46c9-93d6-4af6d4d715db: cancer-specialist
+  Anesthesiology: anesthesiologist
+  anesthesiology: anesthesiologist
+  9f201e91-bb07-460b-b2ce-9eb0c0ccc22c: anesthesiologist
+  Nutrition & Dietetics: medicine-specialist
+  nutrition-dietetics: medicine-specialist
+  06fb29a0-f066-4b5a-a56a-3e260fef5090: medicine-specialist
+  Radiology & Imaging: radiologist
+  radiology-imaging: radiologist
+  5c1fbab1-e875-43b2-bc9a-97dc3352f551: radiologist
+  Allergy & Immunology: allergy-immunologist
+  allergy-immunology: allergy-immunologist
+  5e36da10-eaa3-40a5-8359-b321eb7e1b9a: allergy-immunologist
+  Sonology: sonologist
+  sonology: sonologist
+  83d80407-53c6-41bf-bd43-b9c1325f21a1: sonologist
+  Medical Oncology: cancer-specialist
+  medical-oncology: cancer-specialist
+  a36ed105-1970-4d8a-bbd7-461c0df46970: cancer-specialist
+  andrology: andrologist
+  7c65aeac-7d16-4510-afbe-4a630d50c711: andrologist
+  Clinical Nutrition & Dietetics: nutritionist-dietitian
+  clinical-nutrition-dietetics: nutritionist-dietitian
+  450cdf53-46a2-467c-90c1-285e1046ee2f: nutritionist-dietitian
+  Dietetics: nutritionist-dietitian
+  dietetics: nutritionist-dietitian
+  106aa0b6-ca16-480a-bba8-3d86650fc82b: nutritionist-dietitian
+  Neonatal Surgery: pediatric-surgeon
+  neonatal-surgery: pediatric-surgeon
+  f8c03f1a-5057-48be-a899-4b84639ced99: pediatric-surgeon
+  Neonatology: neonatologist
+  neonatology: neonatologist
+  6c1dc74b-5b53-4c52-a80e-4b54748adba0: neonatologist
+  Kidney Transplant: nephrologist
+  kidney-transplant: nephrologist
+  db5806b9-1cae-4924-97e1-a1aa95aca8b7: nephrologist
+  Trauma Surgery: orthopedic-surgeon
+  trauma-surgery: orthopedic-surgeon
+  b5ced757-cc50-403f-b903-acd2f3a4658c: orthopedic-surgeon
+  Gynecological Oncology: gynecological-oncologist
+  gynecological-oncology: gynecological-oncologist
+  e21cc25a-685f-4382-b2a7-a5f6f5727376: gynecological-oncologist
+  Reproductive Endocrinology: infertility-specialist
+  reproductive-endocrinology: infertility-specialist
+  a0f33d91-2691-4f96-8e9e-0151a41a2177: infertility-specialist
+  Joint Replacement: orthopedic-surgeon
+  joint-replacement: orthopedic-surgeon
+  00d9a652-4a0d-4a34-85ee-db5ec4eb2e87: orthopedic-surgeon
+  Hand Surgery: orthopedic-surgeon
+  hand-surgery: orthopedic-surgeon
+  340f1b20-5df2-4318-b377-647bde6e78aa: orthopedic-surgeon
+  Reconstructive Surgery: plastic-surgeon
+  reconstructive-surgery: plastic-surgeon
+  63f91ad3-ec53-4822-a4a8-5b15d91d8241: plastic-surgeon
+  Pancreatic Surgery: hepatobiliary-surgeon
+  pancreatic-surgery: hepatobiliary-surgeon
+  f7050a68-72a7-45cf-a7e6-dcf10cc120aa: hepatobiliary-surgeon
+  Liver Transplant Surgery: hepatobiliary-surgeon
+  liver-transplant-surgery: hepatobiliary-surgeon
+  f8d8eeed-1efd-4007-b950-ac8c9aecc811: hepatobiliary-surgeon
+  Critical Care: critical-care-specialist
+  critical-care: critical-care-specialist
+  daee4874-ffce-4df3-9b49-05d052253256: critical-care-specialist
+  Child Health: child-specialist
+  child-health: child-specialist
+  2d5f1a38-b3e8-4e6f-b041-9c218b6142eb: child-specialist
+  Neuromedicine: neurologist
+  neuromedicine: neurologist
+  2823669c-6ac8-42c0-9976-1724b20d6ba9: neurologist
+  Pediatric Urology: pediatric-urologist
+  pediatric-urology: pediatric-urologist
+  18668f55-0465-450a-b9d2-5e97acd00b33: pediatric-urologist
+  Pediatric Neurosurgery: pediatric-neurosurgeon
+  pediatric-neurosurgery: pediatric-neurosurgeon
+  fd7bc6d0-fbc8-4005-b172-6f2ae8447e4c: pediatric-neurosurgeon
+  Thyroid: endocrinologist
+  thyroid: endocrinologist
+  97344c7a-fc09-4b88-aaab-274315fad73c: endocrinologist
+  Rehabilitation Medicine: physical-medicine-specialist
+  rehabilitation-medicine: physical-medicine-specialist
+  2ae281c9-43e5-4903-a419-333132f60692: physical-medicine-specialist
+  Neurology Rehabilitation: physical-medicine-specialist
+  neurology-rehabilitation: physical-medicine-specialist
+  816b5e34-5b74-49e0-93c9-8d6ae17a998b: physical-medicine-specialist
+  Obstetrics: gynecologist-obstetrician
+  obstetrics: gynecologist-obstetrician
+  a7882171-e1d1-4940-88e2-288d27432807: gynecologist-obstetrician
+  Metabolism: endocrinologist
+  metabolism: endocrinologist
+  419df016-60cf-464a-bf87-ff69f5176d66: endocrinologist
+  Pain Medicine: pain-specialist
+  pain-medicine: pain-specialist
+  b012a695-7840-4ef9-9f3f-8d3d3fa2f93c: pain-specialist
+  Oral & Maxillofacial Surgery: maxillofacial-surgeon
+  oral-maxillofacial-surgery: maxillofacial-surgeon
+  20ba8160-8fa8-440a-9600-9612535b64c3: maxillofacial-surgeon
+  General Physician: family-physician-gp
+  general-physician: family-physician-gp
+  10c072a3-7268-4d5c-a3ae-8a78848ffadc: family-physician-gp
+  Cancer: cancer-specialist
+  cancer: cancer-specialist
+  294c5f76-f25e-4628-94c7-7e6e2750e15e: cancer-specialist
+  Sleep Medicine: chest-specialist
+  sleep-medicine: chest-specialist
+  3720a7d1-38c0-4de7-a8d9-b7f4192a70be: chest-specialist
+  Diabetic Foot: diabetologist
+  diabetic-foot: diabetologist
+  0eb7a14d-e17c-4aa1-93de-03b1f1b4dc8c: diabetologist
+  Liver Transplant: hepatologist
+  liver-transplant: hepatologist
+  d5128104-17c4-4068-8bc7-5612676b84f2: hepatologist
+  Arthritis: rheumatologist
+  arthritis: rheumatologist
+  4513a91b-8d42-416c-bf0e-c98fdd013ff2: rheumatologist
+  Hypertension: cardiologist
+  hypertension: cardiologist
+  958feca0-89ae-471d-9595-be541a32bb1e: cardiologist
+  Kidney Diseases: nephrologist
+  kidney-diseases: nephrologist
+  175fdb3c-c05f-46c2-81cf-4dea1bd73359: nephrologist
+  Sexual Health: sexologist
+  sexual-health: sexologist
+  fd3d5cc8-8717-43cb-b7e9-6799487bdd22: sexologist
+  Palliative Medicine: medicine-specialist
+  palliative-medicine: medicine-specialist
+  14326f11-1103-4717-8fc6-f76af5feee33: medicine-specialist
+  Pediatric Gastroenterology: pediatric-gastroenterologist
+  pediatric-gastroenterology: pediatric-gastroenterologist
+  942a5163-b6a5-4b3e-9ab6-455cee79143c: pediatric-gastroenterologist
+  Nutrition: nutritionist-dietitian
+  nutrition: nutritionist-dietitian
+  45131e10-e260-4714-9265-e2ad164a2bbc: nutritionist-dietitian
+  Cardiovascular & Thoracic Surgery: cardiac-surgeon
+  cardiovascular-thoracic-surgery: cardiac-surgeon
+  62ad424f-a611-4396-8d77-940995225d45: cardiac-surgeon
+  Hormone: endocrinologist
+  hormone: endocrinologist
+  79ef0e95-e939-4ef9-8908-28f8dbf55295: endocrinologist
+  Tb: chest-specialist
+  tb: chest-specialist
+  54ccddfc-df4a-48a7-a456-6bdb0a7a04cf: chest-specialist
+  Liver Diseases: hepatologist
+  liver-diseases: hepatologist
+  ad1e6666-1675-47ee-91e7-c93c588ffccd: hepatologist
+  Regenerative Medicine: medicine-specialist
+  regenerative-medicine: medicine-specialist
+  40c02bf3-38d4-479f-94a9-80f99cb5cb5e: medicine-specialist
+  Exercise Medicine: sports-medicine-specialist
+  exercise-medicine: sports-medicine-specialist
+  581d980e-5e63-46a5-ab8e-d9dfac3a4572: sports-medicine-specialist
+  Breast Cancer: breast-health-specialist
+  breast-cancer: breast-health-specialist
+  81bc87aa-557b-4e12-8c59-4f6f7afedad1: breast-health-specialist
+  Surgery: general-surgeon
+  surgery: general-surgeon
+  142da003-f169-497b-abe4-0ac4afdd2237: general-surgeon
+  Autism: pediatric-neurologist
+  autism: pediatric-neurologist
+  d0430d11-5536-43cf-a0a4-566f8265d8de: pediatric-neurologist
+  Endoscopy: gastroenterologist
+  endoscopy: gastroenterologist
+  29b9a0e7-438d-4824-bf73-721117362083: gastroenterologist
+  Trauma: orthopedic-surgeon
+  trauma: orthopedic-surgeon
+  5a529b9d-6faa-4cd7-87d4-f7b71782acea: orthopedic-surgeon
+  Pediatric Orthopedics: pediatric-orthopedic-surgeon
+  pediatric-orthopedics: pediatric-orthopedic-surgeon
+  3718ea2e-bb42-43a8-a543-a6d82883d729: pediatric-orthopedic-surgeon
+  Pediatric Pulmonology: pediatric-pulmonologist
+  pediatric-pulmonology: pediatric-pulmonologist
+  52da1ae6-60b9-4cdc-8763-2eb86ad6ca8a: pediatric-pulmonologist
+  Nuclear Medicine: nuclear-medicine-specialist
+  nuclear-medicine: nuclear-medicine-specialist
+  1bd5532e-e66d-4a23-9aa2-5b8fd3fc1d1e: nuclear-medicine-specialist
+  Cardiac MRI: cardiac-surgeon
+  cardiac-mri: cardiac-surgeon
+  824e1507-b2f5-4a0d-b56f-a48ee10b3d1d: cardiac-surgeon
+  Geriatrics: medicine-specialist
+  geriatrics: medicine-specialist
+  177a42a5-18ed-4590-bf1b-c3a64cd44776: medicine-specialist
+  Forensic Medicine: family-physician-gp
+  forensic-medicine: family-physician-gp
+  5f9a4be1-3d13-4264-b2aa-051726ab67b1: family-physician-gp
+  TestSpecB: medicine-specialist
+  testspecb: medicine-specialist
+  17212c2f-3022-4c7e-a8b4-78e4816cbf9a: medicine-specialist
+  Rheumatic Fever: rheumatologist
+  rheumatic-fever: rheumatologist
+  9f3cc5ab-289d-4f85-8e4c-955381681eff: rheumatologist
+  Pathology: pathologist
+  pathology: pathologist
+  4ee570fa-1ebd-44e4-a8b0-495f8fc0ddce: pathologist
+  Obs & Gynae: gynecologist-obstetrician
+  obs-gynae: gynecologist-obstetrician
+  3977f07a-5d36-4e7b-a5bb-2300b32fe87f: gynecologist-obstetrician
+  Vascular Surgery: vascular-surgeon
+  vascular-surgery: vascular-surgeon
+  433e46c8-6872-4b0d-8519-65cf367d1961: vascular-surgeon
+  Colorectal Surgery: colorectal-surgeon
+  colorectal-surgery: colorectal-surgeon
+  3f2954d4-9084-4d50-8ec5-87055db38a6f: colorectal-surgeon
+  Cardiac Surgery: cardiac-surgeon
+  cardiac-surgery: cardiac-surgeon
+  30501fd5-316e-47e8-b8ce-2001831492c0: cardiac-surgeon
+  Nephrology: nephrologist
+  nephrology: nephrologist
+  72e70078-b9a9-404e-aff5-4acd1e5a1d1e: nephrologist
+  General Surgery: general-surgeon
+  general-surgery: general-surgeon
+  5a22d5f1-41ef-4597-88f5-2d31947ce2cf: general-surgeon
+  Neurology: neurologist
+  neurology: neurologist
+  6448b750-6150-4b97-b7f8-6c6fa8a089cc: neurologist
+  Orthopedics: orthopedic-surgeon
+  orthopedics: orthopedic-surgeon
+  e7931877-12e0-4099-a37f-4964998b57c2: orthopedic-surgeon
+  Spine Surgery: spine-surgeon
+  spine-surgery: spine-surgeon
+  ee0ee8d3-54b8-4656-9d05-8cf22da4aa3a: spine-surgeon
+  Hepatology: hepatologist
+  hepatology: hepatologist
+  20ca2df1-cf81-424e-87ce-82c6be94140d: hepatologist
+  Respiratory Medicine: chest-specialist
+  respiratory-medicine: chest-specialist
+  e5085afe-d692-4c39-9ddd-fafb615cd18c: chest-specialist
+  Pediatrics: child-specialist
+  pediatrics: child-specialist
+  53caa153-9d8a-48cd-81f1-48fecddbfe63: child-specialist
+  Pediatric Cardiology: pediatric-cardiologist
+  pediatric-cardiology: pediatric-cardiologist
+  27852e2d-8242-4c85-8b07-1f634ae3cae0: pediatric-cardiologist
+  Urology: urologist
+  urology: urologist
+  1932fda0-2ee7-4b66-a1ef-26d388ea1ffd: urologist
+  Gastroenterology: gastroenterologist
+  gastroenterology: gastroenterologist
+  5df59891-3a5a-4167-9701-6a242f4a105c: gastroenterologist
+  Oncology: cancer-specialist
+  oncology: cancer-specialist
+  550884a3-0ae1-478b-90aa-04ac45f0a0aa: cancer-specialist
+  Rheumatology: rheumatologist
+  rheumatology: rheumatologist
+  836c1cf0-8db7-4cd6-bd47-07cb614288a5: rheumatologist
+  Pediatric Neurology: pediatric-neurologist
+  pediatric-neurology: pediatric-neurologist
+  1463ba00-ad6c-4ccf-8e07-03b620e3b0f1: pediatric-neurologist
+  Pediatric Surgery: pediatric-surgeon
+  pediatric-surgery: pediatric-surgeon
+  906c3f4a-86f2-43b6-bb9c-ad410b43e412: pediatric-surgeon

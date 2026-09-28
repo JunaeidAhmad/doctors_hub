@@ -1,6 +1,8 @@
 from django.contrib import admin
 from core.rbac import has_permission
-from .models import DoctorSpecialty, SpecialtyAlias, Doctor, DoctorAffiliation, AffiliationSchedule
+from .models import (
+    DoctorSpecialty, SpecialtyAlias, Doctor, DoctorAffiliation, AffiliationSchedule,
+)
 
 
 class RBACAdminMixin:
@@ -63,10 +65,21 @@ class SpecialtyAliasInline(admin.TabularInline):
 
 @admin.register(DoctorSpecialty)
 class DoctorSpecialtyAdmin(RBACAdminMixin, admin.ModelAdmin):
-    list_display = ('name', 'canonical_name', 'bn_name', 'slug', 'icon', 'aliases_count', 'doctor_count')
+    list_display = ('name', 'canonical_name', 'bn_name', 'slug', 'is_umbrella', 'icon', 'aliases_count', 'doctor_count')
+    list_filter = ('is_umbrella', 'is_popular')
     search_fields = ('name', 'canonical_name', 'bn_name', 'slug')
-    filter_horizontal = ('components',)
+    filter_horizontal = ('parent_categories', 'related')
     inlines = [SpecialtyAliasInline]
+
+    def save_model(self, request, obj, form, change):
+        super().save_model(request, obj, form, change)
+        from doctors.services.specialty_relations import bump_taxonomy_version
+        bump_taxonomy_version()
+
+    def save_related(self, request, form, formsets, change):
+        super().save_related(request, form, formsets, change)
+        from doctors.services.specialty_relations import bump_taxonomy_version
+        bump_taxonomy_version()
 
     def aliases_count(self, obj):
         return obj.aliases.count()
@@ -98,9 +111,11 @@ class DoctorAffiliationInline(admin.TabularInline):
 
 @admin.register(Doctor)
 class DoctorAdmin(admin.ModelAdmin):
-    list_display = ('id', 'name', 'academic_title', 'institution', 'gender', 'rating', 'status', 'is_verified')
-    list_filter = ('gender', 'is_verified', 'status')
-    search_fields = ('name', 'academic_title', 'institution', 'qualification', 'bmdc_number', 'user__phone_number')
+    list_display = ('id', 'name', 'primary_specialty', 'academic_title', 'institution', 'gender', 'rating', 'status', 'is_verified')
+    list_filter = ('gender', 'is_verified', 'status', 'primary_specialty')
+    search_fields = ('name', 'academic_title', 'institution', 'qualification', 'bmdc_number', 'user__phone_number', 'specialty_source')
+    raw_id_fields = ('primary_specialty',)
+    filter_horizontal = ('specialties',)
     inlines = [DoctorAffiliationInline]
 
 
@@ -115,3 +130,4 @@ class DoctorAffiliationAdmin(admin.ModelAdmin):
 @admin.register(AffiliationSchedule)
 class AffiliationScheduleAdmin(admin.ModelAdmin):
     list_display = ('id', 'affiliation', 'day_of_week', 'start_time', 'end_time')
+

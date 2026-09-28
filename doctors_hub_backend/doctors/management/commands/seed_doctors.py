@@ -121,30 +121,28 @@ class Command(BaseCommand):
                         continue
 
                     try:
-                        # 1. Handle Specialties
+                        # 1. Handle Doctor Specialty Claims & Provider Type
+                        specialty_claims_data = item.get("specialty_claims")
+                        provider_type = item.get("provider_type", "")
                         specialties_objs = []
-                        raw_specialties = item.get("specialties", [])
-                        if isinstance(raw_specialties, str):
-                            raw_specialties = [s.strip() for s in raw_specialties.split(",") if s.strip()]
+                        if not specialty_claims_data:
+                            raw_specialties = item.get("specialties", [])
+                            if isinstance(raw_specialties, str):
+                                raw_specialties = [s.strip() for s in raw_specialties.split(",") if s.strip()]
 
-                        for spec_name in raw_specialties:
-                            spec_name_clean = spec_name.strip()
-                            if not spec_name_clean:
-                                continue
-                            spec_slug = slugify(spec_name_clean)
-                            icon = "Stethoscope"
-                            for key, icon_name in SPECIALTY_ICON_MAP.items():
-                                if key in spec_name_clean.lower():
-                                    icon = icon_name
-                                    break
+                            for spec_name in raw_specialties:
+                                spec_name_clean = spec_name.strip()
+                                if not spec_name_clean:
+                                    continue
+                                from doctors.services.specialty_resolver import resolve_or_create_specialty, UnresolvedSpecialty
+                                try:
+                                    spec_obj = resolve_or_create_specialty(spec_name_clean)
+                                except UnresolvedSpecialty:
+                                    self.stdout.write(self.style.WARNING(f"Unresolved specialty '{spec_name_clean}' encountered during seed_doctors"))
+                                    spec_obj = None
 
-                            from doctors.services.specialty_resolver import resolve_or_create_specialty
-                            spec_obj = resolve_or_create_specialty(spec_name_clean)
-                            if spec_obj:
-                                if icon != "Stethoscope" and spec_obj.icon == "Stethoscope":
-                                    spec_obj.icon = icon
-                                    spec_obj.save()
-                                specialties_objs.append(spec_obj)
+                                if spec_obj:
+                                    specialties_objs.append(spec_obj)
 
                         # 2. Handle Doctor
                         # 2. Handle Doctor Bilingual Name & Script Detection
@@ -219,11 +217,44 @@ class Command(BaseCommand):
                             if description:
                                 doctor.description = description
                             doctor.is_verified = True
-                            doctor.save()
 
-                        # Link specialties
-                        if specialties_objs:
+                        # Direct specialties, primary_specialty, and verbatim source texts
+                        from doctors.services.specialty_resolver import resolve_specialty_exact
+
+                        if specialty_claims_data:
+                            texts = [c.get("text", "").strip() for c in specialty_claims_data if c.get("text")]
+                            texts_bn = [c.get("text_bn", "").strip() for c in specialty_claims_data if c.get("text_bn")]
+                            doctor.specialty_source = "\n".join(texts)
+                            doctor.specialty_source_bn = "\n".join(texts_bn)
+
+                            all_tags = []
+                            prim_tag = None
+                            for c in specialty_claims_data:
+                                tag_refs = c.get("tags", [])
+                                matched = [resolve_specialty_exact(str(t)) for t in tag_refs if resolve_specialty_exact(str(t))]
+                                if c.get("is_primary") and not prim_tag and matched:
+                                    prim_tag = matched[0]
+                                all_tags.extend(matched)
+
+                            if not prim_tag and all_tags:
+                                prim_tag = all_tags[0]
+                            elif not prim_tag and specialties_objs:
+                                prim_tag = specialties_objs[0]
+
+                            doctor.primary_specialty = prim_tag
+                            doctor.save()
+                            if all_tags:
+                                doctor.specialties.set(all_tags)
+                            elif specialties_objs:
+                                doctor.specialties.set(specialties_objs)
+                        elif specialties_objs:
+                            doctor.specialty_source = " · ".join([s.name for s in specialties_objs if s.name])
+                            doctor.specialty_source_bn = " · ".join([s.bn_name or s.name for s in specialties_objs if (s.bn_name or s.name)])
+                            doctor.primary_specialty = specialties_objs[0]
+                            doctor.save()
                             doctor.specialties.set(specialties_objs)
+                        else:
+                            doctor.save()
 
                         # 3. Handle Affiliations & Locations
                         affiliations_data = item.get("affiliations", [])

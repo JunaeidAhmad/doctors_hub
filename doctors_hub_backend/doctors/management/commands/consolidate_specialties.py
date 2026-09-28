@@ -672,8 +672,17 @@ class Command(BaseCommand):
             action="store_true",
             help="Simulate consolidation without committing changes to database.",
         )
+        parser.add_argument(
+            "--force-legacy",
+            action="store_true",
+            help="Bypass retirement guard to run legacy consolidation.",
+        )
 
     def handle(self, *args, **options):
+        if not options.get("force_legacy"):
+            from django.core.management.base import CommandError
+            raise CommandError("Retired: replaced by taxonomy v3")
+
         dry_run = options["dry_run"]
         if dry_run:
             self.stdout.write(self.style.WARNING("--- RUNNING IN DRY-RUN MODE (No changes will be saved) ---"))
@@ -715,7 +724,8 @@ class Command(BaseCommand):
 
                 canonical_map[c_name] = canonical
                 # Self component for simple canonical specialties
-                canonical.components.set([canonical])
+                if hasattr(canonical, 'components'):
+                    canonical.components.set([canonical])
 
                 # Create aliases for its own names
                 for alias_name in [name, c_name, bn_name]:
@@ -755,7 +765,8 @@ class Command(BaseCommand):
             doctors_retagged = 0
 
             for old_spec in existing_specialties:
-                if old_spec.id in canonical_ids or old_spec.components.count() > 1:
+                comp_count = old_spec.components.count() if hasattr(old_spec, 'components') else 0
+                if old_spec.id in canonical_ids or comp_count > 1:
                     continue  # Already a primary canonical row or compound canonical row
 
                 old_name = old_spec.name.strip()
@@ -773,7 +784,8 @@ class Command(BaseCommand):
                         cnt += 1
                     old_spec.slug = slug
                     old_spec.save()
-                    old_spec.components.set(components)
+                    if hasattr(old_spec, 'components'):
+                        old_spec.components.set(components)
                     canonical_ids.add(old_spec.id)
 
                     SpecialtyAlias.objects.get_or_create(

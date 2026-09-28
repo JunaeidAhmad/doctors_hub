@@ -3,7 +3,9 @@ from rest_framework import viewsets, filters, exceptions
 from rest_framework.response import Response
 from rest_framework.decorators import action
 from rest_framework.parsers import MultiPartParser, FormParser, JSONParser
-from django.db.models import Count
+from django.db.models import (
+    Count, Min, Case, When, Value, IntegerField, Exists, OuterRef, Q
+)
 from django_filters.rest_framework import DjangoFilterBackend
 import django_filters
 from drf_spectacular.utils import extend_schema
@@ -11,7 +13,11 @@ from core.mixins import SlugOrPkLookupMixin
 from core.permissions import IsDoctorOwnerOrReadOnly, ScopedFacilityOrReadOnly, HasPagePermissionOrReadOnly
 from core.rbac import has_permission
 from core.scoping import RoleScopedQuerysetMixin
-from .models import DoctorSpecialty, SpecialtyAlias, Doctor, DoctorAffiliation, AffiliationSchedule
+from .models import (
+    DoctorSpecialty, SpecialtyAlias, Doctor, DoctorAffiliation, AffiliationSchedule
+)
+from .services.specialty_relations import match_node_ids, related_node_ids
+from .services.specialty_resolver import resolve_specialty_exact
 from .serializers import (
     DoctorSpecialtySerializer,
     SpecialtyAliasSerializer,
@@ -27,7 +33,7 @@ class DoctorSpecialtyViewSet(viewsets.ModelViewSet):
     queryset = DoctorSpecialty.objects.annotate(
         doctor_count=Count('doctors', distinct=True),
         alias_count=Count('aliases', distinct=True)
-    ).prefetch_related('components').order_by('name')
+    ).order_by('name')
     serializer_class = DoctorSpecialtySerializer
     permission_classes = (HasPagePermissionOrReadOnly,)
     required_module = 'categories'
@@ -185,7 +191,7 @@ class DoctorFilter(django_filters.FilterSet):
         return queryset.filter(
             models.Q(affiliations__location__thana__district__name__iexact=val) |
             models.Q(affiliations__location__thana__district__bn_name__iexact=value) |
-            models.Q(affiliations__location__thana__district__division__name__iexact=value) |
+            models.Q(affiliations__location__thana__district__division__name__iexact=val) |
             models.Q(affiliations__location__thana__district__division__bn_name__iexact=value) |
             models.Q(affiliations__location__thana__name__iexact=value) |
             models.Q(affiliations__location__thana__bn_name__iexact=value)
@@ -194,51 +200,39 @@ class DoctorFilter(django_filters.FilterSet):
     def filter_specialty(self, queryset, name, value):
         if not value or value.lower() == 'all':
             return queryset
-        from doctors.services.specialty_resolver import resolve_specialty
-        from django.db import models
-
-        chosen = resolve_specialty(value)
+        chosen = resolve_specialty_exact(value)
         if not chosen:
-            return queryset.filter(
-                models.Q(specialties__name__icontains=value) |
-                models.Q(specialties__slug__icontains=value)
-            ).distinct()
+            return queryset.none()
+        direct = list(match_node_ids(chosen))
+        related = list(related_node_ids(chosen))
+        self.request._specialty_chosen = chosen
+        self.request._specialty_sets = (direct, related)
 
-        return queryset.filter(
-            models.Q(specialties=chosen) | models.Q(specialties__components=chosen)
-        ).annotate(
-            match_tier=models.Min(
-                models.Case(
-                    models.When(specialties=chosen, then=models.Value(1)),
-                    default=models.Value(2),
-                    output_field=models.IntegerField(),
-                )
-            ),
-            match_overlap=models.Count(
-                'specialties__components',
-                filter=models.Q(specialties__components=chosen),
-                distinct=True
-            ),
-        ).order_by('match_tier', '-match_overlap', 'name').distinct()
-
-    def filter_location(self, queryset, name, value):
-        if not value or value == 'All Bangladesh':
-            return queryset
         from django.db import models
-        DIST_ALIASES = {
-            'chittagong': 'Chattogram', 'comilla': 'Cumilla', 'bogra': 'Bogura',
-            'jessore': 'Jashore', 'barisal': 'Barishal', 'ঢাকা': 'Dhaka',
-            'চট্টগ্রাম': 'Chattogram', 'সিলেট': 'Sylhet'
-        }
-        val = DIST_ALIASES.get(value.strip().lower(), value.strip())
-        return queryset.filter(
-            models.Q(affiliations__location__thana__district__name__iexact=val) |
-            models.Q(affiliations__location__thana__district__division__name__iexact=val) |
-            models.Q(affiliations__location__thana__name__iexact=val) |
-            models.Q(affiliations__location__thana__district__bn_name__iexact=val) |
-            models.Q(affiliations__location__thana__district__division__bn_name__iexact=val) |
-            models.Q(affiliations__location__thana__bn_name__iexact=val)
-        ).distinct()
+        return (queryset
+                .filter(models.Q(primary_specialty__in=direct) | models.Q(specialties__in=direct + related))
+                .annotate(
+                    is_primary_match=Case(
+                        When(primary_specialty__in=direct, then=Value(True)),
+                        default=Value(False),
+                        output_field=models.BooleanField()
+                    ),
+                    match_tier=Case(
+                        When(primary_specialty__in=direct, then=Value(1)),
+                        When(specialties__in=direct, then=Value(1)),
+                        default=Value(2),
+                        output_field=IntegerField()
+                    ),
+                    related_overlap=Count('specialties', filter=Q(specialties__in=related), distinct=True)
+                )
+                .annotate(match_rank=Case(
+                    When(is_primary_match=True, then=Value(1)),
+                    When(match_tier=1, then=Value(2)),
+                    default=Value(3),
+                    output_field=IntegerField()
+                ))
+                .order_by('match_rank', '-is_verified', '-related_overlap', 'name', 'id')
+                .distinct())
 
     def filter_facility(self, queryset, name, value):
         if not value or value.lower() == 'all':
@@ -255,13 +249,12 @@ class DoctorFilter(django_filters.FilterSet):
 @extend_schema(tags=['Doctors'])
 class DoctorViewSet(SlugOrPkLookupMixin, RoleScopedQuerysetMixin, viewsets.ModelViewSet):
     parser_classes = (MultiPartParser, FormParser, JSONParser)
-    queryset = Doctor.objects.all().prefetch_related(
-        'specialties',
-        'specialties__components',
+    queryset = Doctor.objects.all().select_related('primary_specialty').prefetch_related(
+        'specialties__parent_categories',
+        'specialties__related',
         'affiliations__location__thana__district__division',
         'affiliations__schedules',
         'affiliations__doctor__specialties',
-        'affiliations__doctor__specialties__components'
     ).order_by('name').distinct()
     serializer_class = DoctorSerializer
     permission_classes = (IsDoctorOwnerOrReadOnly,)
@@ -269,19 +262,20 @@ class DoctorViewSet(SlugOrPkLookupMixin, RoleScopedQuerysetMixin, viewsets.Model
     filterset_class = DoctorFilter
     search_fields = [
         'name', 'bn_name', 'qualification', 'academic_title', 'institution',
-        'specialties__name', 'specialties__bn_name', 'affiliations__location__name', 'about'
+        'specialties__name', 'specialties__bn_name', 'specialties__formal_name',
+        'specialty_source', 'specialty_source_bn',
+        'affiliations__location__name', 'about'
     ]
     scope_doctor_field = "user"
     scope_location_field = "affiliations__location__in"
 
     def get_queryset(self):
-        qs = Doctor.objects.all().prefetch_related(
-            'specialties',
-            'specialties__components',
+        qs = Doctor.objects.all().select_related('primary_specialty').prefetch_related(
+            'specialties__parent_categories',
+            'specialties__related',
             'affiliations__location__thana__district__division',
             'affiliations__schedules',
             'affiliations__doctor__specialties',
-            'affiliations__doctor__specialties__components'
         ).order_by('name').distinct()
         return self.get_scoped_queryset(qs)
 
@@ -289,17 +283,27 @@ class DoctorViewSet(SlugOrPkLookupMixin, RoleScopedQuerysetMixin, viewsets.Model
         response = super().list(request, *args, **kwargs)
         spec_param = request.query_params.get('specialty')
         if spec_param and spec_param.lower() != 'all':
-            from doctors.services.specialty_resolver import resolve_specialty
-            chosen = resolve_specialty(spec_param)
+            chosen = resolve_specialty_exact(spec_param)
             if chosen and isinstance(response.data, dict):
                 filtered_qs = self.filter_queryset(self.get_queryset())
-                tier1_count = filtered_qs.filter(match_tier=1).count()
-                tier2_count = filtered_qs.filter(match_tier=2).count()
+                rank_counts = dict(
+                    filtered_qs.order_by().values('match_rank').annotate(c=Count('id', distinct=True)).values_list('match_rank', 'c')
+                )
+                primary_count = rank_counts.get(1, 0)
+                secondary_count = rank_counts.get(2, 0)
+                related_count = rank_counts.get(3, 0)
+                match_count = primary_count + secondary_count
                 response.data['meta'] = {
                     'specialty': chosen.name,
                     'specialty_bn': chosen.bn_name,
-                    'tier1_count': tier1_count,
-                    'tier2_count': tier2_count,
+                    'slug': chosen.slug,
+                    'is_umbrella': chosen.is_umbrella,
+                    'primary_count': primary_count,
+                    'secondary_count': secondary_count,
+                    'related_count': related_count,
+                    'match_count': match_count,
+                    'tier1_count': match_count,
+                    'tier2_count': related_count,
                 }
         return response
 
@@ -334,7 +338,6 @@ class DoctorAffiliationViewSet(RoleScopedQuerysetMixin, viewsets.ModelViewSet):
     ).prefetch_related(
         'schedules',
         'doctor__specialties',
-        'doctor__specialties__components'
     ).order_by('id')
     serializer_class = DoctorAffiliationSerializer
     permission_classes = (ScopedFacilityOrReadOnly,)
@@ -348,7 +351,6 @@ class DoctorAffiliationViewSet(RoleScopedQuerysetMixin, viewsets.ModelViewSet):
         ).prefetch_related(
             'schedules',
             'doctor__specialties',
-            'doctor__specialties__components'
         ).order_by('id')
         return self.get_scoped_queryset(qs)
 

@@ -47,6 +47,16 @@ def rbac_user_read_only():
     return user
 
 
+def set_alias(specialty, name, lang=None):
+    norm = normalize_text(name)
+    l = lang or detect_language(name)
+    alias, _ = SpecialtyAlias.objects.update_or_create(
+        normalized=norm,
+        defaults={"specialty": specialty, "name": name, "language": l, "is_verified": True}
+    )
+    return alias
+
+
 @pytest.mark.django_db
 class TestSpecialtyResolver:
     def test_normalization_and_language_detection(self):
@@ -64,16 +74,14 @@ class TestSpecialtyResolver:
 
     def test_resolve_exact_alias_and_canonical(self):
         # Create canonical
-        cardio = DoctorSpecialty.objects.create(
+        cardio, _ = DoctorSpecialty.objects.get_or_create(
             name="Cardiology",
-            canonical_name="Cardiology",
-            bn_name="হৃদরোগ ও কার্ডিওলজি"
+            defaults={"canonical_name": "Cardiology", "bn_name": "হৃদরোগ ও কার্ডিওলজি"}
         )
-        cardio.components.set([cardio])
 
         # Create aliases
-        SpecialtyAlias.objects.create(specialty=cardio, name="হৃদরোগ")
-        SpecialtyAlias.objects.create(specialty=cardio, name="কার্ডিওলজি")
+        set_alias(cardio, "হৃদরোগ")
+        set_alias(cardio, "কার্ডিওলজি")
 
         # Resolution checks
         assert resolve_specialty("Cardiology") == cardio
@@ -88,24 +96,20 @@ class TestSpecialtyResolver:
 
     def test_compound_parsing_and_substring_trap_avoided(self):
         # Base canonical specialties
-        med = DoctorSpecialty.objects.create(name="General Medicine", canonical_name="General Medicine", bn_name="মেডিসিন")
-        med.components.set([med])
-        SpecialtyAlias.objects.create(specialty=med, name="মেডিসিন")
-        SpecialtyAlias.objects.create(specialty=med, name="Medicine")
+        med, _ = DoctorSpecialty.objects.get_or_create(name="General Medicine", defaults={"canonical_name": "General Medicine", "bn_name": "মেডিসিন"})
+        set_alias(med, "মেডিসিন")
+        set_alias(med, "Medicine")
 
-        allergy = DoctorSpecialty.objects.create(name="Allergy & Immunology", canonical_name="Allergy & Immunology", bn_name="এলার্জি")
-        allergy.components.set([allergy])
-        SpecialtyAlias.objects.create(specialty=allergy, name="এলার্জি")
-        SpecialtyAlias.objects.create(specialty=allergy, name="এ্যালার্জি")
+        allergy, _ = DoctorSpecialty.objects.get_or_create(name="Allergy & Immunology", defaults={"canonical_name": "Allergy & Immunology", "bn_name": "এলার্জি"})
+        set_alias(allergy, "এলার্জি")
+        set_alias(allergy, "এ্যালার্জি")
 
-        resp = DoctorSpecialty.objects.create(name="Respiratory Medicine", canonical_name="Respiratory Medicine", bn_name="বক্ষব্যাধি")
-        resp.components.set([resp])
-        SpecialtyAlias.objects.create(specialty=resp, name="বক্ষব্যাধি")
+        resp, _ = DoctorSpecialty.objects.get_or_create(name="Respiratory Medicine", defaults={"canonical_name": "Respiratory Medicine", "bn_name": "বক্ষব্যাধি"})
+        set_alias(resp, "বক্ষব্যাধি")
 
-        neuro = DoctorSpecialty.objects.create(name="Neurology", canonical_name="Neurology", bn_name="নিউরোলজি")
-        neuro.components.set([neuro])
-        SpecialtyAlias.objects.create(specialty=neuro, name="নিউরোমেডিসিন")
-        SpecialtyAlias.objects.create(specialty=neuro, name="Neurology")
+        neuro, _ = DoctorSpecialty.objects.get_or_create(name="Neurology", defaults={"canonical_name": "Neurology", "bn_name": "নিউরোলজি"})
+        set_alias(neuro, "নিউরোমেডিসিন")
+        set_alias(neuro, "Neurology")
 
         # 1. Compound parsing on delimited text
         compound_raw = "মেডিসিন, এলার্জি ও বক্ষব্যাধি"
@@ -120,44 +124,30 @@ class TestSpecialtyResolver:
         assert neuro_resolved == neuro
         assert neuro_resolved != med
 
-        # Check components of Neurology
-        neuro_comps = list(neuro.components.all())
-        assert med not in neuro_comps
-
 
 @pytest.mark.django_db
 class TestTwoTierRanking:
     def test_two_tier_doctor_search_ranking(self, api_client):
-        # 1. Setup base canonicals
-        med = DoctorSpecialty.objects.create(name="General Medicine", canonical_name="General Medicine", bn_name="মেডিসিন")
-        med.components.set([med])
-        SpecialtyAlias.objects.create(specialty=med, name="মেডিসিন")
+        med, _ = DoctorSpecialty.objects.get_or_create(name="General Medicine", defaults={"canonical_name": "General Medicine", "bn_name": "মেডিসিন"})
+        set_alias(med, "মেডিসিন")
 
-        allergy = DoctorSpecialty.objects.create(name="Allergy & Immunology", canonical_name="Allergy & Immunology", bn_name="এলার্জি")
-        allergy.components.set([allergy])
+        allergy, _ = DoctorSpecialty.objects.get_or_create(name="Allergy & Immunology", defaults={"canonical_name": "Allergy & Immunology", "bn_name": "এলার্জি"})
+        med.related.set([allergy])
 
-        neuro = DoctorSpecialty.objects.create(name="Neurology", canonical_name="Neurology", bn_name="নিউরোলজি")
-        neuro.components.set([neuro])
-        SpecialtyAlias.objects.create(specialty=neuro, name="নিউরোমেডিসিন")
-
-        # 2. Setup compound specialty
-        compound_spec = DoctorSpecialty.objects.create(
-            name="Medicine & Allergy Specialist",
-            canonical_name="Medicine & Allergy Specialist"
-        )
-        compound_spec.components.set([med, allergy])
+        neuro, _ = DoctorSpecialty.objects.get_or_create(name="Neurology", defaults={"canonical_name": "Neurology", "bn_name": "নিউরোলজি"})
+        set_alias(neuro, "নিউরোমেডিসিন")
 
         # 3. Create Doctors
         # Doctor A: Pure Medicine (Tier 1)
-        doc_pure_med = DoctorFactory(name="Dr. Pure Medicine")
+        doc_pure_med = DoctorFactory(name="Dr. Pure Medicine", primary_specialty=med, specialty_source="Medicine")
         doc_pure_med.specialties.set([med])
 
-        # Doctor B: Compound Medicine & Allergy (Tier 2)
-        doc_compound = DoctorFactory(name="Dr. Medicine Allergy")
-        doc_compound.specialties.set([compound_spec])
+        # Doctor B: Related Allergy (Tier 2)
+        doc_compound = DoctorFactory(name="Dr. Medicine Allergy", primary_specialty=allergy, specialty_source="Allergy")
+        doc_compound.specialties.set([allergy])
 
         # Doctor C: Neurology / Neuro-medicine (Should be excluded)
-        doc_neuro = DoctorFactory(name="Dr. Neurologist")
+        doc_neuro = DoctorFactory(name="Dr. Neurologist", primary_specialty=neuro, specialty_source="Neurology")
         doc_neuro.specialties.set([neuro])
 
         # 4. Search for 'মেডিসিন'
@@ -194,10 +184,9 @@ class TestTwoTierRanking:
 @pytest.mark.django_db
 class TestDropdownOptionsAndRBAC:
     def test_specialty_options_endpoint_returns_variations(self, api_client):
-        cardio = DoctorSpecialty.objects.create(name="Cardiology", canonical_name="Cardiology")
-        cardio.components.set([cardio])
-        SpecialtyAlias.objects.create(specialty=cardio, name="হৃদরোগ")
-        SpecialtyAlias.objects.create(specialty=cardio, name="কার্ডিওলজি")
+        cardio, _ = DoctorSpecialty.objects.get_or_create(name="Cardiology", defaults={"canonical_name": "Cardiology"})
+        set_alias(cardio, "হৃদরোগ")
+        set_alias(cardio, "কার্ডিওলজি")
 
         # GET /api/specialties/ (default public discovery) returns all verified options
         res = api_client.get("/api/specialties/")
@@ -240,8 +229,8 @@ class TestConsolidationCommand:
         doc = DoctorFactory(name="Dr. Heart Care")
         doc.specialties.set([old_spec])
 
-        # Run consolidation command
-        call_command("consolidate_specialties")
+        # Run consolidation command with --force-legacy
+        call_command("consolidate_specialties", force_legacy=True)
 
         # Verify old_spec was mapped to a canonical specialty
         doc.refresh_from_db()
@@ -253,7 +242,7 @@ class TestConsolidationCommand:
         assert SpecialtyAlias.objects.filter(name="হৃদরোগ ক্লিনিক").exists()
 
         # Test idempotency
-        call_command("consolidate_specialties")
+        call_command("consolidate_specialties", force_legacy=True)
         doc.refresh_from_db()
         assert doc.specialties.count() >= 1
 

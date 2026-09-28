@@ -101,6 +101,58 @@ def fuzzy_match(query, cutoff=0.75):
     return []
 
 
+class UnresolvedSpecialty(Exception):
+    """Raised when a specialty string cannot be resolved exactly."""
+    def __init__(self, raw_text):
+        super().__init__(f"Unresolved specialty: {raw_text}")
+        self.raw_text = raw_text
+
+
+def resolve_specialty_exact(value):
+    """
+    Exact resolution only (no substring, no fuzzy).
+    Tries, in order:
+    1. UUID
+    2. Node slug
+    3. LegacySpecialtySlug (Phase 2 model)
+    4. Normalized text of a verified alias
+    5. None
+    Must never use substring or fuzzy matching.
+    """
+    if not value:
+        return None
+    from doctors.models import DoctorSpecialty, SpecialtyAlias
+
+    query_str = str(value).strip()
+
+    # 1. UUID
+    if len(query_str) == 36:
+        obj = DoctorSpecialty.objects.filter(id=query_str).first()
+        if obj:
+            return obj
+
+    # 2. Node slug
+    node = DoctorSpecialty.objects.filter(slug__iexact=query_str).first()
+    if node:
+        return node
+
+
+    # 4. Normalized text of a verified alias
+    n = normalize_text(query_str)
+    alias = SpecialtyAlias.objects.filter(normalized=n, is_verified=True).select_related('specialty').first()
+    if alias:
+        return alias.specialty
+
+    # Exact canonical match on name/canonical_name/bn_name
+    canonical = DoctorSpecialty.objects.filter(
+        Q(name__iexact=query_str) | Q(canonical_name__iexact=query_str) | Q(bn_name__iexact=query_str)
+    ).first()
+    if canonical:
+        return canonical
+
+    return None
+
+
 def resolve_specialty(query):
     """
     Resolve any specialty string, slug, or UUID to a single canonical DoctorSpecialty instance.
@@ -149,7 +201,9 @@ def resolve_specialty(query):
 
 def resolve_specialty_ids(query):
     """
-    Used by search: turn any query string into canonical specialty IDs.
+    [SEARCH-ONLY] Used exclusively by free-text search endpoints to turn any
+    query string into canonical specialty IDs. Never use for ingestion,
+    data writes, or exact filtering.
     """
     if not query:
         return []
@@ -232,103 +286,16 @@ def parse_compound_components(raw_text):
 
 def resolve_or_create_specialty(raw_text, is_verified=True):
     """
-    Used at ingestion / consolidation: never create a duplicate canonical row again.
-    Handles compound specialties and sets their components M2M.
+    Exact specialty resolver.
+    Fuzzy/substring matching and auto-creation have been removed (Taxonomy v3 freeze).
+    Raises UnresolvedSpecialty(raw_text) if the specialty cannot be resolved exactly.
     """
     if not raw_text or not str(raw_text).strip():
         return None
-    from doctors.models import DoctorSpecialty, SpecialtyAlias
 
-    raw_text = str(raw_text).strip()
-    n = normalize_text(raw_text)
+    spec = resolve_specialty_exact(raw_text)
+    if spec:
+        return spec
 
-    # 1. Direct alias check
-    alias = SpecialtyAlias.objects.filter(normalized=n).select_related('specialty').first()
-    if alias:
-        return alias.specialty
+    raise UnresolvedSpecialty(raw_text)
 
-    # 2. Check if this is a compound specialty
-    fragments = [f.strip() for f in COMPOUND_DELIMITERS_RE.split(raw_text) if f.strip()]
-    is_compound = len(fragments) > 1
-
-    if is_compound:
-        # Check if already exists as a compound DoctorSpecialty
-        canonical = DoctorSpecialty.objects.filter(
-            Q(name__iexact=raw_text) | Q(canonical_name__iexact=raw_text)
-        ).first()
-
-        if not canonical:
-            title_name = raw_text.title() if detect_language(raw_text) == 'en' else raw_text
-            canonical = DoctorSpecialty.objects.create(
-                name=title_name,
-                canonical_name=title_name,
-                bn_name=raw_text if detect_language(raw_text) == 'bn' else ''
-            )
-
-        # Resolve components
-        components = parse_compound_components(raw_text)
-        if components:
-            canonical.components.set(components)
-        else:
-            canonical.components.set([canonical])
-
-        SpecialtyAlias.objects.get_or_create(
-            normalized=n,
-            defaults={
-                'specialty': canonical,
-                'name': raw_text,
-                'is_verified': is_verified
-            }
-        )
-        return canonical
-
-    # 3. Simple specialty: direct canonical match
-    canonical = DoctorSpecialty.objects.filter(
-        Q(name__iexact=raw_text) | Q(canonical_name__iexact=raw_text) | Q(slug__iexact=raw_text)
-    ).first()
-    if canonical:
-        SpecialtyAlias.objects.get_or_create(
-            normalized=n,
-            defaults={
-                'specialty': canonical,
-                'name': raw_text,
-                'is_verified': is_verified
-            }
-        )
-        if not canonical.components.exists():
-            canonical.components.set([canonical])
-        return canonical
-
-    # 4. Resolve using resolver IDs
-    ids = resolve_specialty_ids(raw_text)
-    if ids:
-        canonical = DoctorSpecialty.objects.get(id=ids[0])
-        SpecialtyAlias.objects.get_or_create(
-            normalized=n,
-            defaults={
-                'specialty': canonical,
-                'name': raw_text,
-                'is_verified': False  # Auto-matched, needs review
-            }
-        )
-        return canonical
-
-    # 5. Genuinely new specialty -> create canonical + alias + self-component
-    title_name = raw_text.title() if detect_language(raw_text) == 'en' else raw_text
-    canonical, _ = DoctorSpecialty.objects.get_or_create(
-        name=title_name,
-        defaults={
-            'canonical_name': title_name,
-            'bn_name': raw_text if detect_language(raw_text) == 'bn' else ''
-        }
-    )
-    canonical.components.set([canonical])
-    SpecialtyAlias.objects.get_or_create(
-        normalized=n,
-        defaults={
-            'specialty': canonical,
-            'name': raw_text,
-            'is_verified': is_verified
-        }
-    )
-    return canonical

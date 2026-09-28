@@ -10,16 +10,20 @@ class DoctorSpecialty(models.Model):
     name = models.CharField(max_length=100, unique=True)
     canonical_name = models.CharField(max_length=100, unique=True, blank=True)
     bn_name = models.CharField(max_length=100, blank=True, default='')
+    formal_name = models.CharField(max_length=120, blank=True, default='')
     slug = models.SlugField(max_length=120, unique=True, blank=True)
     icon = models.CharField(max_length=50, default='Stethoscope')
     description = models.TextField(blank=True)
-    components = models.ManyToManyField(
-        "self",
+    is_umbrella = models.BooleanField(default=False, db_index=True)
+    parent_categories = models.ManyToManyField(
+        'self',
         symmetrical=False,
-        related_name="compound_specialties",
-        blank=True,
-        help_text="For compound specialties: the canonical specialties it covers. For simple ones: just itself."
+        related_name='subspecialties',
+        blank=True
     )
+    related = models.ManyToManyField('self', symmetrical=True, blank=True)
+    is_popular = models.BooleanField(default=False)
+    display_order = models.PositiveSmallIntegerField(default=0)
 
     def save(self, *args, **kwargs):
         if not self.canonical_name:
@@ -84,7 +88,16 @@ class Doctor(models.Model):
     old_slugs = models.JSONField(default=list, blank=True)
     academic_title = models.CharField(max_length=150, blank=True, default='')
     institution = models.CharField(max_length=250, blank=True, default='')
-    specialties = models.ManyToManyField(DoctorSpecialty, related_name='doctors')
+    specialty_source = models.TextField(blank=True, default='', help_text="Verbatim text from card or brochure")
+    specialty_source_bn = models.TextField(blank=True, default='', help_text="Verbatim Bengali text from card or brochure")
+    primary_specialty = models.ForeignKey(
+        DoctorSpecialty,
+        null=True,
+        blank=True,
+        on_delete=models.SET_NULL,
+        related_name='primary_doctors'
+    )
+    specialties = models.ManyToManyField(DoctorSpecialty, related_name='doctors', blank=True)
     qualification = models.TextField()
     experience = models.CharField(max_length=50, null=True, blank=True, default='')
     about = models.TextField(blank=True, default='')
@@ -93,8 +106,8 @@ class Doctor(models.Model):
     image = models.ImageField(upload_to="doctors/images/", blank=True, null=True)
     gender = models.CharField(
         max_length=20,
-        choices=[('Male', 'Male'), ('Female', 'Female'), ('Other', 'Other')],
-        default='Male',
+        choices=[('Male', 'Male'), ('Female', 'Female'), ('Other', 'Other'), ('', 'Unspecified')],
+        default='',
         blank=True
     )
     rating = models.DecimalField(max_digits=3, decimal_places=2, default=4.90, blank=True, null=True)

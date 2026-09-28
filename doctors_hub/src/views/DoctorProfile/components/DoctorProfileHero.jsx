@@ -112,6 +112,13 @@ export default function DoctorProfileHero({ doctor, onShare, onSave, onPrint }) 
               </p>
             )}
 
+            {/* Verbatim Card Specialty Line */}
+            {(doctor.specialty_display?.en || doctor.specialty_source) && (
+              <p className="text-sm font-medium text-slate-700 mt-1 leading-snug whitespace-pre-line">
+                {doctor.specialty_display?.en || doctor.specialty_source}
+              </p>
+            )}
+
             {/* Seniority / Academic Title & Institution */}
             {(doctor.academic_title || doctor.institution) && (
               <div className="flex items-center justify-center sm:justify-start gap-2 text-on-surface-variant font-body-md text-body-md pt-0.5 text-slate-600">

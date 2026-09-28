@@ -4,6 +4,7 @@ export default function DoctorSearchBarStrip({
   specialty,
   onSpecialtyChange,
   specialties = [],
+  specialtyGroups = [],
   facility,
   onFacilityChange,
   facilities = [],
@@ -27,7 +28,7 @@ export default function DoctorSearchBarStrip({
         onSubmit={handleSubmit}
       >
         {/* 1. Specialty Selector */}
-        <div className="relative flex-1 lg:max-w-[260px]">
+        <div className="relative flex-1 lg:max-w-[270px]">
           <div className="absolute left-3.5 top-1/2 -translate-y-1/2 text-primary flex items-center pointer-events-none">
             <span className="material-symbols-outlined text-[20px]">stethoscope</span>
           </div>
@@ -38,10 +39,23 @@ export default function DoctorSearchBarStrip({
             style={{ WebkitAppearance: 'none', MozAppearance: 'none' }}
           >
             <option value="">All Specialties</option>
-            {specialties.length > 0 ? (
+            {specialtyGroups.length > 0 ? (
+              specialtyGroups.map((grp) => (
+                <optgroup key={grp.id || grp.slug} label={grp.label || grp.name}>
+                  <option value={grp.slug || grp.name}>
+                    All {grp.name} Specialists
+                  </option>
+                  {(grp.children || []).map((child) => (
+                    <option key={child.id || child.slug} value={child.slug || child.name}>
+                      {child.label || child.name} {child.count ? `(${child.count})` : ''}
+                    </option>
+                  ))}
+                </optgroup>
+              ))
+            ) : specialties.length > 0 ? (
               specialties.map((s) => {
-                const val = typeof s === 'object' ? (s.name || s.slug) : s;
-                const label = typeof s === 'object' ? s.name : s;
+                const val = typeof s === 'object' ? (s.slug || s.name) : s;
+                const label = typeof s === 'object' ? (s.label || s.name) : s;
                 return (
                   <option key={val} value={val}>
                     {label}
@@ -50,14 +64,16 @@ export default function DoctorSearchBarStrip({
               })
             ) : (
               <>
-                <option value="Cardiology">Cardiology</option>
-                <option value="Gynecology">Gynecology & Obstetrics</option>
-                <option value="Orthopedics">Orthopedics & Spine</option>
-                <option value="Pediatrics">Pediatrics & Child Health</option>
-                <option value="Medicine">General & Internal Medicine</option>
-                <option value="Neurology">Neurology & Brain</option>
-                <option value="Dermatology">Dermatology & Skin</option>
-                <option value="Gastroenterology">Gastroenterology</option>
+                <option value="medicine-primary-care">Medicine &amp; Primary Care</option>
+                <option value="heart-vascular">Heart &amp; Vascular</option>
+                <option value="cancer-care">Cancer Care</option>
+                <option value="brain-spine-nerves">Brain, Spine &amp; Nerves</option>
+                <option value="bone-joint">Bone &amp; Joint</option>
+                <option value="womens-health-pregnancy">Women's Health &amp; Pregnancy</option>
+                <option value="child-health">Child Health</option>
+                <option value="kidney-urinary">Kidney &amp; Urinary</option>
+                <option value="digestive-liver">Digestive &amp; Liver</option>
+                <option value="skin-hair-dermatology">Skin, Hair &amp; Dermatology</option>
               </>
             )}
           </select>
