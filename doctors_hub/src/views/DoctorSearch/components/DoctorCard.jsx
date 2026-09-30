@@ -1,7 +1,7 @@
-import React, { useState } from 'react';
+import React, { useState, useMemo } from 'react';
 import DoctorChamberCard from './DoctorChamberCard';
-import { formatFacilityName } from '../../../utils/facilityUtils';
-import { displayName, formatDoctorTitle } from '../../../utils/doctorUtils';
+import { displayName, formatDoctorTitle, formatNextAvailable } from '../../../utils/doctorUtils';
+import { formatDisplayTime } from '../../../utils/scheduleUtils';
 
 function getDoctorDefaultAvatar(doctor) {
   const g = String(doctor?.gender || '').toLowerCase();
@@ -13,6 +13,8 @@ function getDoctorDefaultAvatar(doctor) {
 export default function DoctorCard({
   doctor,
   _index = 0,
+  filteredFacility,
+  filteredLocation,
   onBookDoctorSlot,
   onViewProfile,
   onSelectHospital,
@@ -62,30 +64,83 @@ export default function DoctorCard({
   // Process affiliations / chambers strictly from database API:
   const chambers = Array.isArray(doctor.affiliations) && doctor.affiliations.length > 0
     ? doctor.affiliations.map((aff, i) => {
-        const facName = formatFacilityName(
-          aff.facility_name || aff.facilityName || aff.location_details?.name || aff.name || '',
-          aff.branch || aff.location_details?.branch || ''
-        );
+        const fac = aff.facility || {};
+        const facName = fac.display_name || fac.name || aff.name || '';
+        const locId = fac.id || aff.location_id || aff.location || '';
+        const locSlug = fac.slug || '';
+        const address = fac.address || fac.district || '';
+        const district = fac.district || '';
+        const thana = fac.area || '';
         return {
           id: aff.id || `aff-${doctor.id}-${i + 1}`,
-          facility_name: facName,
+          affiliationId: aff.id,
+          facility: fac,
+          locationId: String(locId),
+          locationSlug: String(locSlug),
+          display_name: facName,
           name: facName,
-          branch: aff.branch || aff.location_details?.branch || '',
-          address: aff.location_details?.address_line || aff.address || aff.district || '',
-          location: aff.location_details?.address_line || aff.address || aff.district || '',
-          district: aff.district || aff.location_details?.district || '',
+          rawName: String(fac.name || ''),
+          branch: String(fac.branch || ''),
+          address,
+          location: address,
+          district: String(district),
+          thana: String(thana),
           fee: aff.fee ? Math.round(Number(aff.fee)) : (doctor.fee ? Math.round(Number(doctor.fee)) : null),
-          status_label: aff.status_label || (i === 0 ? 'Available Today' : 'Advance Booking'),
-          visitSchedule: aff.visitSchedule || (aff.schedules && aff.schedules.length > 0
-            ? `${aff.schedules.map(s => s.day_of_week.slice(0, 3)).join(', ')} (${aff.schedules[0].start_time?.slice(0, 5) || '17:00'} - ${aff.schedules[0].end_time?.slice(0, 5) || '21:00'})`
-            : 'Consultation by Appointment'),
+          next_available: aff.next_available || null,
+          visitSchedule: aff.schedules && aff.schedules.length > 0
+            ? aff.schedules.map(s => s.day_of_week?.slice(0, 3)).filter(Boolean).join(', ')
+            : (aff.visitSchedule || null),
           schedules: aff.schedules || []
         };
       })
     : [];
 
-  // Selected Chamber State (defaulting to the first real chamber)
-  const [selectedChamberId, setSelectedChamberId] = useState(chambers[0]?.id);
+  // Match the chamber that best fits active facility/location filters
+  const matchedChamberId = useMemo(() => {
+    if (!chambers || chambers.length === 0) return null;
+    if (filteredFacility) {
+      const q = String(filteredFacility).trim().toLowerCase();
+      const match = chambers.find((c) => {
+        if (!c) return false;
+        if (c.locationId && c.locationId.toLowerCase() === q) return true;
+        if (c.locationSlug && c.locationSlug.toLowerCase() === q) return true;
+        if (c.affiliationId && String(c.affiliationId).toLowerCase() === q) return true;
+        if (c.id && String(c.id).toLowerCase() === q) return true;
+        if (c.facility_name && c.facility_name.toLowerCase().includes(q)) return true;
+        if (c.rawName && c.rawName.toLowerCase().includes(q)) return true;
+        if (c.branch && c.branch.toLowerCase().includes(q)) return true;
+        if (c.rawName && q.includes(c.rawName.toLowerCase()) && c.rawName.length > 3) return true;
+        return false;
+      });
+      if (match) return match.id;
+    }
+    const area = filteredLocation?.area;
+    if (area) {
+      const qArea = area.trim().toLowerCase();
+      const match = chambers.find((c) =>
+        (c.branch && c.branch.toLowerCase().includes(qArea)) ||
+        (c.thana && c.thana.toLowerCase().includes(qArea)) ||
+        (c.address && c.address.toLowerCase().includes(qArea))
+      );
+      if (match) return match.id;
+    }
+    const district = filteredLocation?.district;
+    if (district) {
+      const qDist = district.trim().toLowerCase();
+      const match = chambers.find((c) =>
+        (c.district && c.district.toLowerCase().includes(qDist)) ||
+        (c.address && c.address.toLowerCase().includes(qDist))
+      );
+      if (match) return match.id;
+    }
+    return chambers[0]?.id;
+  }, [chambers, filteredFacility, filteredLocation]);
+
+  // Selected Chamber State (defaults to matched chamber, user click takes precedence)
+  const [userSelectedChamberId, setUserSelectedChamberId] = useState(null);
+  const selectedChamberId = userSelectedChamberId && chambers.some(c => c.id === userSelectedChamberId)
+    ? userSelectedChamberId
+    : matchedChamberId;
   const selectedChamber = chambers.find(c => c.id === selectedChamberId) || chambers[0];
 
   const handleBookAppointment = () => {
@@ -238,7 +293,7 @@ export default function DoctorCard({
                 key={chamber.id}
                 chamber={chamber}
                 isSelected={selectedChamber?.id === chamber.id}
-                onSelect={() => setSelectedChamberId(chamber.id)}
+                onSelect={() => setUserSelectedChamberId(chamber.id)}
                 onSelectHospital={onSelectHospital}
               />
             ))}
@@ -254,7 +309,7 @@ export default function DoctorCard({
             </div>
             <div>
               <div className="text-label-sm font-label-sm text-[#006877] font-bold">
-                Next Available: {selectedChamber?.status_label || (chambers.length === 0 ? 'Consultation on Request' : 'Available Today')}
+                {formatNextAvailable(selectedChamber?.next_available || chambers[0]?.next_available)}
               </div>
               <div className="text-body-sm text-outline flex items-center gap-1.5">
                 <span className="truncate max-w-[220px] font-medium text-on-surface">

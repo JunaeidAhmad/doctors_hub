@@ -118,13 +118,12 @@ class TestLocationBackwardCompatibility:
         assert data["thana"] == thana.id
         assert data["thana_details"]["name"] == "Dhanmondi"
 
-        # Test creating through serializer with legacy district/area
+        # Test creating through serializer with thana
         new_data = {
             "name": "Serializer Created Clinic",
             "location_type": "hospital",
             "address_line": "New Road",
-            "district": "Dhaka",
-            "area": "Dhanmondi",
+            "thana": thana.id,
         }
         in_serializer = LocationSerializer(data=new_data)
         assert in_serializer.is_valid(), in_serializer.errors
@@ -167,34 +166,34 @@ class TestGeoAPIAndFilters:
 
         client = APIClient()
 
-        # Filter by Dhaka
-        res = client.get("/api/hospitals/?district=Dhaka")
+        # Filter by Dhaka district_id
+        res = client.get(f"/api/hospitals/?district_id={thana_dhan.district_id}")
         assert res.status_code == 200
         data = res.data.get("results", res.data) if isinstance(res.data, dict) else res.data
-        names = [h["location_details"]["name"] for h in data]
+        names = [h["name"] for h in data]
         assert "Dhaka Care" in names
         assert "Ctg Care" not in names
 
-        # Filter by alias Chittagong -> Chattogram
-        res_alias = client.get("/api/hospitals/?district=Chittagong")
-        assert res_alias.status_code == 200
-        data_alias = res_alias.data.get("results", res_alias.data) if isinstance(res_alias.data, dict) else res_alias.data
-        names_alias = [h["location_details"]["name"] for h in data_alias]
-        assert "Ctg Care" in names_alias
-        assert "Dhaka Care" not in names_alias
+        # Filter by Chattogram district_id
+        res_ctg = client.get(f"/api/hospitals/?district_id={thana_ctg.district_id}")
+        assert res_ctg.status_code == 200
+        data_ctg = res_ctg.data.get("results", res_ctg.data) if isinstance(res_ctg.data, dict) else res_ctg.data
+        names_ctg = [h["name"] for h in data_ctg]
+        assert "Ctg Care" in names_ctg
+        assert "Dhaka Care" not in names_ctg
 
-        # Filter by thana area
-        res_area = client.get("/api/hospitals/?area=Dhanmondi")
+        # Filter by thana_id
+        res_area = client.get(f"/api/hospitals/?thana_id={thana_dhan.id}")
         assert res_area.status_code == 200
         data_area = res_area.data.get("results", res_area.data) if isinstance(res_area.data, dict) else res_area.data
-        names_area = [h["location_details"]["name"] for h in data_area]
+        names_area = [h["name"] for h in data_area]
         assert "Dhaka Care" in names_area
 
-        # Filter Doctor by location
+        # Filter Doctor by district_id
         doc = Doctor.objects.create(name="Dr. Filter Test", qualification="MBBS")
         DoctorAffiliation.objects.create(doctor=doc, location=loc_dhaka, fee=1000)
 
-        res_doc = client.get("/api/doctors/?district=Dhaka")
+        res_doc = client.get(f"/api/doctors/?district_id={thana_dhan.district_id}")
         assert res_doc.status_code == 200
         doc_data = res_doc.data.get("results", res_doc.data)
         doc_names = [d["name"] for d in doc_data]

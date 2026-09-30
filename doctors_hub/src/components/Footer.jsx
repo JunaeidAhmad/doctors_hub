@@ -1,8 +1,10 @@
 import React from 'react';
 import { HeartPulse, MapPin, Phone, Mail, Clock, ShieldCheck, Heart } from 'lucide-react';
-import { DIVISIONS } from '../data/constants';
+import { useDivisions } from '../hooks/useGeo';
 
 export default function Footer({ onSelectLocation, onNavigateAdmin }) {
+  const { items: divisions } = useDivisions();
+
   return (
     <footer id="contact" className="bg-slate-950 text-slate-400 pt-16 pb-8 border-t border-slate-800 text-xs">
       <div className="max-w-7xl mx-auto px-4 sm:px-8">
@@ -34,14 +36,14 @@ export default function Footer({ onSelectLocation, onNavigateAdmin }) {
               Divisions & Cities
             </h4>
             <ul className="space-y-2">
-              {DIVISIONS.map((loc) => (
-                <li key={loc}>
+              {divisions.map((loc) => (
+                <li key={loc.id}>
                   <button
                     onClick={() => onSelectLocation(loc)}
                     className="hover:text-emerald-400 transition-colors flex items-center gap-1.5 cursor-pointer text-left"
                   >
                     <MapPin className="w-3 h-3 text-emerald-500 shrink-0" />
-                    <span>Doctor Chambers in {loc}</span>
+                    <span>Doctor Chambers in {loc.label || loc.name}</span>
                   </button>
                 </li>
               ))}

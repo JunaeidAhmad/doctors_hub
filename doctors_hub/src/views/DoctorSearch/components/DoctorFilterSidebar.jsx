@@ -1,18 +1,18 @@
-import React, { useMemo } from 'react';
-import { DIVISIONS, DIVISION_DISTRICTS, DISTRICT_THANAS } from '../../../data/constants';
+import React from 'react';
+import { useDivisions, useDistricts, useThanas } from '../../../hooks/useGeo';
 
 const DAYS = ['All Days', 'Fri', 'Sat', 'Sun', 'Mon', 'Tue', 'Wed', 'Thu'];
 
 export default function DoctorFilterSidebar({
-  division,
-  district,
-  area,
+  divisionId = null,
+  districtId = null,
+  thanaId = null,
   selectedDay,
   gender,
   totalCount = 0,
   onDivisionChange,
   onDistrictChange,
-  onAreaChange,
+  onThanaChange,
   onClearLocation,
   onDayChange,
   onGenderChange,
@@ -21,29 +21,9 @@ export default function DoctorFilterSidebar({
   _onClose,
   className = 'hidden lg:block'
 }) {
-  const districtList = useMemo(() => {
-    if (!division || division === 'All Bangladesh') {
-      return Object.values(DIVISION_DISTRICTS).flat();
-    }
-    return DIVISION_DISTRICTS[division] || [];
-  }, [division]);
-
-  const areaList = useMemo(() => {
-    if (!district || district === 'All Districts') {
-      return [];
-    }
-    return DISTRICT_THANAS[district] || [];
-  }, [district]);
-
-  const handleClearLocation = () => {
-    if (onClearLocation) {
-      onClearLocation();
-    } else {
-      onDivisionChange?.('All Bangladesh');
-      onDistrictChange?.('All Districts');
-      onAreaChange?.('All Areas');
-    }
-  };
+  const { items: divisions, isLoading: loadingDivisions } = useDivisions();
+  const { items: districts, isLoading: loadingDistricts } = useDistricts(divisionId);
+  const { items: thanas, isLoading: loadingThanas } = useThanas(districtId);
 
   return (
     <aside className={`w-full lg:w-80 shrink-0 bg-surface-container-lowest rounded-xl border border-outline-variant shadow-xs p-5 space-y-6 lg:sticky lg:top-24 ${className}`}>
@@ -73,7 +53,7 @@ export default function DoctorFilterSidebar({
           </h4>
           <button
             type="button"
-            onClick={handleClearLocation}
+            onClick={onClearLocation}
             className="text-[11px] text-primary font-medium cursor-pointer hover:underline"
           >
             Clear
@@ -89,15 +69,16 @@ export default function DoctorFilterSidebar({
                 map
               </span>
               <select
-                value={division || 'All Bangladesh'}
-                onChange={(e) => onDivisionChange(e.target.value)}
-                className="w-full pl-9 pr-8 py-2 bg-surface-container-low border border-outline-variant rounded-lg text-on-surface font-label-md text-xs focus:ring-2 focus:ring-primary appearance-none cursor-pointer"
+                value={divisionId ?? ''}
+                onChange={(e) => onDivisionChange(e.target.value ? Number(e.target.value) : null)}
+                disabled={loadingDivisions}
+                className="w-full pl-9 pr-8 py-2 bg-surface-container-low border border-outline-variant rounded-lg text-on-surface font-label-md text-xs focus:ring-2 focus:ring-primary appearance-none cursor-pointer disabled:opacity-60"
                 style={{ backgroundImage: 'none', WebkitAppearance: 'none', MozAppearance: 'none' }}
               >
-                <option value="All Bangladesh">All Bangladesh</option>
-                {DIVISIONS.map((d) => (
-                  <option key={d} value={d}>
-                    {d}
+                <option value="">Select Division</option>
+                {divisions.map((d) => (
+                  <option key={d.id} value={d.id}>
+                    {d.label || d.name}
                   </option>
                 ))}
               </select>
@@ -115,15 +96,16 @@ export default function DoctorFilterSidebar({
                 location_city
               </span>
               <select
-                value={district || 'All Districts'}
-                onChange={(e) => onDistrictChange(e.target.value)}
-                className="w-full pl-9 pr-8 py-2 bg-surface-container-low border border-outline-variant rounded-lg text-on-surface font-label-md text-xs focus:ring-2 focus:ring-primary appearance-none cursor-pointer"
+                value={districtId ?? ''}
+                onChange={(e) => onDistrictChange(e.target.value ? Number(e.target.value) : null)}
+                disabled={!divisionId || loadingDistricts}
+                className="w-full pl-9 pr-8 py-2 bg-surface-container-low border border-outline-variant rounded-lg text-on-surface font-label-md text-xs focus:ring-2 focus:ring-primary appearance-none cursor-pointer disabled:opacity-60"
                 style={{ backgroundImage: 'none', WebkitAppearance: 'none', MozAppearance: 'none' }}
               >
-                <option value="All Districts">All Districts</option>
-                {districtList.map((dist) => (
-                  <option key={dist} value={dist}>
-                    {dist}
+                <option value="">Select District</option>
+                {districts.map((dist) => (
+                  <option key={dist.id} value={dist.id}>
+                    {dist.label || dist.name}
                   </option>
                 ))}
               </select>
@@ -141,15 +123,16 @@ export default function DoctorFilterSidebar({
                 near_me
               </span>
               <select
-                value={area || 'All Areas'}
-                onChange={(e) => onAreaChange(e.target.value)}
-                className="w-full pl-9 pr-8 py-2 bg-surface-container-low border border-outline-variant rounded-lg text-on-surface font-label-md text-xs focus:ring-2 focus:ring-primary appearance-none cursor-pointer"
+                value={thanaId ?? ''}
+                onChange={(e) => onThanaChange(e.target.value ? Number(e.target.value) : null)}
+                disabled={!districtId || loadingThanas}
+                className="w-full pl-9 pr-8 py-2 bg-surface-container-low border border-outline-variant rounded-lg text-on-surface font-label-md text-xs focus:ring-2 focus:ring-primary appearance-none cursor-pointer disabled:opacity-60"
                 style={{ backgroundImage: 'none', WebkitAppearance: 'none', MozAppearance: 'none' }}
               >
-                <option value="All Areas">All Areas</option>
-                {areaList.map((a) => (
-                  <option key={a} value={a}>
-                    {a}
+                <option value="">Select Thana / Area</option>
+                {thanas.map((a) => (
+                  <option key={a.id} value={a.id}>
+                    {a.label || a.name}
                   </option>
                 ))}
               </select>

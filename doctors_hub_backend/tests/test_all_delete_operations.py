@@ -98,7 +98,7 @@ def test_delete_doctor_cascades_affiliations_and_bookings(api_client, super_admi
     )
     patient = Patient.objects.create(name="Test Patient", phone="01711112222")
     booking = DoctorBooking.objects.create(
-        affiliation=aff, date="2026-09-28", slot="09:00", patient=patient, serial_number=1
+        affiliation=aff, date="2026-09-28", session_key="09:00-12:00", session_start="09:00:00", session_end="12:00:00", patient=patient, serial_number=1
     )
 
     res = api_client.delete(f"/api/doctors/{doc.id}/")

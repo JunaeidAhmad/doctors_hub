@@ -4,6 +4,7 @@ from .models import DoctorBooking, TestBooking, HospitalServiceBooking, Patient,
 from doctors.models import DoctorAffiliation
 from tests.models import FacilityTest
 from facilities.models import Hospital, HospitalService
+from facilities.serializers_summary import FacilitySummarySerializer
 from core.validators import bangladesh_phone_validator
 from services.sms import (
     send_doctor_booking_confirmation_sms,
@@ -98,8 +99,7 @@ def resolve_patient(patient_data):
 
 class DoctorBookingSerializer(serializers.ModelSerializer):
     doctor_name = serializers.CharField(source='affiliation.doctor.name', read_only=True)
-    facility_name = serializers.CharField(source='affiliation.location.name', read_only=True)
-    branch = serializers.SerializerMethodField(read_only=True)
+    facility = FacilitySummarySerializer(source='affiliation.location', read_only=True)
     user = serializers.PrimaryKeyRelatedField(source='booked_by_user', read_only=True)
     affiliation_id = serializers.PrimaryKeyRelatedField(
         queryset=DoctorAffiliation.objects.all(), write_only=True, source='affiliation'
@@ -109,6 +109,9 @@ class DoctorBookingSerializer(serializers.ModelSerializer):
         queryset=Patient.objects.all(), write_only=True, source='patient', required=False, allow_null=True
     )
     serial_display = serializers.CharField(read_only=True)
+    session_start = serializers.TimeField(read_only=True, format='%H:%M')
+    session_end = serializers.TimeField(read_only=True, format='%H:%M')
+    estimated_time = serializers.TimeField(read_only=True, format='%H:%M')
     otp_code = serializers.CharField(write_only=True, required=False, allow_blank=True)
     patient_age = serializers.IntegerField(write_only=True, required=False, allow_null=True)
     gender = serializers.CharField(write_only=True, required=False, allow_blank=True)
@@ -117,75 +120,65 @@ class DoctorBookingSerializer(serializers.ModelSerializer):
         model = DoctorBooking
         fields = (
             'id', 'patient', 'patient_id', 'user', 'status', 'notes', 'created_at', 'updated_at',
-            'affiliation_id', 'date', 'slot', 'serial_number', 'serial_display',
+            'affiliation_id', 'date', 'session_key', 'session_start', 'session_end', 'estimated_time',
+            'serial_number', 'serial_display',
             'patient_name', 'patient_phone', 'patient_age', 'gender',
-            'doctor_name', 'facility_name', 'branch', 'otp_code'
+            'doctor_name', 'facility', 'otp_code'
         )
-        read_only_fields = ('user', 'created_at', 'updated_at', 'serial_number', 'serial_display')
+        read_only_fields = (
+            'user', 'created_at', 'updated_at', 'serial_number', 'serial_display',
+            'session_start', 'session_end', 'estimated_time'
+        )
 
-    def get_branch(self, obj):
-        loc = getattr(getattr(obj, 'affiliation', None), 'location', None)
-        return getattr(loc, 'branch', '') or ''
+    def __init__(self, *args, **kwargs):
+        super().__init__(*args, **kwargs)
+        if self.instance is None and 'status' in self.fields:
+            self.fields['status'].read_only = True
 
     def to_internal_value(self, data):
-        mutable_data = data.copy() if hasattr(data, 'copy') else dict(data)
-        if 'appointment_date' in mutable_data and not mutable_data.get('date'):
-            mutable_data['date'] = mutable_data['appointment_date']
-        if 'appointment_time' in mutable_data and not mutable_data.get('slot'):
-            mutable_data['slot'] = mutable_data['appointment_time']
-        if 'affiliation' in mutable_data and not mutable_data.get('affiliation_id'):
-            mutable_data['affiliation_id'] = mutable_data['affiliation']
-        return super().to_internal_value(mutable_data)
+        if hasattr(data, 'copy'):
+            data = data.copy()
+            if 'affiliation' in data and 'affiliation_id' not in data:
+                data['affiliation_id'] = data['affiliation']
+        return super().to_internal_value(data)
 
     def validate(self, attrs):
-        otp_code = attrs.pop('otp_code', None)
-        patient_age = attrs.pop('patient_age', None)
-        gender = attrs.pop('gender', None)
-        phone = attrs.get('patient_phone') or (attrs.get('patient').phone if attrs.get('patient') else None)
+        if not self.instance:
+            otp_code = attrs.pop('otp_code', None)
+            patient_age = attrs.pop('patient_age', None)
+            gender = attrs.pop('gender', None)
+            phone = attrs.get('patient_phone') or (attrs.get('patient').phone if attrs.get('patient') else None)
 
-        if otp_code:
-            verify_otp_helper(phone, otp_code, purpose='doctor_booking')
+            if otp_code:
+                verify_otp_helper(phone, otp_code, purpose='doctor_booking')
 
-        if not attrs.get('patient') and phone:
-            patient = resolve_patient({
-                'phone': phone,
-                'name': attrs.get('patient_name', ''),
-                'age': patient_age,
-                'gender': gender
-            })
-            attrs['patient'] = patient
-            if not attrs.get('patient_name'):
-                attrs['patient_name'] = patient.name
-            if not attrs.get('patient_phone'):
-                attrs['patient_phone'] = patient.phone
-
-        valid_fields = {'affiliation', 'date', 'slot', 'patient_name', 'patient_phone', 'status', 'notes', 'patient', 'booked_by_user'}
-        model_kwargs = {k: v for k, v in attrs.items() if k in valid_fields}
-        instance = DoctorBooking(**model_kwargs)
-        try:
-            instance.clean()
-        except Exception as e:
-            if hasattr(e, 'message_dict'):
-                raise serializers.ValidationError(e.message_dict)
-            elif hasattr(e, 'messages'):
-                raise serializers.ValidationError(e.messages)
-            raise e
+            if not attrs.get('patient') and phone:
+                patient = resolve_patient({
+                    'phone': phone,
+                    'name': attrs.get('patient_name', ''),
+                    'age': patient_age,
+                    'gender': gender
+                })
+                attrs['patient'] = patient
+                if not attrs.get('patient_name'):
+                    attrs['patient_name'] = patient.name
+                if not attrs.get('patient_phone'):
+                    attrs['patient_phone'] = patient.phone
         return attrs
 
     def create(self, validated_data):
-        instance = super().create(validated_data)
-        send_doctor_booking_confirmation_sms(instance)
-        return instance
+        from .services import create_doctor_booking
+        user = validated_data.pop('booked_by_user', None)
+        if not user:
+            request = self.context.get('request')
+            if request and hasattr(request, 'user'):
+                user = request.user
+        return create_doctor_booking(validated_data, user=user)
 
 
 class TestBookingSerializer(serializers.ModelSerializer):
     test_name = serializers.CharField(source='facility_test.test.name', read_only=True, default='')
-    center_name = serializers.CharField(source='facility_test.location.name', read_only=True, default='')
-    branch = serializers.SerializerMethodField(read_only=True)
-    center_branch = serializers.SerializerMethodField(
-        read_only=True,
-        help_text="[DEPRECATED] Use 'branch' instead. Scheduled for removal in v2.0."
-    )
+    facility = FacilitySummarySerializer(source='facility_test.location', read_only=True)
     price = serializers.DecimalField(source='facility_test.price', max_digits=10, decimal_places=2, read_only=True, default=0)
     address = serializers.CharField(source='full_pickup_address', read_only=True)
     user = serializers.PrimaryKeyRelatedField(source='booked_by_user', read_only=True)
@@ -206,16 +199,9 @@ class TestBookingSerializer(serializers.ModelSerializer):
             'id', 'patient', 'patient_id', 'user', 'status', 'notes', 'created_at', 'updated_at',
             'facility_test_id', 'pickup_date', 'patient_name', 'patient_phone', 'patient_age', 'gender',
             'pickup_address_line',
-            'address', 'test_name', 'center_name', 'branch', 'center_branch', 'price', 'otp_code'
+            'address', 'test_name', 'facility', 'price', 'otp_code'
         )
         read_only_fields = ('user', 'created_at', 'updated_at')
-
-    def get_branch(self, obj):
-        loc = getattr(getattr(obj, 'facility_test', None), 'location', None)
-        return getattr(loc, 'branch', '') or ''
-
-    def get_center_branch(self, obj):
-        return self.get_branch(obj)
 
     def to_internal_value(self, data):
         mutable_data = data.copy() if hasattr(data, 'copy') else dict(data)
@@ -262,8 +248,7 @@ class TestBookingSerializer(serializers.ModelSerializer):
 
 
 class HospitalServiceBookingSerializer(serializers.ModelSerializer):
-    hospital_name = serializers.CharField(source='hospital.location.name', read_only=True)
-    branch = serializers.SerializerMethodField(read_only=True)
+    facility = FacilitySummarySerializer(source='hospital.location', read_only=True)
     service_name = serializers.CharField(source='service.name', read_only=True)
     user = serializers.PrimaryKeyRelatedField(source='booked_by_user', read_only=True)
     hospital_id = serializers.PrimaryKeyRelatedField(
@@ -286,13 +271,9 @@ class HospitalServiceBookingSerializer(serializers.ModelSerializer):
             'id', 'patient', 'patient_id', 'user', 'status', 'notes', 'created_at', 'updated_at',
             'hospital_id', 'service_id', 'booking_date', 'preferred_time',
             'patient_name', 'patient_phone', 'patient_age', 'gender',
-            'hospital_name', 'branch', 'service_name', 'otp_code'
+            'facility', 'service_name', 'otp_code'
         )
         read_only_fields = ('user', 'created_at', 'updated_at')
-
-    def get_branch(self, obj):
-        loc = getattr(getattr(obj, 'hospital', None), 'location', None)
-        return getattr(loc, 'branch', '') or ''
 
     def to_internal_value(self, data):
         mutable_data = data.copy() if hasattr(data, 'copy') else dict(data)

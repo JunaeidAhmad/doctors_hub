@@ -7,10 +7,9 @@ import {
 } from 'lucide-react';
 import { api, ensureArray, isPageReload, getIsInitialLoad } from '../../services/api';
 import { useDebounce } from '../../hooks/useDebounce';
-import { DIVISIONS, findDivisionForDistrict } from '../../data/constants';
+import { useDivisions, useDistricts, useThanas } from '../../hooks/useGeo';
 import Pagination from '../../components/Pagination';
 import CascadingLocationFilter from '../../components/CascadingLocationFilter';
-import { formatFacilityName } from '../../utils/facilityUtils';
 
 
 
@@ -40,7 +39,7 @@ function HospitalCardImage({ hospital }) {
 
       <img
         src={error ? fallbackImg : rawImg}
-        alt={formatFacilityName(hospital)}
+        alt={hospital.display_name || hospital.name}
         loading="lazy"
         decoding="async"
         onLoad={() => setLoaded(true)}
@@ -52,10 +51,12 @@ function HospitalCardImage({ hospital }) {
       <div className="absolute inset-0 bg-gradient-to-t from-slate-950 via-slate-950/40 to-transparent"></div>
 
       <div className="absolute top-3 left-3 right-3 flex items-center justify-between">
-        <div className="inline-flex items-center gap-1 bg-slate-900/90 backdrop-blur-md border border-emerald-500/40 text-emerald-400 text-xs font-extrabold px-3 py-1 rounded-full">
-          <ShieldCheck className="w-3.5 h-3.5 text-emerald-400" />
-          <span>{typeof hospital.badge === 'string' ? hospital.badge : (hospital.badge?.name || hospital.type)}</span>
-        </div>
+        {hospital.badge && (
+          <div className="inline-flex items-center gap-1 bg-slate-900/90 backdrop-blur-md border border-emerald-500/40 text-emerald-400 text-xs font-extrabold px-3 py-1 rounded-full">
+            <ShieldCheck className="w-3.5 h-3.5 text-emerald-400" />
+            <span>{typeof hospital.badge === 'string' ? hospital.badge : (hospital.badge?.name || '')}</span>
+          </div>
+        )}
         <div className="bg-slate-900/90 backdrop-blur-md text-amber-400 text-xs font-bold px-2.5 py-1 rounded-full border border-amber-500/30 flex items-center gap-1">
           <Star className="w-3.5 h-3.5 fill-amber-400" />
           <span>{hospital.rating || 4.8} ({hospital.reviews_count || hospital.reviewsCount || 250})</span>
@@ -72,7 +73,7 @@ function HospitalCardImage({ hospital }) {
           </div>
         )}
         <h3 className="text-lg font-extrabold text-white group-hover:text-emerald-300 transition-colors flex items-center gap-2">
-          <span>{formatFacilityName(hospital)}</span>
+          <span>{hospital.display_name || hospital.name}</span>
           {hospital.is_verified && (
             <CheckCircle className="w-4 h-4 text-emerald-400 shrink-0" />
           )}
@@ -106,26 +107,19 @@ export default function HospitalsPage({ initialCategory = '', initialKeyword = '
   const lastParamsRef = useRef(searchParams.toString());
   
   // Filter states
-  const [division, setDivision] = useState(() => {
-    const urlDiv = getParam('division', '');
-    if (urlDiv) return urlDiv;
-    const urlLoc = getParam('loc', 'All Bangladesh');
-    if (DIVISIONS.includes(urlLoc)) return urlLoc;
-    const found = findDivisionForDistrict(urlLoc);
-    if (found) return found;
-    return 'All Bangladesh';
+  const [divisionId, setDivisionId] = useState(() => {
+    const v = getParam('division_id', null);
+    return v ? Number(v) : null;
   });
 
-  const [district, setDistrict] = useState(() => {
-    const urlDist = getParam('district', '');
-    if (urlDist) return urlDist;
-    const urlLoc = getParam('loc', '');
-    if (urlLoc && !DIVISIONS.includes(urlLoc) && urlLoc !== 'All Bangladesh') return urlLoc;
-    return 'All Districts';
+  const [districtId, setDistrictId] = useState(() => {
+    const v = getParam('district_id', null);
+    return v ? Number(v) : null;
   });
 
-  const [area, setArea] = useState(() => {
-    return getParam('area', 'All Areas');
+  const [thanaId, setThanaId] = useState(() => {
+    const v = getParam('thana_id', null);
+    return v ? Number(v) : null;
   });
 
   const [selectedCategory, setSelectedCategory] = useState(() => {
@@ -150,6 +144,7 @@ export default function HospitalsPage({ initialCategory = '', initialKeyword = '
   const debouncedSearchKeyword = useDebounce(searchKeyword, 350);
 
   const [totalHospitalPages, setTotalHospitalPages] = useState(1);
+  const [totalHospitals, setTotalHospitals] = useState(0);
 
   // Sync initialCategory prop if passed or updated from parent
   useEffect(() => {
@@ -162,20 +157,39 @@ export default function HospitalsPage({ initialCategory = '', initialKeyword = '
   const activeCategoryValue = useMemo(() => {
     if (!selectedCategory || selectedCategory === 'all' || selectedCategory === 'All Categories') return 'all';
     const found = hospitalCategories.find(c => 
-      String(c.id) === String(selectedCategory) ||
       (c.slug && c.slug.toLowerCase() === String(selectedCategory).toLowerCase()) ||
+      String(c.id) === String(selectedCategory) ||
       (c.name && c.name.toLowerCase() === String(selectedCategory).toLowerCase())
     );
-    return found ? String(found.id) : selectedCategory;
+    return found ? (found.slug || String(found.id)) : selectedCategory;
   }, [selectedCategory, hospitalCategories]);
+
+  const { items: divisions } = useDivisions();
+  const { items: districts } = useDistricts(divisionId);
+  const { items: thanas } = useThanas(districtId);
+
+  const divisionName = useMemo(() => {
+    if (!divisionId) return '';
+    return divisions.find(d => d.id === divisionId)?.name || '';
+  }, [divisions, divisionId]);
+
+  const districtName = useMemo(() => {
+    if (!districtId) return '';
+    return districts.find(d => d.id === districtId)?.name || '';
+  }, [districts, districtId]);
+
+  const thanaName = useMemo(() => {
+    if (!thanaId) return '';
+    return thanas.find(t => t.id === thanaId)?.name || '';
+  }, [thanas, thanaId]);
 
   // Fetch hospital categories metadata and real-time facets
   useEffect(() => {
     let isMounted = true;
     api.getSearchFacets({ 
-      division: division !== 'All Bangladesh' ? division : undefined, 
-      district: district !== 'All Districts' ? district : undefined, 
-      area: area !== 'All Areas' ? area : undefined 
+      division_id: divisionId || undefined, 
+      district_id: districtId || undefined, 
+      thana_id: thanaId || undefined 
     })
       .then((facets) => {
         if (isMounted && facets && facets.hospital_categories) {
@@ -196,19 +210,20 @@ export default function HospitalsPage({ initialCategory = '', initialKeyword = '
           });
       });
     return () => { isMounted = false; };
-  }, [division, district, area]);
+  }, [divisionId, districtId, thanaId]);
 
   // Fetch filtered Hospitals from backend (instant on filters/buttons, debounced on search text)
   useEffect(() => {
     let isMounted = true;
     setIsSyncing(true);
     const params = {
-      division: division !== 'All Bangladesh' ? division : undefined,
-      district: district !== 'All Districts' ? district : undefined,
-      area: area !== 'All Areas' ? area : undefined,
-      category: selectedCategory !== 'all' && selectedCategory !== 'All Categories' ? selectedCategory : undefined,
+      division_id: divisionId || undefined,
+      district_id: districtId || undefined,
+      thana_id: thanaId || undefined,
+      category: activeCategoryValue !== 'all' ? activeCategoryValue : undefined,
       ownership_type: ownershipType !== 'all' ? ownershipType : undefined,
       search: debouncedSearchKeyword.trim() || undefined,
+      ordering: sortOrder === 'desc' ? '-name' : 'name',
       page: page,
       page_size: pageSize
     };
@@ -224,11 +239,13 @@ export default function HospitalsPage({ initialCategory = '', initialKeyword = '
         }
 
         setHospitals(hList);
+        setTotalHospitals(hCount);
         setTotalHospitalPages(Math.max(1, Math.ceil(hCount / pageSize)));
       }
     }).catch(() => {
       if (isMounted) {
         setHospitals([]);
+        setTotalHospitals(0);
         setTotalHospitalPages(1);
       }
     }).finally(() => {
@@ -236,7 +253,7 @@ export default function HospitalsPage({ initialCategory = '', initialKeyword = '
     });
 
     return () => { isMounted = false; };
-  }, [division, district, area, selectedCategory, ownershipType, debouncedSearchKeyword, page]);
+  }, [divisionId, districtId, thanaId, selectedCategory, ownershipType, debouncedSearchKeyword, page, sortOrder]);
 
   // Handle URL deserialization once or when searchParams actually change from outside
   useEffect(() => {
@@ -245,39 +262,18 @@ export default function HospitalsPage({ initialCategory = '', initialKeyword = '
     
     const urlCat = searchParams.get('cat');
     const urlOwn = searchParams.get('ownership');
-    const urlDiv = searchParams.get('division');
-    const urlDist = searchParams.get('district');
-    const urlLoc = searchParams.get('loc');
-    const urlArea = searchParams.get('area');
+    const urlDivId = searchParams.get('division_id');
+    const urlDistId = searchParams.get('district_id');
+    const urlThanaId = searchParams.get('thana_id');
     const urlQ = searchParams.get('q');
     const urlPage = searchParams.get('page');
     const urlSort = searchParams.get('sort');
     
     setSelectedCategory(urlCat || 'all');
     setOwnershipType(urlOwn || 'all');
-    
-    if (urlDiv) {
-      setDivision(urlDiv);
-    } else if (urlLoc) {
-      if (DIVISIONS.includes(urlLoc)) setDivision(urlLoc);
-      else {
-        const found = findDivisionForDistrict(urlLoc);
-        if (found) setDivision(found);
-        else setDivision('All Bangladesh');
-      }
-    } else {
-      setDivision('All Bangladesh');
-    }
-
-    if (urlDist) {
-      setDistrict(urlDist);
-    } else if (urlLoc && !DIVISIONS.includes(urlLoc) && urlLoc !== 'All Bangladesh') {
-      setDistrict(urlLoc);
-    } else {
-      setDistrict('All Districts');
-    }
-
-    setArea(urlArea || 'All Areas');
+    setDivisionId(urlDivId ? Number(urlDivId) : null);
+    setDistrictId(urlDistId ? Number(urlDistId) : null);
+    setThanaId(urlThanaId ? Number(urlThanaId) : null);
     setSearchKeyword(urlQ || '');
     setPage(urlPage ? Math.max(1, parseInt(urlPage, 10) || 1) : 1);
     if (urlSort !== null) setSortOrder(urlSort === 'desc' ? 'desc' : 'asc');
@@ -285,47 +281,22 @@ export default function HospitalsPage({ initialCategory = '', initialKeyword = '
 
   // Combine hospitals list to display
   const allHospitalsList = useMemo(() => {
-    return hospitals.map(h => {
-      let categoryName = h.category_name || h.categoryName || '';
-
-      if (!categoryName) {
-        if (Array.isArray(h.categories) && h.categories.length > 0) {
-          categoryName = h.categories
-            .map(c => (typeof c === 'object' ? (c.name || c.title) : c))
-            .filter(Boolean)
-            .join(', ');
-        } else if (h.category && typeof h.category === 'object') {
-          categoryName = h.category.name || h.category.title || '';
-        } else if (typeof h.category === 'string' && h.category.trim()) {
-          const foundCat = hospitalCategories.find(c => String(c.id).toLowerCase() === h.category.toLowerCase());
-          categoryName = foundCat ? foundCat.name : h.category;
-        } else if (h.hospital_category) {
-          categoryName = typeof h.hospital_category === 'object' ? h.hospital_category.name : h.hospital_category;
-        }
-      }
-
-      if (!categoryName && h.category_id) {
-        const foundCat = hospitalCategories.find(c => String(c.id) === String(h.category_id));
-        if (foundCat) categoryName = foundCat.name;
-      }
-
-      return {
-        ...h,
-        type: 'Hospital',
-        badge: h.badge || 'Verified Hospital',
-        categoryName: categoryName || 'Multi-Specialty'
-      };
-    });
-  }, [hospitals, hospitalCategories]);
+    return hospitals.map(h => ({
+      ...h,
+      type: 'Hospital',
+      badge: h.badge || null,
+      categoryName: h.category_name || (typeof h.category === 'object' ? h.category?.name : h.category) || ''
+    }));
+  }, [hospitals]);
 
   const filteredHospitals = allHospitalsList;
 
   const handleResetFilters = () => {
     setSelectedCategory('all');
     setOwnershipType('all');
-    setDivision('All Bangladesh');
-    setDistrict('All Districts');
-    setArea('All Areas');
+    setDivisionId(null);
+    setDistrictId(null);
+    setThanaId(null);
     setSearchKeyword('');
     setPage(1);
   };
@@ -333,18 +304,18 @@ export default function HospitalsPage({ initialCategory = '', initialKeyword = '
   const hasActiveFilters = Boolean(
     (selectedCategory && selectedCategory !== 'all') ||
     (ownershipType && ownershipType !== 'all') ||
-    (division && division !== 'All Bangladesh') ||
-    (district && district !== 'All Districts') ||
-    (area && area !== 'All Areas') ||
+    divisionId ||
+    districtId ||
+    thanaId ||
     (searchKeyword && searchKeyword.trim())
   );
 
   useEffect(() => {
     const params = new URLSearchParams();
     if (selectedCategory && selectedCategory !== 'all') params.set('cat', selectedCategory);
-    if (division && division !== 'All Bangladesh') params.set('division', division);
-    if (district && district !== 'All Districts') params.set('district', district);
-    if (area && area !== 'All Areas') params.set('area', area);
+    if (divisionId) params.set('division_id', String(divisionId));
+    if (districtId) params.set('district_id', String(districtId));
+    if (thanaId) params.set('thana_id', String(thanaId));
     if (ownershipType && ownershipType !== 'all') params.set('ownership', ownershipType);
     if (searchKeyword.trim()) params.set('q', searchKeyword.trim());
     if (page > 1) params.set('page', String(page));
@@ -355,18 +326,9 @@ export default function HospitalsPage({ initialCategory = '', initialKeyword = '
       lastParamsRef.current = next;
       setSearchParams(params, { replace: true });
     }
-  }, [selectedCategory, division, district, area, ownershipType, searchKeyword, page, sortOrder, setSearchParams]);
+  }, [selectedCategory, divisionId, districtId, thanaId, ownershipType, searchKeyword, page, sortOrder, setSearchParams]);
 
-  // Alphabetical sorting
-  const sortedHospitals = useMemo(() => {
-    const sorted = [...filteredHospitals].sort((a, b) => {
-      const cmp = (a.name || '').localeCompare(b.name || '');
-      return sortOrder === 'asc' ? cmp : -cmp;
-    });
-    return sorted;
-  }, [filteredHospitals, sortOrder]);
-
-  const paginatedHospitals = sortedHospitals;
+  const paginatedHospitals = filteredHospitals;
 
   const didMountRef = useRef(false);
   useEffect(() => {
@@ -375,7 +337,7 @@ export default function HospitalsPage({ initialCategory = '', initialKeyword = '
       return;
     }
     setPage(1);
-  }, [selectedCategory, ownershipType, division, district, area, searchKeyword]);
+  }, [selectedCategory, ownershipType, divisionId, districtId, thanaId, searchKeyword]);
 
   return (
     <div className="min-h-screen bg-slate-50 pb-20">
@@ -408,7 +370,7 @@ export default function HospitalsPage({ initialCategory = '', initialKeyword = '
             <div className="bg-slate-800/80 backdrop-blur-md p-3.5 rounded-2xl border border-slate-700 text-xs flex items-center gap-3 shrink-0">
               <div className={`w-3 h-3 rounded-full ${isSyncing ? 'bg-amber-400 animate-spin border-2 border-amber-300 border-t-transparent' : 'bg-emerald-400 animate-ping'}`}></div>
               <div>
-                <div className="font-extrabold text-white">{filteredHospitals.length} Active Hospitals</div>
+                <div className="font-extrabold text-white">{totalHospitals} Active Hospitals</div>
                 <div className="text-slate-400">{isSyncing ? 'Updating live network data...' : 'Hospitals'}</div>
               </div>
             </div>
@@ -451,7 +413,7 @@ export default function HospitalsPage({ initialCategory = '', initialKeyword = '
                   >
                     <option value="all">All Hospital Categories</option>
                     {hospitalCategories.map(cat => (
-                      <option key={cat.id} value={cat.id}>{cat.name}</option>
+                      <option key={cat.id} value={cat.slug || cat.id}>{cat.name}</option>
                     ))}
                   </select>
                   <div className="pointer-events-none absolute inset-y-0 right-0 flex items-center px-3 text-slate-400">
@@ -462,13 +424,13 @@ export default function HospitalsPage({ initialCategory = '', initialKeyword = '
 
               {/* 2. Cascading Location Filter (Division -> District -> Thana) */}
               <CascadingLocationFilter
-                division={division}
-                district={district}
-                area={area}
-                onChange={({ division: d, district: dist, area: a }) => {
-                  setDivision(d);
-                  setDistrict(dist);
-                  setArea(a);
+                divisionId={divisionId}
+                districtId={districtId}
+                thanaId={thanaId}
+                onChange={({ divisionId: d, districtId: dist, thanaId: a }) => {
+                  setDivisionId(d);
+                  setDistrictId(dist);
+                  setThanaId(a);
                 }}
                 theme="dark"
                 accent="emerald"
@@ -522,7 +484,7 @@ export default function HospitalsPage({ initialCategory = '', initialKeyword = '
             </div>
 
             {/* ACTIVE FILTER PILLS */}
-            {(ownershipType !== 'all' || selectedCategory !== 'all' || division !== 'All Bangladesh' || district !== 'All Districts' || area !== 'All Areas' || searchKeyword) && (
+            {(ownershipType !== 'all' || selectedCategory !== 'all' || divisionId || districtId || thanaId || searchKeyword) && (
               <div className="flex flex-wrap items-center gap-2 pt-2 border-t border-slate-700/60 text-xs">
                 <span className="text-slate-400 font-bold">Active Filters:</span>
 
@@ -540,24 +502,24 @@ export default function HospitalsPage({ initialCategory = '', initialKeyword = '
                   </span>
                 )}
 
-                {division !== 'All Bangladesh' && (
+                {divisionName && (
                   <span className="inline-flex items-center gap-1.5 px-3 py-1 rounded-full bg-emerald-500/20 text-emerald-300 border border-emerald-500/40 font-bold">
-                    <span>Division: {division}</span>
-                    <button onClick={() => { setDivision('All Bangladesh'); setDistrict('All Districts'); setArea('All Areas'); }} className="hover:text-white cursor-pointer"><X className="w-3 h-3" /></button>
+                    <span>Division: {divisionName}</span>
+                    <button onClick={() => { setDivisionId(null); setDistrictId(null); setThanaId(null); }} className="hover:text-white cursor-pointer"><X className="w-3 h-3" /></button>
                   </span>
                 )}
 
-                {district !== 'All Districts' && (
+                {districtName && (
                   <span className="inline-flex items-center gap-1.5 px-3 py-1 rounded-full bg-emerald-500/20 text-emerald-300 border border-emerald-500/40 font-bold">
-                    <span>District: {district}</span>
-                    <button onClick={() => { setDistrict('All Districts'); setArea('All Areas'); }} className="hover:text-white cursor-pointer"><X className="w-3 h-3" /></button>
+                    <span>District: {districtName}</span>
+                    <button onClick={() => { setDistrictId(null); setThanaId(null); }} className="hover:text-white cursor-pointer"><X className="w-3 h-3" /></button>
                   </span>
                 )}
 
-                {area !== 'All Areas' && (
+                {thanaName && (
                   <span className="inline-flex items-center gap-1.5 px-3 py-1 rounded-full bg-emerald-500/20 text-emerald-300 border border-emerald-500/40 font-bold">
-                    <span>Area: {area}</span>
-                    <button onClick={() => setArea('All Areas')} className="hover:text-white cursor-pointer"><X className="w-3 h-3" /></button>
+                    <span>Area: {thanaName}</span>
+                    <button onClick={() => setThanaId(null)} className="hover:text-white cursor-pointer"><X className="w-3 h-3" /></button>
                   </span>
                 )}
 
@@ -624,8 +586,8 @@ export default function HospitalsPage({ initialCategory = '', initialKeyword = '
 
           <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-8">
             {paginatedHospitals.map((hospital) => {
-              const docCount = (hospital.affiliated_doctors || hospital.doctors || []).length;
-              const testCount = (hospital.offered_tests || hospital.tests || []).length;
+              const docCount = hospital.doctor_count ?? (hospital.affiliated_doctors || hospital.doctors || []).length;
+              const testCount = hospital.test_count ?? (hospital.offered_tests || hospital.tests || []).length;
               return (
                 <div
                   key={hospital.id}

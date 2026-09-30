@@ -5,7 +5,6 @@ import BranchTestModal from './modals/BranchTestModal';
 import AdminPagination from './AdminPagination';
 import { api, ensureArray } from '../../../services/api';
 import { useDebounce } from '../../../hooks/useDebounce';
-import { formatFacilityName } from '../../../utils/facilityUtils';
 
 export default function BranchTestsTab() {
   const {
@@ -243,9 +242,9 @@ export default function BranchTestsTab() {
                 </tr>
               ) : (
                 tabBranchTests.map(bt => {
-                  const isHospital = bt?.facility_type === 'hospital' || bt?.location_details?.location_type === 'hospital';
-                  const facilityName = bt?.facility_name || bt?.location_details?.name || 'Medical Facility';
-                  const branchName = bt?.location_details?.branch || 'Main Branch';
+                  const fac = bt?.facility || {};
+                  const isHospital = bt?.facility_type === 'hospital' || fac.location_type === 'hospital';
+                  const facilityDisplayName = fac.display_name || fac.name || bt?.facility_name || 'Medical Facility';
                   
                   return (
                     <tr key={bt.id} className={`hover:bg-[#e7ebff]/25 transition-colors ${isFetching ? 'opacity-60' : 'opacity-100'}`}>
@@ -258,7 +257,7 @@ export default function BranchTestsTab() {
                               <FlaskConical className="w-3.5 h-3.5 text-cyan-700 shrink-0" />
                             )}
                             <div>
-                              <div className="font-serif font-bold text-xs text-[#1b1c1d]">{formatFacilityName(facilityName, branchName)}</div>
+                              <div className="font-serif font-bold text-xs text-[#1b1c1d]">{facilityDisplayName}</div>
                             </div>
                           </div>
                         </td>

@@ -56,11 +56,11 @@ export default function FacilityProfile({ kind = 'hospital' }) {
 
   useEffect(() => {
     if (facility) {
-      const loc = facility.location_details || facility;
+      const loc = facility;
       setFormData({
-        name: loc.name || facility.name || '',
-        branch: loc.branch || facility.branch || 'Main Branch',
-        tagline: loc.tagline || facility.tagline || '',
+        name: loc.name || '',
+        branch: loc.branch || 'Main Branch',
+        tagline: loc.tagline || '',
         badge: loc.badge || facility.badge || (isHospital ? 'Hospital' : 'Diagnostic Center'),
         description: loc.description || facility.description || '',
         division: loc.division || facility.division || 'Dhaka',
@@ -84,7 +84,7 @@ export default function FacilityProfile({ kind = 'hospital' }) {
 
   const handleSaveAll = async (e) => {
     e?.preventDefault();
-    const facilityId = facility?.id || facility?.location_id || facility?.location_details?.id || facility?.location; 
+    const facilityId = facility?.id || facility?.location_id || facility?.location; 
     if (!facilityId) { 
       alert("Error: Facility ID is missing!"); 
       return; 

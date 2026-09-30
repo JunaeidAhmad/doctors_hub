@@ -1,10 +1,10 @@
 import React from 'react';
-import { DIVISIONS, DIVISION_DISTRICTS, DISTRICT_THANAS } from '../../../data/constants';
+import { useDivisions, useDistricts, useThanas } from '../../../hooks/useGeo';
 
 export default function DiagnosticsFilterSidebar({
-  division = 'All Bangladesh',
-  district = 'All Districts',
-  area = 'All Areas',
+  divisionId = null,
+  districtId = null,
+  thanaId = null,
   onLocationChange,
   onClearLocation,
   fulfillment = 'all', // 'all' | 'home' | 'center'
@@ -17,23 +17,9 @@ export default function DiagnosticsFilterSidebar({
   onClose,
   className = 'hidden lg:block',
 }) {
-  // Clean division name
-  const cleanDivision = (division || '').replace(/\s*Division$/i, '').trim();
-  const isAllBangladesh = !cleanDivision || cleanDivision.toLowerCase() === 'all' || cleanDivision.toLowerCase() === 'all bangladesh';
-  const activeDivision = isAllBangladesh ? 'All Bangladesh' : (DIVISIONS.includes(cleanDivision) ? cleanDivision : 'All Bangladesh');
-
-  const availableDistricts = !isAllBangladesh && DIVISION_DISTRICTS[activeDivision]
-    ? DIVISION_DISTRICTS[activeDivision]
-    : Object.values(DIVISION_DISTRICTS).flat();
-
-  // Clean district name
-  const cleanDistrict = (district || '').replace(/\s*District$/i, '').trim();
-  const isAllDistricts = !cleanDistrict || cleanDistrict.toLowerCase() === 'all' || cleanDistrict.toLowerCase() === 'all districts';
-  const activeDistrict = isAllDistricts ? 'All Districts' : (availableDistricts.includes(cleanDistrict) ? cleanDistrict : 'All Districts');
-
-  const availableAreas = (!isAllDistricts && DISTRICT_THANAS[activeDistrict])
-    ? DISTRICT_THANAS[activeDistrict]
-    : [];
+  const { items: divisions, isLoading: loadingDivisions } = useDivisions();
+  const { items: districts, isLoading: loadingDistricts } = useDistricts(divisionId);
+  const { items: thanas, isLoading: loadingThanas } = useThanas(districtId);
 
   return (
     <aside className={`bg-surface-container-lowest rounded-2xl border border-outline-variant/60 p-6 shadow-sm space-y-6 ${className}`}>
@@ -79,22 +65,16 @@ export default function DiagnosticsFilterSidebar({
                 map
               </span>
               <select
-                value={activeDivision}
-                onChange={(e) => {
-                  const val = e.target.value;
-                  if (val === 'All Bangladesh') {
-                    onLocationChange({ division: 'All Bangladesh', district: 'All Districts', area: 'All Areas' });
-                  } else {
-                    onLocationChange({ division: `${val} Division`, district: 'All Districts', area: 'All Areas' });
-                  }
-                }}
-                className="w-full pl-9 pr-8 py-2 bg-surface-container-low border border-outline-variant rounded-lg text-on-surface font-label-md text-xs focus:ring-2 focus:ring-primary appearance-none cursor-pointer"
+                value={divisionId ?? ''}
+                onChange={(e) => onLocationChange({ divisionId: e.target.value ? Number(e.target.value) : null, districtId: null, thanaId: null })}
+                disabled={loadingDivisions}
+                className="w-full pl-9 pr-8 py-2 bg-surface-container-low border border-outline-variant rounded-lg text-on-surface font-label-md text-xs focus:ring-2 focus:ring-primary appearance-none cursor-pointer disabled:opacity-60"
                 style={{ backgroundImage: 'none', WebkitAppearance: 'none', MozAppearance: 'none' }}
               >
-                <option value="All Bangladesh">All Bangladesh</option>
-                {DIVISIONS.map((d) => (
-                  <option key={d} value={d}>
-                    {d} Division
+                <option value="">Select Division</option>
+                {divisions.map((d) => (
+                  <option key={d.id} value={d.id}>
+                    {d.label || d.name}
                   </option>
                 ))}
               </select>
@@ -112,22 +92,16 @@ export default function DiagnosticsFilterSidebar({
                 location_city
               </span>
               <select
-                value={activeDistrict}
-                onChange={(e) => {
-                  const val = e.target.value;
-                  if (val === 'All Districts') {
-                    onLocationChange({ division, district: 'All Districts', area: 'All Areas' });
-                  } else {
-                    onLocationChange({ division, district: `${val} District`, area: 'All Areas' });
-                  }
-                }}
-                className="w-full pl-9 pr-8 py-2 bg-surface-container-low border border-outline-variant rounded-lg text-on-surface font-label-md text-xs focus:ring-2 focus:ring-primary appearance-none cursor-pointer"
+                value={districtId ?? ''}
+                onChange={(e) => onLocationChange({ divisionId, districtId: e.target.value ? Number(e.target.value) : null, thanaId: null })}
+                disabled={!divisionId || loadingDistricts}
+                className="w-full pl-9 pr-8 py-2 bg-surface-container-low border border-outline-variant rounded-lg text-on-surface font-label-md text-xs focus:ring-2 focus:ring-primary appearance-none cursor-pointer disabled:opacity-60"
                 style={{ backgroundImage: 'none', WebkitAppearance: 'none', MozAppearance: 'none' }}
               >
-                <option value="All Districts">All Districts</option>
-                {availableDistricts.map((dist) => (
-                  <option key={dist} value={dist}>
-                    {dist} District
+                <option value="">Select District</option>
+                {districts.map((dist) => (
+                  <option key={dist.id} value={dist.id}>
+                    {dist.label || dist.name}
                   </option>
                 ))}
               </select>
@@ -145,15 +119,16 @@ export default function DiagnosticsFilterSidebar({
                 near_me
               </span>
               <select
-                value={area || 'All Areas'}
-                onChange={(e) => onLocationChange({ division, district, area: e.target.value })}
-                className="w-full pl-9 pr-8 py-2 bg-surface-container-low border border-outline-variant rounded-lg text-on-surface font-label-md text-xs focus:ring-2 focus:ring-primary appearance-none cursor-pointer"
+                value={thanaId ?? ''}
+                onChange={(e) => onLocationChange({ divisionId, districtId, thanaId: e.target.value ? Number(e.target.value) : null })}
+                disabled={!districtId || loadingThanas}
+                className="w-full pl-9 pr-8 py-2 bg-surface-container-low border border-outline-variant rounded-lg text-on-surface font-label-md text-xs focus:ring-2 focus:ring-primary appearance-none cursor-pointer disabled:opacity-60"
                 style={{ backgroundImage: 'none', WebkitAppearance: 'none', MozAppearance: 'none' }}
               >
-                <option value="All Areas">All Areas / Thanas</option>
-                {availableAreas.map((a) => (
-                  <option key={a} value={a}>
-                    {a}
+                <option value="">Select Thana / Area</option>
+                {thanas.map((a) => (
+                  <option key={a.id} value={a.id}>
+                    {a.label || a.name}
                   </option>
                 ))}
               </select>
@@ -219,10 +194,10 @@ export default function DiagnosticsFilterSidebar({
 
         <div className="space-y-2">
           {[
-            { key: 'private', label: 'Private Diagnostic Center', count: ownershipCounts.private || 18 },
-            { key: 'hospital_affiliated', label: 'Hospital Affiliated Lab', count: ownershipCounts.hospital_affiliated || 12 },
-            { key: 'government', label: 'Govt. / Autonomous Facility', count: ownershipCounts.government || 5 },
-            { key: 'ngo', label: 'NGO / Non-Profit Laboratory', count: ownershipCounts.ngo || 3 },
+            { key: 'private', label: 'Private Diagnostic Center', count: ownershipCounts?.private ?? 0 },
+            { key: 'hospital_affiliated', label: 'Hospital Affiliated Lab', count: ownershipCounts?.hospital_affiliated ?? 0 },
+            { key: 'government', label: 'Govt. / Autonomous Facility', count: ownershipCounts?.government ?? 0 },
+            { key: 'ngo', label: 'NGO / Non-Profit Laboratory', count: ownershipCounts?.ngo ?? 0 },
           ].map((item) => {
             const isChecked = ownership === item.key;
             return (

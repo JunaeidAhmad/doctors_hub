@@ -30,14 +30,14 @@ export default function CreateUserModal({
   const allFacilities = useMemo(() => {
     if (propFacilities && propFacilities.length > 0) return propFacilities;
     const hosps = ensureArray(hospitals).map(h => ({
-      id: h.id || h.location_details?.id,
-      name: h.name,
+      id: h.id || h.location_id,
+      name: h.display_name || h.name,
       branch: h.branch,
       type: 'hospital'
     }));
     const diags = ensureArray(diagnosticCenters).map(d => ({
-      id: d.id || d.location_details?.id,
-      name: d.name,
+      id: d.id || d.location_id,
+      name: d.display_name || d.name,
       branch: d.branch,
       type: 'diagnostic_center'
     }));

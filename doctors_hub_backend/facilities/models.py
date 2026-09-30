@@ -230,6 +230,11 @@ class Location(models.Model):
     def detail(self):
         return getattr(self, f"{self.location_type}_detail", None)
 
+    @property
+    def display_name(self):
+        from core.text import format_facility_name
+        return format_facility_name(self.name, self.branch)
+
     def __str__(self):
         branch_str = f" ({self.branch})" if self.branch else ""
         return f"{self.name}{branch_str} - {self.location_type}"
@@ -267,6 +272,7 @@ class Hospital(models.Model):
     category = models.ForeignKey(HospitalCategory, on_delete=models.SET_NULL, null=True, blank=True, related_name="hospitals")
     services = models.ManyToManyField(HospitalService, related_name="hospitals", blank=True)
     has_diagnostic_center = models.BooleanField(default=True)
+    details_reviewed = models.BooleanField(default=False)
     bed_capacity = models.IntegerField(default=650)
     icu_beds_total = models.IntegerField(default=48)
     icu_beds_available = models.IntegerField(default=4)

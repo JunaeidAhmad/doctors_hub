@@ -1,91 +1,137 @@
-import React, { useState } from 'react';
+import React, { useState, useEffect, useCallback, useRef } from 'react';
 import { 
-  FlaskConical, Truck, Activity, Heart, 
-  TestTube2, Sparkles, Clock, ArrowRight, Search 
+  FlaskConical, Truck, Search, ArrowRight, Loader2, TestTube2
 } from 'lucide-react';
 import { formatFacilityName } from '../../../utils/facilityUtils';
-
-const STITCH_FEATURED_DIAGNOSTICS = [
-  {
-    id: 'diag-mri-3t',
-    name: '3.0 Tesla Silent MRI',
-    badge: 'High Resolution',
-    badgeColor: 'text-primary',
-    iconBg: 'bg-primary/10 text-primary',
-    icon: Activity,
-    description: 'Whole body, neurovascular, cardiac and musculoskeletal high definition scanning.',
-    turnaround: 'Report in 12 Hrs',
-    price: 14500,
-    category: 'Radiology & Imaging',
-  },
-  {
-    id: 'diag-ct-128',
-    name: '128-Slice Cardiac CT',
-    badge: 'Multi-Slice Imaging',
-    badgeColor: 'text-secondary',
-    iconBg: 'bg-secondary/10 text-secondary',
-    icon: Activity,
-    description: 'Coronary angiography and ultra-fast pulmonary calcium scoring with minimal radiation.',
-    turnaround: 'Report in 8 Hrs',
-    price: 11000,
-    category: 'Radiology & Imaging',
-  },
-  {
-    id: 'diag-echo-cath',
-    name: 'Echo & Cath Lab',
-    badge: 'Interventional Suite',
-    badgeColor: 'text-tertiary',
-    iconBg: 'bg-tertiary/10 text-tertiary',
-    icon: Heart,
-    description: 'Color 4D Doppler echocardiography, transesophageal echo and diagnostic angiograms.',
-    turnaround: 'Same Day Report',
-    price: 4500,
-    category: 'Cardiology Diagnostics',
-  },
-  {
-    id: 'diag-health-panel',
-    name: 'Executive Health Panel',
-    badge: 'Automated Clinical Lab',
-    badgeColor: 'text-primary',
-    iconBg: 'bg-primary-fixed-dim/30 text-primary',
-    icon: TestTube2,
-    description: 'Complete CBC, Lipid Profile, HbA1c, LFT, Serum Creatinine and Thyroid screen.',
-    turnaround: 'Report in 4 Hrs',
-    price: 5800,
-    category: 'Clinical Pathology',
-  },
-];
+import { getFacilityTests } from '../../../services/api/hospitals';
 
 export default function HospitalDiagnosticsSection({ 
   hospital, 
   onBookLabTest 
 }) {
   const [searchTerm, setSearchTerm] = useState('');
-  const [showAllTests, setShowAllTests] = useState(false);
+  const [tests, setTests] = useState([]);
+  const [facets, setFacets] = useState({});
+  const [totalCount, setTotalCount] = useState(0);
+  const [nextPage, setNextPage] = useState(null);
+  const [loading, setLoading] = useState(true);
+  const [loadingMore, setLoadingMore] = useState(false);
+  const [error, setError] = useState(null);
+  const debounceRef = useRef(null);
 
-  const rawTests = hospital?.offered_tests || [];
-  const hasOfferedTests = rawTests.length > 0;
+  const hospitalName = formatFacilityName(hospital) || '';
+  const facilityId = hospital?.slug || hospital?.id;
+  const facilityKind = hospital?.location_type === 'diagnostic_center' ? 'diagnostic-centers' : 'hospitals';
+
+  const hasHomeSample = (facets?.fulfillment?.home ?? 0) > 0;
+
+  const fetchTests = useCallback(async (page = 1, append = false) => {
+    if (!facilityId) return;
+
+    if (page === 1) {
+      setLoading(true);
+    } else {
+      setLoadingMore(true);
+    }
+    setError(null);
+
+    try {
+      const params = { page, page_size: 12, ordering: 'price' };
+      if (searchTerm.trim()) params.q = searchTerm.trim();
+
+      const data = await getFacilityTests(facilityKind, facilityId, params);
+
+      const results = data?.results || [];
+      const newFacets = data?.facets || {};
+      const count = data?.count ?? 0;
+
+      if (append) {
+        setTests(prev => [...prev, ...results]);
+      } else {
+        setTests(results);
+        setFacets(newFacets);
+      }
+      setTotalCount(count);
+      setNextPage(data?.next ? page + 1 : null);
+    } catch (err) {
+      console.error('Failed to fetch facility tests:', err);
+      setError('Failed to load diagnostic tests. Please try again.');
+      if (!append) {
+        setTests([]);
+        setFacets({});
+        setTotalCount(0);
+      }
+    } finally {
+      setLoading(false);
+      setLoadingMore(false);
+    }
+  }, [facilityId, facilityKind, searchTerm]);
+
+  // Fetch on mount
+  useEffect(() => {
+    fetchTests(1, false);
+  }, [facilityId]);
+
+  // Debounced search
+  useEffect(() => {
+    if (debounceRef.current) clearTimeout(debounceRef.current);
+    debounceRef.current = setTimeout(() => {
+      fetchTests(1, false);
+    }, 400);
+    return () => {
+      if (debounceRef.current) clearTimeout(debounceRef.current);
+    };
+  }, [searchTerm]);
+
+  const handleLoadMore = () => {
+    if (nextPage && !loadingMore) {
+      fetchTests(nextPage, true);
+    }
+  };
 
   const handleBook = (test) => {
     if (onBookLabTest) {
       onBookLabTest({
-        id: test.id,
-        name: test.name || test.test_name || 'Diagnostic Procedure',
-        price: test.price || test.calculated_price || 0,
-        facility_name: formatFacilityName(hospital) || 'Square Hospital',
+        id: test.test_id || test.id,
+        name: test.test_name || test.name,
+        min_price: test.min_price,
+        max_price: test.max_price,
+        facility_name: hospitalName,
         branch_name: hospital?.branch || '',
         branch: hospital?.branch || '',
-        category: test.category || 'Diagnostic',
+        category: test.category_name || '',
       });
     }
   };
 
-  // Filtered backend tests if available
-  const filteredBackendTests = rawTests.filter(t => {
-    const tName = t.test_details?.name || t.name || '';
-    const tCat = t.test_details?.category_name || t.category_name || '';
-    return tName.toLowerCase().includes(searchTerm.toLowerCase()) || tCat.toLowerCase().includes(searchTerm.toLowerCase());
-  });
+  // If no tests at all and not loading, don't show the section
+  if (!loading && totalCount === 0 && !error && !searchTerm.trim()) {
+    return null;
+  }
+
+  // Skeleton loading
+  if (loading && tests.length === 0) {
+    return (
+      <section className="bg-surface-container-lowest rounded-2xl border border-outline-variant/70 p-5 sm:p-6 lg:p-8 space-y-6 scroll-mt-24" id="diagnostics-section">
+        <div className="flex flex-col md:flex-row md:items-center justify-between gap-4 border-b border-outline-variant/50 pb-5">
+          <div className="space-y-2">
+            <div className="h-5 w-32 bg-surface-container-high rounded-full animate-pulse" />
+            <div className="h-7 w-72 bg-surface-container-high rounded animate-pulse" />
+            <div className="h-4 w-48 bg-surface-container-high rounded animate-pulse" />
+          </div>
+        </div>
+        <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-4">
+          {[1,2,3,4,5,6].map(i => (
+            <div key={i} className="p-4 rounded-xl border border-outline-variant animate-pulse">
+              <div className="h-5 w-48 bg-surface-container-high rounded mb-2" />
+              <div className="h-3 w-32 bg-surface-container-high rounded mb-3" />
+              <div className="h-4 w-20 bg-surface-container-high rounded" />
+            </div>
+          ))}
+        </div>
+      </section>
+    );
+  }
 
   return (
     <section className="bg-surface-container-lowest rounded-2xl border border-outline-variant/70 p-5 sm:p-6 lg:p-8 space-y-6 scroll-mt-24" id="diagnostics-section">
@@ -97,136 +143,137 @@ export default function HospitalDiagnosticsSection({
             <span>Diagnostic Division</span>
           </div>
           <h2 className="text-xl sm:text-2xl font-bold text-on-surface">
-            In-House Diagnostic & Precision Lab Facilities
+            Diagnostic & Lab Tests
           </h2>
           <p className="text-xs sm:text-sm text-on-surface-variant mt-0.5">
-            Automated clinical pathology, digital radiology, and molecular genomics operating 24 hours daily.
+            {totalCount} diagnostic test{totalCount !== 1 ? 's' : ''} available at this facility.
           </p>
         </div>
 
         <div className="flex items-center gap-3">
-          <div className="flex items-center gap-1.5 text-xs text-primary font-semibold bg-primary/5 px-3 py-1.5 rounded-lg border border-primary/20">
-            <Truck className="w-4 h-4 text-primary" />
-            <span>Home Sample Collection Available</span>
-          </div>
+          {hasHomeSample && (
+            <div className="flex items-center gap-1.5 text-xs text-primary font-semibold bg-primary/5 px-3 py-1.5 rounded-lg border border-primary/20">
+              <Truck className="w-4 h-4 text-primary" />
+              <span>Home Sample Collection Available</span>
+            </div>
+          )}
         </div>
       </div>
 
-      {/* Featured 4-Column Grid */}
-      <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-5">
-        {STITCH_FEATURED_DIAGNOSTICS.map((diag) => {
-          const IconComponent = diag.icon;
-
-          return (
-            <div
-              key={diag.id}
-              className="p-5 rounded-xl border border-outline-variant bg-surface-container-low/40 hover:border-primary hover:shadow-sm transition-all flex flex-col justify-between"
-            >
-              <div>
-                <div className={`w-12 h-12 rounded-xl ${diag.iconBg} flex items-center justify-center mb-4 shadow-2xs`}>
-                  <IconComponent className="w-6 h-6" />
-                </div>
-
-                <span className={`text-[11px] font-bold ${diag.badgeColor} uppercase tracking-wider`}>
-                  {diag.badge}
-                </span>
-
-                <h4 className="text-base font-bold text-on-surface mt-1">
-                  {diag.name}
-                </h4>
-
-                <p className="text-xs text-on-surface-variant mt-1.5 leading-relaxed">
-                  {diag.description}
-                </p>
-
-                <div className="mt-4 pt-3 border-t border-outline-variant/60 flex items-center justify-between text-xs">
-                  <span className="text-outline flex items-center gap-1">
-                    <Clock className="w-3 h-3 text-slate-400" />
-                    <span>{diag.turnaround}</span>
-                  </span>
-                  <span className="text-base font-bold text-on-surface">
-                    ৳{diag.price.toLocaleString()}
-                  </span>
-                </div>
-              </div>
-
-              <button
-                onClick={() => handleBook(diag)}
-                className="mt-4 w-full py-2.5 rounded-lg bg-surface-container-lowest border border-primary text-primary text-xs font-semibold hover:bg-primary hover:text-white transition-all cursor-pointer shadow-2xs"
-              >
-                Book Diagnostic Test
-              </button>
-            </div>
-          );
-        })}
+      {/* Search */}
+      <div className="relative max-w-md">
+        <Search className="w-4 h-4 absolute left-3 top-2.5 text-outline" />
+        <input
+          type="text"
+          value={searchTerm}
+          onChange={(e) => setSearchTerm(e.target.value)}
+          placeholder="Search tests by name or category..."
+          className="w-full pl-9 pr-3 py-2 text-xs rounded-lg border border-outline-variant bg-surface-container-lowest focus:border-primary outline-none transition-all"
+        />
       </div>
 
-      {/* Optional: Full Hospital Diagnostic Catalog Search & Browse */}
-      {hasOfferedTests && (
-        <div className="mt-6 pt-6 border-t border-outline-variant/60">
-          <div className="flex flex-col sm:flex-row items-start sm:items-center justify-between gap-3 mb-4">
-            <div>
-              <h3 className="text-sm sm:text-base font-bold text-on-surface">
-                Complete Laboratory & Pathology Catalog ({rawTests.length} Tests Available)
-              </h3>
-              <p className="text-xs text-on-surface-variant">
-                Search and instant booking for all clinical diagnostic procedures offered at this facility.
-              </p>
-            </div>
+      {/* Error state */}
+      {error && (
+        <div className="bg-error/5 rounded-xl border border-error/20 p-6 text-center">
+          <p className="text-sm font-medium text-error">{error}</p>
+          <button
+            onClick={() => fetchTests(1, false)}
+            className="mt-2 text-xs font-semibold text-primary hover:underline cursor-pointer"
+          >
+            Try Again
+          </button>
+        </div>
+      )}
 
-            <button
-              onClick={() => setShowAllTests(!showAllTests)}
-              className="text-xs font-bold text-primary hover:underline flex items-center gap-1 cursor-pointer"
-            >
-              <span>{showAllTests ? 'Collapse Catalog' : 'Browse All Lab Tests'}</span>
-              <ArrowRight className="w-3.5 h-3.5" />
-            </button>
-          </div>
+      {/* Tests Grid */}
+      {!error && tests.length === 0 && !loading ? (
+        <div className="bg-surface-container-lowest rounded-xl border border-outline-variant/70 p-8 text-center">
+          <TestTube2 className="w-10 h-10 text-slate-300 mx-auto mb-2" />
+          <p className="text-sm font-bold text-on-surface">No tests found matching your search</p>
+          <p className="text-xs text-on-surface-variant mt-1">Try a different search term.</p>
+        </div>
+      ) : !error && (
+        <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-4">
+          {tests.map((test) => {
+            const testName = test.test_name || test.name || 'Lab Test';
+            const categoryName = test.category_name || '';
+            const minPrice = test.min_price != null ? Number(test.min_price) : null;
+            const maxPrice = test.max_price != null ? Number(test.max_price) : null;
+            const offeringCount = test.offering_count ?? 0;
 
-          {showAllTests && (
-            <div className="space-y-4 pt-2">
-              <div className="relative max-w-md">
-                <Search className="w-4 h-4 absolute left-3 top-2.5 text-outline" />
-                <input
-                  type="text"
-                  value={searchTerm}
-                  onChange={(e) => setSearchTerm(e.target.value)}
-                  placeholder="Filter tests by name or category..."
-                  className="w-full pl-9 pr-3 py-2 text-xs rounded-lg border border-outline-variant bg-surface-container-lowest focus:border-primary outline-none"
-                />
-              </div>
+            return (
+              <div
+                key={test.test_id || test.id}
+                className="p-4 rounded-xl border border-outline-variant/70 bg-surface-container-low/40 hover:border-primary/50 transition-all flex flex-col justify-between"
+              >
+                <div>
+                  {categoryName && (
+                    <span className="text-[11px] font-bold text-secondary uppercase tracking-wider">
+                      {categoryName}
+                    </span>
+                  )}
+                  <h4 className="text-sm font-bold text-on-surface mt-0.5 line-clamp-2">
+                    {testName}
+                  </h4>
 
-              <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-3 max-h-96 overflow-y-auto pr-1">
-                {filteredBackendTests.slice(0, 30).map((t) => {
-                  const testDetails = t.test_details || {};
-                  const testName = testDetails.name || t.name || 'Lab Test';
-                  const price = Number(t.price || 0);
-
-                  return (
-                    <div
-                      key={t.id}
-                      className="p-3 rounded-lg border border-outline-variant/70 bg-surface-container-lowest flex items-center justify-between gap-3 hover:border-primary/50 transition-colors"
-                    >
-                      <div className="min-w-0 flex-1">
-                        <p className="text-xs font-bold text-on-surface truncate">{testName}</p>
-                        <p className="text-[11px] text-outline truncate">{testDetails.category_name || 'General Pathology'}</p>
-                      </div>
-
-                      <div className="text-right shrink-0">
-                        <p className="text-xs font-bold text-primary">৳{price.toLocaleString()}</p>
-                        <button
-                          onClick={() => handleBook(t)}
-                          className="text-[11px] font-bold text-emerald-700 hover:underline mt-0.5 cursor-pointer block"
-                        >
-                          Book Slot
-                        </button>
-                      </div>
+                  <div className="mt-3 pt-2.5 border-t border-outline-variant/60 flex items-center justify-between text-xs">
+                    <div>
+                      {minPrice != null && (
+                        <span className="text-base font-bold text-on-surface">
+                          ৳{minPrice.toLocaleString()}
+                          {maxPrice != null && maxPrice !== minPrice && (
+                            <span className="text-xs font-normal text-on-surface-variant"> – ৳{maxPrice.toLocaleString()}</span>
+                          )}
+                        </span>
+                      )}
                     </div>
-                  );
-                })}
+                    {offeringCount > 1 && (
+                      <span className="text-[11px] text-on-surface-variant">
+                        {offeringCount} offering{offeringCount !== 1 ? 's' : ''}
+                      </span>
+                    )}
+                  </div>
+                </div>
+
+                <button
+                  onClick={() => handleBook(test)}
+                  className="mt-3 w-full py-2 rounded-lg bg-surface-container-lowest border border-primary text-primary text-xs font-semibold hover:bg-primary hover:text-white transition-all cursor-pointer shadow-2xs"
+                >
+                  Book Test
+                </button>
               </div>
-            </div>
-          )}
+            );
+          })}
+        </div>
+      )}
+
+      {/* Loading indicator during refetch */}
+      {loading && tests.length > 0 && (
+        <div className="text-center py-4">
+          <Loader2 className="w-5 h-5 animate-spin text-primary mx-auto" />
+        </div>
+      )}
+
+      {/* Load More */}
+      {nextPage && !loading && (
+        <div className="text-center pt-2">
+          <button
+            onClick={handleLoadMore}
+            disabled={loadingMore}
+            className="inline-flex items-center gap-2 px-5 py-2 rounded-lg border border-secondary text-secondary text-xs sm:text-sm font-semibold hover:bg-secondary/5 transition-all cursor-pointer disabled:opacity-50"
+          >
+            {loadingMore ? (
+              <>
+                <Loader2 className="w-4 h-4 animate-spin" />
+                <span>Loading...</span>
+              </>
+            ) : (
+              <>
+                <span>Load More Tests ({tests.length} of {totalCount})</span>
+                <ArrowRight className="w-3.5 h-3.5" />
+              </>
+            )}
+          </button>
         </div>
       )}
     </section>

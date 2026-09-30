@@ -1,5 +1,3 @@
-import { formatFacilityName } from '../../utils/facilityUtils';
-
 export const BASE_URL = import.meta.env.VITE_API_BASE_URL || 'http://localhost:8000/api';
 
 let refreshPromise = null;
@@ -40,6 +38,13 @@ export async function rawFetchWithTimeout(url, options = {}, timeoutMs = 60000) 
     return fetch(url, options);
   }
   const controller = new AbortController();
+  if (options.signal) {
+    if (options.signal.aborted) {
+      controller.abort();
+    } else {
+      options.signal.addEventListener('abort', () => controller.abort(), { once: true });
+    }
+  }
   const id = setTimeout(() => controller.abort(), timeoutMs);
   try {
     const response = await fetch(url, {
@@ -50,6 +55,11 @@ export async function rawFetchWithTimeout(url, options = {}, timeoutMs = 60000) 
     return response;
   } catch (err) {
     clearTimeout(id);
+    if (options.signal && options.signal.aborted) {
+      const abortErr = new Error('The operation was aborted');
+      abortErr.name = 'AbortError';
+      throw abortErr;
+    }
     if (
       err.name === 'AbortError' ||
       err.name === 'DOMException' ||
@@ -155,7 +165,10 @@ export function setCached(key, data) {
   memoryCache.set(key, entry);
   if (typeof window !== 'undefined') {
     try {
-      localStorage.setItem(`cache_${key}`, JSON.stringify(entry));
+      const serialized = JSON.stringify(entry);
+      if (serialized.length <= 500000) {
+        localStorage.setItem(`cache_${key}`, serialized);
+      }
     } catch (e) {}
   }
 }
@@ -235,69 +248,7 @@ export async function handleResponse(response) {
   return response.json();
 }
 
-/**
- * Helper to flatten location_details into the main object for frontend compatibility
- */
-export function flattenFacility(data) {
-  if (Array.isArray(data)) {
-    return data.map(flattenFacility);
-  }
-  if (data && Array.isArray(data.results)) {
-    return { ...data, results: data.results.map(flattenFacility) };
-  }
-  if (data && data.facility_name) {
-    data.center_name = data.facility_name;
-    data.hospital_name = data.facility_name;
-  }
-  if (data && data.location_details) {
-    const loc = data.location_details;
-    const addr = loc.address_details || {};
-    const addressLine = loc.address_line || addr.address_line || (typeof loc.address === 'string' ? loc.address : '') || '';
-    const city = loc.city || addr.city || '';
-    const district = loc.district || addr.district || '';
-    const division = loc.division || addr.division || '';
-    const area = loc.area || addr.area || '';
 
-    let catList = [];
-    if (Array.isArray(data.categories)) {
-      catList = data.categories;
-    } else if (data.category) {
-      catList = [data.category];
-    }
-
-    const name = loc.name || data.name || data.facility_name || data.center_name || '';
-    const branch = loc.branch || data.branch || '';
-    const displayName = formatFacilityName(name, branch);
-
-    return {
-      ...data,
-      ...loc,
-      ...addr,
-      name,
-      branch,
-      display_name: displayName,
-      address_line: addressLine,
-      address: addressLine,
-      city,
-      district,
-      division,
-      area,
-      category: data.category || catList[0] || null,
-      categories: catList,
-      category_name: data.category?.name || catList[0]?.name || data.category_name || '',
-      location_id: data.location_id || loc.id,
-      id: data.id || data.location_id || loc.id,
-    };
-  }
-  if (data && typeof data === 'object') {
-    const rawName = data.name || data.facility_name || data.center_name || data.hospital_name || '';
-    const rawBranch = data.branch || '';
-    if (rawName && !data.display_name) {
-      data.display_name = formatFacilityName(rawName, rawBranch);
-    }
-  }
-  return data;
-}
 
 /**
  * Get headers, including optional Authorization token

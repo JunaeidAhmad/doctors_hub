@@ -102,30 +102,34 @@ def test_anonymous_cannot_write_catalog(api_client, managed_location):
 
 @pytest.mark.django_db
 def test_anonymous_can_create_booking_publicly(api_client, managed_location, doctor_profile):
+    import datetime
+    from django.utils import timezone
     # Public creation of doctor and lab bookings without an account
     affiliation = DoctorAffiliationFactory(doctor=doctor_profile, location=managed_location)
-    # Tuesday schedule for 2026-09-01
-    AffiliationScheduleFactory(affiliation=affiliation, day_of_week="Tuesday", start_time="09:00:00", end_time="17:00:00")
+    booking_date = timezone.localtime().date() + datetime.timedelta(days=2)
+    day_name = booking_date.strftime('%A')
+    sched = AffiliationScheduleFactory(affiliation=affiliation, day_of_week=day_name, start_time="09:00:00", end_time="17:00:00")
     test_obj = TestFactory()
     fac_test = FacilityTestFactory(location=managed_location, test=test_obj)
 
     # Doctor booking
     doc_res = api_client.post("/api/bookings/doctor/", {
-        "affiliation": str(affiliation.id),
+        "affiliation_id": str(affiliation.id),
         "patient_name": "Rahim Ahmed",
         "patient_phone": "01711999888",
-        "appointment_date": "2026-09-01",
-        "appointment_time": "10:00:00"
+        "date": booking_date.isoformat(),
+        "session_key": f"s:{sched.id}",
     })
     assert doc_res.status_code == status.HTTP_201_CREATED
     assert doc_res.data["patient_name"] == "Rahim Ahmed"
 
     # Lab booking
+    lab_date = timezone.localtime().date() + datetime.timedelta(days=3)
     lab_res = api_client.post("/api/bookings/lab/", {
         "facility_test": str(fac_test.id),
         "patient_name": "Karim Mia",
         "patient_phone": "01811999777",
-        "booking_date": "2026-09-02",
+        "booking_date": lab_date.isoformat(),
         "booking_time": "11:00:00"
     })
     assert lab_res.status_code == status.HTTP_201_CREATED
@@ -215,11 +219,11 @@ def test_facility_admin_sees_only_own_location_bookings(api_client, facility_adm
 
     b_managed = DoctorBooking.objects.create(
         affiliation=aff_managed, patient_name="Managed Patient", patient_phone="01711111111",
-        date="2026-09-01", slot="10:00"
+        date="2026-09-01", session_key="08:00-18:00", session_start="08:00:00", session_end="18:00:00", serial_number=1
     )
     b_other = DoctorBooking.objects.create(
         affiliation=aff_other, patient_name="Other Patient", patient_phone="01722222222",
-        date="2026-09-01", slot="10:00"
+        date="2026-09-01", session_key="08:00-18:00", session_start="08:00:00", session_end="18:00:00", serial_number=1
     )
 
     res = api_client.get("/api/bookings/doctor/")

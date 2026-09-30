@@ -24,6 +24,7 @@ export default function DoctorAffiliationsManager() {
   const [editingAff, setEditingAff] = useState(null);
   const [selectedLocationId, setSelectedLocationId] = useState('');
   const [fee, setFee] = useState('1500');
+  const [advanceBookingDays, setAdvanceBookingDays] = useState('14');
   const [saving, setSaving] = useState(false);
   const [localErr, setLocalErr] = useState('');
 
@@ -36,6 +37,7 @@ export default function DoctorAffiliationsManager() {
     setEditingAff(null);
     setSelectedLocationId(allLocations[0]?.id || '');
     setFee('1500');
+    setAdvanceBookingDays('14');
     setLocalErr('');
     setShowModal(true);
   };
@@ -44,6 +46,7 @@ export default function DoctorAffiliationsManager() {
     setEditingAff(aff);
     setSelectedLocationId(aff.location_id || aff.location?.id || '');
     setFee(String(aff.fee || '1500'));
+    setAdvanceBookingDays(String(aff.advance_booking_days ?? 14));
     setLocalErr('');
     setShowModal(true);
   };
@@ -56,13 +59,15 @@ export default function DoctorAffiliationsManager() {
     try {
       if (editingAff && editingAff.id) {
         await api.updateDoctorAffiliation(editingAff.id, {
-          fee: parseFloat(fee) || 1500
+          fee: parseFloat(fee) || 1500,
+          advance_booking_days: parseInt(advanceBookingDays, 10) || 14
         });
       } else {
         await api.createDoctorAffiliation({
           doctor: doctor?.id,
           location_id: selectedLocationId || allLocations[0]?.id,
-          fee: parseFloat(fee) || 1500
+          fee: parseFloat(fee) || 1500,
+          advance_booking_days: parseInt(advanceBookingDays, 10) || 14
         });
       }
 
@@ -135,6 +140,9 @@ export default function DoctorAffiliationsManager() {
                   <p className="text-xs font-body text-slate-500 flex items-center gap-1.5 mt-1">
                     <MapPin className="w-3.5 h-3.5 text-slate-400 shrink-0" />
                     <span>{aff.location?.address_line || aff.location?.area || 'Dhaka, Bangladesh'}</span>
+                  </p>
+                  <p className="text-[11px] font-body text-slate-400 mt-0.5">
+                    Advance booking window: <span className="font-semibold text-slate-600 font-mono">{aff.advance_booking_days ?? 14} days</span>
                   </p>
                 </div>
               </div>
@@ -249,6 +257,25 @@ export default function DoctorAffiliationsManager() {
                   placeholder="1500"
                   className="w-full bg-white border border-[#d1d5dc] rounded-sm px-3 py-2 text-slate-800 focus:outline-none focus:border-[#094cb2] font-mono text-sm"
                 />
+              </div>
+
+              <div>
+                <label className="block text-slate-700 font-label font-bold uppercase text-[11px] mb-1.5">
+                  Advance Booking Window (Days) *
+                </label>
+                <input
+                  type="number"
+                  required
+                  min="1"
+                  max="90"
+                  value={advanceBookingDays}
+                  onChange={e => setAdvanceBookingDays(e.target.value)}
+                  placeholder="14"
+                  className="w-full bg-white border border-[#d1d5dc] rounded-sm px-3 py-2 text-slate-800 focus:outline-none focus:border-[#094cb2] font-mono text-sm"
+                />
+                <p className="text-[10px] text-slate-500 mt-1">
+                  How many days ahead patients can book appointments (default: 14 days).
+                </p>
               </div>
 
               <div className="flex justify-end gap-2 pt-3 border-t border-[#e3e5ea]">

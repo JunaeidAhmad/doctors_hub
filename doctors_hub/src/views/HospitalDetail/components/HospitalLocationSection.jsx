@@ -6,11 +6,11 @@ import {
 import { formatFacilityName } from '../../../utils/facilityUtils';
 
 export default function HospitalLocationSection({ hospital }) {
-  const hospitalName = formatFacilityName(hospital) || 'Square Hospital';
-  const address = hospital?.address_line || hospital?.address || '18/F, Bir Uttam Qazi Nuruzzaman Sarak, West Panthapath, Dhaka 1205';
-  const parkingText = hospital?.parking_capacity || '280 Car Parking Available';
-  const ambulancePhone = hospital?.ambulance_phone || '+880 1700-000000';
-  const emergencyPhone = hospital?.emergency_phone || '10678';
+  const hospitalName = formatFacilityName(hospital) || '';
+  const address = hospital?.address_line || hospital?.address || '';
+  const parkingText = hospital?.parking_capacity || null;
+  const ambulancePhone = hospital?.ambulance_phone || null;
+  const emergencyPhone = hospital?.emergency_phone || null;
 
   const mapPreviewImg = 'https://lh3.googleusercontent.com/aida-public/AB6AXuD5ZlsQNbcZvNeW-owVe0qR2PUttkwvBZ0sGWzi4U62946lbtg5xof3GoMKP3cjzaduFMdLNPGdr3Bt0gOe9-govLdd7Ia2poNCvHXVq3X0EoKRw8Pc-nPRKr_YnFEvEw6qUDfd8ew-HSGsTzy7NvEZN9zvsbNIJ_yVBOaIdtmMy2w1jtk4STaaIVfb2m4Cr6JfFNC0pSY6pSflqZ4vmCy7TGZB8a0FMJHbV5j6V3w0K4x3tM3qEqpUVg';
 
@@ -53,10 +53,12 @@ export default function HospitalLocationSection({ hospital }) {
             <p className="text-xs text-outline mt-0.5">
               {address}
             </p>
-            <div className="mt-2 flex items-center gap-1.5 text-xs text-primary font-semibold">
-              <Car className="w-4 h-4 text-primary" />
-              <span>{parkingText}</span>
-            </div>
+            {parkingText && (
+              <div className="mt-2 flex items-center gap-1.5 text-xs text-primary font-semibold">
+                <Car className="w-4 h-4 text-primary" />
+                <span>{parkingText}</span>
+              </div>
+            )}
           </div>
 
           {/* External Map Action */}
@@ -74,26 +76,30 @@ export default function HospitalLocationSection({ hospital }) {
         {/* Ambulance & Gate Guide (Right Column) */}
         <div className="space-y-4 flex flex-col justify-between">
           {/* Ambulance Dispatch Box */}
+          {(ambulancePhone || emergencyPhone) && (
           <div className="p-5 rounded-2xl border border-error/30 bg-error/5 space-y-3">
             <div className="flex items-center gap-2 text-error">
               <Ambulance className="w-6 h-6" />
-              <h4 className="text-base font-bold">24/7 Ambulance Dispatch</h4>
+              <h4 className="text-base font-bold">Ambulance Dispatch</h4>
             </div>
-
-            <p className="text-xs text-on-surface-variant leading-relaxed">
-              AC ICU Mobile Units equipped with Dräger ventilators, multipara cardiac monitors, and emergency medical officers.
-            </p>
 
             <div className="pt-1">
-              <span className="text-xs text-outline font-medium">Dedicated Dispatch Hotlines:</span>
-              <p className="text-xl sm:text-2xl font-bold text-error tracking-tight mt-0.5">
-                {ambulancePhone}
-              </p>
-              <p className="text-xs font-semibold text-on-surface mt-0.5">
-                {emergencyPhone} (Ext 1)
-              </p>
+              {ambulancePhone && (
+                <>
+                  <span className="text-xs text-outline font-medium">Dispatch Hotline:</span>
+                  <p className="text-xl sm:text-2xl font-bold text-error tracking-tight mt-0.5">
+                    {ambulancePhone}
+                  </p>
+                </>
+              )}
+              {emergencyPhone && (
+                <p className="text-xs font-semibold text-on-surface mt-0.5">
+                  {emergencyPhone}
+                </p>
+              )}
             </div>
 
+            {ambulancePhone && (
             <a
               href={`tel:${ambulancePhone.replace(/[^0-9+]/g, '')}`}
               className="w-full py-2.5 rounded-lg bg-error text-white text-xs font-bold inline-flex items-center justify-center gap-2 hover:bg-error/90 transition-all shadow-sm"
@@ -101,7 +107,9 @@ export default function HospitalLocationSection({ hospital }) {
               <PhoneCall className="w-4 h-4" />
               <span>Dispatch Ambulance Now</span>
             </a>
+            )}
           </div>
+          )}
 
           {/* Gate & Triage Guide */}
           <div className="p-5 rounded-2xl border border-outline-variant bg-surface-container-low/50 space-y-2.5">

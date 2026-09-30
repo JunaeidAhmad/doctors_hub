@@ -1,7 +1,7 @@
 from django.contrib import admin
 from core.rbac import has_permission
 from .models import (
-    DoctorSpecialty, SpecialtyAlias, Doctor, DoctorAffiliation, AffiliationSchedule,
+    DoctorSpecialty, SpecialtyAlias, Doctor, DoctorAffiliation, AffiliationSchedule, ScheduleException
 )
 
 
@@ -121,13 +121,20 @@ class DoctorAdmin(admin.ModelAdmin):
 
 @admin.register(DoctorAffiliation)
 class DoctorAffiliationAdmin(admin.ModelAdmin):
-    list_display = ('id', 'doctor', 'location', 'chamber_type', 'fee', 'status_label')
+    list_display = ('id', 'doctor', 'location', 'chamber_type', 'fee', 'advance_booking_days')
     list_filter = ('chamber_type',)
-    search_fields = ('doctor__name', 'location__name', 'chamber_type', 'status_label')
+    search_fields = ('doctor__name', 'location__name', 'chamber_type')
     inlines = [AffiliationScheduleInline]
 
 
 @admin.register(AffiliationSchedule)
 class AffiliationScheduleAdmin(admin.ModelAdmin):
-    list_display = ('id', 'affiliation', 'day_of_week', 'start_time', 'end_time')
+    list_display = ('id', 'affiliation', 'day_of_week', 'start_time', 'end_time', 'max_patients', 'avg_consult_minutes')
+
+
+@admin.register(ScheduleException)
+class ScheduleExceptionAdmin(admin.ModelAdmin):
+    list_display = ('id', 'affiliation', 'date', 'kind', 'schedule', 'start_time', 'end_time', 'max_patients')
+    list_filter = ('kind', 'date')
+    search_fields = ('affiliation__doctor__name', 'affiliation__location__name', 'note')
 

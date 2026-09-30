@@ -6,12 +6,20 @@ from drf_spectacular.utils import extend_schema
 from core.mixins import SlugOrPkLookupMixin
 from core.permissions import ScopedFacilityOrReadOnly, IsSuperAdminOrReadOnly, check_location_write_permission
 from core.scoping import RoleScopedQuerysetMixin
+from core.filters import exact_slug_or_id_q
 from .models import (
     Division, District, Thana,
     Location, HospitalCategory, HospitalService, Hospital,
     DiagnosticCenterCategory, DiagnosticService, DiagnosticCenter, Chamber
 )
+from django.db.models import F, Subquery, OuterRef, Count, IntegerField, Value
+from django.db.models.functions import Coalesce
+from django.utils.decorators import method_decorator
+from django.views.decorators.cache import cache_page
 from accounts.models import Role, UserRole
+from doctors.models import DoctorAffiliation
+from tests.models import FacilityTest
+from .views_facility_actions import FacilityDetailActionsMixin
 from .serializers import (
     DivisionSerializer, DistrictSerializer, ThanaSerializer,
     LocationSerializer, HospitalCategorySerializer, HospitalServiceSerializer,
@@ -20,6 +28,24 @@ from .serializers import (
 )
 
 
+def get_facility_counts_annotations():
+    doctor_count_sub = DoctorAffiliation.objects.filter(
+        location_id=OuterRef('location_id')
+    ).values('location_id').annotate(c=Count('id')).values('c')
+
+    test_count_sub = FacilityTest.objects.filter(
+        location_id=OuterRef('location_id'),
+        is_available=True
+    ).values('location_id').annotate(c=Count('id')).values('c')
+
+    return {
+        'doctor_count': Coalesce(Subquery(doctor_count_sub, output_field=IntegerField()), Value(0)),
+        'test_count': Coalesce(Subquery(test_count_sub, output_field=IntegerField()), Value(0)),
+    }
+
+
+
+@method_decorator(cache_page(60 * 60 * 24), name='list')
 @extend_schema(tags=['Facilities - Geography'])
 class DivisionViewSet(viewsets.ReadOnlyModelViewSet):
     queryset = Division.objects.all().prefetch_related('districts').order_by('order', 'name')
@@ -30,6 +56,7 @@ class DivisionViewSet(viewsets.ReadOnlyModelViewSet):
     search_fields = ('name', 'bn_name')
 
 
+@method_decorator(cache_page(60 * 60 * 24), name='list')
 @extend_schema(tags=['Facilities - Geography'])
 class DistrictViewSet(viewsets.ReadOnlyModelViewSet):
     queryset = District.objects.all().select_related('division').prefetch_related('thanas').order_by('name')
@@ -41,6 +68,7 @@ class DistrictViewSet(viewsets.ReadOnlyModelViewSet):
     search_fields = ('name', 'bn_name')
 
 
+@method_decorator(cache_page(60 * 60 * 24), name='list')
 @extend_schema(tags=['Facilities - Geography'])
 class ThanaViewSet(viewsets.ReadOnlyModelViewSet):
     queryset = Thana.objects.all().select_related('district__division').order_by('name')
@@ -103,110 +131,44 @@ class HospitalServiceViewSet(viewsets.ModelViewSet):
     permission_classes = (IsSuperAdminOrReadOnly,)
 
 
-def resolve_location_q(value, prefix="location__"):
-    if not value or value.lower() in ['all', 'all bangladesh', 'all districts', 'all areas']:
-        return None
-    from django.db import models
-    DIST_ALIASES = {
-        'chittagong': 'Chattogram', 'comilla': 'Cumilla', 'bogra': 'Bogura',
-        'jessore': 'Jashore', 'barisal': 'Barishal', 'ঢাকা': 'Dhaka',
-        'চট্টগ্রাম': 'Chattogram', 'সিলেট': 'Sylhet'
-    }
-    norm_val = DIST_ALIASES.get(value.lower(), value)
-    return (
-        models.Q(**{f"{prefix}thana__district__name__iexact": norm_val}) |
-        models.Q(**{f"{prefix}thana__district__bn_name__iexact": value}) |
-        models.Q(**{f"{prefix}thana__district__division__name__iexact": value}) |
-        models.Q(**{f"{prefix}thana__district__division__bn_name__iexact": value}) |
-        models.Q(**{f"{prefix}thana__name__iexact": value}) |
-        models.Q(**{f"{prefix}thana__bn_name__iexact": value})
-    )
-
-
 class HospitalFilter(django_filters.FilterSet):
-    area = django_filters.CharFilter(method='filter_area')
-    district = django_filters.CharFilter(method='filter_district')
-    division = django_filters.CharFilter(method='filter_division')
     thana_id = django_filters.NumberFilter(field_name='location__thana_id')
     district_id = django_filters.NumberFilter(field_name='location__thana__district_id')
     division_id = django_filters.NumberFilter(field_name='location__thana__district__division_id')
     ownership_type = django_filters.CharFilter(field_name='location__ownership_type', lookup_expr='iexact')
     category = django_filters.CharFilter(method='filter_category')
-    categories = django_filters.CharFilter(method='filter_category')
-    location = django_filters.CharFilter(method='filter_location')
 
     class Meta:
         model = Hospital
         fields = [
-            'location', 'area', 'district', 'division', 'thana_id', 'district_id', 'division_id',
-            'ownership_type', 'category', 'categories', 'has_diagnostic_center'
+            'thana_id', 'district_id', 'division_id',
+            'ownership_type', 'category', 'has_diagnostic_center'
         ]
 
-    def filter_area(self, queryset, name, value):
-        if not value or value.lower() in ['all', 'all areas']:
-            return queryset
-        from django.db import models
-        return queryset.filter(
-            models.Q(location__thana__name__iexact=value) |
-            models.Q(location__thana__bn_name__iexact=value)
-        ).distinct()
-
-    def filter_district(self, queryset, name, value):
-        if not value or value.lower() in ['all', 'all districts']:
-            return queryset
-        from django.db import models
-        DIST_ALIASES = {
-            'chittagong': 'Chattogram', 'comilla': 'Cumilla', 'bogra': 'Bogura',
-            'jessore': 'Jashore', 'barisal': 'Barishal', 'ঢাকা': 'Dhaka',
-            'চট্টগ্রাম': 'Chattogram', 'সিলেট': 'Sylhet'
-        }
-        val = DIST_ALIASES.get(value.lower(), value)
-        return queryset.filter(
-            models.Q(location__thana__district__name__iexact=val) |
-            models.Q(location__thana__district__bn_name__iexact=value)
-        ).distinct()
-
-    def filter_division(self, queryset, name, value):
-        if not value or value.lower() in ['all', 'all bangladesh']:
-            return queryset
-        from django.db import models
-        return queryset.filter(
-            models.Q(location__thana__district__division__name__iexact=value) |
-            models.Q(location__thana__district__division__bn_name__iexact=value)
-        ).distinct()
-
     def filter_category(self, queryset, name, value):
-        if not value or value.lower() in ['all', 'all categories']:
-            return queryset
-        from django.db import models
-        return queryset.filter(
-            models.Q(category__name__icontains=value) |
-            models.Q(category__slug__icontains=value) |
-            models.Q(category__id__iexact=value if len(value) == 36 else '00000000-0000-0000-0000-000000000000')
-        ).distinct()
-
-    def filter_location(self, queryset, name, value):
-        q = resolve_location_q(value, prefix="location__")
+        q = exact_slug_or_id_q('category__', value)
         if q is None:
             return queryset
-        return queryset.filter(q).distinct()
+        return queryset.filter(q)
 
 
 @extend_schema(tags=['Facilities'])
-class HospitalViewSet(SlugOrPkLookupMixin, RoleScopedQuerysetMixin, viewsets.ModelViewSet):
+class HospitalViewSet(FacilityDetailActionsMixin, SlugOrPkLookupMixin, RoleScopedQuerysetMixin, viewsets.ModelViewSet):
     queryset = Hospital.objects.all().select_related(
         'location__thana__district__division', 'category'
     ).prefetch_related(
         'services',
-        'location__affiliations__doctor__specialties',
-        'location__affiliations__schedules',
-        'location__offered_tests__test__category'
-    ).order_by('location__name').distinct()
+    ).annotate(
+        name=F('location__name'),
+        **get_facility_counts_annotations()
+    ).order_by('name').distinct()
     serializer_class = HospitalSerializer
     permission_classes = (ScopedFacilityOrReadOnly,)
     slug_field = 'location__slug'
-    filter_backends = [DjangoFilterBackend, filters.SearchFilter]
+    filter_backends = [DjangoFilterBackend, filters.SearchFilter, filters.OrderingFilter]
     filterset_class = HospitalFilter
+    ordering_fields = ['name']
+    ordering = ['name']
     search_fields = [
         'location__name', 'location__branch', 'location__address_line',
         'location__thana__name', 'location__thana__district__name', 'location__thana__district__division__name',
@@ -219,10 +181,10 @@ class HospitalViewSet(SlugOrPkLookupMixin, RoleScopedQuerysetMixin, viewsets.Mod
             'location__thana__district__division', 'category'
         ).prefetch_related(
             'services',
-            'location__affiliations__doctor__specialties',
-            'location__affiliations__schedules',
-            'location__offered_tests__test__category'
-        ).order_by('location__name').distinct()
+        ).annotate(
+            name=F('location__name'),
+            **get_facility_counts_annotations()
+        ).order_by('name').distinct()
         return self.get_scoped_queryset(qs)
 
     def perform_create(self, serializer):
@@ -249,114 +211,42 @@ class DiagnosticServiceViewSet(viewsets.ModelViewSet):
 
 
 class DiagnosticCenterFilter(django_filters.FilterSet):
-    area = django_filters.CharFilter(method='filter_area')
-    district = django_filters.CharFilter(method='filter_district')
-    division = django_filters.CharFilter(method='filter_division')
     thana_id = django_filters.NumberFilter(field_name='location__thana_id')
     district_id = django_filters.NumberFilter(field_name='location__thana__district_id')
     division_id = django_filters.NumberFilter(field_name='location__thana__district__division_id')
     ownership_type = django_filters.CharFilter(field_name='location__ownership_type', lookup_expr='iexact')
+    owner = django_filters.CharFilter(field_name='location__ownership_type', lookup_expr='iexact')
     category = django_filters.CharFilter(method='filter_category')
-    categories = django_filters.CharFilter(method='filter_category')
-    spec = django_filters.CharFilter(method='filter_category')
-    owner = django_filters.CharFilter(method='filter_category')
     testcat = django_filters.CharFilter(method='filter_testcat')
-    location = django_filters.CharFilter(method='filter_location')
 
     class Meta:
         model = DiagnosticCenter
         fields = [
-            'location', 'area', 'district', 'division', 'thana_id', 'district_id', 'division_id',
-            'ownership_type', 'category', 'categories', 'spec', 'owner', 'testcat'
+            'thana_id', 'district_id', 'division_id',
+            'ownership_type', 'owner', 'category', 'testcat'
         ]
 
-    def filter_area(self, queryset, name, value):
-        if not value or value.lower() in ['all', 'all areas']:
-            return queryset
-        from django.db import models
-        return queryset.filter(
-            models.Q(location__thana__name__iexact=value) |
-            models.Q(location__thana__bn_name__iexact=value)
-        ).distinct()
-
-    def filter_district(self, queryset, name, value):
-        if not value or value.lower() in ['all', 'all districts']:
-            return queryset
-        from django.db import models
-        DIST_ALIASES = {
-            'chittagong': 'Chattogram', 'comilla': 'Cumilla', 'bogra': 'Bogura',
-            'jessore': 'Jashore', 'barisal': 'Barishal', 'ঢাকা': 'Dhaka',
-            'চট্টগ্রাম': 'Chattogram', 'সিলেট': 'Sylhet'
-        }
-        val = DIST_ALIASES.get(value.lower(), value)
-        return queryset.filter(
-            models.Q(location__thana__district__name__iexact=val) |
-            models.Q(location__thana__district__bn_name__iexact=value)
-        ).distinct()
-
-    def filter_division(self, queryset, name, value):
-        if not value or value.lower() in ['all', 'all bangladesh']:
-            return queryset
-        from django.db import models
-        return queryset.filter(
-            models.Q(location__thana__district__division__name__iexact=value) |
-            models.Q(location__thana__district__division__bn_name__iexact=value)
-        ).distinct()
-
     def filter_category(self, queryset, name, value):
-        if not value or value.lower() in ['all', 'all categories']:
+        q = exact_slug_or_id_q('category__', value)
+        if q is None:
             return queryset
-        from django.db import models
-        values = [v.strip() for v in value.split(',') if v.strip()]
-        q = models.Q()
-        for v in values:
-            v_clean = v.replace('-', ' ').replace('_', ' ').strip()
-            v_slug = v.replace(' ', '-').replace('_', '-').lower().strip()
-            q |= (
-                models.Q(category__name__icontains=v) |
-                models.Q(category__name__icontains=v_clean) |
-                models.Q(category__slug__icontains=v) |
-                models.Q(category__slug__icontains=v_slug)
-            )
-            if len(v) == 36:
-                q |= models.Q(category__id__iexact=v)
-        return queryset.filter(q).distinct()
+        return queryset.filter(q)
 
     def filter_testcat(self, queryset, name, value):
-        if not value or value.lower() in ['all', 'all categories']:
-            return queryset
-        from django.db import models
-        values = [v.strip() for v in value.split(',') if v.strip()]
-        q = models.Q()
-        for v in values:
-            v_clean = v.replace('-', ' ').replace('_', ' ').strip()
-            v_slug = v.replace(' ', '-').replace('_', '-').lower().strip()
-            q |= (
-                models.Q(location__offered_tests__test__category__name__icontains=v) |
-                models.Q(location__offered_tests__test__category__name__icontains=v_clean) |
-                models.Q(location__offered_tests__test__category__slug__icontains=v) |
-                models.Q(location__offered_tests__test__category__slug__icontains=v_slug) |
-                models.Q(location__offered_tests__test__name__icontains=v) |
-                models.Q(location__offered_tests__test__name__icontains=v_clean)
-            )
-            if len(v) == 36:
-                q |= models.Q(location__offered_tests__test__category__id__iexact=v)
-        return queryset.filter(q).distinct()
-
-    def filter_location(self, queryset, name, value):
-        q = resolve_location_q(value, prefix="location__")
+        q = exact_slug_or_id_q('location__offered_tests__test__category__', value)
         if q is None:
             return queryset
         return queryset.filter(q).distinct()
 
 
 @extend_schema(tags=['Facilities'])
-class DiagnosticCenterViewSet(SlugOrPkLookupMixin, RoleScopedQuerysetMixin, viewsets.ModelViewSet):
+class DiagnosticCenterViewSet(FacilityDetailActionsMixin, SlugOrPkLookupMixin, RoleScopedQuerysetMixin, viewsets.ModelViewSet):
     queryset = DiagnosticCenter.objects.all().select_related(
         'location__thana__district__division', 'category'
     ).prefetch_related(
         'services',
-        'location__offered_tests__test__category'
+    ).annotate(
+        **get_facility_counts_annotations()
     ).order_by('location__name').distinct()
 
     serializer_class = DiagnosticCenterSerializer
@@ -378,7 +268,8 @@ class DiagnosticCenterViewSet(SlugOrPkLookupMixin, RoleScopedQuerysetMixin, view
             'location__thana__district__division', 'category'
         ).prefetch_related(
             'services',
-            'location__offered_tests__test__category'
+        ).annotate(
+            **get_facility_counts_annotations()
         ).order_by('location__name').distinct()
         return self.get_scoped_queryset(qs)
 

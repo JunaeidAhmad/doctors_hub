@@ -137,7 +137,7 @@ class DoctorBookingViewSet(viewsets.ModelViewSet):
         'patient',
         'booked_by_user',
         'affiliation__doctor',
-        'affiliation__location'
+        'affiliation__location__thana__district__division'
     )
     serializer_class = DoctorBookingSerializer
     permission_classes = (PublicCreateAdminManage,)
@@ -151,7 +151,7 @@ class DoctorBookingViewSet(viewsets.ModelViewSet):
             'patient',
             'booked_by_user',
             'affiliation__doctor',
-            'affiliation__location'
+            'affiliation__location__thana__district__division'
         )
 
         if getattr(user, "is_super_admin", False):
@@ -179,7 +179,7 @@ class TestBookingViewSet(viewsets.ModelViewSet):
         'patient',
         'booked_by_user',
         'facility_test__test',
-        'facility_test__location'
+        'facility_test__location__thana__district__division'
     )
     serializer_class = TestBookingSerializer
     permission_classes = (PublicCreateAdminManage,)
@@ -193,7 +193,7 @@ class TestBookingViewSet(viewsets.ModelViewSet):
             'patient',
             'booked_by_user',
             'facility_test__test',
-            'facility_test__location'
+            'facility_test__location__thana__district__division'
         )
 
         if getattr(user, "is_super_admin", False):
@@ -221,7 +221,7 @@ class HospitalServiceBookingViewSet(viewsets.ModelViewSet):
     queryset = HospitalServiceBooking.objects.all().select_related(
         'patient',
         'booked_by_user',
-        'hospital__location',
+        'hospital__location__thana__district__division',
         'service'
     )
     serializer_class = HospitalServiceBookingSerializer
@@ -235,7 +235,7 @@ class HospitalServiceBookingViewSet(viewsets.ModelViewSet):
         qs = HospitalServiceBooking.objects.all().select_related(
             'patient',
             'booked_by_user',
-            'hospital__location',
+            'hospital__location__thana__district__division',
             'service'
         )
 

@@ -15,7 +15,6 @@ const DAYS_OF_WEEK = [
 const GENDER_CHOICES = ['Male', 'Female', 'Other'];
 const STATUS_CHOICES = ['Active', 'Inactive', 'On Leave', 'Retired'];
 const CHAMBER_TYPES = ['Primary Chamber', 'Visiting Chamber', 'Consultation Room', 'Evening Chamber'];
-const STATUS_LABELS = ['Available Today', 'Visiting Consultant', 'On Call', 'Advance Booking Only'];
 
 export default function DoctorModal() {
   const {
@@ -65,19 +64,15 @@ export default function DoctorModal() {
   const allLocations = useMemo(() => {
     const list = [];
     (hospitals || []).forEach(h => {
-      const locId = h.location_details?.id || h.location || h.id;
-      const locName = h.location_details?.name || h.name || 'Hospital';
-      const locBranch = h.location_details?.branch || h.branch;
-      const label = locBranch ? `${locName} (${locBranch})` : locName;
+      const locId = h.id || h.location_id;
+      const label = h.display_name || (h.branch ? `${h.name} (${h.branch})` : h.name);
       if (locId && !list.some(item => String(item.id) === String(locId))) {
         list.push({ id: String(locId), name: label, type: 'Hospital' });
       }
     });
     (diagnosticCenters || []).forEach(dc => {
-      const locId = dc.location_details?.id || dc.location || dc.id;
-      const locName = dc.location_details?.name || dc.name || 'Diagnostic Center';
-      const locBranch = dc.location_details?.branch || dc.branch;
-      const label = locBranch ? `${locName} (${locBranch})` : locName;
+      const locId = dc.id || dc.location_id;
+      const label = dc.display_name || (dc.branch ? `${dc.name} (${dc.branch})` : dc.name);
       if (locId && !list.some(item => String(item.id) === String(locId))) {
         list.push({ id: String(locId), name: label, type: 'Diagnostic Center' });
       }
@@ -119,13 +114,13 @@ export default function DoctorModal() {
 
       const allLocationIds = new Set(allLocations.map(l => String(l.id)));
       const managedAffiliations = (editingDoctor.affiliations || []).filter(a => {
-        const locId = a.location_details?.id || a.location_id || a.location || a.hospital?.id || a.diagnostic_center?.id || '';
+        const locId = a.facility?.id || a.location_id || a.location || a.hospital?.id || a.diagnostic_center?.id || '';
         return allLocationIds.has(String(locId));
       });
 
       const affList = managedAffiliations.length > 0
         ? managedAffiliations.map(a => {
-            const locId = a.location_details?.id || a.location_id || a.location || a.hospital?.id || a.diagnostic_center?.id || '';
+            const locId = a.facility?.id || a.location_id || a.location || a.hospital?.id || a.diagnostic_center?.id || '';
             const schedules = Array.isArray(a.schedules) ? a.schedules.map(s => ({
               id: s.id,
               day_of_week: s.day_of_week || 'Saturday',
@@ -137,7 +132,7 @@ export default function DoctorModal() {
               id: a.id,
               location_id: String(locId),
               chamber_type: a.chamber_type || 'Primary Chamber',
-              status_label: a.status_label || 'Available Today',
+              advance_booking_days: a.advance_booking_days || 14,
               fee: String(a.fee != null ? a.fee : '1200'),
               schedules: schedules.length > 0 ? schedules : [
                 {
@@ -154,7 +149,7 @@ export default function DoctorModal() {
               id: `temp-aff-${Date.now()}`,
               location_id: allLocations[0]?.id || '',
               chamber_type: 'Primary Chamber',
-              status_label: 'Available Today',
+              advance_booking_days: 14,
               fee: '1200',
               schedules: [
                 {
@@ -205,7 +200,7 @@ export default function DoctorModal() {
           id: `temp-aff-${Date.now()}`,
           location_id: allLocations[0]?.id || '',
           chamber_type: 'Primary Chamber',
-          status_label: 'Available Today',
+          advance_booking_days: 14,
           fee: '1200',
           schedules: [
             {
@@ -258,7 +253,7 @@ export default function DoctorModal() {
         id: `temp-aff-${Date.now()}-${Math.random()}`,
         location_id: defaultLoc,
         chamber_type: 'Primary Chamber',
-        status_label: 'Available Today',
+        advance_booking_days: 14,
         fee: '1200',
         schedules: [
           {
@@ -480,14 +475,14 @@ export default function DoctorModal() {
             doctor: doctorId,
             location_id: targetLocId,
             chamber_type: aff.chamber_type || 'Primary Chamber',
-            status_label: aff.status_label || 'Available Today',
+            advance_booking_days: parseInt(aff.advance_booking_days || 14, 10),
             fee: parseFloat(aff.fee) || 1200
           });
           affId = createdAff?.id;
         } else {
           await api.updateDoctorAffiliation(affId, {
             chamber_type: aff.chamber_type || 'Primary Chamber',
-            status_label: aff.status_label || 'Available Today',
+            advance_booking_days: parseInt(aff.advance_booking_days || 14, 10),
             fee: parseFloat(aff.fee) || 1200
           });
         }
@@ -1070,16 +1065,15 @@ export default function DoctorModal() {
                       </div>
 
                       <div>
-                        <label className="block text-slate-700 font-label font-bold uppercase text-[10px] mb-1">Status Label</label>
-                        <select
-                          value={aff.status_label || 'Available Today'}
-                          onChange={e => handleUpdateChamberField(aIdx, 'status_label', e.target.value)}
-                          className="w-full bg-white border border-[#d1d5dc] rounded-sm px-2.5 py-1.5 text-slate-800 text-xs focus:outline-none focus:border-[#094cb2] transition cursor-pointer"
-                        >
-                          {STATUS_LABELS.map(sl => (
-                            <option key={sl} value={sl}>{sl}</option>
-                          ))}
-                        </select>
+                        <label className="block text-slate-700 font-label font-bold uppercase text-[10px] mb-1">Advance Booking (Days)</label>
+                        <input
+                          type="number"
+                          min="1"
+                          max="30"
+                          value={aff.advance_booking_days || 14}
+                          onChange={e => handleUpdateChamberField(aIdx, 'advance_booking_days', e.target.value)}
+                          className="w-full bg-white border border-[#d1d5dc] rounded-sm px-2.5 py-1.5 text-slate-800 text-xs focus:outline-none focus:border-[#094cb2] transition"
+                        />
                       </div>
 
                       <div>

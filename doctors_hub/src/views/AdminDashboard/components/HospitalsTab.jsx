@@ -5,7 +5,6 @@ import HospitalModal from './modals/HospitalModal';
 import AdminPagination from './AdminPagination';
 import { api, ensureArray } from '../../../services/api';
 import { useDebounce } from '../../../hooks/useDebounce';
-import { formatFacilityName } from '../../../utils/facilityUtils';
 
 export default function HospitalsTab() {
   const {
@@ -121,7 +120,7 @@ export default function HospitalsTab() {
           </div>
           <div>
             <div className="text-2xl font-serif font-bold text-[#1b1c1d]">
-              {Array.from(new Set(tabHospitals.map(h => h.district || h.location_details?.district || 'Dhaka'))).length}
+              {Array.from(new Set(tabHospitals.map(h => h.district || 'Dhaka'))).length}
             </div>
             <p className="text-[10px] text-slate-500 font-label mt-0.5">
               Districts in active view
@@ -221,28 +220,34 @@ export default function HospitalsTab() {
                 </tr>
               ) : (
                 tabHospitals.map(h => {
-                  const hId = h.id || h.location_details?.id || h.location_id || h.location;
-                  const hName = h.name || h.location_details?.name || h.hospital_name || h.facility_name || 'Hospital';
-                  const hTagline = h.tagline || h.location_details?.tagline || '';
-                  const hBranch = h.branch || h.location_details?.branch || 'Main Branch';
-                  const hCategory = h.category || h.location_details?.category;
-                  const hCategoryName = typeof hCategory === 'object' ? hCategory?.name : (hCategory || h.category_name || '');
-                  const hServices = Array.isArray(h.services) ? h.services : (Array.isArray(h.location_details?.services) ? h.location_details.services : []);
-                  const hAddress = h.address || h.address_line || h.location_details?.address_line || h.location_details?.address || '';
-                  const hArea = h.area || h.location_details?.area || '';
-                  const hDistrict = h.district || h.city || h.location_details?.district || h.location_details?.city || 'Dhaka';
-                  const hDivision = h.division || h.location_details?.division || '';
+                  const hId = h.id || h.location_id;
+                  const hName = h.name || 'Hospital';
+                  const hDisplayName = h.display_name || (h.branch ? `${hName} (${h.branch})` : hName);
+                  const hTagline = h.tagline || '';
+                  const hBranch = h.branch || 'Main Branch';
+                  const hCategory = h.category;
+                  const hCategoryName = h.category_name || (typeof hCategory === 'object' ? hCategory?.name : hCategory) || '';
+                  const hServices = Array.isArray(h.services) ? h.services : [];
+                  const hAddress = h.address || h.address_line || '';
+                  const hArea = h.area || '';
+                  const hDistrict = h.district || 'Dhaka';
+                  const hDivision = h.division || '';
 
                   return (
                     <tr key={hId || hName} className={`hover:bg-[#e7ebff]/25 transition-colors ${isFetching ? 'opacity-60' : 'opacity-100'}`}>
                       <td className="py-3.5 px-4">
                         <div className="font-serif font-bold text-sm text-[#1b1c1d]">
-                          {formatFacilityName(hName, hBranch)}
+                          {hDisplayName}
                         </div>
                         {hTagline && <div className="text-slate-500 text-[11px] font-normal mt-0.5">{hTagline}</div>}
                         {hCategoryName && (
                           <span className="inline-block mt-1 px-1.5 py-0.5 bg-[#e7ebff] text-[#094cb2] border border-[#094cb2]/20 rounded-xs text-[10px] font-label font-semibold">
                             {hCategoryName}
+                          </span>
+                        )}
+                        {!h.details_reviewed && (
+                          <span className="inline-block mt-1 ml-1.5 px-1.5 py-0.5 bg-amber-50 text-amber-800 border border-amber-300 rounded-xs text-[10px] font-label font-semibold">
+                            Needs review
                           </span>
                         )}
                       </td>
@@ -296,7 +301,7 @@ export default function HospitalsTab() {
                           onClick={async () => {
                             const success = await handleDeleteHospital(hId, hName);
                             if (success) {
-                              setTabHospitals(prev => prev.filter(x => (x.id || x.location_details?.id) !== hId));
+                              setTabHospitals(prev => prev.filter(x => (x.id || x.location_id) !== hId));
                               setTotalCount(prev => Math.max(0, prev - 1));
                             }
                           }} 

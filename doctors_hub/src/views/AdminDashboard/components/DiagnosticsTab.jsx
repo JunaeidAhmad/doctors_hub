@@ -5,7 +5,6 @@ import DiagnosticModal from './modals/DiagnosticModal';
 import AdminPagination from './AdminPagination';
 import { api, ensureArray } from '../../../services/api';
 import { useDebounce } from '../../../hooks/useDebounce';
-import { formatFacilityName } from '../../../utils/facilityUtils';
 
 export default function DiagnosticsTab() {
   const {
@@ -121,7 +120,7 @@ export default function DiagnosticsTab() {
           </div>
           <div>
             <div className="text-2xl font-serif font-bold text-[#1b1c1d]">
-              {Array.from(new Set(tabDiagnostics.map(dc => dc.district || dc.location_details?.district || 'Dhaka'))).length}
+              {Array.from(new Set(tabDiagnostics.map(dc => dc.district || 'Dhaka'))).length}
             </div>
             <p className="text-[10px] text-slate-500 font-label mt-0.5">
               Geographic coverage
@@ -221,23 +220,24 @@ export default function DiagnosticsTab() {
                 </tr>
               ) : (
                 tabDiagnostics.map(dc => {
-                  const dcId = dc.id || dc.location_details?.id || dc.location_id || dc.location;
-                  const dcName = dc.name || dc.location_details?.name || dc.center_name || dc.facility_name || 'Diagnostic Center';
-                  const dcTagline = dc.tagline || dc.location_details?.tagline || '';
-                  const dcBranch = dc.branch || dc.location_details?.branch || 'Main Branch';
-                  const dcCategory = dc.category || dc.location_details?.category;
-                  const dcCategoryName = typeof dcCategory === 'object' ? dcCategory?.name : (dcCategory || dc.category_name || '');
-                  const dcServices = Array.isArray(dc.services) ? dc.services : (Array.isArray(dc.location_details?.services) ? dc.location_details.services : []);
-                  const dcAddress = dc.address || dc.address_line || dc.location_details?.address_line || dc.location_details?.address || '';
-                  const dcArea = dc.area || dc.location_details?.area || '';
-                  const dcDistrict = dc.district || dc.city || dc.location_details?.district || dc.location_details?.city || 'Dhaka';
-                  const dcDivision = dc.division || dc.location_details?.division || '';
+                  const dcId = dc.id || dc.location_id;
+                  const dcName = dc.name || 'Diagnostic Center';
+                  const dcDisplayName = dc.display_name || (dc.branch ? `${dcName} (${dc.branch})` : dcName);
+                  const dcTagline = dc.tagline || '';
+                  const dcBranch = dc.branch || 'Main Branch';
+                  const dcCategory = dc.category;
+                  const dcCategoryName = dc.category_name || (typeof dcCategory === 'object' ? dcCategory?.name : dcCategory) || '';
+                  const dcServices = Array.isArray(dc.services) ? dc.services : [];
+                  const dcAddress = dc.address || dc.address_line || '';
+                  const dcArea = dc.area || '';
+                  const dcDistrict = dc.district || 'Dhaka';
+                  const dcDivision = dc.division || '';
 
                   return (
                     <tr key={dcId || dcName} className={`hover:bg-[#e7ebff]/25 transition-colors ${isFetching ? 'opacity-60' : 'opacity-100'}`}>
                       <td className="py-3.5 px-4">
                         <div className="font-serif font-bold text-sm text-[#1b1c1d]">
-                          {formatFacilityName(dcName, dcBranch)}
+                          {dcDisplayName}
                         </div>
                         {dcTagline && <div className="text-slate-500 text-[11px] font-normal mt-0.5">{dcTagline}</div>}
                         {dcCategoryName && (
@@ -296,7 +296,7 @@ export default function DiagnosticsTab() {
                           onClick={async () => {
                             const success = await handleDeleteDiagnostic(dcId, dcName);
                             if (success) {
-                              setTabDiagnostics(prev => prev.filter(x => (x.id || x.location_details?.id) !== dcId));
+                              setTabDiagnostics(prev => prev.filter(x => (x.id || x.location_id) !== dcId));
                               setTotalCount(prev => Math.max(0, prev - 1));
                             }
                           }} 

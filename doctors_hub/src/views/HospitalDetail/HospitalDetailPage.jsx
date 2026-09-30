@@ -20,51 +20,35 @@ export default function HospitalDetailPage({
 }) {
   const [hospital, setHospital] = useState(null);
   const [loading, setLoading] = useState(true);
+  const [error, setError] = useState(false);
   const [activeTab, setActiveTab] = useState('overview');
 
   useEffect(() => {
     let isMounted = true;
     async function loadHospital() {
+      if (!hospitalId) {
+        setLoading(false);
+        setError(true);
+        return;
+      }
       setLoading(true);
+      setError(false);
       try {
-        const idOrSlug = hospitalId || 'square-hospital-panthapath-main';
-        const data = await api.getHospitalById(idOrSlug);
+        const data = await api.getHospitalById(hospitalId);
         if (isMounted && data && (data.id || data.location_id || data.name)) {
           setHospital(data);
-          setLoading(false);
-          return;
+        } else if (isMounted) {
+          setError(true);
         }
       } catch (err) {
-        console.warn('Failed to fetch hospital from API, using fallback data:', err);
-      }
-
-      // High-fidelity fallback for Square Hospital if API is temporarily unavailable
-      if (isMounted) {
-        setHospital({
-          id: '42e93c99-d8db-5d1f-b8af-59838b290646',
-          name: 'Square Hospital, Dhaka',
-          branch: 'Panthapath Main',
-          slug: 'square-hospital-panthapath-main',
-          address_line: '18/F, Bir Uttam Qazi Nuruzzaman Sarak, West Panthapath, Dhaka 1205',
-          district: 'Dhaka',
-          division: 'Dhaka',
-          phone: '+880 1713-377775',
-          email: 'info@squarehospital.com',
-          rating: 4.9,
-          reviews_count: 1840,
-          bed_capacity: 650,
-          icu_beds_total: 48,
-          icu_beds_available: 4,
-          ot_suites_count: 16,
-          has_helipad: true,
-          dghs_reg_no: 'DGHS Reg #H-098234',
-          accreditation: 'JCI Accredited Facility',
-          emergency_phone: '10678',
-          ambulance_phone: '+880 1700-000000',
-          parking_capacity: '280 Car Parking Available',
-          has_diagnostic_center: true,
-        });
-        setLoading(false);
+        console.error('Failed to fetch hospital:', err);
+        if (isMounted) {
+          setError(true);
+        }
+      } finally {
+        if (isMounted) {
+          setLoading(false);
+        }
       }
     }
 
@@ -91,7 +75,7 @@ export default function HospitalDetailPage({
     return <HospitalLoadingState />;
   }
 
-  if (!hospital) {
+  if (error || !hospital) {
     return (
       <HospitalNotFoundState 
         onNavigateHospitals={onNavigateHospitals} 
@@ -100,7 +84,7 @@ export default function HospitalDetailPage({
     );
   }
 
-  const doctorsCount = hospital.specialists_count || hospital.total_doctors || 124;
+  const doctorsCount = hospital.doctor_count ?? hospital.specialists_count ?? hospital.total_doctors ?? null;
 
   return (
     <div className="min-h-screen bg-background text-on-surface antialiased selection:bg-primary-fixed selection:text-on-primary-fixed">

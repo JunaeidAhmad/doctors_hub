@@ -1,7 +1,25 @@
-import React, { useEffect, useState } from 'react';
-import {
-  Heart, Brain, User, Activity, Sparkles, Baby, Stethoscope, Flame, Ear, ShieldAlert, Wind, Droplet,
-  Building2, FlaskConical, Award, ShieldCheck, FileText, ChevronDown, Eye, Smile, Scissors, Syringe, Pill, Bone
+import React, { useState, useEffect } from 'react';
+import { 
+  Heart, 
+  Brain, 
+  User, 
+  Baby, 
+  Activity, 
+  Sparkles, 
+  Stethoscope, 
+  Flame, 
+  Ear, 
+  ShieldAlert, 
+  Wind, 
+  Droplet, 
+  Eye, 
+  Smile, 
+  Scissors, 
+  ShieldCheck, 
+  Syringe, 
+  ChevronDown,
+  Pill,
+  Bone
 } from 'lucide-react';
 import { api, ensureArray } from '../../../services/api';
 
@@ -9,81 +27,52 @@ const iconMap = {
   Heart,
   Brain,
   User,
+  Baby,
   Activity,
   Sparkles,
-  Baby,
   Stethoscope,
   Flame,
   Ear,
   ShieldAlert,
   Wind,
   Droplet,
-  Building2,
-  FlaskConical,
-  Award,
-  ShieldCheck,
-  FileText,
   Eye,
   Smile,
   Scissors,
+  ShieldCheck,
   Syringe,
   Pill,
   Bone,
 };
 
-const FALLBACK_SPECIALTIES = [
-  { id: 'spec-1', name: 'Cardiology', slug: 'cardiology', icon: 'Heart', description: 'Heart & cardiovascular care', count: 120 },
-  { id: 'spec-2', name: 'Neurology', slug: 'neurology', icon: 'Brain', description: 'Brain, spine & nerve disorders', count: 85 },
-  { id: 'spec-3', name: 'Gynecology & Obstetrics', slug: 'gynecology-obstetrics', icon: 'User', description: "Women's reproductive & maternity care", count: 140 },
-  { id: 'spec-4', name: 'Pediatrics', slug: 'pediatrics', icon: 'Baby', description: 'Child healthcare & developmental wellness', count: 95 },
-  { id: 'spec-5', name: 'Orthopedics', slug: 'orthopedics', icon: 'Activity', description: 'Bones, joints, spine & trauma surgeries', count: 110 },
-  { id: 'spec-6', name: 'Dermatology', slug: 'dermatology', icon: 'Sparkles', description: 'Skin, hair, cosmetic & allergy treatment', count: 75 },
-  { id: 'spec-7', name: 'Medicine & General Physician', slug: 'medicine-general-physician', icon: 'Stethoscope', description: 'Primary care, diabetes, fever & diagnostics', count: 210 },
-  { id: 'spec-8', name: 'Gastroenterology', slug: 'gastroenterology', icon: 'Flame', description: 'Stomach, liver, digestive & endoscopy care', count: 60 },
-  { id: 'spec-9', name: 'ENT (Ear, Nose, Throat)', slug: 'ent', icon: 'Ear', description: 'Otolaryngology & head-neck treatments', count: 80 },
-  { id: 'spec-10', name: 'Urology', slug: 'urology', icon: 'ShieldAlert', description: 'Kidney, bladder & urinary tract care', count: 55 },
-  { id: 'spec-11', name: 'Pulmonology / Chest', slug: 'pulmonology', icon: 'Wind', description: 'Lungs, asthma & respiratory care', count: 65 },
-  { id: 'spec-12', name: 'Nephrology', slug: 'nephrology', icon: 'Droplet', description: 'Kidney care, dialysis & renal wellness', count: 50 },
-  { id: 'spec-13', name: 'Ophthalmology (Eye)', slug: 'ophthalmology', icon: 'Eye', description: 'Vision correction, cataract & retinal care', count: 70 },
-  { id: 'spec-14', name: 'Psychiatry & Mental Health', slug: 'psychiatry', icon: 'Brain', description: 'Mental wellness, anxiety, depression & therapy', count: 45 },
-  { id: 'spec-15', name: 'Dentistry & Oral Surgery', slug: 'dentistry', icon: 'Smile', description: 'Dental implants, orthodontic & oral health', count: 90 },
-  { id: 'spec-16', name: 'General & Laparoscopic Surgery', slug: 'general-surgery', icon: 'Scissors', description: 'Hernia, appendix, gallbladder & day care surgeries', count: 80 },
-  { id: 'spec-17', name: 'Endocrinology & Diabetology', slug: 'endocrinology', icon: 'Activity', description: 'Thyroid, hormone imbalance & diabetes management', count: 65 },
-  { id: 'spec-18', name: 'Oncology (Cancer)', slug: 'oncology', icon: 'ShieldCheck', description: 'Medical, surgical & radiation cancer treatments', count: 40 },
-  { id: 'spec-19', name: 'Physical Medicine & Rehab', slug: 'physical-medicine', icon: 'Activity', description: 'Physiotherapy, chronic pain relief & rehabilitation', count: 55 },
-  { id: 'spec-20', name: 'Hematology', slug: 'hematology', icon: 'Droplet', description: 'Blood disorders, anemia, leukemia & coagulation', count: 35 },
-  { id: 'spec-21', name: 'Rheumatology', slug: 'rheumatology', icon: 'Bone', description: 'Arthritis, autoimmune & musculoskeletal conditions', count: 30 },
-  { id: 'spec-22', name: 'Plastic & Cosmetic Surgery', slug: 'plastic-surgery', icon: 'Sparkles', description: 'Reconstructive, burn & aesthetic plastic surgery', count: 25 },
-  { id: 'spec-23', name: 'Vascular Surgery', slug: 'vascular-surgery', icon: 'Activity', description: 'Artery, vein & circulatory surgical treatments', count: 20 },
-  { id: 'spec-24', name: 'Anesthesiology & Pain Care', slug: 'anesthesiology', icon: 'Syringe', description: 'Critical pain interventions & intensive care medicine', count: 30 },
-];
-
 export default function SpecialtyGrid({ selectedSpecialty, setSelectedSpecialty, onSelectSpecialty }) {
   const [specialties, setSpecialties] = useState([]);
+  const [loading, setLoading] = useState(true);
+  const [error, setError] = useState(null);
   const [showAll, setShowAll] = useState(false);
 
-  useEffect(() => {
-    let isMounted = true;
+  const fetchSpecialties = () => {
+    setLoading(true);
+    setError(null);
     api.getSpecialties()
       .then((data) => {
-        if (isMounted && data) {
-          const list = ensureArray(data);
-          const filtered = list.filter((s) => s && s.id !== 'all' && s.name !== 'All Specialties');
-          if (filtered.length > 0) {
-            setSpecialties(filtered);
-          } else if (list.length > 0) {
-            setSpecialties(list);
-          }
-        }
+        const list = ensureArray(data);
+        const filtered = list.filter((s) => s && s.id !== 'all');
+        setSpecialties(filtered);
+        setLoading(false);
       })
       .catch((err) => {
-        console.warn("Using mock specialties fallback", err);
+        console.warn("Failed to load specialties", err);
+        setError("Unable to load specialties. Please try again.");
+        setLoading(false);
       });
-    return () => { isMounted = false; };
+  };
+
+  useEffect(() => {
+    fetchSpecialties();
   }, []);
 
-  const displayList = specialties.length > 0 ? specialties : FALLBACK_SPECIALTIES;
-  const visibleList = showAll ? displayList : displayList.slice(0, 20);
+  const visibleList = showAll ? specialties : specialties.slice(0, 20);
 
   return (
     <section className="py-14 px-4 sm:px-8 bg-slate-100/70 border-t border-slate-200">
@@ -101,66 +90,99 @@ export default function SpecialtyGrid({ selectedSpecialty, setSelectedSpecialty,
           </p>
         </div>
 
-        <div className="grid grid-cols-2 sm:grid-cols-3 md:grid-cols-4 lg:grid-cols-6 gap-4">
-          {visibleList.map((spec) => {
-            const IconComponent = iconMap[spec.icon] || iconMap[spec.slug] || Stethoscope;
-            const isSelected = selectedSpecialty === spec.name || selectedSpecialty === spec.slug;
-
-            return (
-              <div
-                key={spec.id || spec.slug || spec.name}
-                onClick={() => {
-                  if (setSelectedSpecialty) {
-                    setSelectedSpecialty(isSelected ? '' : spec.name);
-                  }
-                  if (onSelectSpecialty) {
-                    onSelectSpecialty(spec.name || spec.slug);
-                  }
-                }}
-                className={`p-4 rounded-xl border cursor-pointer transition-all duration-200 text-center flex flex-col items-center justify-between group ${
-                  isSelected
-                    ? 'bg-emerald-600 text-white border-emerald-600 shadow-md shadow-emerald-600/30 scale-[1.03]'
-                    : 'bg-white text-slate-800 border-slate-200 hover:border-emerald-500 hover:shadow-md hover:-translate-y-0.5'
-                }`}
-              >
-                <div className={`w-12 h-12 rounded-full flex items-center justify-center mb-3 transition-colors ${
-                  isSelected ? 'bg-white/20 text-white' : 'bg-emerald-100 text-emerald-600 group-hover:bg-emerald-600 group-hover:text-white'
-                }`}>
-                  <IconComponent className="w-6 h-6" />
-                </div>
-
-                <div>
-                  <h4 className={`font-bold text-sm leading-tight mb-1 ${isSelected ? 'text-white' : 'text-slate-900 group-hover:text-emerald-700'}`}>
-                    {spec.name}
-                  </h4>
-                  <p className={`text-[11px] line-clamp-2 ${isSelected ? 'text-emerald-100' : 'text-slate-500'}`}>
-                    {spec.description || `Consult top ${spec.name} doctors`}
-                  </p>
-                </div>
-
-                {spec.count !== undefined && spec.count !== null && (
-                  <div className={`mt-3 text-[10px] font-bold px-2 py-0.5 rounded-full ${
-                    isSelected ? 'bg-white text-emerald-800' : 'bg-slate-100 text-slate-600'
-                  }`}>
-                    {spec.count} Doctors
-                  </div>
-                )}
+        {/* Loading Skeleton */}
+        {loading && (
+          <div className="grid grid-cols-2 sm:grid-cols-3 md:grid-cols-4 lg:grid-cols-6 gap-4">
+            {Array.from({ length: 12 }).map((_, i) => (
+              <div key={i} className="p-4 rounded-xl border border-slate-200 bg-white text-center flex flex-col items-center animate-pulse">
+                <div className="w-12 h-12 rounded-full bg-slate-200 mb-3" />
+                <div className="h-4 bg-slate-200 rounded w-3/4 mb-2" />
+                <div className="h-3 bg-slate-100 rounded w-1/2" />
               </div>
-            );
-          })}
-        </div>
+            ))}
+          </div>
+        )}
 
-        {displayList.length > 20 && (
-          <div className="mt-8 text-center">
+        {/* Error State */}
+        {!loading && error && (
+          <div className="text-center py-10 bg-white border border-slate-200 rounded-xl p-6">
+            <p className="text-sm font-medium text-slate-600 mb-3">{error}</p>
             <button
-              type="button"
-              onClick={() => setShowAll(!showAll)}
-              className="inline-flex items-center gap-2 px-6 py-2.5 rounded-xl font-bold text-sm bg-white text-slate-800 border border-slate-300 hover:border-emerald-500 hover:text-emerald-700 hover:shadow-md transition-all duration-200 cursor-pointer active:scale-95"
+              onClick={fetchSpecialties}
+              className="px-4 py-2 bg-emerald-600 hover:bg-emerald-700 text-white text-xs font-semibold rounded-lg transition cursor-pointer"
             >
-              <span>{showAll ? 'Show Less' : `Show All (${displayList.length})`}</span>
-              <ChevronDown className={`w-4 h-4 transition-transform duration-200 ${showAll ? 'rotate-180' : ''}`} />
+              Retry
             </button>
           </div>
+        )}
+
+        {/* Categories Grid */}
+        {!loading && !error && (
+          <>
+            <div className="grid grid-cols-2 sm:grid-cols-3 md:grid-cols-4 lg:grid-cols-6 gap-4">
+              {visibleList.map((spec) => {
+                const IconComponent = iconMap[spec.icon] || iconMap[spec.slug] || Stethoscope;
+                const isSelected = selectedSpecialty === spec.name || selectedSpecialty === spec.slug;
+
+                return (
+                  <div
+                    key={spec.id || spec.slug || spec.name}
+                    onClick={() => {
+                      if (setSelectedSpecialty) {
+                        setSelectedSpecialty(isSelected ? '' : spec.name);
+                      }
+                      if (onSelectSpecialty) {
+                        onSelectSpecialty(spec.name || spec.slug);
+                      }
+                    }}
+                    className={`p-4 rounded-xl border cursor-pointer transition-all duration-200 text-center flex flex-col items-center justify-between group ${
+                      isSelected
+                        ? 'bg-emerald-600 text-white border-emerald-600 shadow-md shadow-emerald-600/30 scale-[1.03]'
+                        : 'bg-white text-slate-800 border-slate-200 hover:border-emerald-500 hover:shadow-md hover:-translate-y-0.5'
+                    }`}
+                  >
+                    <div className={`w-12 h-12 rounded-full flex items-center justify-center mb-3 transition-colors ${
+                      isSelected ? 'bg-white/20 text-white' : 'bg-emerald-100 text-emerald-600 group-hover:bg-emerald-600 group-hover:text-white'
+                    }`}>
+                      <IconComponent className="w-6 h-6" />
+                    </div>
+
+                    <div>
+                      <h4 className={`font-bold text-sm leading-tight mb-1 ${isSelected ? 'text-white' : 'text-slate-900 group-hover:text-emerald-700'}`}>
+                        {spec.name}
+                      </h4>
+                      {spec.description && (
+                        <p className={`text-[11px] line-clamp-2 ${isSelected ? 'text-emerald-100' : 'text-slate-500'}`}>
+                          {spec.description}
+                        </p>
+                      )}
+                    </div>
+
+                    {spec.count !== undefined && spec.count !== null && (
+                      <div className={`mt-3 text-[10px] font-bold px-2 py-0.5 rounded-full ${
+                        isSelected ? 'bg-white text-emerald-800' : 'bg-slate-100 text-slate-600'
+                      }`}>
+                        {spec.count} Doctors
+                      </div>
+                    )}
+                  </div>
+                );
+              })}
+            </div>
+
+            {specialties.length > 20 && (
+              <div className="mt-8 text-center">
+                <button
+                  type="button"
+                  onClick={() => setShowAll(!showAll)}
+                  className="inline-flex items-center gap-2 px-6 py-2.5 rounded-xl font-bold text-sm bg-white text-slate-800 border border-slate-300 hover:border-emerald-500 hover:text-emerald-700 hover:shadow-md transition-all duration-200 cursor-pointer active:scale-95"
+                >
+                  <span>{showAll ? 'Show Less' : `Show All (${specialties.length})`}</span>
+                  <ChevronDown className={`w-4 h-4 transition-transform duration-200 ${showAll ? 'rotate-180' : ''}`} />
+                </button>
+              </div>
+            )}
+          </>
         )}
 
       </div>

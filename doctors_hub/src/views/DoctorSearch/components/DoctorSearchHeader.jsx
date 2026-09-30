@@ -8,10 +8,8 @@ export default function DoctorSearchHeader({
   const normalizedLocation = (location || '').trim();
   const isAllLocation =
     !normalizedLocation ||
-    normalizedLocation === 'All Bangladesh' ||
-    normalizedLocation === 'All Districts' ||
-    normalizedLocation === 'All Areas' ||
-    normalizedLocation === 'All';
+    normalizedLocation.toLowerCase().startsWith('all') ||
+    normalizedLocation.toLowerCase() === 'bangladesh';
   const displayLocation = isAllLocation ? 'Bangladesh' : normalizedLocation;
   const hierarchyLabel = specialty
     ? `${specialty} in ${displayLocation}`

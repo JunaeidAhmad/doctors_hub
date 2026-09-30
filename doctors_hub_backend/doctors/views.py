@@ -1,5 +1,8 @@
 import uuid
+import datetime
+from django.utils import timezone
 from rest_framework import viewsets, filters, exceptions
+from rest_framework.permissions import AllowAny
 from rest_framework.response import Response
 from rest_framework.decorators import action
 from rest_framework.parsers import MultiPartParser, FormParser, JSONParser
@@ -8,23 +11,26 @@ from django.db.models import (
 )
 from django_filters.rest_framework import DjangoFilterBackend
 import django_filters
-from drf_spectacular.utils import extend_schema
+from drf_spectacular.utils import extend_schema, OpenApiParameter, OpenApiTypes
 from core.mixins import SlugOrPkLookupMixin
 from core.permissions import IsDoctorOwnerOrReadOnly, ScopedFacilityOrReadOnly, HasPagePermissionOrReadOnly
 from core.rbac import has_permission
 from core.scoping import RoleScopedQuerysetMixin
 from .models import (
-    DoctorSpecialty, SpecialtyAlias, Doctor, DoctorAffiliation, AffiliationSchedule
+    DoctorSpecialty, SpecialtyAlias, Doctor, DoctorAffiliation, AffiliationSchedule, ScheduleException
 )
 from .services.specialty_relations import match_node_ids, related_node_ids
 from .services.specialty_resolver import resolve_specialty_exact
+from .services.specialty_suggest import suggest_specialties
+from .services.availability import get_availability, batch_next_available
 from .serializers import (
     DoctorSpecialtySerializer,
     SpecialtyAliasSerializer,
     SpecialtyOptionSerializer,
     DoctorSerializer,
     DoctorAffiliationSerializer,
-    AffiliationScheduleSerializer
+    AffiliationScheduleSerializer,
+    ScheduleExceptionSerializer
 )
 
 
@@ -53,6 +59,22 @@ class DoctorSpecialtyViewSet(viewsets.ModelViewSet):
 
         aliases = list(SpecialtyAlias.objects.filter(is_verified=True).select_related('specialty').order_by('name'))
         data = SpecialtyOptionSerializer(aliases, many=True).data
+        return Response(data)
+
+    @action(detail=False, methods=['get'], url_path='suggest', permission_classes=[AllowAny], pagination_class=None, filter_backends=[])
+    def suggest(self, request):
+        q = request.query_params.get('q', '')
+        q_stripped = q.strip() if q else ''
+        if not q_stripped or len(q_stripped) > 100:
+            return Response({'error': 'Parameter "q" must be between 1 and 100 characters.'}, status=400)
+
+        raw_limit = request.query_params.get('limit', 8)
+        try:
+            limit = int(raw_limit)
+        except (ValueError, TypeError):
+            limit = 8
+
+        data = suggest_specialties(q_stripped, limit=limit)
         return Response(data)
 
 
@@ -121,81 +143,112 @@ class SpecialtyAliasViewSet(viewsets.ModelViewSet):
 
 
 class DoctorFilter(django_filters.FilterSet):
+    bmdc = django_filters.CharFilter(field_name='bmdc_number', lookup_expr='iexact')
     specialty = django_filters.CharFilter(method='filter_specialty')
     specialties = django_filters.ModelMultipleChoiceFilter(queryset=DoctorSpecialty.objects.all())
-    area = django_filters.CharFilter(method='filter_area')
-    district = django_filters.CharFilter(method='filter_district')
-    division = django_filters.CharFilter(method='filter_division')
-    thana_id = django_filters.NumberFilter(field_name='affiliations__location__thana_id')
-    district_id = django_filters.NumberFilter(field_name='affiliations__location__thana__district_id')
-    division_id = django_filters.NumberFilter(field_name='affiliations__location__thana__district__division_id')
-    location = django_filters.CharFilter(method='filter_location')
-    fee_max = django_filters.NumberFilter(field_name='affiliations__fee', lookup_expr='lte')
-    day = django_filters.CharFilter(field_name='affiliations__schedules__day_of_week', lookup_expr='icontains')
-    gender = django_filters.CharFilter(field_name='gender', lookup_expr='iexact')
-    facility = django_filters.CharFilter(method='filter_facility')
-    hospital = django_filters.UUIDFilter(field_name='affiliations__location')
-    diagnostic_center = django_filters.UUIDFilter(field_name='affiliations__location')
+    thana_id = django_filters.NumberFilter(method='noop_filter')
+    district_id = django_filters.NumberFilter(method='noop_filter')
+    division_id = django_filters.NumberFilter(method='noop_filter')
+    fee_max = django_filters.NumberFilter(method='noop_filter')
+    day = django_filters.CharFilter(method='noop_filter')
+    gender = django_filters.CharFilter(method='filter_gender')
+    facility = django_filters.CharFilter(method='noop_filter')
+    hospital = django_filters.UUIDFilter(method='noop_filter')
+    diagnostic_center = django_filters.UUIDFilter(method='noop_filter')
 
     class Meta:
         model = Doctor
         fields = [
-            'specialty', 'specialties', 'area', 'district', 'division',
+            'bmdc', 'specialty', 'specialties',
             'thana_id', 'district_id', 'division_id',
-            'location', 'fee_max', 'day', 'gender', 'facility', 'hospital', 'diagnostic_center'
+            'fee_max', 'day', 'gender', 'facility', 'hospital', 'diagnostic_center'
         ]
 
-    def filter_area(self, queryset, name, value):
-        if not value or value.lower() in ['all', 'all areas']:
-            return queryset
-        from django.db import models
-        return queryset.filter(
-            models.Q(affiliations__location__thana__name__iexact=value) |
-            models.Q(affiliations__location__thana__bn_name__iexact=value)
-        ).distinct()
+    def noop_filter(self, queryset, name, value):
+        return queryset
 
-    def filter_district(self, queryset, name, value):
-        if not value or value.lower() in ['all', 'all districts']:
+    def filter_gender(self, queryset, name, value):
+        if not value or str(value).lower() in ['all', '']:
             return queryset
-        from django.db import models
-        DIST_ALIASES = {
-            'chittagong': 'Chattogram', 'comilla': 'Cumilla', 'bogra': 'Bogura',
-            'jessore': 'Jashore', 'barisal': 'Barishal', 'ঢাকা': 'Dhaka',
-            'চট্টগ্রাম': 'Chattogram', 'সিলেট': 'Sylhet'
-        }
-        val = DIST_ALIASES.get(value.lower(), value)
-        return queryset.filter(
-            models.Q(affiliations__location__thana__district__name__iexact=val) |
-            models.Q(affiliations__location__thana__district__bn_name__iexact=value)
-        ).distinct()
+        return queryset.filter(gender__iexact=str(value).strip())
 
-    def filter_division(self, queryset, name, value):
-        if not value or value.lower() in ['all', 'all bangladesh']:
-            return queryset
-        from django.db import models
-        return queryset.filter(
-            models.Q(affiliations__location__thana__district__division__name__iexact=value) |
-            models.Q(affiliations__location__thana__district__division__bn_name__iexact=value)
-        ).distinct()
+    def filter_queryset(self, queryset):
+        queryset = super().filter_queryset(queryset)
+        cleaned_data = getattr(self.form, 'cleaned_data', {})
 
-    def filter_location(self, queryset, name, value):
-        if not value or value.lower() in ['all', 'all bangladesh', 'all districts', 'all areas']:
-            return queryset
-        from django.db import models
-        DIST_ALIASES = {
-            'chittagong': 'Chattogram', 'comilla': 'Cumilla', 'bogra': 'Bogura',
-            'jessore': 'Jashore', 'barisal': 'Barishal', 'ঢাকা': 'Dhaka',
-            'চট্টগ্রাম': 'Chattogram', 'সিলেট': 'Sylhet'
-        }
-        val = DIST_ALIASES.get(value.lower(), value)
-        return queryset.filter(
-            models.Q(affiliations__location__thana__district__name__iexact=val) |
-            models.Q(affiliations__location__thana__district__bn_name__iexact=value) |
-            models.Q(affiliations__location__thana__district__division__name__iexact=val) |
-            models.Q(affiliations__location__thana__district__division__bn_name__iexact=value) |
-            models.Q(affiliations__location__thana__name__iexact=value) |
-            models.Q(affiliations__location__thana__bn_name__iexact=value)
-        ).distinct()
+        affil_q = Q(doctor=OuterRef('pk'))
+        has_affil_filter = False
+
+        thana_id = cleaned_data.get('thana_id')
+        if thana_id:
+            affil_q &= Q(location__thana_id=thana_id)
+            has_affil_filter = True
+
+        district_id = cleaned_data.get('district_id')
+        if district_id:
+            affil_q &= Q(location__thana__district_id=district_id)
+            has_affil_filter = True
+
+        division_id = cleaned_data.get('division_id')
+        if division_id:
+            affil_q &= Q(location__thana__district__division_id=division_id)
+            has_affil_filter = True
+
+        fee_max = cleaned_data.get('fee_max')
+        if fee_max is not None:
+            affil_q &= Q(fee__lte=fee_max)
+            has_affil_filter = True
+
+        day = cleaned_data.get('day')
+        if day and str(day).lower() not in ['all', 'all days']:
+            day_str = str(day).strip()
+            DAY_MAP = {
+                'sat': 'Saturday',
+                'sun': 'Sunday',
+                'mon': 'Monday',
+                'tue': 'Tuesday',
+                'wed': 'Wednesday',
+                'thu': 'Thursday',
+                'fri': 'Friday',
+            }
+            normalized_day = DAY_MAP.get(day_str.lower(), day_str)
+            affil_q &= (
+                Q(schedules__day_of_week__iexact=normalized_day) |
+                Q(schedules__day_of_week__istartswith=day_str)
+            )
+            has_affil_filter = True
+
+        hospital = cleaned_data.get('hospital')
+        if hospital:
+            affil_q &= Q(location=hospital)
+            has_affil_filter = True
+
+        diagnostic_center = cleaned_data.get('diagnostic_center')
+        if diagnostic_center:
+            affil_q &= Q(location=diagnostic_center)
+            has_affil_filter = True
+
+        facility = cleaned_data.get('facility')
+        if facility and str(facility).lower() != 'all':
+            fq = (
+                Q(location__name__icontains=facility) |
+                Q(location__branch__icontains=facility) |
+                Q(location__slug__icontains=facility)
+            )
+            try:
+                import uuid
+                u = uuid.UUID(str(facility))
+                fq |= Q(location__id=u)
+            except (ValueError, TypeError, AttributeError):
+                pass
+            affil_q &= fq
+            has_affil_filter = True
+
+        if has_affil_filter:
+            sub = DoctorAffiliation.objects.filter(affil_q)
+            queryset = queryset.filter(Exists(sub))
+
+        return queryset
 
     def filter_specialty(self, queryset, name, value):
         if not value or value.lower() == 'all':
@@ -208,6 +261,15 @@ class DoctorFilter(django_filters.FilterSet):
         self.request._specialty_chosen = chosen
         self.request._specialty_sets = (direct, related)
 
+        has_direct_specialty = Exists(
+            DoctorSpecialty.objects.filter(doctors=OuterRef('pk'), id__in=direct)
+        )
+
+        if related:
+            related_overlap_expr = Count('specialties', filter=Q(specialties__in=related), distinct=True)
+        else:
+            related_overlap_expr = Value(0, output_field=IntegerField())
+
         from django.db import models
         return (queryset
                 .filter(models.Q(primary_specialty__in=direct) | models.Q(specialties__in=direct + related))
@@ -219,31 +281,20 @@ class DoctorFilter(django_filters.FilterSet):
                     ),
                     match_tier=Case(
                         When(primary_specialty__in=direct, then=Value(1)),
-                        When(specialties__in=direct, then=Value(1)),
+                        When(has_direct_specialty, then=Value(1)),
                         default=Value(2),
                         output_field=IntegerField()
                     ),
-                    related_overlap=Count('specialties', filter=Q(specialties__in=related), distinct=True)
+                    related_overlap=related_overlap_expr
                 )
                 .annotate(match_rank=Case(
-                    When(is_primary_match=True, then=Value(1)),
+                    When(primary_specialty__in=direct, then=Value(1)),
                     When(match_tier=1, then=Value(2)),
                     default=Value(3),
                     output_field=IntegerField()
                 ))
                 .order_by('match_rank', '-is_verified', '-related_overlap', 'name', 'id')
                 .distinct())
-
-    def filter_facility(self, queryset, name, value):
-        if not value or value.lower() == 'all':
-            return queryset
-        from django.db import models
-        return queryset.filter(
-            models.Q(affiliations__location__name__icontains=value) |
-            models.Q(affiliations__location__branch__icontains=value) |
-            models.Q(affiliations__location__slug__icontains=value) |
-            models.Q(affiliations__location__id__iexact=value if len(value) == 36 else '00000000-0000-0000-0000-000000000000')
-        ).distinct()
 
 
 @extend_schema(tags=['Doctors'])
@@ -255,13 +306,13 @@ class DoctorViewSet(SlugOrPkLookupMixin, RoleScopedQuerysetMixin, viewsets.Model
         'affiliations__location__thana__district__division',
         'affiliations__schedules',
         'affiliations__doctor__specialties',
-    ).order_by('name').distinct()
+    ).order_by('name', 'id').distinct()
     serializer_class = DoctorSerializer
     permission_classes = (IsDoctorOwnerOrReadOnly,)
     filter_backends = [DjangoFilterBackend, filters.SearchFilter]
     filterset_class = DoctorFilter
     search_fields = [
-        'name', 'bn_name', 'qualification', 'academic_title', 'institution',
+        'name', 'bn_name', 'bmdc_number', 'qualification', 'academic_title', 'institution',
         'specialties__name', 'specialties__bn_name', 'specialties__formal_name',
         'specialty_source', 'specialty_source_bn',
         'affiliations__location__name', 'about'
@@ -276,11 +327,31 @@ class DoctorViewSet(SlugOrPkLookupMixin, RoleScopedQuerysetMixin, viewsets.Model
             'affiliations__location__thana__district__division',
             'affiliations__schedules',
             'affiliations__doctor__specialties',
-        ).order_by('name').distinct()
+        ).order_by('name', 'id').distinct()
         return self.get_scoped_queryset(qs)
 
     def list(self, request, *args, **kwargs):
-        response = super().list(request, *args, **kwargs)
+        queryset = self.filter_queryset(self.get_queryset())
+
+        page = self.paginate_queryset(queryset)
+        instances = page if page is not None else list(queryset)
+
+        # Batch compute next_available for affiliations of doctors on this page
+        affiliations = []
+        for doc in instances:
+            affiliations.extend(doc.affiliations.all())
+        next_map = batch_next_available(affiliations, days=7)
+
+        context = self.get_serializer_context()
+        context['next_available_map'] = next_map
+
+        if page is not None:
+            serializer = self.get_serializer(page, many=True, context=context)
+            response = self.get_paginated_response(serializer.data)
+        else:
+            serializer = self.get_serializer(instances, many=True, context=context)
+            response = Response(serializer.data)
+
         spec_param = request.query_params.get('specialty')
         if spec_param and spec_param.lower() != 'all':
             chosen = resolve_specialty_exact(spec_param)
@@ -306,6 +377,15 @@ class DoctorViewSet(SlugOrPkLookupMixin, RoleScopedQuerysetMixin, viewsets.Model
                     'tier2_count': related_count,
                 }
         return response
+
+    def retrieve(self, request, *args, **kwargs):
+        instance = self.get_object()
+        affiliations = list(instance.affiliations.all())
+        next_map = batch_next_available(affiliations, days=7)
+        context = self.get_serializer_context()
+        context['next_available_map'] = next_map
+        serializer = self.get_serializer(instance, context=context)
+        return Response(serializer.data)
 
     def perform_create(self, serializer):
         user = self.request.user
@@ -353,6 +433,48 @@ class DoctorAffiliationViewSet(RoleScopedQuerysetMixin, viewsets.ModelViewSet):
             'doctor__specialties',
         ).order_by('id')
         return self.get_scoped_queryset(qs)
+
+    @extend_schema(
+        tags=['Doctors'],
+        summary='Get affiliation availability',
+        parameters=[
+            OpenApiParameter('from', OpenApiTypes.DATE, OpenApiParameter.QUERY, description='Start date (YYYY-MM-DD), defaults to today'),
+            OpenApiParameter('days', OpenApiTypes.INT, OpenApiParameter.QUERY, description='Number of days (1-30), defaults to 7'),
+        ]
+    )
+    @action(detail=True, methods=['get'], url_path='availability', permission_classes=[AllowAny])
+    def availability(self, request, pk=None):
+        try:
+            val_uuid = uuid.UUID(str(pk))
+            affiliation = DoctorAffiliation.objects.select_related(
+                'doctor',
+                'location__thana__district__division'
+            ).get(pk=val_uuid)
+        except (DoctorAffiliation.DoesNotExist, ValueError, TypeError):
+            raise exceptions.NotFound(f"DoctorAffiliation with ID '{pk}' not found.")
+
+        today = timezone.localdate()
+        from_str = request.query_params.get('from')
+        if from_str:
+            try:
+                start_date = datetime.date.fromisoformat(from_str)
+            except ValueError:
+                return Response({'detail': 'Invalid from date format. Use YYYY-MM-DD.'}, status=400)
+            if start_date < today:
+                return Response({'detail': 'from date cannot be in the past.'}, status=400)
+        else:
+            start_date = today
+
+        days_str = request.query_params.get('days', '7')
+        try:
+            days = int(days_str)
+            if days < 1 or days > 30:
+                raise ValueError()
+        except (ValueError, TypeError):
+            return Response({'detail': 'days must be an integer between 1 and 30.'}, status=400)
+
+        data = get_availability(affiliation, start_date=start_date, days=days)
+        return Response(data)
 
     def perform_create(self, serializer):
         user = self.request.user
@@ -428,3 +550,64 @@ class AffiliationScheduleViewSet(RoleScopedQuerysetMixin, viewsets.ModelViewSet)
             return
 
         raise exceptions.PermissionDenied("You do not have permission to create affiliation schedules.")
+
+
+class ScheduleExceptionFilter(django_filters.FilterSet):
+    affiliation = django_filters.UUIDFilter(field_name='affiliation_id')
+    date_from = django_filters.DateFilter(field_name='date', lookup_expr='gte')
+    date_to = django_filters.DateFilter(field_name='date', lookup_expr='lte')
+
+    class Meta:
+        model = ScheduleException
+        fields = ['affiliation', 'date_from', 'date_to']
+
+
+@extend_schema(tags=['Doctors'])
+class ScheduleExceptionViewSet(RoleScopedQuerysetMixin, viewsets.ModelViewSet):
+    queryset = ScheduleException.objects.all().select_related(
+        'affiliation__doctor',
+        'affiliation__location',
+        'schedule'
+    ).order_by('date', 'id')
+    serializer_class = ScheduleExceptionSerializer
+    permission_classes = (ScopedFacilityOrReadOnly,)
+    filter_backends = (DjangoFilterBackend,)
+    filterset_class = ScheduleExceptionFilter
+    scope_location_field = "affiliation__location_id__in"
+    scope_doctor_field = "affiliation__doctor__user"
+
+    def get_queryset(self):
+        qs = ScheduleException.objects.all().select_related(
+            'affiliation__doctor',
+            'affiliation__location',
+            'schedule'
+        ).order_by('date', 'id')
+        return self.get_scoped_queryset(qs)
+
+    def perform_create(self, serializer):
+        user = self.request.user
+        if not user or not user.is_authenticated:
+            raise exceptions.NotAuthenticated()
+
+        if getattr(user, "is_super_admin", False):
+            serializer.save()
+            return
+
+        aff = serializer.validated_data.get("affiliation")
+        if not aff:
+            raise exceptions.ValidationError("Affiliation is required.")
+
+        if getattr(user, "is_facility_admin", False):
+            if aff.location_id not in user.managed_location_ids:
+                raise exceptions.PermissionDenied("You can only create schedule exceptions for locations you manage.")
+            serializer.save()
+            return
+
+        if getattr(user, "is_doctor_role", False):
+            doctor_profile = getattr(user, "doctor_profile", None)
+            if not doctor_profile or aff.doctor_id != doctor_profile.id:
+                raise exceptions.PermissionDenied("You can only create schedule exceptions for your own affiliations.")
+            serializer.save()
+            return
+
+        raise exceptions.PermissionDenied("You do not have permission to create schedule exceptions.")

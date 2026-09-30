@@ -30,7 +30,6 @@ export {
   getIsInitialLoad,
   setInitialLoadComplete,
   clearCache,
-  flattenFacility,
   handleResponse,
   getHeaders,
   fetchWithTimeout,

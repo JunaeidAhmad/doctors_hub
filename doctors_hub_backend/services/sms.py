@@ -74,36 +74,7 @@ def send_sms_via_sms_bd(phone: str, message: str) -> dict:
         return {"success": False, "error": str(e)}
 
 
-def format_facility_name_sms(name: str, branch: str) -> str:
-    """
-    Canonical rule: Normalize all suffix forms (- Branch, , Branch, bare Branch) to canonical `Name (Branch)`,
-    unless the name is identical to the branch or already enclosed in parentheses.
-    This ensures identical presentation parity between the UI and SMS notifications.
-    """
-    name = (name or "").strip()
-    branch = (branch or "").strip()
-    if not name:
-        return f"({branch})" if branch else ""
-    if not branch:
-        return name
-
-    lower_name = name.lower()
-    lower_branch = branch.lower()
-
-    if lower_name == lower_branch:
-        return name
-
-    if f"({lower_branch})" in lower_name:
-        return name
-
-    # Normalize all trailing delimiter forms ("- Branch", ", Branch", " Branch") to canonical "Name (Branch)"
-    pattern = rf"[- ,]+\s*{re.escape(branch)}$"
-    match = re.search(pattern, name, flags=re.IGNORECASE)
-    if match and match.start() > 0:
-        base = name[:match.start()].strip()
-        return f"{base} ({branch})" if base else name
-
-    return f"{name} ({branch})"
+from core.text import format_facility_name as format_facility_name_sms
 
 
 def send_doctor_booking_confirmation_sms(booking) -> dict:
@@ -123,12 +94,12 @@ def send_doctor_booking_confirmation_sms(booking) -> dict:
         chamber_name = format_facility_name_sms(chamber_raw, chamber_branch)
         serial = booking.serial_display or f"SL-{booking.serial_number or 1:03d}"
         date_str = str(booking.date)
-        slot_str = booking.slot or ""
-        slot_info = f" ({slot_str})" if slot_str else ""
+        est_time_str = booking.estimated_time.strftime('%I:%M %p') if booking.estimated_time else ""
+        time_info = f" (Est. Time: {est_time_str})" if est_time_str else ""
 
         message = (
             f"Dear {patient_name}, your appointment with {doctor_name} at {chamber_name} is CONFIRMED. "
-            f"Serial No: {serial}. Date: {date_str}{slot_info}. Thank you for choosing Doctors Hub."
+            f"Serial No: {serial}. Date: {date_str}{time_info}. Thank you for choosing Doctors Hub."
         )
         return send_sms_via_sms_bd(phone, message)
     except Exception as e:
@@ -148,14 +119,14 @@ def send_test_booking_confirmation_sms(booking) -> dict:
         patient_name = booking.patient_name or (booking.patient.name if booking.patient else "Patient")
         test_name = booking.facility_test.test.name if (booking.facility_test and booking.facility_test.test) else "Diagnostic Test"
         loc = booking.facility_test.location if booking.facility_test else None
-        center_raw = loc.name if loc else "Diagnostic Center"
-        center_branch = loc.branch if loc else ""
-        center_name = format_facility_name_sms(center_raw, center_branch)
+        facility_raw = loc.name if loc else "Diagnostic Center"
+        facility_branch = loc.branch if loc else ""
+        facility_display = format_facility_name_sms(facility_raw, facility_branch)
         pickup_date = str(booking.pickup_date or "")
         ref_id = f"TESTBD-{booking.id}"
 
         message = (
-            f"Dear {patient_name}, your diagnostic test booking for {test_name} at {center_name} is CONFIRMED. "
+            f"Dear {patient_name}, your diagnostic test booking for {test_name} at {facility_display} is CONFIRMED. "
             f"Ref: {ref_id}. Date: {pickup_date}. Thank you for choosing Doctors Hub."
         )
         return send_sms_via_sms_bd(phone, message)
@@ -178,14 +149,14 @@ def send_hospital_service_booking_confirmation_sms(booking) -> dict:
         loc = booking.hospital.location if (booking.hospital and getattr(booking.hospital, 'location', None)) else None
         hospital_raw = loc.name if loc else getattr(booking.hospital, 'name', 'Hospital')
         hospital_branch = loc.branch if loc else getattr(booking.hospital, 'branch', '')
-        hospital_name = format_facility_name_sms(hospital_raw, hospital_branch)
+        hospital_display = format_facility_name_sms(hospital_raw, hospital_branch)
         booking_date = str(booking.booking_date or "")
         time_str = booking.preferred_time or ""
         time_info = f" ({time_str})" if time_str else ""
         ref_id = f"HSB-{booking.id}"
 
         message = (
-            f"Dear {patient_name}, your hospital service request for {service_name} at {hospital_name} is CONFIRMED. "
+            f"Dear {patient_name}, your hospital service request for {service_name} at {hospital_display} is CONFIRMED. "
             f"Ref: {ref_id}. Date: {booking_date}{time_info}. Thank you for choosing Doctors Hub."
         )
         return send_sms_via_sms_bd(phone, message)

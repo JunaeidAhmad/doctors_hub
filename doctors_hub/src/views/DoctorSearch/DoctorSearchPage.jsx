@@ -1,8 +1,8 @@
 import React, { useState, useMemo, useEffect, useRef } from 'react';
 import { useSearchParams, useNavigate } from 'react-router-dom';
-import { DIVISIONS, findDivisionForDistrict } from '../../data/constants';
 import { api, ensureArray } from '../../services/api';
 import { useDebounce } from '../../hooks/useDebounce';
+import { useDivisions, useDistricts, useThanas } from '../../hooks/useGeo';
 
 import DoctorSearchHeader from './components/DoctorSearchHeader';
 import DoctorActiveFiltersBar from './components/DoctorActiveFiltersBar';
@@ -16,7 +16,6 @@ import { formatFacilityName } from '../../utils/facilityUtils';
 
 export default function DoctorSearchPage({
   initialSpecialty = '',
-  initialLocation = 'All Bangladesh',
   initialKeyword = '',
   onBookDoctorSlot,
   onSelectHospital,
@@ -33,29 +32,24 @@ export default function DoctorSearchPage({
 
   // State
   const [specialty, setSpecialty] = useState(() => getParam('spec', getParam('specialty', initialSpecialty)));
-  const [division, setDivision] = useState(() => {
-    const urlDiv = getParam('division', '');
-    if (urlDiv) return urlDiv;
-    const urlLoc = getParam('loc', initialLocation);
-    if (DIVISIONS.includes(urlLoc)) return urlLoc;
-    const found = findDivisionForDistrict(urlLoc);
-    return found || 'All Bangladesh';
+  const [divisionId, setDivisionId] = useState(() => {
+    const v = getParam('division_id', null);
+    return v ? Number(v) : null;
   });
-  const [district, setDistrict] = useState(() => {
-    const urlDist = getParam('district', '');
-    if (urlDist) return urlDist;
-    const urlLoc = getParam('loc', '');
-    if (urlLoc && !DIVISIONS.includes(urlLoc) && urlLoc !== 'All Bangladesh') return urlLoc;
-    return 'All Districts';
+  const [districtId, setDistrictId] = useState(() => {
+    const v = getParam('district_id', null);
+    return v ? Number(v) : null;
   });
-  const [area, setArea] = useState(() => getParam('area', 'All Areas'));
+  const [thanaId, setThanaId] = useState(() => {
+    const v = getParam('thana_id', null);
+    return v ? Number(v) : null;
+  });
   const [facility, setFacility] = useState(() => getParam('facility', ''));
   const [keyword, setKeyword] = useState(() => getParam('q', initialKeyword));
   const debouncedKeyword = useDebounce(keyword, 350);
   const [selectedDay, setSelectedDay] = useState(() => getParam('day', 'All'));
   const [gender, setGender] = useState(() => getParam('gender', 'All'));
   const [maxFee, setMaxFee] = useState(3000);
-  const [sortOrder, setSortOrder] = useState(() => getParam('sort', 'recommended'));
   const [currentPage, setCurrentPage] = useState(() => {
     const p = parseInt(getParam('page', '1'), 10);
     return isNaN(p) || p < 1 ? 1 : p;
@@ -73,20 +67,38 @@ export default function DoctorSearchPage({
   const [isMobileFiltersOpen, setIsMobileFiltersOpen] = useState(false);
   const [searchMeta, setSearchMeta] = useState(null);
 
+  const { items: divisions } = useDivisions();
+  const { items: districts } = useDistricts(divisionId);
+  const { items: thanas } = useThanas(districtId);
+
+  const divisionName = useMemo(() => {
+    if (!divisionId) return '';
+    return divisions.find(d => d.id === divisionId)?.name || '';
+  }, [divisions, divisionId]);
+
+  const districtName = useMemo(() => {
+    if (!districtId) return '';
+    return districts.find(d => d.id === districtId)?.name || '';
+  }, [districts, districtId]);
+
+  const thanaName = useMemo(() => {
+    if (!thanaId) return '';
+    return thanas.find(t => t.id === thanaId)?.name || '';
+  }, [thanas, thanaId]);
+
   // Sync state from URL search params on back/forward navigation
   useEffect(() => {
     if (lastParamsRef.current === searchParams.toString()) return;
     lastParamsRef.current = searchParams.toString();
 
     setSpecialty(searchParams.get('spec') || searchParams.get('specialty') || '');
-    setDivision(searchParams.get('division') || 'All Bangladesh');
-    setDistrict(searchParams.get('district') || 'All Districts');
-    setArea(searchParams.get('area') || 'All Areas');
+    setDivisionId(searchParams.get('division_id') ? Number(searchParams.get('division_id')) : null);
+    setDistrictId(searchParams.get('district_id') ? Number(searchParams.get('district_id')) : null);
+    setThanaId(searchParams.get('thana_id') ? Number(searchParams.get('thana_id')) : null);
     setFacility(searchParams.get('facility') || '');
     setKeyword(searchParams.get('q') || '');
     setSelectedDay(searchParams.get('day') || 'All');
     setGender(searchParams.get('gender') || 'All');
-    setSortOrder(searchParams.get('sort') || 'recommended');
     const p = parseInt(searchParams.get('page') || '1', 10);
     setCurrentPage(isNaN(p) || p < 1 ? 1 : p);
   }, [searchParams]);
@@ -95,14 +107,13 @@ export default function DoctorSearchPage({
   useEffect(() => {
     const params = new URLSearchParams();
     if (specialty) params.set('spec', specialty);
-    if (division && division !== 'All Bangladesh') params.set('division', division);
-    if (district && district !== 'All Districts') params.set('district', district);
-    if (area && area !== 'All Areas') params.set('area', area);
+    if (divisionId) params.set('division_id', String(divisionId));
+    if (districtId) params.set('district_id', String(districtId));
+    if (thanaId) params.set('thana_id', String(thanaId));
     if (facility) params.set('facility', facility);
     if (keyword.trim()) params.set('q', keyword.trim());
     if (selectedDay && selectedDay !== 'All' && selectedDay !== 'All Days') params.set('day', selectedDay);
     if (gender && gender !== 'All') params.set('gender', gender);
-    if (sortOrder && sortOrder !== 'recommended') params.set('sort', sortOrder);
     if (currentPage > 1) params.set('page', String(currentPage));
 
     const next = params.toString();
@@ -110,7 +121,7 @@ export default function DoctorSearchPage({
       lastParamsRef.current = next;
       setSearchParams(params, { replace: true });
     }
-  }, [specialty, division, district, area, facility, keyword, selectedDay, gender, sortOrder, currentPage, setSearchParams]);
+  }, [specialty, divisionId, districtId, thanaId, facility, keyword, selectedDay, gender, currentPage, setSearchParams]);
 
   // Load specialties and facility options on mount
   useEffect(() => {
@@ -164,9 +175,9 @@ export default function DoctorSearchPage({
 
     api.getDoctors({
       specialty: specialty || undefined,
-      division: division !== 'All Bangladesh' ? division : undefined,
-      district: district !== 'All Districts' ? district : undefined,
-      area: area !== 'All Areas' ? area : undefined,
+      division_id: divisionId || undefined,
+      district_id: districtId || undefined,
+      thana_id: thanaId || undefined,
       facility: facility || undefined,
       gender: gender !== 'All' ? gender : undefined,
       search: debouncedKeyword.trim() || undefined,
@@ -217,43 +228,13 @@ export default function DoctorSearchPage({
       });
 
     return () => { isMounted = false; };
-  }, [specialty, division, district, area, facility, gender, debouncedKeyword, maxFee, selectedDay, currentPage]);
-
-  // Client-side sorting
-  const sortedDoctors = useMemo(() => {
-    const list = [...doctors];
-    if (sortOrder === 'highest_rated') {
-      return list.sort((a, b) => (Number(b.rating) || 0) - (Number(a.rating) || 0));
-    }
-    if (sortOrder === 'experience') {
-      return list.sort((a, b) => {
-        const expA = parseInt(a.experience || '0', 10) || 0;
-        const expB = parseInt(b.experience || '0', 10) || 0;
-        return expB - expA;
-      });
-    }
-    if (sortOrder === 'fee_low') {
-      return list.sort((a, b) => {
-        const feeA = Number(a.fee) || (a.affiliations?.[0]?.fee) || 1000;
-        const feeB = Number(b.fee) || (b.affiliations?.[0]?.fee) || 1000;
-        return feeA - feeB;
-      });
-    }
-    if (sortOrder === 'fee_high') {
-      return list.sort((a, b) => {
-        const feeA = Number(a.fee) || (a.affiliations?.[0]?.fee) || 1000;
-        const feeB = Number(b.fee) || (b.affiliations?.[0]?.fee) || 1000;
-        return feeB - feeA;
-      });
-    }
-    return list;
-  }, [doctors, sortOrder]);
+  }, [specialty, divisionId, districtId, thanaId, facility, gender, debouncedKeyword, maxFee, selectedDay, currentPage]);
 
   const hasActiveFilters = Boolean(
     specialty ||
-    (division && division !== 'All Bangladesh') ||
-    (district && district !== 'All Districts') ||
-    (area && area !== 'All Areas') ||
+    divisionId ||
+    districtId ||
+    thanaId ||
     facility ||
     (keyword && keyword.trim()) ||
     (selectedDay && selectedDay !== 'All' && selectedDay !== 'All Days') ||
@@ -263,9 +244,9 @@ export default function DoctorSearchPage({
 
   const handleClearAll = () => {
     setSpecialty('');
-    setDivision('All Bangladesh');
-    setDistrict('All Districts');
-    setArea('All Areas');
+    setDivisionId(null);
+    setDistrictId(null);
+    setThanaId(null);
     setFacility('');
     setKeyword('');
     setSelectedDay('All');
@@ -294,15 +275,15 @@ export default function DoctorSearchPage({
       {/* 1. Sub-Header & Breadcrumb Bar */}
       <DoctorSearchHeader
         specialty={specialtyDisplayName}
-        location={district !== 'All Districts' ? district : (division !== 'All Bangladesh' ? division : 'Bangladesh')}
+        location={districtName || divisionName || 'Bangladesh'}
         onNavigateHome={onNavigateHome}
       />
 
       {/* 2. Filter Summary & Results Header Strip */}
       <DoctorActiveFiltersBar
-        division={division}
-        district={district}
-        area={area}
+        divisionName={divisionName}
+        districtName={districtName}
+        thanaName={thanaName}
         specialty={specialty}
         specialtyName={specialtyDisplayName}
         facility={facility}
@@ -315,9 +296,9 @@ export default function DoctorSearchPage({
         maxFee={maxFee}
         totalDoctors={totalCount}
         hasActiveFilters={hasActiveFilters}
-        onRemoveDivision={() => { setDivision('All Bangladesh'); setDistrict('All Districts'); setArea('All Areas'); }}
-        onRemoveDistrict={() => { setDistrict('All Districts'); setArea('All Areas'); }}
-        onRemoveArea={() => setArea('All Areas')}
+        onRemoveDivision={() => { setDivisionId(null); setDistrictId(null); setThanaId(null); setCurrentPage(1); }}
+        onRemoveDistrict={() => { setDistrictId(null); setThanaId(null); setCurrentPage(1); }}
+        onRemoveThana={() => { setThanaId(null); setCurrentPage(1); }}
         onRemoveSpecialty={() => setSpecialty('')}
         onRemoveFacility={() => setFacility('')}
         onRemoveDay={() => setSelectedDay('All')}
@@ -364,31 +345,31 @@ export default function DoctorSearchPage({
 
           {/* Left Sidebar Filter Engine */}
           <DoctorFilterSidebar
-            division={division}
-            district={district}
-            area={area}
+            divisionId={divisionId}
+            districtId={districtId}
+            thanaId={thanaId}
             selectedDay={selectedDay}
             gender={gender}
             totalCount={totalCount}
-            onDivisionChange={(val) => {
-              setDivision(val);
-              setDistrict('All Districts');
-              setArea('All Areas');
+            onDivisionChange={(id) => {
+              setDivisionId(id);
+              setDistrictId(null);
+              setThanaId(null);
               setCurrentPage(1);
             }}
-            onDistrictChange={(val) => {
-              setDistrict(val);
-              setArea('All Areas');
+            onDistrictChange={(id) => {
+              setDistrictId(id);
+              setThanaId(null);
               setCurrentPage(1);
             }}
-            onAreaChange={(val) => {
-              setArea(val);
+            onThanaChange={(id) => {
+              setThanaId(id);
               setCurrentPage(1);
             }}
             onClearLocation={() => {
-              setDivision('All Bangladesh');
-              setDistrict('All Districts');
-              setArea('All Areas');
+              setDivisionId(null);
+              setDistrictId(null);
+              setThanaId(null);
               setCurrentPage(1);
             }}
             onDayChange={(val) => {
@@ -429,56 +410,31 @@ export default function DoctorSearchPage({
                   </div>
                 ))}
               </div>
-            ) : sortedDoctors.length > 0 ? (
-              sortedDoctors.map((doc, idx) => {
-                const prevDoc = idx > 0 ? sortedDoctors[idx - 1] : null;
-                const isFirstTier1 = doc.match_tier === 1 && idx === 0 && searchMeta?.tier2_count > 0;
-                const isFirstTier2 = doc.match_tier === 2 && (!prevDoc || prevDoc.match_tier === 1);
-
-                return (
-                  <React.Fragment key={doc.id || idx}>
-                    {isFirstTier1 && (
-                      <div className="flex items-center gap-2 pb-2 mb-1 border-b border-primary/20 text-primary font-semibold text-sm">
-                        <span className="material-symbols-outlined text-base">verified</span>
-                        <span>{searchMeta?.specialty_bn || searchMeta?.specialty || specialty} বিশেষজ্ঞ (Primary Specialists)</span>
-                        {searchMeta?.tier1_count > 0 && (
-                          <span className="text-xs bg-primary/10 text-primary px-2 py-0.5 rounded-full font-bold ml-auto">
-                            {searchMeta.tier1_count}
-                          </span>
-                        )}
-                      </div>
-                    )}
-                    {isFirstTier2 && (
-                      <div className="pt-4 pb-2 mb-1 border-b border-outline-variant/60 flex items-center justify-between text-slate-700">
-                        <div className="flex items-center gap-2">
-                          <span className="material-symbols-outlined text-base text-slate-500">hub</span>
-                          <span className="font-semibold text-sm">অন্যান্য সম্পর্কিত বিশেষজ্ঞ (Related & Sub-specialists)</span>
-                        </div>
-                        {searchMeta?.tier2_count > 0 && (
-                          <span className="text-xs bg-slate-100 text-slate-600 px-2 py-0.5 rounded-full font-bold">
-                            {searchMeta.tier2_count}
-                          </span>
-                        )}
-                      </div>
-                    )}
-                    <DoctorCard
-                      doctor={doc}
-                      index={idx}
-                      onBookDoctorSlot={onBookDoctorSlot}
-                      onViewProfile={(d) => {
-                        navigate(`/doctor/${d.slug || d.id}`, { state: { doctor: d, chambers: d.chambers } });
-                        window.scrollTo({ top: 0, behavior: 'smooth' });
-                      }}
-                      onSelectHospital={onSelectHospital}
-                      onSelectSpecialty={(specSlug) => {
-                        setSpecialty(specSlug);
-                        setCurrentPage(1);
-                        window.scrollTo({ top: 0, behavior: 'smooth' });
-                      }}
-                    />
-                  </React.Fragment>
-                );
-              })
+            ) : doctors.length > 0 ? (
+              doctors.map((doc, idx) => (
+                <DoctorCard
+                  key={doc.id || idx}
+                  doctor={doc}
+                  index={idx}
+                  filteredFacility={facility}
+                  filteredLocation={{
+                    division: divisionName,
+                    district: districtName,
+                    area: thanaName
+                  }}
+                  onBookDoctorSlot={onBookDoctorSlot}
+                  onViewProfile={(d) => {
+                    navigate(`/doctor/${d.slug || d.id}`, { state: { doctor: d, chambers: d.chambers } });
+                    window.scrollTo({ top: 0, behavior: 'smooth' });
+                  }}
+                  onSelectHospital={onSelectHospital}
+                  onSelectSpecialty={(specSlug) => {
+                    setSpecialty(specSlug);
+                    setCurrentPage(1);
+                    window.scrollTo({ top: 0, behavior: 'smooth' });
+                  }}
+                />
+              ))
             ) : (
               <div className="bg-surface-container-lowest rounded-xl border border-outline-variant p-12 text-center space-y-3">
                 <div className="w-14 h-14 mx-auto rounded-full bg-primary/10 flex items-center justify-center text-primary">

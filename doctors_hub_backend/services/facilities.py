@@ -27,7 +27,9 @@ def _extract_or_create_location(location_data, default_type):
     if not location_data:
         return None
     thana = location_data.get('thana')
-    if not thana:
+    if isinstance(thana, int):
+        thana = Thana.objects.filter(id=thana).first()
+    elif not thana:
         thana_id = location_data.get('thana_id')
         if thana_id:
             thana = Thana.objects.filter(id=thana_id).first()
@@ -61,7 +63,11 @@ def _update_location_fields(location, location_data):
         if field in location_data:
             setattr(location, field, location_data[field])
     if 'thana' in location_data and location_data['thana']:
-        location.thana = location_data['thana']
+        thana_val = location_data['thana']
+        if isinstance(thana_val, int):
+            location.thana = Thana.objects.filter(id=thana_val).first()
+        else:
+            location.thana = thana_val
     elif 'thana_id' in location_data and location_data['thana_id']:
         thana_obj = Thana.objects.filter(id=location_data['thana_id']).first()
         if thana_obj:

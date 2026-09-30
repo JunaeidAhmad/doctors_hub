@@ -296,13 +296,13 @@ export function AdminProvider({ children, currentUser, onLogout, showToast }) {
     if (facilityType === 'diagnostic_center' && facilityObj && facilityId) {
       setDiagnosticCenters(prev => {
         const list = Array.isArray(prev) ? prev : [];
-        const exists = list.some(dc => String(dc.id || dc.location_details?.id) === String(facilityId));
+        const exists = list.some(dc => String(dc.id) === String(facilityId));
         return exists ? list : [facilityObj, ...list];
       });
     } else if (facilityType === 'hospital' && facilityObj && facilityId) {
       setHospitals(prev => {
         const list = Array.isArray(prev) ? prev : [];
-        const exists = list.some(h => String(h.id || h.location_details?.id) === String(facilityId));
+        const exists = list.some(h => String(h.id) === String(facilityId));
         return exists ? list : [facilityObj, ...list];
       });
     }

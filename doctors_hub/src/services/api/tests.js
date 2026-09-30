@@ -5,7 +5,6 @@ import {
   getHeaders,
   fetchWithDeduplicationAndCache,
   clearCache,
-  flattenFacility,
 } from './core';
 
 // Facility Tests (prices per location)
@@ -40,7 +39,38 @@ export async function getDiagnosticCenterTests({
       if (page) url.searchParams.append('page', page);
       if (page_size) url.searchParams.append('page_size', page_size);
       const res = await fetchWithTimeout(url, { headers: getHeaders() });
-      return flattenFacility(await handleResponse(res));
+      return handleResponse(res);
+    },
+    60000
+  );
+}
+
+export async function searchFacilityTests(params = {}) {
+  const cleanParams = {};
+  for (const [key, val] of Object.entries(params)) {
+    if (val !== null && val !== undefined && val !== '' && val !== 'all') {
+      cleanParams[key] = val;
+    }
+  }
+  if (cleanParams.page_size) {
+    cleanParams.page_size = Math.min(Number(cleanParams.page_size) || 4, 20);
+  }
+
+  const cacheKey = `fts_s1_${JSON.stringify(cleanParams)}`;
+  return fetchWithDeduplicationAndCache(
+    cacheKey,
+    async () => {
+      const base = BASE_URL.startsWith('http')
+        ? BASE_URL
+        : typeof window !== 'undefined'
+        ? `${window.location.origin}${BASE_URL}`
+        : `http://localhost:8000${BASE_URL}`;
+      const url = new URL(`${base}/facility-tests/search/`);
+      for (const [k, v] of Object.entries(cleanParams)) {
+        url.searchParams.set(k, String(v));
+      }
+      const res = await fetchWithTimeout(url, { headers: getHeaders() });
+      return handleResponse(res);
     },
     60000
   );

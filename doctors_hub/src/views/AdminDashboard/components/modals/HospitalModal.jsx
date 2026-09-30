@@ -2,14 +2,7 @@ import React, { useState, useEffect } from 'react';
 import { X, CheckCircle } from 'lucide-react';
 import { useAdminContext } from '../../context/AdminContext';
 import { api } from '../../../../services/api';
-import { 
-  DIVISIONS, 
-  DIVISION_DISTRICTS, 
-  DISTRICT_THANAS, 
-  findDivisionForDistrict, 
-  getDistrictsForDivision, 
-  getThanasForDistrict 
-} from '../../../../data/constants';
+import { useDivisions, useDistricts, useThanas } from '../../../../hooks/useGeo';
 
 export default function HospitalModal() {
   const {
@@ -25,9 +18,9 @@ export default function HospitalModal() {
   const [hospitalForm, setHospitalForm] = useState({
     id: '',
     name: 'Ibn Sina Healthcare Group',
-    division: 'Dhaka',
-    district: 'Dhaka',
-    area: 'Dhanmondi',
+    division_id: null,
+    district_id: null,
+    thana_id: null,
     branch: 'Dhanmondi',
     isCustomBranch: false,
     customBranch: '',
@@ -45,8 +38,13 @@ export default function HospitalModal() {
     logo: 'https://images.unsplash.com/photo-1519494026892-80bbd2d6fd0d?auto=format&fit=crop&w=600&q=80',
     image: 'https://images.unsplash.com/photo-1519494026892-80bbd2d6fd0d?auto=format&fit=crop&w=600&q=80',
     description: 'Leading hospital offering inpatient and doctor consultation.',
-    is_verified: true
+    is_verified: true,
+    details_reviewed: false
   });
+
+  const { items: divisions, isLoading: loadingDivisions } = useDivisions();
+  const { items: districts, isLoading: loadingDistricts } = useDistricts(hospitalForm.division_id);
+  const { items: thanas, isLoading: loadingThanas } = useThanas(hospitalForm.district_id);
 
   useEffect(() => {
     if (editingHospital) {
@@ -55,21 +53,21 @@ export default function HospitalModal() {
         ? editingHospital.services.map(s => typeof s === 'object' ? s.id : s) 
         : [];
 
-      const initialDistrict = editingHospital.district || 'Dhaka';
-      const initialDivision = editingHospital.division || findDivisionForDistrict(initialDistrict) || 'Dhaka';
-      const initialArea = editingHospital.area || editingHospital.branch || 'Dhanmondi';
+      const initialThanaId = editingHospital.thana_id || (typeof editingHospital.thana === 'object' ? editingHospital.thana?.id : editingHospital.thana) || null;
+      const initialDistrictId = editingHospital.district_id || null;
+      const initialDivisionId = editingHospital.division_id || null;
 
       setHospitalForm({
         id: editingHospital.id,
-        name: editingHospital.name,
-        division: initialDivision,
-        district: initialDistrict,
-        area: initialArea,
-        branch: editingHospital.branch || initialArea || 'Main',
+        name: editingHospital.name || '',
+        division_id: initialDivisionId,
+        district_id: initialDistrictId,
+        thana_id: initialThanaId,
+        branch: editingHospital.branch || 'Main',
         isCustomBranch: false,
         customBranch: '',
         category_id: catId,
-        ownership_type: editingHospital.ownership_type || editingHospital.location_details?.ownership_type || 'private',
+        ownership_type: editingHospital.ownership_type || 'private',
         service_ids: srvIds,
         address: editingHospital.address || editingHospital.address_line || '',
         phone: editingHospital.phone || '',
@@ -83,16 +81,17 @@ export default function HospitalModal() {
         image: editingHospital.image || '',
         description: editingHospital.description || '',
         is_verified: editingHospital.is_verified ?? true,
+        details_reviewed: editingHospital.details_reviewed ?? false,
         has_diagnostic_center: editingHospital.has_diagnostic_center ?? false
       });
     } else {
       setHospitalForm({
         id: '',
         name: '',
-        division: 'Dhaka',
-        district: 'Dhaka',
-        area: 'Dhanmondi',
-        branch: 'Dhanmondi',
+        division_id: null,
+        district_id: null,
+        thana_id: null,
+        branch: 'Main',
         isCustomBranch: false,
         customBranch: '',
         category_id: '',
@@ -110,6 +109,7 @@ export default function HospitalModal() {
         image: 'https://images.unsplash.com/photo-1519494026892-80bbd2d6fd0d?auto=format&fit=crop&w=600&q=80',
         description: '',
         is_verified: true,
+        details_reviewed: false,
         has_diagnostic_center: false
       });
     }
@@ -121,12 +121,10 @@ export default function HospitalModal() {
     e.preventDefault();
     try {
       const finalBranch = hospitalForm.isCustomBranch ? hospitalForm.customBranch : hospitalForm.branch;
-      const finalArea = hospitalForm.area || finalBranch;
       const payload = {
         name: hospitalForm.name,
-        division: hospitalForm.division,
-        district: hospitalForm.district,
-        area: finalArea,
+        thana: hospitalForm.thana_id,
+        thana_id: hospitalForm.thana_id,
         branch: finalBranch,
         address_line: hospitalForm.address,
         address: hospitalForm.address,
@@ -144,6 +142,7 @@ export default function HospitalModal() {
         image: hospitalForm.image,
         description: hospitalForm.description,
         is_verified: hospitalForm.is_verified,
+        details_reviewed: hospitalForm.details_reviewed,
         has_diagnostic_center: hospitalForm.has_diagnostic_center
       };
 
@@ -168,9 +167,6 @@ export default function HospitalModal() {
       : [...current, srvId];
     setHospitalForm({ ...hospitalForm, service_ids: updated });
   };
-
-  const currentDistricts = getDistrictsForDivision(hospitalForm.division);
-  const currentThanas = getThanasForDistrict(hospitalForm.district);
 
   return (
     <div className="fixed inset-0 z-50 bg-slate-900/60 backdrop-blur-xs flex items-center justify-center p-4 overflow-y-auto">
@@ -243,26 +239,22 @@ export default function HospitalModal() {
                   <label className="block text-slate-700 font-label font-bold uppercase text-[10px] mb-1">1. Division *</label>
                   <select
                     required
-                    value={hospitalForm.division}
+                    value={hospitalForm.division_id ?? ''}
+                    disabled={loadingDivisions}
                     onChange={e => {
-                      const newDiv = e.target.value;
-                      const dists = getDistrictsForDivision(newDiv);
-                      const newDist = dists[0] || 'Dhaka';
-                      const thanas = getThanasForDistrict(newDist);
+                      const newDivId = e.target.value ? Number(e.target.value) : null;
                       setHospitalForm({
                         ...hospitalForm,
-                        division: newDiv,
-                        district: newDist,
-                        area: thanas[0] || '',
-                        branch: thanas[0] || 'Main',
-                        isCustomBranch: false,
-                        customBranch: ''
+                        division_id: newDivId,
+                        district_id: null,
+                        thana_id: null,
                       });
                     }}
-                    className="w-full bg-white border border-[#d1d5dc] rounded-sm px-2.5 py-1.5 text-slate-800 font-bold focus:outline-none focus:border-[#094cb2]"
+                    className="w-full bg-white border border-[#d1d5dc] rounded-sm px-2.5 py-1.5 text-slate-800 font-bold focus:outline-none focus:border-[#094cb2] disabled:opacity-60"
                   >
-                    {DIVISIONS.map(div => (
-                      <option key={div} value={div}>{div} Division</option>
+                    <option value="">Select Division</option>
+                    {divisions.map(div => (
+                      <option key={div.id} value={div.id}>{div.label || div.name}</option>
                     ))}
                   </select>
                 </div>
@@ -272,23 +264,21 @@ export default function HospitalModal() {
                   <label className="block text-slate-700 font-label font-bold uppercase text-[10px] mb-1">2. District *</label>
                   <select
                     required
-                    value={hospitalForm.district}
+                    value={hospitalForm.district_id ?? ''}
+                    disabled={!hospitalForm.division_id || loadingDistricts}
                     onChange={e => {
-                      const newDist = e.target.value;
-                      const thanas = getThanasForDistrict(newDist);
+                      const newDistId = e.target.value ? Number(e.target.value) : null;
                       setHospitalForm({
                         ...hospitalForm,
-                        district: newDist,
-                        area: thanas[0] || '',
-                        branch: thanas[0] || 'Main',
-                        isCustomBranch: false,
-                        customBranch: ''
+                        district_id: newDistId,
+                        thana_id: null,
                       });
                     }}
-                    className="w-full bg-white border border-[#d1d5dc] rounded-sm px-2.5 py-1.5 text-slate-800 font-bold focus:outline-none focus:border-[#094cb2]"
+                    className="w-full bg-white border border-[#d1d5dc] rounded-sm px-2.5 py-1.5 text-slate-800 font-bold focus:outline-none focus:border-[#094cb2] disabled:opacity-60"
                   >
-                    {currentDistricts.map(dist => (
-                      <option key={dist} value={dist}>{dist}</option>
+                    <option value="">Select District</option>
+                    {districts.map(dist => (
+                      <option key={dist.id} value={dist.id}>{dist.label || dist.name}</option>
                     ))}
                   </select>
                 </div>
@@ -298,25 +288,29 @@ export default function HospitalModal() {
                   <label className="block text-slate-700 font-label font-bold uppercase text-[10px] mb-1">3. Thana / Branch *</label>
                   <select
                     required
-                    value={hospitalForm.isCustomBranch ? 'Other' : hospitalForm.branch}
+                    value={hospitalForm.isCustomBranch ? 'Other' : (hospitalForm.thana_id ?? '')}
+                    disabled={!hospitalForm.district_id || loadingThanas}
                     onChange={e => {
                       const val = e.target.value;
                       if (val === 'Other') {
                         setHospitalForm({ ...hospitalForm, isCustomBranch: true, branch: 'Other' });
                       } else {
+                        const selectedT = thanas.find(t => t.id === Number(val));
+                        const tName = selectedT?.name || '';
                         setHospitalForm({ 
                           ...hospitalForm, 
                           isCustomBranch: false, 
-                          branch: val, 
-                          area: val,
+                          thana_id: val ? Number(val) : null,
+                          branch: tName || 'Main',
                           customBranch: '' 
                         });
                       }
                     }}
-                    className="w-full bg-white border border-[#d1d5dc] rounded-sm px-2.5 py-1.5 text-slate-800 font-bold focus:outline-none focus:border-[#094cb2]"
+                    className="w-full bg-white border border-[#d1d5dc] rounded-sm px-2.5 py-1.5 text-slate-800 font-bold focus:outline-none focus:border-[#094cb2] disabled:opacity-60"
                   >
-                    {currentThanas.map(th => (
-                      <option key={th} value={th}>{th}</option>
+                    <option value="">Select Thana</option>
+                    {thanas.map(th => (
+                      <option key={th.id} value={th.id}>{th.label || th.name}</option>
                     ))}
                     <option value="Other">+ Custom Branch Name</option>
                   </select>
@@ -450,6 +444,19 @@ export default function HospitalModal() {
               />
               <label htmlFor="has_diagnostic_center" className="text-slate-700 font-bold cursor-pointer text-xs">
                 Has Internal Diagnostic Center / Pathology Laboratory
+              </label>
+            </div>
+
+            <div className="flex items-center gap-2 pt-1">
+              <input
+                type="checkbox"
+                id="details_reviewed"
+                checked={hospitalForm.details_reviewed}
+                onChange={e => setHospitalForm({ ...hospitalForm, details_reviewed: e.target.checked })}
+                className="w-4 h-4 text-[#094cb2] rounded-xs border-[#d1d5dc] focus:ring-[#094cb2]"
+              />
+              <label htmlFor="details_reviewed" className="text-slate-700 font-bold cursor-pointer text-xs">
+                Details verified (All operational details reviewed and audited)
               </label>
             </div>
 

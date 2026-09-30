@@ -5,7 +5,6 @@ import {
 } from 'lucide-react';
 import { api } from '../../../services/api';
 import { useAdminContext } from '../context/AdminContext';
-import { formatFacilityName } from '../../../utils/facilityUtils';
 
 export default function AddTestsToDiagnosticsTab() {
   const {
@@ -38,14 +37,14 @@ export default function AddTestsToDiagnosticsTab() {
     if (addTestsFacilityPrefill?.type === 'diagnostic_center' && addTestsFacilityPrefill?.id) {
       return String(addTestsFacilityPrefill.id);
     }
-    const firstId = diagnosticCenters[0]?.id || diagnosticCenters[0]?.location_details?.id;
+    const firstId = diagnosticCenters[0]?.id || diagnosticCenters[0]?.location_id;
     return firstId ? String(firstId) : '';
   });
   const [selectedHospitalId, setSelectedHospitalId] = useState(() => {
     if (addTestsFacilityPrefill?.type === 'hospital' && addTestsFacilityPrefill?.id) {
       return String(addTestsFacilityPrefill.id);
     }
-    const firstId = hospitals[0]?.id || hospitals[0]?.location_details?.id;
+    const firstId = hospitals[0]?.id || hospitals[0]?.location_id;
     return firstId ? String(firstId) : '';
   });
   const [selectedCatIds, setSelectedCatIds] = useState([]);
@@ -61,9 +60,9 @@ export default function AddTestsToDiagnosticsTab() {
       const isHosp = Boolean(hospitals[0]);
       setFacilityType(isHosp ? 'hospital' : 'diagnostic_center');
       if (isHosp) {
-        setSelectedHospitalId(String(lockedFacility.id || lockedFacility.location_details?.id));
+        setSelectedHospitalId(String(lockedFacility.id || lockedFacility.location_id));
       } else {
-        setSelectedCenterId(String(lockedFacility.id || lockedFacility.location_details?.id));
+        setSelectedCenterId(String(lockedFacility.id || lockedFacility.location_id));
       }
     }
   }, [isSuperAdmin, lockedFacility, hospitals, diagnosticCenters]);
@@ -84,14 +83,14 @@ export default function AddTestsToDiagnosticsTab() {
   // Fallback to first available facility if selectedCenterId is empty
   useEffect(() => {
     if (!selectedCenterId && diagnosticCenters.length > 0 && facilityType === 'diagnostic_center') {
-      const firstId = diagnosticCenters[0].id || diagnosticCenters[0].location_details?.id;
+      const firstId = diagnosticCenters[0].id || diagnosticCenters[0].location_id;
       if (firstId) setSelectedCenterId(String(firstId));
     }
   }, [selectedCenterId, diagnosticCenters, facilityType]);
 
   useEffect(() => {
     if (!selectedHospitalId && hospitals.length > 0 && facilityType === 'hospital') {
-      const firstId = hospitals[0].id || hospitals[0].location_details?.id;
+      const firstId = hospitals[0].id || hospitals[0].location_id;
       if (firstId) setSelectedHospitalId(String(firstId));
     }
   }, [selectedHospitalId, hospitals, facilityType]);
@@ -99,12 +98,12 @@ export default function AddTestsToDiagnosticsTab() {
   // When facility selection or type changes, pre-populate existing category associations
   useEffect(() => {
     if (facilityType === 'diagnostic_center') {
-      const center = diagnosticCenters.find(dc => String(dc.id || dc.location_details?.id) === String(selectedCenterId));
+      const center = diagnosticCenters.find(dc => String(dc.id) === String(selectedCenterId));
       if (center && Array.isArray(center.test_category_ids) && center.test_category_ids.length > 0) {
         setSelectedCatIds(center.test_category_ids.map(id => id.toString()));
       } else {
         const existingBranchTestIds = branchTests
-          .filter(bt => String(bt.center?.id || bt.center || bt.location_id || bt.location || bt.location_details?.id) === String(selectedCenterId))
+          .filter(bt => String(bt.facility?.id || bt.center?.id || bt.center || bt.location_id || bt.location) === String(selectedCenterId))
           .map(bt => bt.test?.id || bt.test);
         
         const existingCatIds = new Set();
@@ -117,12 +116,12 @@ export default function AddTestsToDiagnosticsTab() {
         setSelectedCatIds(Array.from(existingCatIds));
       }
     } else {
-      const hospital = hospitals.find(h => String(h.id || h.location_details?.id) === String(selectedHospitalId));
+      const hospital = hospitals.find(h => String(h.id) === String(selectedHospitalId));
       if (hospital && Array.isArray(hospital.test_category_ids) && hospital.test_category_ids.length > 0) {
         setSelectedCatIds(hospital.test_category_ids.map(id => id.toString()));
       } else {
         const existingBranchTestIds = branchTests
-          .filter(bt => String(bt.hospital?.id || bt.hospital || bt.location_id || bt.location || bt.location_details?.id) === String(selectedHospitalId))
+          .filter(bt => String(bt.facility?.id || bt.hospital?.id || bt.hospital || bt.location_id || bt.location) === String(selectedHospitalId))
           .map(bt => bt.test?.id || bt.test);
         
         const existingCatIds = new Set();
@@ -169,8 +168,8 @@ export default function AddTestsToDiagnosticsTab() {
   });
 
   const currentFacility = facilityType === 'diagnostic_center'
-    ? diagnosticCenters.find(dc => String(dc.id || dc.location_details?.id) === String(selectedCenterId))
-    : hospitals.find(h => String(h.id || h.location_details?.id) === String(selectedHospitalId));
+    ? diagnosticCenters.find(dc => String(dc.id) === String(selectedCenterId))
+    : hospitals.find(h => String(h.id) === String(selectedHospitalId));
 
   const handleSaveAssociations = async () => {
     if (!currentFacility) {
@@ -180,17 +179,17 @@ export default function AddTestsToDiagnosticsTab() {
 
     const facilityId = facilityType === 'diagnostic_center' ? selectedCenterId : selectedHospitalId;
     const isHosp = facilityType === 'hospital';
-    const facilityName = currentFacility.name || currentFacility.location_details?.name || 'Facility';
-    const facilityBranch = currentFacility.branch || currentFacility.location_details?.branch || 'Main Branch';
+    const facilityName = currentFacility.display_name || currentFacility.name || 'Facility';
+    const facilityBranch = currentFacility.branch || 'Main Branch';
 
     setIsSaving(true);
     try {
       const existingBranchTestIds = new Set(
         branchTests
           .filter(bt => {
-            const btFacId = isHosp 
-              ? (bt.hospital?.id || bt.hospital || bt.hospital_id || bt.location_id || bt.location_details?.id)
-              : (bt.center?.id || bt.center || bt.center_id || bt.location_id || bt.location_details?.id);
+            const btFacId = bt.facility?.id || (isHosp 
+              ? (bt.hospital?.id || bt.hospital || bt.hospital_id || bt.location_id)
+              : (bt.center?.id || bt.center || bt.center_id || bt.location_id));
             return String(btFacId) === String(facilityId);
           })
           .map(bt => String(bt.test?.id || bt.test))
@@ -207,14 +206,11 @@ export default function AddTestsToDiagnosticsTab() {
           const entry = {
             id: `bt-${facilityType}-${facilityId}-${testId}-${Date.now()}`,
             facility_type: facilityType,
+            facility: currentFacility,
             center: !isHosp ? facilityId : null,
             center_id: !isHosp ? facilityId : null,
-            center_name: !isHosp ? facilityName : '',
-            center_branch: !isHosp ? facilityBranch : '',
             hospital: isHosp ? facilityId : null,
             hospital_id: isHosp ? facilityId : null,
-            hospital_name: isHosp ? facilityName : '',
-            hospital_branch: isHosp ? facilityBranch : '',
             test: testId,
             test_name: testObj.name,
             category: testObj.category || testObj.category_id || '',
@@ -344,7 +340,7 @@ export default function AddTestsToDiagnosticsTab() {
                   type="button"
                   onClick={() => {
                     setFacilityType('diagnostic_center');
-                    const firstId = diagnosticCenters[0]?.id || diagnosticCenters[0]?.location_details?.id;
+                    const firstId = diagnosticCenters[0]?.id || diagnosticCenters[0]?.location_id;
                     if (firstId) setSelectedCenterId(String(firstId));
                   }}
                   className={`py-1.5 px-2 rounded-xs text-xs font-label font-semibold flex items-center justify-center gap-1 transition cursor-pointer ${
@@ -359,7 +355,7 @@ export default function AddTestsToDiagnosticsTab() {
                   type="button"
                   onClick={() => {
                     setFacilityType('hospital');
-                    const firstId = hospitals[0]?.id || hospitals[0]?.location_details?.id;
+                    const firstId = hospitals[0]?.id || hospitals[0]?.location_id;
                     if (firstId) setSelectedHospitalId(String(firstId));
                   }}
                   className={`py-1.5 px-2 rounded-xs text-xs font-label font-semibold flex items-center justify-center gap-1 transition cursor-pointer ${
@@ -385,13 +381,12 @@ export default function AddTestsToDiagnosticsTab() {
                   className="w-full bg-white border border-[#d1d5dc] rounded-sm px-3 py-1.5 text-xs text-[#1b1c1d] focus:outline-none focus:border-[#094cb2]"
                 >
                   {diagnosticCenters.map(dc => {
-                    const dcId = dc.id || dc.location_details?.id;
-                    const dcName = dc.name || dc.location_details?.name || 'Diagnostic Center';
-                    const dcBranch = dc.branch || dc.location_details?.branch || 'Main Branch';
-                    const dcDistrict = dc.district || dc.location_details?.district || 'Dhaka';
+                    const dcId = dc.id || dc.location_id;
+                    const dcDisplayName = dc.display_name || (dc.branch ? `${dc.name} (${dc.branch})` : dc.name);
+                    const dcDistrict = dc.district || 'Dhaka';
                     return (
                       <option key={dcId} value={dcId}>
-                        {formatFacilityName(dcName, dcBranch)} — {dcDistrict}
+                        {dcDisplayName} — {dcDistrict}
                       </option>
                     );
                   })}
@@ -403,13 +398,12 @@ export default function AddTestsToDiagnosticsTab() {
                   className="w-full bg-white border border-[#d1d5dc] rounded-sm px-3 py-1.5 text-xs text-[#1b1c1d] focus:outline-none focus:border-[#094cb2]"
                 >
                   {hospitals.map(h => {
-                    const hId = h.id || h.location_details?.id;
-                    const hName = h.name || h.location_details?.name || 'Hospital';
-                    const hBranch = h.branch || h.location_details?.branch || 'Main Branch';
-                    const hDistrict = h.district || h.location_details?.district || 'Dhaka';
+                    const hId = h.id || h.location_id;
+                    const hDisplayName = h.display_name || (h.branch ? `${h.name} (${h.branch})` : h.name);
+                    const hDistrict = h.district || 'Dhaka';
                     return (
                       <option key={hId} value={hId}>
-                        {formatFacilityName(hName, hBranch)} — {hDistrict}
+                        {hDisplayName} — {hDistrict}
                       </option>
                     );
                   })}

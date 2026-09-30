@@ -25,15 +25,14 @@ export default function FacilityAdminOverview() {
   const isHospital = Boolean(activeHospital);
   const facility = activeHospital || activeDiagnostic;
 
-  const loc = facility?.location_details || facility?.location || {};
-  const facilityName = facility?.name || loc?.name || (isHospital ? 'Square Hospital' : 'Popular Diagnostic Centre');
-  const branchName = facility?.branch || loc?.branch || (isHospital ? 'Panthapath Main' : 'Dhanmondi Branch');
-  const address = loc?.address_line || loc?.area || 'Dhaka, Bangladesh';
-  const phone = loc?.phone || '+880 1700-000000';
-  const email = loc?.email || 'admin@facility.com';
-  const timing = loc?.open_timing || '24/7 Open';
-  const rating = loc?.rating || 4.8;
-  const badge = loc?.badge || (isHospital ? 'Top Rated Hospital' : 'Verified Diagnostic');
+  const facilityName = facility?.display_name || facility?.name || (isHospital ? 'Hospital' : 'Diagnostic Centre');
+  const branchName = facility?.branch || '';
+  const address = facility?.address || 'Dhaka, Bangladesh';
+  const phone = facility?.phone || '';
+  const email = facility?.email || '';
+  const timing = facility?.open_timing || '24/7 Open';
+  const rating = facility?.rating || 4.8;
+  const badge = facility?.badge || (isHospital ? 'Top Rated Hospital' : 'Verified Diagnostic');
 
   return (
     <div className="space-y-6">

@@ -3,7 +3,7 @@ import React from 'react';
 export default function DiagnosticsResultsHeader({
   locationLabel = 'Dhaka',
   totalCount = 0,
-  sortBy = 'relevance',
+  sortBy = 'price_asc',
   onSortChange,
 }) {
   return (

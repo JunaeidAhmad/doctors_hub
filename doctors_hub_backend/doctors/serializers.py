@@ -1,9 +1,9 @@
 from rest_framework import serializers
 from .models import (
-    DoctorSpecialty, SpecialtyAlias, Doctor, DoctorAffiliation, AffiliationSchedule
+    DoctorSpecialty, SpecialtyAlias, Doctor, DoctorAffiliation, AffiliationSchedule, ScheduleException
 )
 from facilities.models import Location
-from facilities.serializers import LocationSerializer
+from facilities.serializers_summary import FacilitySummarySerializer
 
 
 class SpecialtyTagSerializer(serializers.ModelSerializer):
@@ -150,7 +150,10 @@ class AffiliationScheduleSerializer(serializers.ModelSerializer):
 
     class Meta:
         model = AffiliationSchedule
-        fields = ('id', 'affiliation', 'affiliation_id', 'day_of_week', 'start_time', 'end_time')
+        fields = (
+            'id', 'affiliation', 'affiliation_id', 'day_of_week', 'start_time', 'end_time',
+            'max_patients', 'avg_consult_minutes'
+        )
         extra_kwargs = {
             'affiliation': {'required': False}
         }
@@ -216,11 +219,7 @@ def strip_doctor_honorific(name_str):
 
 
 class DoctorAffiliationSerializer(serializers.ModelSerializer):
-    facility_name = serializers.CharField(source='location.name', read_only=True, default='')
-    branch = serializers.CharField(source='location.branch', read_only=True, default='')
-    district = serializers.CharField(source='location.district', read_only=True, default='')
-    division = serializers.CharField(source='location.division', read_only=True, default='')
-    area = serializers.CharField(source='location.area', read_only=True, default='')
+    facility = FacilitySummarySerializer(source='location', read_only=True)
     schedules = AffiliationScheduleSerializer(many=True, required=False)
 
     doctor_name = serializers.CharField(source='doctor.name', read_only=True, default='')
@@ -229,7 +228,6 @@ class DoctorAffiliationSerializer(serializers.ModelSerializer):
     institution = serializers.CharField(source='doctor.institution', read_only=True, default='')
     qualification = serializers.CharField(source='doctor.qualification', read_only=True, default='')
     experience = serializers.CharField(source='doctor.experience', read_only=True, default='')
-    location_details = LocationSerializer(source='location', read_only=True)
     location_id = serializers.PrimaryKeyRelatedField(
         queryset=Location.objects.all(), write_only=True, source='location', required=False
     )
@@ -237,20 +235,121 @@ class DoctorAffiliationSerializer(serializers.ModelSerializer):
         queryset=Doctor.objects.all(), required=False
     )
 
+    next_available = serializers.SerializerMethodField()
+
     class Meta:
         model = DoctorAffiliation
         fields = (
-            'id', 'doctor', 'location_id', 'location_details', 'fee',
-            'facility_name', 'branch', 'district', 'division', 'area', 'schedules',
-            'chamber_type', 'status_label',
+            'id', 'doctor', 'location_id', 'facility', 'fee',
+            'schedules',
+            'chamber_type', 'advance_booking_days', 'next_available',
             'doctor_name', 'doctor_bn_name', 'academic_title', 'institution', 'qualification', 'experience'
         )
+        validators = []
+
+    def validate(self, attrs):
+        doctor = attrs.get('doctor') or (self.instance.doctor if self.instance else None)
+        location = attrs.get('location') or (self.instance.location if self.instance else None)
+        if doctor and location:
+            qs = DoctorAffiliation.objects.filter(doctor=doctor, location=location)
+            if self.instance and self.instance.pk:
+                qs = qs.exclude(pk=self.instance.pk)
+            if qs.exists():
+                raise serializers.ValidationError("This doctor is already affiliated with this facility.")
+        return attrs
+
+    def get_next_available(self, obj):
+        next_available_map = self.context.get('next_available_map')
+        if next_available_map is not None:
+            return next_available_map.get(str(obj.id)) or next_available_map.get(obj.id)
+        return None
 
     def to_internal_value(self, data):
         mutable_data = data.copy() if hasattr(data, 'copy') else dict(data)
         if 'location' in mutable_data and not mutable_data.get('location_id'):
             mutable_data['location_id'] = mutable_data['location']
         return super().to_internal_value(mutable_data)
+
+
+class ScheduleExceptionSerializer(serializers.ModelSerializer):
+    affiliation = serializers.PrimaryKeyRelatedField(read_only=True)
+    affiliation_id = serializers.PrimaryKeyRelatedField(
+        queryset=DoctorAffiliation.objects.all(), source='affiliation', write_only=True
+    )
+    affected_bookings = serializers.SerializerMethodField()
+
+    class Meta:
+        model = ScheduleException
+        fields = (
+            'id', 'affiliation', 'affiliation_id', 'date', 'kind', 'schedule',
+            'start_time', 'end_time', 'max_patients', 'avg_consult_minutes',
+            'note', 'created_at', 'affected_bookings'
+        )
+        read_only_fields = ('created_at',)
+
+    def get_affected_bookings(self, obj):
+        from bookings.models import DoctorBooking
+        qs = DoctorBooking.objects.filter(
+            affiliation=obj.affiliation,
+            date=obj.date
+        ).exclude(status='cancelled')
+        if obj.schedule:
+            qs = qs.filter(session_key=f"s:{obj.schedule_id}")
+        return qs.count()
+
+    def validate(self, attrs):
+        from django.utils import timezone
+        date_val = attrs.get('date') or (self.instance.date if self.instance else None)
+        if date_val and date_val < timezone.localdate():
+            raise serializers.ValidationError({"date": "Exception date cannot be in the past."})
+
+        kind = attrs.get('kind') or (self.instance.kind if self.instance else None)
+        schedule = attrs.get('schedule') or (self.instance.schedule if self.instance else None)
+        start_time = attrs.get('start_time') or (self.instance.start_time if self.instance else None)
+        end_time = attrs.get('end_time') or (self.instance.end_time if self.instance else None)
+
+        if kind in ('cancel', 'modify'):
+            if not schedule:
+                raise serializers.ValidationError({"schedule": f"Schedule is required for '{kind}' exception."})
+        elif kind == 'extra':
+            if schedule:
+                raise serializers.ValidationError({"schedule": "Schedule must be null for 'extra' exception."})
+            if not start_time or not end_time:
+                raise serializers.ValidationError("start_time and end_time are required for 'extra' exception.")
+
+        if start_time and end_time and start_time >= end_time:
+            raise serializers.ValidationError({"end_time": "End time must be after start time."})
+
+        # Overlap validation across all affiliations of the same doctor on that date (P1.7.8)
+        affiliation = attrs.get('affiliation') or (self.instance.affiliation if self.instance else None)
+        if affiliation and date_val and start_time and end_time and kind in ('extra', 'modify'):
+            doctor = affiliation.doctor
+            weekday_name = date_val.strftime('%A')
+            other_schedules = AffiliationSchedule.objects.filter(
+                affiliation__doctor=doctor,
+                day_of_week=weekday_name,
+                start_time__lt=end_time,
+                end_time__gt=start_time
+            )
+            if schedule:
+                other_schedules = other_schedules.exclude(pk=schedule.pk)
+            if other_schedules.exists():
+                raise serializers.ValidationError("Session time overlaps with another session of the doctor on this date.")
+
+            other_exceptions = ScheduleException.objects.filter(
+                affiliation__doctor=doctor,
+                date=date_val,
+                kind__in=['extra', 'modify'],
+                start_time__lt=end_time,
+                end_time__gt=start_time
+            )
+            if self.instance and self.instance.pk:
+                other_exceptions = other_exceptions.exclude(pk=self.instance.pk)
+            if other_exceptions.exists():
+                raise serializers.ValidationError("Session time overlaps with another exception session of the doctor on this date.")
+
+        return attrs
+
 
 
 class DoctorSerializer(serializers.ModelSerializer):

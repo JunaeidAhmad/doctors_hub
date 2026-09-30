@@ -5,7 +5,8 @@ from .views import (
     SpecialtyAliasViewSet,
     DoctorViewSet,
     DoctorAffiliationViewSet,
-    AffiliationScheduleViewSet
+    AffiliationScheduleViewSet,
+    ScheduleExceptionViewSet
 )
 
 
@@ -15,6 +16,7 @@ router.register(r'specialty-aliases', SpecialtyAliasViewSet, basename='specialty
 router.register(r'doctors', DoctorViewSet, basename='doctor')
 router.register(r'affiliations', DoctorAffiliationViewSet, basename='affiliation')
 router.register(r'schedules', AffiliationScheduleViewSet, basename='schedule')
+router.register(r'schedule-exceptions', ScheduleExceptionViewSet, basename='schedule-exception')
 
 urlpatterns = [
     path('', include(router.urls)),

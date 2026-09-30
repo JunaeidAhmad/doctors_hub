@@ -80,7 +80,7 @@ export default function App() {
   }, [currentPage]);
 
   // Global Search Filters (Domain Separated)
-  const [selectedLocation, setSelectedLocation] = useState('All Bangladesh');
+  const [selectedLocation, setSelectedLocation] = useState(null);
   const [selectedSpecialty, setSelectedSpecialty] = useState('');
   const [selectedTest, setSelectedTest] = useState('');
   const [selectedHospitalCategory, setSelectedHospitalCategory] = useState('');
@@ -144,27 +144,22 @@ export default function App() {
 
   // Execute Search Navigation Handler (Decoupled per Domain)
   const handleExecuteSearch = (mode, param, locationOverride) => {
-    let locDiv = '';
-    let locDist = '';
-    let locArea = '';
+    let locDivId = null;
+    let locDistId = null;
+    let locThanaId = null;
 
     if (typeof locationOverride === 'object' && locationOverride !== null) {
-      locDiv = locationOverride.division || '';
-      locDist = locationOverride.district || '';
-      locArea = locationOverride.area || '';
-    } else if (typeof locationOverride === 'string') {
-      locDiv = locationOverride;
+      locDivId = locationOverride.divisionId ?? locationOverride.division_id ?? null;
+      locDistId = locationOverride.districtId ?? locationOverride.district_id ?? null;
+      locThanaId = locationOverride.thanaId ?? locationOverride.thana_id ?? null;
+    } else if (typeof locationOverride === 'number') {
+      locDivId = locationOverride;
     }
 
     const appendLocationParams = (queryParams) => {
-      if (locDiv && locDiv !== 'All Bangladesh') queryParams.set('division', locDiv);
-      if (locDist && locDist !== 'All Districts') queryParams.set('district', locDist);
-      if (locArea && locArea !== 'All Areas') queryParams.set('area', locArea);
-      if (locDist && locDist !== 'All Districts') {
-        queryParams.set('loc', locDist);
-      } else if (locDiv && locDiv !== 'All Bangladesh') {
-        queryParams.set('loc', locDiv);
-      }
+      if (locDivId) queryParams.set('division_id', String(locDivId));
+      if (locDistId) queryParams.set('district_id', String(locDistId));
+      if (locThanaId) queryParams.set('thana_id', String(locThanaId));
     };
 
     if (mode === 'doctor') {
@@ -188,7 +183,7 @@ export default function App() {
     } else if (mode === 'diagnostics_center') {
       const queryParams = new URLSearchParams();
       appendLocationParams(queryParams);
-      if (param) queryParams.set('spec', param);
+      if (param) queryParams.set('testcat', param);
       const queryStr = queryParams.toString();
       navigate(`/diagnostics-search${queryStr ? `?${queryStr}` : ''}`);
       setActiveTab('diagnostics');
@@ -394,7 +389,25 @@ export default function App() {
           {currentPage === 'doctor-profile' && (
             <DoctorProfilePage
               doctorSlug={currentDoctorSlug}
-              onBookDoctorSlot={(chamber, doctor) => setBookingDoctorState({ chamber, doctor })}
+              onBookDoctorSlot={(arg1, arg2) => {
+                if (arg1 && typeof arg1 === 'object' && arg1.chamber) {
+                  setBookingDoctorState({
+                    chamber: arg1.chamber,
+                    doctor: arg1.doctor,
+                    date: arg1.date,
+                    sessionKey: arg1.sessionKey || arg1.session_key,
+                    initialPatient: {
+                      name: arg1.patientName,
+                      phone: arg1.patientPhone,
+                      age: arg1.patientAge,
+                      gender: arg1.patientGender,
+                      symptoms: arg1.symptoms,
+                    }
+                  });
+                } else {
+                  setBookingDoctorState({ chamber: arg1, doctor: arg2 });
+                }
+              }}
               onNavigateHome={() => handleNavClick('home')}
               onNavigateDoctorSearch={() => {
                 navigate('/doctor-search');
@@ -419,8 +432,12 @@ export default function App() {
       {currentPage !== 'admin' && (
         <Footer 
           onSelectLocation={(loc) => {
-            setSelectedLocation(loc);
-            navigate('/doctor-search');
+            const divId = typeof loc === 'object' && loc ? loc.id : (typeof loc === 'number' ? loc : null);
+            if (divId) {
+              navigate(`/doctor-search?division_id=${divId}`);
+            } else {
+              navigate('/doctor-search');
+            }
             window.scrollTo({ top: 0, behavior: 'smooth' });
           }}
           onNavigateAdmin={() => handleNavClick('admin')}
@@ -433,6 +450,9 @@ export default function App() {
         <BookingModal
           chamber={bookingDoctorState.chamber}
           doctor={bookingDoctorState.doctor}
+          initialDate={bookingDoctorState.date}
+          initialSessionKey={bookingDoctorState.sessionKey}
+          initialPatient={bookingDoctorState.initialPatient}
           onClose={() => setBookingDoctorState(null)}
           onConfirmBooking={handleConfirmBooking}
           showToast={showToast}

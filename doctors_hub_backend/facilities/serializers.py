@@ -5,6 +5,7 @@ from .models import (
     Location, HospitalCategory, HospitalService, Hospital,
     DiagnosticCenterCategory, DiagnosticService, DiagnosticCenter, Chamber
 )
+from .serializers_summary import FacilitySummarySerializer
 
 class DivisionSerializer(serializers.ModelSerializer):
     districts_count = serializers.IntegerField(source='districts.count', read_only=True)
@@ -99,6 +100,11 @@ class LocationSerializer(serializers.ModelSerializer):
                 ret['input_area'] = raw_area
         return ret
 
+    def validate(self, attrs):
+        if self.instance is None and not attrs.get('thana'):
+            raise serializers.ValidationError({'thana': ['This field is required.']})
+        return super().validate(attrs)
+
     def _resolve_thana(self, validated_data):
         thana = validated_data.get('thana')
         input_district = validated_data.pop('input_district', None)
@@ -126,8 +132,8 @@ class LocationSerializer(serializers.ModelSerializer):
 
     def create(self, validated_data):
         validated_data = self._resolve_thana(validated_data)
-        if 'thana' not in validated_data or not validated_data['thana']:
-            validated_data['thana'] = Thana.objects.filter(district__name='Dhaka', name='Dhanmondi').first() or Thana.objects.first()
+        if not validated_data.get('thana'):
+            raise serializers.ValidationError({'thana': ['This field is required.']})
         return super().create(validated_data)
 
     def update(self, instance, validated_data):
@@ -136,8 +142,6 @@ class LocationSerializer(serializers.ModelSerializer):
 
 
 class HospitalSerializer(serializers.ModelSerializer):
-
-    location_details = LocationSerializer(source='location', read_only=True)
     location_id = serializers.PrimaryKeyRelatedField(
         queryset=Location.objects.all(), write_only=True, source='location'
     )
@@ -152,39 +156,64 @@ class HospitalSerializer(serializers.ModelSerializer):
     test_category_ids = serializers.ListField(
         child=serializers.UUIDField(), write_only=True, required=False
     )
-    affiliated_doctors = serializers.SerializerMethodField()
-    offered_tests = serializers.SerializerMethodField()
+    details_reviewed = serializers.BooleanField(required=False, default=False)
+    doctor_count = serializers.IntegerField(read_only=True, default=0)
+    test_count = serializers.IntegerField(read_only=True, default=0)
 
     class Meta:
         model = Hospital
         fields = (
-            'location_details', 'location_id', 'category', 'category_id',
+            'location_id', 'category', 'category_id',
             'services', 'service_ids', 'has_diagnostic_center', 'test_category_ids',
             'bed_capacity', 'icu_beds_total', 'icu_beds_available',
             'emergency_phone', 'ambulance_phone', 'accreditation', 'dghs_reg_no',
             'ot_suites_count', 'has_helipad', 'parking_capacity',
-            'affiliated_doctors', 'offered_tests'
+            'details_reviewed', 'doctor_count', 'test_count'
         )
 
-    def get_affiliated_doctors(self, obj):
-        if not obj.location:
-            return []
-        try:
-            from doctors.serializers import DoctorAffiliationSerializer
-            affs = obj.location.affiliations.all()
-            return DoctorAffiliationSerializer(affs, many=True).data
-        except Exception:
-            return []
+    def to_representation(self, instance):
+        from .serializers_summary import FacilitySummarySerializer
+        data = FacilitySummarySerializer(instance.location, context=self.context).data if instance.location else {}
+        loc = instance.location
+        if loc:
+            data['description'] = loc.description or ""
+            data['tagline'] = loc.tagline or ""
+            data['badge'] = loc.badge or ""
+            data['open_timing'] = loc.open_timing or ""
 
-    def get_offered_tests(self, obj):
-        if not obj.location:
-            return []
-        try:
-            from tests.serializers import FacilityTestSerializer
-            fts = obj.location.offered_tests.all()
-            return FacilityTestSerializer(fts, many=True).data
-        except Exception:
-            return []
+        cat = instance.category
+        if cat:
+            data['category'] = {'id': str(cat.id), 'slug': cat.slug, 'name': cat.name}
+            data['category_name'] = cat.name
+        else:
+            data['category'] = None
+            data['category_name'] = None
+
+        data['services'] = [{'id': str(s.id), 'name': s.name, 'icon': s.icon} for s in instance.services.all()]
+        data['has_diagnostic_center'] = instance.has_diagnostic_center
+        data['bed_capacity'] = instance.bed_capacity
+        data['icu_beds_total'] = instance.icu_beds_total
+        data['icu_beds_available'] = instance.icu_beds_available
+        data['emergency_phone'] = instance.emergency_phone
+        data['ambulance_phone'] = instance.ambulance_phone
+        data['accreditation'] = instance.accreditation
+        data['dghs_reg_no'] = instance.dghs_reg_no
+        data['ot_suites_count'] = instance.ot_suites_count
+        data['has_helipad'] = instance.has_helipad
+        data['parking_capacity'] = instance.parking_capacity
+        data['details_reviewed'] = getattr(instance, 'details_reviewed', False)
+
+        doc_cnt = getattr(instance, 'doctor_count', None)
+        if doc_cnt is None:
+            doc_cnt = instance.location.affiliations.count() if instance.location else 0
+        data['doctor_count'] = doc_cnt
+
+        t_cnt = getattr(instance, 'test_count', None)
+        if t_cnt is None:
+            t_cnt = instance.location.offered_tests.filter(is_available=True).count() if instance.location else 0
+        data['test_count'] = t_cnt
+
+        return data
 
     def create(self, validated_data):
         from services.facilities import create_hospital
@@ -223,12 +252,9 @@ class DiagnosticCenterOfferedTestSummarySerializer(serializers.Serializer):
     report_time = serializers.CharField(allow_blank=True, required=False)
     is_available = serializers.BooleanField(default=True)
     home_sample_collection = serializers.BooleanField(default=False)
-    facility_name = serializers.CharField(allow_blank=True, required=False)
-    facility_type = serializers.CharField(allow_blank=True, required=False)
 
 
 class DiagnosticCenterSerializer(serializers.ModelSerializer):
-    location_details = LocationSerializer(source='location', read_only=True)
     location_id = serializers.PrimaryKeyRelatedField(
         queryset=Location.objects.all(), write_only=True, source='location', required=False
     )
@@ -240,7 +266,8 @@ class DiagnosticCenterSerializer(serializers.ModelSerializer):
     service_ids = serializers.PrimaryKeyRelatedField(
         queryset=DiagnosticService.objects.all(), many=True, write_only=True, source='services', required=False
     )
-    offered_tests = serializers.SerializerMethodField()
+    doctor_count = serializers.IntegerField(read_only=True, default=0)
+    test_count = serializers.IntegerField(read_only=True, default=0)
     test_category_ids = serializers.ListField(
         child=serializers.UUIDField(), write_only=True, required=False
     )
@@ -248,17 +275,42 @@ class DiagnosticCenterSerializer(serializers.ModelSerializer):
     class Meta:
         model = DiagnosticCenter
         fields = (
-            'location_details', 'location_id', 'category', 'category_id',
-            'services', 'service_ids', 'offered_tests', 'test_category_ids'
+            'location_id', 'category', 'category_id',
+            'services', 'service_ids', 'test_category_ids',
+            'doctor_count', 'test_count'
         )
 
-    @extend_schema_field(DiagnosticCenterOfferedTestSummarySerializer(many=True))
-    def get_offered_tests(self, obj):
-        if not obj.location:
-            return []
-        from tests.serializers import FacilityTestSerializer
-        fts = obj.location.offered_tests.all()
-        return FacilityTestSerializer(fts, many=True).data
+    def to_representation(self, instance):
+        from .serializers_summary import FacilitySummarySerializer
+        data = FacilitySummarySerializer(instance.location, context=self.context).data if instance.location else {}
+        loc = instance.location
+        if loc:
+            data['description'] = loc.description or ""
+            data['tagline'] = loc.tagline or ""
+            data['badge'] = loc.badge or ""
+            data['open_timing'] = loc.open_timing or ""
+
+        cat = instance.category
+        if cat:
+            data['category'] = {'id': str(cat.id), 'slug': cat.slug, 'name': cat.name}
+            data['category_name'] = cat.name
+        else:
+            data['category'] = None
+            data['category_name'] = None
+
+        data['services'] = [{'id': str(s.id), 'name': s.name, 'icon': s.icon} for s in instance.services.all()]
+
+        doc_cnt = getattr(instance, 'doctor_count', None)
+        if doc_cnt is None:
+            doc_cnt = instance.location.affiliations.count() if instance.location else 0
+        data['doctor_count'] = doc_cnt
+
+        t_cnt = getattr(instance, 'test_count', None)
+        if t_cnt is None:
+            t_cnt = instance.location.offered_tests.filter(is_available=True).count() if instance.location else 0
+        data['test_count'] = t_cnt
+
+        return data
 
     def create(self, validated_data):
         from services.facilities import create_diagnostic_center
@@ -289,11 +341,11 @@ class DiagnosticCenterSerializer(serializers.ModelSerializer):
 
 
 class ChamberSerializer(serializers.ModelSerializer):
-    location_details = LocationSerializer(source='location', read_only=True)
+    facility = FacilitySummarySerializer(source='location', read_only=True)
     location_id = serializers.PrimaryKeyRelatedField(
         queryset=Location.objects.all(), write_only=True, source='location'
     )
     
     class Meta:
         model = Chamber
-        fields = ('location_details', 'location_id', 'doctor', 'assistant_phone')
+        fields = ('facility', 'location_id', 'doctor', 'assistant_phone')

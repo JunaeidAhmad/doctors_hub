@@ -1,5 +1,4 @@
 import React, { useState } from 'react';
-import { formatFacilityName } from '../../../utils/facilityUtils';
 
 export default function DiagnosticCentersTable({ offerings = [], testDetails = {}, onBookTest }) {
   const [isExpanded, setIsExpanded] = useState(false);
@@ -33,11 +32,9 @@ export default function DiagnosticCentersTable({ offerings = [], testDetails = {
         </thead>
         <tbody className="divide-y divide-outline-variant/40 font-body-sm text-xs">
           {visibleOfferings.map((offering, idx) => {
-            const center = offering.location_details || offering.center || offering.branch || {};
-            const rawCenterName = center.name || offering.facility_name || 'Diagnostic Center';
-            const branchName = center.branch || offering.branch || '';
-            const centerName = formatFacilityName(rawCenterName, branchName);
-            const initial = getInitial(rawCenterName);
+            const center = offering.facility || offering.center || offering.branch || {};
+            const centerName = center.display_name || center.name || 'Diagnostic Center';
+            const initial = getInitial(center.name || centerName);
 
             const isHome = Boolean(offering.home_sample_collection);
             const homeNote = offering.home_sample_note || (isHome ? 'Available' : 'Center Visit Only');

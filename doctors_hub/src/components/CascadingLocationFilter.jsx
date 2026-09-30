@@ -1,158 +1,98 @@
-import React, { useState, useEffect } from 'react';
+import React from 'react';
 import { MapPin, ChevronRight } from 'lucide-react';
-import { DIVISIONS, DIVISION_DISTRICTS, DISTRICT_THANAS, getDistrictsForDivision, getThanasForDistrict } from '../data/constants';
-import { getDivisions as fetchDivisionsApi, getDistricts as fetchDistrictsApi, getThanas as fetchThanasApi } from '../services/api/geo';
+import { useDivisions, useDistricts, useThanas } from '../hooks/useGeo';
 
 /**
  * CascadingLocationFilter
- * 1. Division: "All Bangladesh" + 8 Divisions
- * 2. District: Opens when a Division is selected (All Districts in {Division} + Districts)
- * 3. Area / Thana: Opens when a District is selected (All Areas in {District} + Thanas/Upazilas)
+ * Uses ID-based geography via useGeo hooks.
+ * Emits { divisionId, districtId, thanaId } as numbers or null.
  */
 export default function CascadingLocationFilter({
-  division = 'All Bangladesh',
-  district = 'All Districts',
-  area = 'All Areas',
+  divisionId = null,
+  districtId = null,
+  thanaId = null,
   onChange,
   theme = 'dark', // 'dark' | 'light'
   accent = 'emerald', // 'emerald' | 'teal' | 'cyan'
   layout = 'stacked', // 'stacked' | 'inline' | 'grid'
   showLabels = true,
   className = '',
-  divisionOnly = false
+  divisionOnly = false,
 }) {
-  const [apiDivisions, setApiDivisions] = useState([]);
-  const [apiDistricts, setApiDistricts] = useState([]);
-  const [apiThanas, setApiThanas] = useState([]);
-
-  useEffect(() => {
-    let isMounted = true;
-    fetchDivisionsApi()
-      .then((data) => {
-        if (isMounted && Array.isArray(data) && data.length > 0) {
-          setApiDivisions(data);
-        }
-      })
-      .catch(() => {});
-    return () => { isMounted = false; };
-  }, []);
-
-  const selectedDivObj = apiDivisions.find((d) => d.name.toLowerCase() === (division || '').toLowerCase());
-
-  useEffect(() => {
-    let isMounted = true;
-    if (selectedDivObj?.id) {
-      fetchDistrictsApi(selectedDivObj.id)
-        .then((data) => {
-          if (isMounted && Array.isArray(data)) {
-            setApiDistricts(data);
-          }
-        })
-        .catch(() => {});
-    } else {
-      setApiDistricts([]);
-    }
-    return () => { isMounted = false; };
-  }, [selectedDivObj?.id]);
-
-  const selectedDistObj = apiDistricts.find((d) => d.name.toLowerCase() === (district || '').toLowerCase());
-
-  useEffect(() => {
-    let isMounted = true;
-    if (selectedDistObj?.id) {
-      fetchThanasApi(selectedDistObj.id)
-        .then((data) => {
-          if (isMounted && Array.isArray(data)) {
-            setApiThanas(data);
-          }
-        })
-        .catch(() => {});
-    } else {
-      setApiThanas([]);
-    }
-    return () => { isMounted = false; };
-  }, [selectedDistObj?.id]);
-
-  // Use dynamic API names if available, falling back seamlessly to local constants
-  const currentDivisions = apiDivisions.length > 0
-    ? apiDivisions.map((d) => d.name)
-    : DIVISIONS;
-
-  const currentDistricts = apiDistricts.length > 0
-    ? apiDistricts.map((d) => d.name)
-    : (division && division !== 'All Bangladesh' ? getDistrictsForDivision(division) : []);
-
-  const currentThanas = apiThanas.length > 0
-    ? apiThanas.map((t) => t.name)
-    : (district && district !== 'All Districts' ? getThanasForDistrict(district) : []);
+  const { items: divisions, isLoading: loadingDivisions } = useDivisions();
+  const { items: districts, isLoading: loadingDistricts } = useDistricts(divisionId);
+  const { items: thanas, isLoading: loadingThanas } = useThanas(districtId);
 
   const isDark = theme === 'dark';
 
-  // Accent color utilities
   const accentBorder = {
     emerald: isDark ? 'focus:border-emerald-500 border-slate-700' : 'focus:border-emerald-500 border-slate-300',
     teal: isDark ? 'focus:border-teal-500 border-slate-700' : 'focus:border-teal-500 border-slate-300',
-    cyan: isDark ? 'focus:border-cyan-500 border-slate-700' : 'focus:border-cyan-500 border-slate-300'
+    cyan: isDark ? 'focus:border-cyan-500 border-slate-700' : 'focus:border-cyan-500 border-slate-300',
   }[accent] || (isDark ? 'focus:border-emerald-500 border-slate-700' : 'focus:border-emerald-500 border-slate-300');
 
   const accentLabel = {
     emerald: 'text-emerald-400',
     teal: 'text-teal-400',
-    cyan: 'text-cyan-400'
+    cyan: 'text-cyan-400',
   }[accent] || 'text-emerald-400';
 
   const selectBg = isDark ? 'bg-slate-900 text-white' : 'bg-white text-slate-800';
 
-  const handleDivisionChange = (newDiv) => {
+  const handleDivisionChange = (newVal) => {
+    const divId = newVal ? Number(newVal) : null;
     onChange({
-      division: newDiv,
-      district: 'All Districts',
-      area: 'All Areas'
+      divisionId: divId,
+      districtId: null,
+      thanaId: null,
     });
   };
 
-  const handleDistrictChange = (newDist) => {
+  const handleDistrictChange = (newVal) => {
+    const distId = newVal ? Number(newVal) : null;
     onChange({
-      division,
-      district: newDist,
-      area: 'All Areas'
+      divisionId,
+      districtId: distId,
+      thanaId: null,
     });
   };
 
-  const handleAreaChange = (newArea) => {
+  const handleThanaChange = (newVal) => {
+    const tId = newVal ? Number(newVal) : null;
     onChange({
-      division,
-      district,
-      area: newArea
+      divisionId,
+      districtId,
+      thanaId: tId,
     });
   };
 
   const containerClasses = {
     stacked: 'space-y-3',
     inline: 'contents',
-    grid: 'grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-3'
+    grid: 'grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-3',
   }[layout] || 'space-y-3';
 
   return (
     <div className={`${containerClasses} ${className}`}>
-      {/* 1. PRIMARY LEVEL: DIVISION / ALL BANGLADESH */}
+      {/* 1. PRIMARY LEVEL: DIVISION */}
       <div className={layout === 'inline' ? 'flex-1 min-w-[160px]' : ''}>
         {showLabels && (
           <label className={`block text-[11px] font-bold mb-1 flex items-center gap-1 ${isDark ? 'text-slate-300' : 'text-slate-700'} whitespace-nowrap`}>
             <MapPin className={`w-3.5 h-3.5 ${accentLabel} shrink-0`} />
-            <span>Division / Location</span>
+            <span>Division</span>
           </label>
         )}
         <div className="relative">
           <select
-            value={division || 'All Bangladesh'}
+            value={divisionId ?? ''}
             onChange={(e) => handleDivisionChange(e.target.value)}
-            className={`w-full ${selectBg} text-xs font-semibold border ${accentBorder} rounded-xl pl-3 pr-8 py-2.5 focus:outline-none transition-all appearance-none cursor-pointer shadow-xs`}
+            disabled={loadingDivisions}
+            className={`w-full ${selectBg} text-xs font-semibold border ${accentBorder} rounded-xl pl-3 pr-8 py-2.5 focus:outline-none transition-all appearance-none cursor-pointer shadow-xs disabled:opacity-60`}
           >
-            <option value="All Bangladesh">All Bangladesh</option>
-            {DIVISIONS.map((div) => (
-              <option key={div} value={div}>
-                {div} Division
+            <option value="">All Divisions</option>
+            {divisions.map((div) => (
+              <option key={div.id} value={div.id}>
+                {div.label}
               </option>
             ))}
           </select>
@@ -162,25 +102,26 @@ export default function CascadingLocationFilter({
         </div>
       </div>
 
-      {/* 2. SECONDARY LEVEL: DISTRICT (Opens only when a specific Division is selected) */}
-      {!divisionOnly && division && division !== 'All Bangladesh' && (
+      {/* 2. SECONDARY LEVEL: DISTRICT */}
+      {!divisionOnly && divisionId && (
         <div className={`transition-all duration-300 animate-in fade-in slide-in-from-top-1 ${layout === 'inline' ? 'flex-1 min-w-[160px]' : ''}`}>
           {showLabels && (
             <label className={`block text-[11px] font-bold mb-1 flex items-center gap-1.5 ${isDark ? 'text-slate-300' : 'text-slate-700'} whitespace-nowrap`}>
               <MapPin className={`w-3.5 h-3.5 ${accentLabel} shrink-0`} />
-              <span>District in {division}</span>
+              <span>District</span>
             </label>
           )}
           <div className="relative">
             <select
-              value={district || 'All Districts'}
+              value={districtId ?? ''}
               onChange={(e) => handleDistrictChange(e.target.value)}
-              className={`w-full ${selectBg} text-xs font-semibold border ${accentBorder} rounded-xl pl-3 pr-8 py-2.5 focus:outline-none transition-all appearance-none cursor-pointer shadow-xs`}
+              disabled={loadingDistricts}
+              className={`w-full ${selectBg} text-xs font-semibold border ${accentBorder} rounded-xl pl-3 pr-8 py-2.5 focus:outline-none transition-all appearance-none cursor-pointer shadow-xs disabled:opacity-60`}
             >
-              <option value="All Districts">All Districts in {division}</option>
-              {currentDistricts.map((dist) => (
-                <option key={dist} value={dist}>
-                  {dist}
+              <option value="">Select District</option>
+              {districts.map((dist) => (
+                <option key={dist.id} value={dist.id}>
+                  {dist.label}
                 </option>
               ))}
             </select>
@@ -191,25 +132,26 @@ export default function CascadingLocationFilter({
         </div>
       )}
 
-      {/* 3. TERTIARY LEVEL: AREA / THANA (Opens only when a specific District is selected) */}
-      {!divisionOnly && division && division !== 'All Bangladesh' && district && district !== 'All Districts' && (
+      {/* 3. TERTIARY LEVEL: THANA / AREA */}
+      {!divisionOnly && divisionId && districtId && (
         <div className={`transition-all duration-300 animate-in fade-in slide-in-from-top-1 ${layout === 'inline' ? 'flex-1 min-w-[160px]' : ''}`}>
           {showLabels && (
             <label className={`block text-[11px] font-bold mb-1 flex items-center gap-1.5 ${isDark ? 'text-slate-300' : 'text-slate-700'} whitespace-nowrap`}>
               <MapPin className={`w-3.5 h-3.5 ${accentLabel} shrink-0`} />
-              <span>Area / Thana in {district}</span>
+              <span>Area / Thana</span>
             </label>
           )}
           <div className="relative">
             <select
-              value={area || 'All Areas'}
-              onChange={(e) => handleAreaChange(e.target.value)}
-              className={`w-full ${selectBg} text-xs font-semibold border ${accentBorder} rounded-xl pl-3 pr-8 py-2.5 focus:outline-none transition-all appearance-none cursor-pointer shadow-xs`}
+              value={thanaId ?? ''}
+              onChange={(e) => handleThanaChange(e.target.value)}
+              disabled={loadingThanas}
+              className={`w-full ${selectBg} text-xs font-semibold border ${accentBorder} rounded-xl pl-3 pr-8 py-2.5 focus:outline-none transition-all appearance-none cursor-pointer shadow-xs disabled:opacity-60`}
             >
-              <option value="All Areas">All Areas in {district}</option>
-              {currentThanas.map((th) => (
-                <option key={th} value={th}>
-                  {th}
+              <option value="">Select Thana / Area</option>
+              {thanas.map((th) => (
+                <option key={th.id} value={th.id}>
+                  {th.label}
                 </option>
               ))}
             </select>

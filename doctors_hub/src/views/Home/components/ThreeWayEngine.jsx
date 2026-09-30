@@ -3,32 +3,7 @@ import { Stethoscope, FlaskConical, Search, Filter, Sparkles, MapPin, ChevronRig
 import { api, ensureArray } from '../../../services/api';
 import CascadingLocationFilter from '../../../components/CascadingLocationFilter';
 
-const FALLBACK_TEST_CATS = [
-  { id: 'cardiac-tests', name: 'Cardiac Tests', slug: 'cardiac-tests' },
-  { id: 'hematology', name: 'Hematology & Blood', slug: 'hematology' },
-  { id: 'biochemistry', name: 'Biochemistry & LFT/KFT', slug: 'biochemistry' },
-  { id: 'radiology-imaging', name: 'Radiology & X-Ray', slug: 'radiology-imaging' },
-  { id: 'ultrasound-usg', name: 'Ultrasound / USG', slug: 'ultrasound-usg' },
-  { id: 'ct-scan', name: 'CT Scan Body Imaging', slug: 'ct-scan' },
-  { id: 'mri', name: 'MRI Diagnostics', slug: 'mri' },
-  { id: 'neuro-tests', name: 'Neuro Diagnostics', slug: 'neuro-tests' },
-  { id: 'genetic-molecular', name: 'Genetic & Molecular', slug: 'genetic-molecular' },
-  { id: 'endoscopy-colonoscopy', name: 'Endoscopy & Colonoscopy', slug: 'endoscopy-colonoscopy' },
-  { id: 'serology', name: 'Serology & Immunity', slug: 'serology' },
-  { id: 'microbiology', name: 'Microbiology & Culture', slug: 'microbiology' },
-  { id: 'histopathology', name: 'Histopathology & Biopsy', slug: 'histopathology' },
-  { id: 'hormone-endocrinology', name: 'Hormones & Thyroid', slug: 'hormone-endocrinology' },
-  { id: 'urine-renal', name: 'Urine & Renal Tests', slug: 'urine-renal' },
-  { id: 'allergy-immunology', name: 'Allergy & Immunology', slug: 'allergy-immunology' },
-  { id: 'dental-imaging', name: 'Dental X-Ray & OPG', slug: 'dental-imaging' },
-  { id: 'mammography', name: 'Mammography & Breast', slug: 'mammography' },
-  { id: 'pulmonary-pft', name: 'Pulmonary Function (PFT)', slug: 'pulmonary-pft' },
-  { id: 'bone-dexa', name: 'Bone Mineral DEXA Scan', slug: 'bone-dexa' },
-  { id: 'infectious-diseases', name: 'Infectious Disease Panels', slug: 'infectious-diseases' },
-  { id: 'ophthalmology-diagnostics', name: 'Eye & Retinal Imaging', slug: 'ophthalmology-diagnostics' },
-  { id: 'pediatric-diagnostics', name: 'Pediatric Diagnostics', slug: 'pediatric-diagnostics' },
-  { id: 'health-checkup-packages', name: 'Health Checkup Packages', slug: 'health-checkup-packages' },
-];
+
 
 export default function ThreeWayEngine({
   selectedSpecialty,
@@ -56,7 +31,8 @@ export default function ThreeWayEngine({
     api.getSearchMetadata()
       .then((meta) => {
         if (isMounted && meta) {
-          if (meta.specialties) setSpecialties(ensureArray(meta.specialties));
+          if (meta.specialties_az) setSpecialties(ensureArray(meta.specialties_az));
+          else if (meta.specialties) setSpecialties(ensureArray(meta.specialties));
           if (meta.test_categories) setTestCategories(ensureArray(meta.test_categories));
           if (meta.hospital_categories) setHospitalCategories(ensureArray(meta.hospital_categories));
         }
@@ -84,30 +60,22 @@ export default function ThreeWayEngine({
   
   // Location states per search engine
   const [doctorLocState, setDoctorLocState] = useState({
-    division: typeof selectedLocation === 'string' ? selectedLocation : 'All Bangladesh',
-    district: 'All Districts',
-    area: 'All Areas'
+    divisionId: null,
+    districtId: null,
+    thanaId: null
   });
 
   const [diagLocState, setDiagLocState] = useState({
-    division: typeof selectedLocation === 'string' ? selectedLocation : 'All Bangladesh',
-    district: 'All Districts',
-    area: 'All Areas'
+    divisionId: null,
+    districtId: null,
+    thanaId: null
   });
 
   const [hospLocState, setHospLocState] = useState({
-    division: typeof selectedLocation === 'string' ? selectedLocation : 'All Bangladesh',
-    district: 'All Districts',
-    area: 'All Areas'
+    divisionId: null,
+    districtId: null,
+    thanaId: null
   });
-
-  useEffect(() => {
-    if (typeof selectedLocation === 'string' && selectedLocation) {
-      setDoctorLocState(prev => ({ ...prev, division: selectedLocation }));
-      setDiagLocState(prev => ({ ...prev, division: selectedLocation }));
-      setHospLocState(prev => ({ ...prev, division: selectedLocation }));
-    }
-  }, [selectedLocation]);
 
   const handleSearch = (mode, param, locState) => {
     if (typeof setActiveEngineTab === 'function') {
@@ -185,9 +153,9 @@ export default function ThreeWayEngine({
 
               {/* Cascading Location Filter (Division -> District -> Thana) */}
               <CascadingLocationFilter
-                division={doctorLocState.division}
-                district={doctorLocState.district}
-                area={doctorLocState.area}
+                divisionId={doctorLocState.divisionId}
+                districtId={doctorLocState.districtId}
+                thanaId={doctorLocState.thanaId}
                 onChange={setDoctorLocState}
                 theme="light"
                 accent="emerald"
@@ -240,7 +208,7 @@ export default function ThreeWayEngine({
                   >
                     <option value="">All Test Categories</option>
 
-                    {(testCategories.length > 0 ? testCategories : FALLBACK_TEST_CATS).filter((cat) => cat && cat.id !== 'all').map((cat) => (
+                    {testCategories.filter((cat) => cat && cat.id !== 'all').map((cat) => (
                       <option key={cat.slug || cat.id} value={cat.slug || cat.id}>
                         {cat.name}
                       </option>
@@ -254,9 +222,9 @@ export default function ThreeWayEngine({
 
               {/* Cascading Location Filter (Division -> District -> Thana) */}
               <CascadingLocationFilter
-                division={diagLocState.division}
-                district={diagLocState.district}
-                area={diagLocState.area}
+                divisionId={diagLocState.divisionId}
+                districtId={diagLocState.districtId}
+                thanaId={diagLocState.thanaId}
                 onChange={setDiagLocState}
                 theme="light"
                 accent="teal"
@@ -322,9 +290,9 @@ export default function ThreeWayEngine({
 
               {/* Cascading Location Filter (Division -> District -> Thana) */}
               <CascadingLocationFilter
-                division={hospLocState.division}
-                district={hospLocState.district}
-                area={hospLocState.area}
+                divisionId={hospLocState.divisionId}
+                districtId={hospLocState.districtId}
+                thanaId={hospLocState.thanaId}
                 onChange={setHospLocState}
                 theme="light"
                 accent="cyan"

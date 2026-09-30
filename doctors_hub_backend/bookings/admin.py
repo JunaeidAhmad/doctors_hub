@@ -18,7 +18,7 @@ class OTPVerificationAdmin(admin.ModelAdmin):
 
 @admin.register(DoctorBooking)
 class DoctorBookingAdmin(admin.ModelAdmin):
-    list_display = ('id', 'serial_number', 'patient_name', 'patient_phone', 'affiliation', 'date', 'slot', 'status')
+    list_display = ('id', 'serial_number', 'patient_name', 'patient_phone', 'affiliation', 'date', 'estimated_time', 'status')
     list_filter = ('status', 'date')
     search_fields = ('patient_name', 'patient_phone')
 

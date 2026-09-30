@@ -2,6 +2,7 @@ import { useState, useMemo, useEffect, useRef } from 'react';
 import { useSearchParams } from 'react-router-dom';
 import { api, ensureArray } from '../../../services/api';
 import { useDebounce } from '../../../hooks/useDebounce';
+import { useDivisions, useDistricts, useThanas } from '../../../hooks/useGeo';
 
 // Category normalization helper
 export function normalizeCategorySlug(param, categoriesList = []) {
@@ -13,18 +14,16 @@ export function normalizeCategorySlug(param, categoriesList = []) {
   if (categoriesList && categoriesList.length > 0) {
     const match = categoriesList.find((c) =>
       (c.slug && c.slug.toLowerCase() === cleanParam) ||
-      (c.id && String(c.id).toLowerCase() === cleanParam) ||
-      (c.name && c.name.toLowerCase() === cleanParam)
+      (c.id && String(c.id).toLowerCase() === cleanParam)
     );
     if (match) return match.slug || match.id;
   }
 
-  return cleanParam;
+  return 'all';
 }
 
 export function useDiagnosticsSearch({
   initialTest,
-  initialLocation,
   onBookLabTest
 }) {
   const [searchParams, setSearchParams] = useSearchParams();
@@ -33,9 +32,9 @@ export function useDiagnosticsSearch({
   // Read URL parameters with fallbacks
   const urlQ = searchParams.get('q') || '';
   const urlTestCat = searchParams.get('testcat') || initialTest || 'all';
-  const urlDivision = searchParams.get('division') || (initialLocation?.division || 'All Bangladesh');
-  const urlDistrict = searchParams.get('district') || (initialLocation?.district || 'All Districts');
-  const urlArea = searchParams.get('area') || (initialLocation?.area || 'All Areas');
+  const urlDivisionId = searchParams.get('division_id') ? Number(searchParams.get('division_id')) : null;
+  const urlDistrictId = searchParams.get('district_id') ? Number(searchParams.get('district_id')) : null;
+  const urlThanaId = searchParams.get('thana_id') ? Number(searchParams.get('thana_id')) : null;
   const urlFulfillment = searchParams.get('fulfillment') || 'all';
   const urlOwnership = searchParams.get('ownership') || 'all';
   const urlSort = searchParams.get('sort') || 'price_asc';
@@ -48,21 +47,44 @@ export function useDiagnosticsSearch({
   const [selectedCategory, setSelectedCategory] = useState(() =>
     normalizeCategorySlug(urlTestCat, [])
   );
-  const [division, setDivision] = useState(urlDivision);
-  const [district, setDistrict] = useState(urlDistrict);
-  const [area, setArea] = useState(urlArea);
+  const [divisionId, setDivisionId] = useState(urlDivisionId);
+  const [districtId, setDistrictId] = useState(urlDistrictId);
+  const [thanaId, setThanaId] = useState(urlThanaId);
   const [fulfillment, setFulfillment] = useState(urlFulfillment);
   const [ownership, setOwnership] = useState(urlOwnership);
   const [sortBy, setSortBy] = useState(urlSort);
   const [currentPage, setCurrentPage] = useState(urlPage);
   const [isMobileFiltersOpen, setIsMobileFiltersOpen] = useState(false);
 
+  const { items: divisions } = useDivisions();
+  const { items: districts } = useDistricts(divisionId);
+  const { items: thanas } = useThanas(districtId);
+
+  const divisionName = useMemo(() => {
+    if (!divisionId) return '';
+    return divisions.find(d => d.id === divisionId)?.name || '';
+  }, [divisions, divisionId]);
+
+  const districtName = useMemo(() => {
+    if (!districtId) return '';
+    return districts.find(d => d.id === districtId)?.name || '';
+  }, [districts, districtId]);
+
+  const thanaName = useMemo(() => {
+    if (!thanaId) return '';
+    return thanas.find(t => t.id === thanaId)?.name || '';
+  }, [thanas, thanaId]);
+
   // Data States
-  const [diagnosticCenters, setDiagnosticCenters] = useState([]);
   const [testCategories, setTestCategories] = useState([
     { id: 'all', name: 'All Test Types', slug: 'all' }
   ]);
+  const [results, setResults] = useState([]);
+  const [totalCount, setTotalCount] = useState(0);
+  const [totalPages, setTotalPages] = useState(1);
+  const [facets, setFacets] = useState({ ownership: {}, fulfillment: {} });
   const [isLoading, setIsLoading] = useState(true);
+  const [error, setError] = useState(null);
 
   // Reactive synchronization: sync URL testcat parameter / initialTest into selectedCategory
   useEffect(() => {
@@ -84,9 +106,9 @@ export function useDiagnosticsSearch({
     const params = new URLSearchParams();
     if (searchKeyword.trim()) params.set('q', searchKeyword.trim());
     if (selectedCategory && selectedCategory !== 'all') params.set('testcat', selectedCategory);
-    if (division && division !== 'All Bangladesh') params.set('division', division);
-    if (district && district !== 'All Districts') params.set('district', district);
-    if (area && area !== 'All Areas') params.set('area', area);
+    if (divisionId) params.set('division_id', String(divisionId));
+    if (districtId) params.set('district_id', String(districtId));
+    if (thanaId) params.set('thana_id', String(thanaId));
     if (fulfillment && fulfillment !== 'all') params.set('fulfillment', fulfillment);
     if (ownership && ownership !== 'all') params.set('ownership', ownership);
     if (sortBy && sortBy !== 'price_asc') params.set('sort', sortBy);
@@ -97,7 +119,7 @@ export function useDiagnosticsSearch({
       lastParamsRef.current = next;
       setSearchParams(params, { replace: true });
     }
-  }, [searchKeyword, selectedCategory, division, district, area, fulfillment, ownership, sortBy, currentPage, setSearchParams]);
+  }, [searchKeyword, selectedCategory, divisionId, districtId, thanaId, fulfillment, ownership, sortBy, currentPage, setSearchParams]);
 
   // Load Test Categories directly from API
   useEffect(() => {
@@ -131,61 +153,85 @@ export function useDiagnosticsSearch({
     return () => { isMounted = false; };
   }, []);
 
-  // Load Diagnostic Centers & Offered Tests from API
+  // Single fetch effect for searchFacilityTests API
   useEffect(() => {
     let isMounted = true;
     setIsLoading(true);
+    setError(null);
 
-    const cleanDiv = (division || '').replace(/\s*Division$/i, '').trim();
-    const cleanDist = (district || '').replace(/\s*District$/i, '').trim();
-    const cleanArea = (area || '').replace(/\s*(Thana|Area)s?$/i, '').trim();
+    const params = {
+      page: currentPage,
+      page_size: 4,
+      ordering: sortBy === 'price_desc' ? '-price' : 'price',
+    };
 
-    const isCleanDivAll = !cleanDiv || cleanDiv.toLowerCase() === 'all' || cleanDiv.toLowerCase() === 'all bangladesh';
-    const isCleanDistAll = !cleanDist || cleanDist.toLowerCase() === 'all' || cleanDist.toLowerCase() === 'all districts';
-    const isCleanAreaAll = !cleanArea || cleanArea.toLowerCase() === 'all' || cleanArea.toLowerCase() === 'all areas';
-
-    let queryTestCat = undefined;
-    if (selectedCategory && selectedCategory !== 'all') {
-      const catObj = testCategories.find(
-        (c) => c.slug === selectedCategory || c.id === selectedCategory || (c.name || '').toLowerCase() === selectedCategory.toLowerCase()
-      );
-      queryTestCat = catObj?.slug || selectedCategory;
+    if (debouncedSearchKeyword && debouncedSearchKeyword.trim()) {
+      params.q = debouncedSearchKeyword.trim();
     }
 
-    api.getDiagnosticCenters({
-      division: !isCleanDivAll ? cleanDiv : undefined,
-      district: !isCleanDistAll ? cleanDist : undefined,
-      area: !isCleanAreaAll ? cleanArea : undefined,
-      testcat: queryTestCat,
-      search: debouncedSearchKeyword.trim() || undefined,
-      page: 1,
-      page_size: 50,
-    })
+    if (selectedCategory && selectedCategory !== 'all') {
+      const catObj = testCategories.find(
+        (c) => c.slug === selectedCategory || c.id === selectedCategory
+      );
+      params.testcat = catObj?.slug || selectedCategory;
+    }
+
+    if (divisionId) params.division_id = divisionId;
+    if (districtId) params.district_id = districtId;
+    if (thanaId) params.thana_id = thanaId;
+
+    if (fulfillment && fulfillment !== 'all') {
+      params.fulfillment = fulfillment;
+    }
+
+    if (ownership && ownership !== 'all') {
+      params.ownership = ownership;
+    }
+
+    api.searchFacilityTests(params)
       .then((data) => {
         if (isMounted) {
-          const list = ensureArray(data, []);
-          setDiagnosticCenters(list);
+          setResults(data?.results || []);
+          setTotalCount(data?.count || 0);
+          setTotalPages(data?.total_pages || 1);
+          setFacets(data?.facets || { ownership: {}, fulfillment: {} });
           setIsLoading(false);
         }
       })
       .catch((err) => {
         if (isMounted) {
-          console.warn('Failed to load diagnostic centers:', err);
-          setDiagnosticCenters([]);
+          console.error('Failed to search facility tests:', err);
+          setError(err);
+          setResults([]);
+          setTotalCount(0);
+          setTotalPages(1);
           setIsLoading(false);
         }
       });
 
-    return () => { isMounted = false; };
-  }, [division, district, area, selectedCategory, debouncedSearchKeyword, testCategories]);
+    return () => {
+      isMounted = false;
+    };
+  }, [
+    debouncedSearchKeyword,
+    selectedCategory,
+    divisionId,
+    districtId,
+    thanaId,
+    fulfillment,
+    ownership,
+    sortBy,
+    currentPage,
+    testCategories,
+  ]);
 
   // Reset all filters to default
   const handleResetAll = () => {
     setSearchKeyword('');
     setSelectedCategory('all');
-    setDivision('All Bangladesh');
-    setDistrict('All Districts');
-    setArea('All Areas');
+    setDivisionId(null);
+    setDistrictId(null);
+    setThanaId(null);
     setFulfillment('all');
     setOwnership('all');
     setSortBy('price_asc');
@@ -193,219 +239,28 @@ export function useDiagnosticsSearch({
   };
 
   const handleClearLocation = () => {
-    setDivision('All Bangladesh');
-    setDistrict('All Districts');
-    setArea('All Areas');
+    setDivisionId(null);
+    setDistrictId(null);
+    setThanaId(null);
     setCurrentPage(1);
   };
 
   // Location label for breadcrumb and titles
   const locationLabel = useMemo(() => {
-    if (district && district !== 'All Districts') {
-      return district.replace(/\s*District$/i, '').trim();
-    }
-    if (division && division !== 'All Bangladesh') {
-      return division.replace(/\s*Division$/i, '').trim();
-    }
-    return 'Bangladesh';
-  }, [division, district]);
-
-  // Transform Diagnostic Centers into Test-centric Grouping
-  const processedTests = useMemo(() => {
-    const testMap = new Map();
-
-    if (diagnosticCenters.length > 0) {
-      diagnosticCenters.forEach((center) => {
-        const centerOffered = ensureArray(center.offered_tests || center.tests, []);
-        const centerLoc = center.location_details || center;
-
-        centerOffered.forEach((offering) => {
-          const tDetails = offering.test_details || offering.test || {};
-          const tName = (tDetails.name || offering.name || '').trim();
-          if (!tName) return;
-
-          const key = tName.toLowerCase();
-          const existing = testMap.get(key);
-
-          const offeringItem = {
-            id: offering.id || `${center.id}-${tDetails.id || tName}`,
-            facility_name: center.name || centerLoc.name || 'Diagnostic Center',
-            location_details: {
-              name: center.name || centerLoc.name,
-              branch: center.branch || centerLoc.branch || '',
-              district: center.district || centerLoc.district || '',
-              division: center.division || centerLoc.division || '',
-              ownership_type: center.ownership_type || centerLoc.ownership_type || 'private',
-            },
-            price: offering.price || offering.calculated_price || 500,
-            calculated_price: offering.calculated_price || offering.price || 500,
-            report_time: offering.report_time || (tDetails.report_time_hours ? `Within ${tDetails.report_time_hours} hrs` : 'Same Day'),
-            home_sample_collection: Boolean(offering.home_sample_collection),
-            home_sample_note: offering.home_sample_note || (offering.home_sample_collection ? 'Available' : 'Center Visit Only'),
-          };
-
-          if (existing) {
-            if (!existing.offerings.some((o) => o.facility_name === offeringItem.facility_name)) {
-              existing.offerings.push(offeringItem);
-            }
-          } else {
-            testMap.set(key, {
-              id: tDetails.id || `test-${tName.replace(/\s+/g, '-').toLowerCase()}`,
-              name: tName,
-              category_id: tDetails.category_id || tDetails.category?.id || '',
-              category_name: tDetails.category_name || tDetails.category?.name || 'Diagnostic Test',
-              category_slug: tDetails.category_slug || tDetails.category?.slug || '',
-              description: tDetails.description || 'Standard laboratory investigation with verified clinical reports.',
-              report_time_hours: tDetails.report_time_hours || 12,
-              fasting_required: Boolean(tDetails.fasting_required),
-              sample_type: tDetails.sample_type || 'Clinical Sample',
-              preparation_instructions: tDetails.preparation_instructions || '',
-              price: offeringItem.price,
-              offerings: [offeringItem],
-            });
-          }
-        });
-      });
-    }
-
-    let list = Array.from(testMap.values());
-
-    const cleanDiv = (division || '').replace(/\s*Division$/i, '').trim().toLowerCase();
-    const cleanDist = (district || '').replace(/\s*District$/i, '').trim().toLowerCase();
-    const cleanArea = (area || '').replace(/\s*(Thana|Area)s?$/i, '').trim().toLowerCase();
-
-    const isAllDiv = !cleanDiv || cleanDiv === 'all bangladesh' || cleanDiv === 'all';
-    const isAllDist = !cleanDist || cleanDist === 'all districts' || cleanDist === 'all';
-    const isAllArea = !cleanArea || cleanArea === 'all areas' || cleanArea === 'all';
-
-    // Filter 1: Search Keyword
-    if (searchKeyword.trim()) {
-      const q = searchKeyword.trim().toLowerCase();
-      list = list.filter((t) => {
-        const matchName = t.name.toLowerCase().includes(q);
-        const matchCat = (t.category_name || '').toLowerCase().includes(q);
-        const matchDesc = (t.description || '').toLowerCase().includes(q);
-        const matchCenter = t.offerings.some((o) => o.facility_name.toLowerCase().includes(q));
-        return matchName || matchCat || matchDesc || matchCenter;
-      });
-    }
-
-    // Filter 2: Category
-    if (selectedCategory && selectedCategory !== 'all') {
-      const selCatObj = testCategories.find(
-        (c) => c.slug === selectedCategory || c.id === selectedCategory || (c.name || '').toLowerCase() === selectedCategory.toLowerCase()
-      );
-      const catSlug = (selCatObj?.slug || selectedCategory).toLowerCase();
-      const catName = (selCatObj?.name || '').toLowerCase();
-      const catId = selCatObj?.id;
-
-      list = list.filter((t) => {
-        if (catId && t.category_id && t.category_id === catId) return true;
-        const cName = (t.category_name || '').toLowerCase();
-        const cSlug = (t.category_slug || '').toLowerCase();
-
-        if (cSlug && (cSlug === catSlug || cSlug.includes(catSlug) || catSlug.includes(cSlug))) return true;
-        if (catName && (cName.includes(catName) || catName.includes(cName))) return true;
-        return false;
-      });
-    }
-
-    // Filter 3: Location
-    if (!isAllDiv || !isAllDist || (!isAllArea && !searchKeyword.trim())) {
-      list = list.map((t) => {
-        const filteredOfferings = t.offerings.filter((o) => {
-          const loc = o.location_details || {};
-          const oDiv = (loc.division || '').toLowerCase();
-          const oDist = (loc.district || '').toLowerCase();
-          const oBranch = (loc.branch || '').toLowerCase();
-          const oAddress = (loc.address || '').toLowerCase();
-
-          if (!isAllDiv) {
-            const matchDiv = oDiv.includes(cleanDiv) || cleanDiv.includes(oDiv) || oDist.includes(cleanDiv);
-            if (!matchDiv) return false;
-          }
-          if (!isAllDist) {
-            const matchDist = oDist.includes(cleanDist) || cleanDist.includes(oDist);
-            if (!matchDist) return false;
-          }
-          if (!isAllArea && !searchKeyword.trim()) {
-            const matchArea = oBranch.includes(cleanArea) || oAddress.includes(cleanArea);
-            if (!matchArea) return false;
-          }
-          return true;
-        });
-
-        if (filteredOfferings.length === 0) return null;
-        return { ...t, offerings: filteredOfferings };
-      }).filter(Boolean);
-    }
-
-    // Filter 4: Fulfillment
-    if (fulfillment !== 'all') {
-      list = list.map((t) => {
-        const filteredOfferings = t.offerings.filter((o) => {
-          if (fulfillment === 'home') return o.home_sample_collection === true;
-          if (fulfillment === 'center') return o.home_sample_collection === false;
-          return true;
-        });
-        if (filteredOfferings.length === 0) return null;
-        return { ...t, offerings: filteredOfferings };
-      }).filter(Boolean);
-    }
-
-    // Filter 5: Ownership Type
-    if (ownership !== 'all') {
-      const ownKey = ownership.toLowerCase();
-      list = list.map((t) => {
-        const filteredOfferings = t.offerings.filter((o) => {
-          const oType = (o.location_details?.ownership_type || 'private').toLowerCase();
-          return oType === ownKey || oType.includes(ownKey);
-        });
-        if (filteredOfferings.length === 0) return null;
-        return { ...t, offerings: filteredOfferings };
-      }).filter(Boolean);
-    }
-
-    // Sort By
-    if (sortBy === 'price_desc') {
-      list.sort((a, b) => {
-        const pA = Math.max(...a.offerings.map((o) => Number(o.calculated_price || o.price || 0)));
-        const pB = Math.max(...b.offerings.map((o) => Number(o.calculated_price || o.price || 0)));
-        return pB - pA;
-      });
-    } else {
-      list.sort((a, b) => {
-        const pA = Math.min(...a.offerings.map((o) => Number(o.calculated_price || o.price || 0)));
-        const pB = Math.min(...b.offerings.map((o) => Number(o.calculated_price || o.price || 0)));
-        return pA - pB;
-      });
-    }
-
-    return list;
-  }, [diagnosticCenters, searchKeyword, selectedCategory, division, district, area, fulfillment, ownership, sortBy, testCategories]);
+    return districtName || divisionName || 'Bangladesh';
+  }, [districtName, divisionName]);
 
   // Check landing / active filters
-  const cleanDiv = (division || '').replace(/\s*Division$/i, '').trim().toLowerCase();
-  const cleanDist = (district || '').replace(/\s*District$/i, '').trim().toLowerCase();
-  const isAllDiv = !cleanDiv || cleanDiv === 'all bangladesh' || cleanDiv === 'all';
-  const isAllDist = !cleanDist || cleanDist === 'all districts' || cleanDist === 'all';
-  const isDefaultLanding = !searchKeyword.trim() && selectedCategory === 'all' && isAllDiv && isAllDist;
+  const isDefaultLanding = !searchKeyword.trim() && selectedCategory === 'all' && !divisionId && !districtId && !thanaId;
   const hasActiveFilters = Boolean(
     (searchKeyword && searchKeyword.trim()) ||
     (selectedCategory && selectedCategory !== 'all') ||
     (fulfillment && fulfillment !== 'all') ||
     (ownership && ownership !== 'all') ||
-    (!isAllDiv) ||
-    (!isAllDist)
+    divisionId ||
+    districtId ||
+    thanaId
   );
-
-  // Pagination
-  const pageSize = 4;
-  const totalPages = Math.max(1, Math.ceil(processedTests.length / pageSize));
-  const paginatedTests = useMemo(() => {
-    const start = (currentPage - 1) * pageSize;
-    return processedTests.slice(start, start + pageSize);
-  }, [processedTests, currentPage, pageSize]);
 
   // Book action from test card table
   const handleBookTest = (offering, center, testDetails) => {
@@ -428,7 +283,7 @@ export function useDiagnosticsSearch({
           home_sample_collection: offering.home_sample_collection,
           home_sample_note: offering.home_sample_note,
         },
-        branch: center || { name: offering.facility_name },
+        branch: offering.facility || center || { name: offering.facility_name },
       });
     }
   };
@@ -449,12 +304,15 @@ export function useDiagnosticsSearch({
     setSearchKeyword,
     selectedCategory,
     setSelectedCategory,
-    division,
-    setDivision,
-    district,
-    setDistrict,
-    area,
-    setArea,
+    divisionId,
+    setDivisionId,
+    districtId,
+    setDistrictId,
+    thanaId,
+    setThanaId,
+    divisionName,
+    districtName,
+    thanaName,
     fulfillment,
     setFulfillment,
     ownership,
@@ -467,12 +325,15 @@ export function useDiagnosticsSearch({
     setIsMobileFiltersOpen,
     testCategories,
     isLoading,
+    error,
+    results,
+    paginatedTests: results,
+    totalCount,
+    totalPages,
+    facets,
     locationLabel,
     isDefaultLanding,
     hasActiveFilters,
-    processedTests,
-    paginatedTests,
-    totalPages,
     handleResetAll,
     handleClearLocation,
     handleBookTest,

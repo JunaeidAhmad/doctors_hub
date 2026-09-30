@@ -1,3 +1,5 @@
+import { formatDisplayTime } from './scheduleUtils';
+
 /**
  * Doctor name formatting and bilingual display utilities.
  */
@@ -45,4 +47,21 @@ export function formatDoctorTitle(doctor, lang = 'en') {
     return `ডাঃ ${clean}`;
   }
   return `Dr. ${clean}`;
+}
+
+/**
+ * Formats next available session text.
+ * e.g., "Next: Thu 1 Oct · 05:00 PM · 12 left", or "No sessions in the next 7 days" when null.
+ */
+export function formatNextAvailable(nextAvail) {
+  if (!nextAvail || !nextAvail.date) return 'No sessions in the next 7 days';
+  try {
+    const d = new Date(nextAvail.date + 'T00:00:00');
+    const dateFormatted = d.toLocaleDateString('en-US', { weekday: 'short', day: 'numeric', month: 'short' });
+    const timeFormatted = formatDisplayTime(nextAvail.session_start) || nextAvail.session_start;
+    const remaining = nextAvail.remaining ?? nextAvail.capacity_remaining ?? 0;
+    return `Next: ${dateFormatted} · ${timeFormatted} · ${remaining} left`;
+  } catch (e) {
+    return 'No sessions in the next 7 days';
+  }
 }

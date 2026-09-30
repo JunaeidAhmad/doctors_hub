@@ -5,7 +5,6 @@ import {
   getHeaders,
   fetchWithDeduplicationAndCache,
   setCached,
-  flattenFacility,
 } from './core';
 
 // Admin Bootstrap (BFF pattern)
@@ -13,16 +12,7 @@ export async function getAdminDashboardInit() {
   const res = await fetchWithTimeout(`${BASE_URL}/admin/dashboard-init/`, {
     headers: getHeaders(),
   });
-  const data = await handleResponse(res);
-  if (data && typeof data === 'object') {
-    if (Array.isArray(data.hospitals)) {
-      data.hospitals = data.hospitals.map(flattenFacility);
-    }
-    if (Array.isArray(data.diagnostic_centers)) {
-      data.diagnostic_centers = data.diagnostic_centers.map(flattenFacility);
-    }
-  }
-  return data;
+  return handleResponse(res);
 }
 
 // Search Metadata / Bootstrap Endpoint
@@ -33,7 +23,8 @@ export async function getSearchMetadata() {
     });
     const data = await handleResponse(res);
     if (data && typeof data === 'object') {
-      if (data.specialties) setCached('specialties', data.specialties);
+      if (data.specialties_az) setCached('specialties', data.specialties_az);
+      else if (data.specialties) setCached('specialties', data.specialties);
       if (data.test_categories) setCached('test_categories', data.test_categories);
       if (data.diagnostic_center_categories) setCached('diagnostic_center_categories', data.diagnostic_center_categories);
       if (data.hospital_categories) setCached('hospital_categories', data.hospital_categories);
@@ -45,10 +36,11 @@ export async function getSearchMetadata() {
 }
 
 // Dynamic Search Facets Endpoint
-export async function getSearchFacets({ location = '', area = '', search = '' } = {}) {
+export async function getSearchFacets({ division_id = null, district_id = null, thana_id = null, search = '' } = {}) {
   const params = {};
-  if (location && location !== 'All Bangladesh') params.location = location;
-  if (area && area !== 'All Areas') params.area = area;
+  if (division_id) params.division_id = division_id;
+  if (district_id) params.district_id = district_id;
+  if (thana_id) params.thana_id = thana_id;
   if (search && search.trim()) params.search = search.trim();
 
   const query = new URLSearchParams(params).toString();

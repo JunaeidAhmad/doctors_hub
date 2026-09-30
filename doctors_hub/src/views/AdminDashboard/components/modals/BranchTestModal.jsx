@@ -36,7 +36,8 @@ export default function BranchTestModal() {
 
   useEffect(() => {
     if (editingBranchTest) {
-      const isHosp = editingBranchTest.facility_type === 'hospital' || editingBranchTest.location_details?.location_type === 'hospital';
+      const fac = editingBranchTest.facility || {};
+      const isHosp = editingBranchTest.facility_type === 'hospital' || fac.location_type === 'hospital';
       setBranchTestForm({
         id: editingBranchTest.id,
         facility_type: isHosp ? 'hospital' : 'diagnostic_center',
@@ -77,8 +78,8 @@ export default function BranchTestModal() {
   const testName = currentTest?.name || editingBranchTest?.test_name || 'Diagnostic Test';
   const categoryName = currentTest?.category_name || currentTest?.category?.name || '';
   const sampleType = currentTest?.sample_type || '';
-  const facilityName = editingBranchTest?.facility_name || editingBranchTest?.location_details?.name || '';
-  const branchName = editingBranchTest?.location_details?.branch || '';
+  const facilityName = editingBranchTest?.facility?.display_name || editingBranchTest?.facility?.name || '';
+  const branchName = editingBranchTest?.facility?.branch || '';
 
   const handleSaveBranchTest = async (e) => {
     e.preventDefault();

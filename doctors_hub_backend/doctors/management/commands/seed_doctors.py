@@ -172,9 +172,43 @@ class Command(BaseCommand):
                             if not bmdc or bmdc.lower() in ("null", "none", "n/a", "-"):
                                 bmdc = None
 
-                        qualification = item.get("qualification", "").strip() or "MBBS"
-                        experience = item.get("experience", "").strip() or "Consultant"
-                        description = item.get("description", "").strip()
+                        qualification = str(item.get("qualification", "") or "").strip() or "MBBS"
+                        experience = str(item.get("experience", "") or "").strip()[:50]
+                        description = str(item.get("description", "") or item.get("about", "") or "").strip()
+                        academic_title = str(item.get("academic_title", "") or "").strip()[:150]
+                        institution = str(item.get("institution", "") or "").strip()[:250]
+                        clinical_services = str(item.get("clinical_services", "") or "").strip()
+                        doc_status_val = str(item.get("status", "") or "Active").strip()[:50] or "Active"
+                        gender_val = str(item.get("gender", "") or "").strip()
+                        if gender_val not in ("Male", "Female", "Other", ""):
+                            gender_val = ""
+                        # Verbatim specialty source texts from the file win over
+                        # auto-generated canonical joins (file = actual site text).
+                        verbatim_source = str(item.get("specialty_source", "") or "").strip()
+                        verbatim_source_bn = str(item.get("specialty_source_bn", "") or "").strip()
+
+                        raw_slug = str(item.get("slug", "") or "").strip()
+                        old_slugs = item.get("old_slugs", [])
+                        if not isinstance(old_slugs, list):
+                            old_slugs = []
+
+                        create_kwargs = {
+                            "name": doc_name,
+                            "bn_name": doc_bn_name,
+                            "academic_title": academic_title,
+                            "institution": institution,
+                            "qualification": qualification,
+                            "experience": experience,
+                            "about": description,
+                            "clinical_services": clinical_services,
+                            "gender": gender_val,
+                            "status": doc_status_val,
+                            "is_verified": True,
+                        }
+                        if raw_slug and not Doctor.objects.filter(slug=raw_slug).exists():
+                            create_kwargs["slug"] = raw_slug
+                        if old_slugs:
+                            create_kwargs["old_slugs"] = old_slugs
 
                         doctor = None
                         created = False
@@ -182,27 +216,15 @@ class Command(BaseCommand):
                         if bmdc:
                             doctor, created = Doctor.objects.get_or_create(
                                 bmdc_number=bmdc,
-                                defaults={
-                                    "name": doc_name,
-                                    "bn_name": doc_bn_name,
-                                    "qualification": qualification,
-                                    "experience": experience,
-                                    "description": description,
-                                    "is_verified": True,
-                                },
+                                defaults=create_kwargs,
                             )
                         else:
                             # Search by name match
                             doctor = Doctor.objects.filter(name__iexact=doc_name).first() if doc_name else None
                             if not doctor:
                                 doctor = Doctor.objects.create(
-                                    name=doc_name,
-                                    bn_name=doc_bn_name,
                                     bmdc_number=None,
-                                    qualification=qualification,
-                                    experience=experience,
-                                    description=description,
-                                    is_verified=True,
+                                    **create_kwargs,
                                 )
                                 created = True
 
@@ -212,20 +234,54 @@ class Command(BaseCommand):
                                 doctor.name = doc_name
                             if doc_bn_name:
                                 doctor.bn_name = doc_bn_name
+                            if academic_title:
+                                doctor.academic_title = academic_title
+                            if institution:
+                                doctor.institution = institution
                             doctor.qualification = qualification or doctor.qualification
-                            doctor.experience = experience or doctor.experience
+                            if experience:
+                                doctor.experience = experience[:50]
                             if description:
-                                doctor.description = description
+                                doctor.about = description
+                            if clinical_services:
+                                doctor.clinical_services = clinical_services
+                            if gender_val:
+                                doctor.gender = gender_val
+                            if doc_status_val:
+                                doctor.status = doc_status_val
+                            if raw_slug and not doctor.slug:
+                                if not Doctor.objects.filter(slug=raw_slug).exclude(pk=doctor.pk).exists():
+                                    doctor.slug = raw_slug
+                            if old_slugs and not doctor.old_slugs:
+                                doctor.old_slugs = old_slugs
                             doctor.is_verified = True
+
+                        rating_val = item.get("rating")
+                        if rating_val is not None:
+                            try:
+                                doctor.rating = float(rating_val)
+                            except (ValueError, TypeError):
+                                pass
+                        review_count_val = item.get("review_count")
+                        if review_count_val is not None:
+                            try:
+                                doctor.review_count = int(review_count_val)
+                            except (ValueError, TypeError):
+                                pass
 
                         # Direct specialties, primary_specialty, and verbatim source texts
                         from doctors.services.specialty_resolver import resolve_specialty_exact
 
+                        primary_spec_slug = str(item.get("primary_specialty", "") or "").strip()
+                        seed_primary_spec = None
+                        if primary_spec_slug:
+                            seed_primary_spec = resolve_specialty_exact(primary_spec_slug)
+
                         if specialty_claims_data:
                             texts = [c.get("text", "").strip() for c in specialty_claims_data if c.get("text")]
                             texts_bn = [c.get("text_bn", "").strip() for c in specialty_claims_data if c.get("text_bn")]
-                            doctor.specialty_source = "\n".join(texts)
-                            doctor.specialty_source_bn = "\n".join(texts_bn)
+                            doctor.specialty_source = verbatim_source or "\n".join(texts)
+                            doctor.specialty_source_bn = verbatim_source_bn or "\n".join(texts_bn)
 
                             all_tags = []
                             prim_tag = None
@@ -236,7 +292,9 @@ class Command(BaseCommand):
                                     prim_tag = matched[0]
                                 all_tags.extend(matched)
 
-                            if not prim_tag and all_tags:
+                            if seed_primary_spec:
+                                prim_tag = seed_primary_spec
+                            elif not prim_tag and all_tags:
                                 prim_tag = all_tags[0]
                             elif not prim_tag and specialties_objs:
                                 prim_tag = specialties_objs[0]
@@ -247,12 +305,16 @@ class Command(BaseCommand):
                                 doctor.specialties.set(all_tags)
                             elif specialties_objs:
                                 doctor.specialties.set(specialties_objs)
-                        elif specialties_objs:
-                            doctor.specialty_source = " · ".join([s.name for s in specialties_objs if s.name])
-                            doctor.specialty_source_bn = " · ".join([s.bn_name or s.name for s in specialties_objs if (s.bn_name or s.name)])
-                            doctor.primary_specialty = specialties_objs[0]
+                        elif specialties_objs or seed_primary_spec:
+                            doctor.specialty_source = verbatim_source or " · ".join([s.name for s in specialties_objs if s.name])
+                            doctor.specialty_source_bn = verbatim_source_bn or " · ".join([s.bn_name or s.name for s in specialties_objs if (s.bn_name or s.name)])
+                            prim_tag = seed_primary_spec or (specialties_objs[0] if specialties_objs else None)
+                            doctor.primary_specialty = prim_tag
                             doctor.save()
-                            doctor.specialties.set(specialties_objs)
+                            specs_to_set = list(specialties_objs)
+                            if prim_tag and prim_tag not in specs_to_set:
+                                specs_to_set.append(prim_tag)
+                            doctor.specialties.set(specs_to_set)
                         else:
                             doctor.save()
 
@@ -375,6 +437,14 @@ class Command(BaseCommand):
                                     start_t = time(17, 0)
                                 if not end_t or end_t <= start_t:
                                     end_t = time((start_t.hour + 3) % 24, start_t.minute)
+                                if end_t <= start_t:
+                                    # Overnight or zero-length slot (e.g. 21:00-21:00 from bad parse);
+                                    # skip instead of failing the whole doctor import.
+                                    self.stdout.write(self.style.WARNING(
+                                        f"[{index}] Skipped invalid schedule {day_clean} "
+                                        f"{start_t}-{end_t} for '{doc_name}'."
+                                    ))
+                                    continue
 
                                 # Check and delete existing matching slot or update
                                 existing_sched = AffiliationSchedule.objects.filter(
@@ -382,18 +452,28 @@ class Command(BaseCommand):
                                     day_of_week=day_clean,
                                 ).first()
 
-                                if existing_sched:
-                                    existing_sched.start_time = start_t
-                                    existing_sched.end_time = end_t
-                                    existing_sched.save()
-                                else:
-                                    # Create new slot
-                                    AffiliationSchedule.objects.create(
-                                        affiliation=affiliation,
-                                        day_of_week=day_clean,
-                                        start_time=start_t,
-                                        end_time=end_t,
-                                    )
+                                from django.core.exceptions import ValidationError
+                                try:
+                                    if existing_sched:
+                                        existing_sched.start_time = start_t
+                                        existing_sched.end_time = end_t
+                                        existing_sched.save()
+                                    else:
+                                        # Create new slot
+                                        AffiliationSchedule.objects.create(
+                                            affiliation=affiliation,
+                                            day_of_week=day_clean,
+                                            start_time=start_t,
+                                            end_time=end_t,
+                                        )
+                                except ValidationError as ve:
+                                    # e.g. overlap with the doctor's slot at another facility;
+                                    # keep doctor + affiliation, skip only this slot.
+                                    self.stdout.write(self.style.WARNING(
+                                        f"[{index}] Skipped conflicting schedule {day_clean} "
+                                        f"{start_t}-{end_t} for '{doc_name}': {ve}."
+                                    ))
+                                    continue
 
                         if created:
                             created_count += 1

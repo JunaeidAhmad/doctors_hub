@@ -1,5 +1,6 @@
 import React from 'react';
 import { formatFacilityName } from '../../../utils/facilityUtils';
+import { formatNextAvailable } from '../../../utils/doctorUtils';
 
 export default function DoctorChamberCard({
   chamber,
@@ -14,14 +15,14 @@ export default function DoctorChamberCard({
     ? rawAddress
     : (rawAddress === 'Dhaka' ? 'Dhanmondi Branch, Road 2, Dhaka' : (rawAddress || 'House 16, Road 2, Dhanmondi, Dhaka'));
   const fee = chamber.fee ? `৳${Number(chamber.fee).toLocaleString()}` : '৳1,200';
-  const facilityId = chamber.location_id || chamber.location || chamber.hospital || chamber.diagnostic_center;
+  const facilityId = chamber.locationId || chamber.location_id || chamber.location || chamber.hospital || chamber.diagnostic_center;
   
   // Format visiting days and time
   const visitSchedule = chamber.visitSchedule || (chamber.schedules && chamber.schedules.length > 0
-    ? `${chamber.schedules.map(s => s.day_of_week.slice(0, 3)).join(', ')} (${chamber.schedules[0].start_time?.slice(0, 5) || '17:00'} - ${chamber.schedules[0].end_time?.slice(0, 5) || '21:00'})`
-    : (chamber.visitDays ? `${chamber.visitDays} (${chamber.visitTime || '5:00 PM - 9:00 PM'})` : 'Daily (Except Friday) 6:00 PM - 9:00 PM'));
+    ? chamber.schedules.map(s => s.day_of_week?.slice(0, 3)).filter(Boolean).join(', ')
+    : (chamber.visitDays || ''));
 
-  const statusLabel = chamber.status_label || (isSelected ? 'Selected Chamber' : 'Slots Available');
+  const nextAvailText = formatNextAvailable(chamber.next_available);
 
   return (
     <div
@@ -109,7 +110,7 @@ export default function DoctorChamberCard({
               isSelected ? 'text-[#006877]' : 'text-slate-600'
             }`}
           >
-            {statusLabel}
+            {nextAvailText}
           </span>
         </div>
       </div>

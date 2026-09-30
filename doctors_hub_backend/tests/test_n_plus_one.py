@@ -75,7 +75,14 @@ def test_doctor_bookings_list_no_n_plus_one():
 
     for i in range(5):
         DoctorBooking.objects.create(
-            user=user, affiliation=aff, date=date(2026, 8, 17), slot=f"{10 + i}:00", patient_name=f"Patient {i}"
+            user=user,
+            affiliation=aff,
+            date=date(2026, 8, 17),
+            session_key="09:00-17:00",
+            session_start=time(9, 0),
+            session_end=time(17, 0),
+            serial_number=i + 1,
+            patient_name=f"Patient {i}"
         )
 
     client = APIClient()
@@ -175,10 +182,10 @@ def test_facility_tests_list_no_n_plus_one():
         assert res.status_code == 200
         data = res.data.get("results", res.data)
         assert len(data) == 5
-        # Verify branch is present in each item
+        # Verify branch is present in facility summary
         for item in data:
-            assert "branch" in item
-            assert item["branch"].startswith("Branch ")
+            assert "facility" in item
+            assert item["facility"]["branch"].startswith("Branch ")
 
     # Bounded query count: count + select_related(location, test, test__category)
     assert len(ctx.captured_queries) <= 4
@@ -218,8 +225,8 @@ def test_hospital_service_bookings_list_no_n_plus_one():
         data = res.data.get("results", res.data)
         assert len(data) == 5
         for item in data:
-            assert "branch" in item
-            assert item["branch"].startswith("Campus ")
+            assert "facility" in item
+            assert item["facility"]["branch"].startswith("Campus ")
 
     # Bounded query count: 1 count query + 1 select_related query
     assert len(ctx.captured_queries) <= 4

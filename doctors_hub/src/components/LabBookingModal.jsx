@@ -1,7 +1,6 @@
 import React, { useState, useEffect } from 'react';
 import { X, Calendar, User, Phone, MapPin, CheckCircle2, TestTube2, ShieldCheck, ArrowRight, Building2, Home, Sparkles } from 'lucide-react';
 import { api } from '../services/api';
-import { formatFacilityName } from '../utils/facilityUtils';
 
 export default function LabBookingModal({ test, onClose, onConfirmLabBooking, showToast }) {
   const today = new Date().toISOString().split('T')[0];
@@ -72,28 +71,9 @@ export default function LabBookingModal({ test, onClose, onConfirmLabBooking, sh
     false
   );
 
-  const branchName =
-    branch?.branch ||
-    test?.branch ||
-    test?.center_branch ||
-    branchTest?.branch ||
-    '';
-
-  const rawCenterName =
-    branch?.name ||
-    test?.center_name ||
-    test?.facility_name ||
-    test?.location_name ||
-    branchTest?.center_name ||
-    '';
-
-  const centerName = formatFacilityName(rawCenterName, branchName);
-
-  const centerLocation =
-    branch?.address ||
-    branch?.location ||
-    test?.address ||
-    '';
+  const fac = branchTest?.facility || test?.facility || branch;
+  const centerName = fac?.display_name || fac?.name || test?.name || 'Diagnostic Center';
+  const centerLocation = fac?.address || fac?.district || '';
 
   const testId =
     branchTest?.id ||

@@ -296,20 +296,19 @@ class TestSearchMetadataAndFacets:
         assert "specialty_groups" in data
         assert "popular_specialties" in data
         assert "specialties_az" in data
-        assert "provider_types" in data
-        assert "specialties" in data
+        assert "provider_types" not in data
+        assert "specialties" not in data
 
         # All 24 umbrellas must be present
         groups = data["specialty_groups"]
         assert len(groups) == 24
 
-        # Check search_terms
         for g in groups:
-            assert len(g["search_terms"]) >= 1
+            assert "search_terms" not in g
             assert "label" in g
             assert "icon" in g
             for c in g["children"]:
-                assert "search_terms" in c
+                assert "search_terms" not in c
                 assert "label" in c
                 assert "formal_name" in c
 

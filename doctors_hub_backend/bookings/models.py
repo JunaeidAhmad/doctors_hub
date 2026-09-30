@@ -6,7 +6,6 @@ from accounts.models import User
 from doctors.models import DoctorAffiliation
 from tests.models import FacilityTest
 from facilities.models import Hospital, HospitalService
-from services.scheduling import validate_slot_against_schedule
 from core.validators import bangladesh_phone_validator
 
 
@@ -85,14 +84,19 @@ class BaseBooking(models.Model):
 class DoctorBooking(BaseBooking):
     affiliation = models.ForeignKey(DoctorAffiliation, on_delete=models.CASCADE, related_name="bookings")
     date = models.DateField()
-    slot = models.CharField(max_length=50)
+    session_key = models.CharField(max_length=64, null=True, blank=True, db_index=True)
+    session_start = models.TimeField(null=True, blank=True)
+    session_end = models.TimeField(null=True, blank=True)
+    estimated_time = models.TimeField(null=True, blank=True)
+    schedule = models.ForeignKey('doctors.AffiliationSchedule', on_delete=models.SET_NULL, null=True, blank=True, related_name='doctor_bookings')
+    schedule_exception = models.ForeignKey('doctors.ScheduleException', on_delete=models.SET_NULL, null=True, blank=True, related_name='doctor_bookings')
     serial_number = models.PositiveIntegerField(null=True, blank=True, db_index=True)
     patient_name = models.CharField(max_length=100, blank=True)
     patient_phone = models.CharField(max_length=20, blank=True, default="", validators=[bangladesh_phone_validator])
 
     class Meta:
         constraints = [
-            models.UniqueConstraint(fields=["affiliation", "date", "serial_number"], name="unique_doctor_date_serial"),
+            models.UniqueConstraint(fields=["affiliation", "date", "session_key", "serial_number"], name="unique_serial_per_session"),
         ]
         ordering = ["date", "serial_number", "-created_at"]
 
@@ -102,19 +106,7 @@ class DoctorBooking(BaseBooking):
             return f"SL-{self.serial_number:03d}"
         return ""
 
-    def clean(self):
-        super().clean()
-        if self.date and self.slot and getattr(self, 'affiliation', None):
-            validate_slot_against_schedule(self.affiliation, self.date, self.slot)
-
     def save(self, *args, **kwargs):
-        if not self.serial_number and self.affiliation_id and self.date:
-            last_serial = DoctorBooking.objects.filter(
-                affiliation_id=self.affiliation_id,
-                date=self.date
-            ).aggregate(models.Max('serial_number'))['serial_number__max']
-            self.serial_number = (last_serial or 0) + 1
-
         if self.patient:
             if not self.patient_name:
                 self.patient_name = self.patient.name
@@ -127,7 +119,6 @@ class DoctorBooking(BaseBooking):
             )
             self.patient = patient_obj
 
-        self.full_clean()
         super().save(*args, **kwargs)
 
     def __str__(self):

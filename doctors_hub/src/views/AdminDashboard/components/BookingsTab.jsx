@@ -3,7 +3,6 @@ import { Search, Calendar, TestTube, CheckCircle, Clock, MapPin, Phone } from 'l
 import { useAdminContext } from '../context/AdminContext';
 import { api } from '../../../services/api';
 import StatusBadge from './shared/StatusBadge';
-import { formatFacilityName } from '../../../utils/facilityUtils';
 
 export default function BookingsTab() {
   const { 
@@ -85,7 +84,7 @@ export default function BookingsTab() {
                 <th className="py-3 px-4 w-[24%] font-semibold">{isDoctor ? 'Serial / Patient' : 'Patient Name'}</th>
                 <th className="py-3 px-4 w-[16%] font-semibold">Contact Phone</th>
                 <th className="py-3 px-4 w-[24%] font-semibold">{isDoctor ? 'Doctor & Facility' : 'Diagnostic Center & Tests'}</th>
-                <th className="py-3 px-4 w-[18%] font-semibold">{isDoctor ? 'Appointment Date & Slot' : 'Pickup Date & Address'}</th>
+                <th className="py-3 px-4 w-[18%] font-semibold">{isDoctor ? 'Appointment & Session' : 'Pickup Date & Address'}</th>
                 <th className="py-3 px-4 w-[10%] font-semibold">Status</th>
                 <th className="py-3 px-4 w-[8%] text-right font-semibold">Actions</th>
               </tr>
@@ -125,11 +124,11 @@ export default function BookingsTab() {
                       {isDoctor ? (
                         <div>
                           <div className="font-serif font-bold text-slate-900">{b.doctor_name || 'Specialist Doctor'}</div>
-                          <div className="text-[11px] text-slate-500">{formatFacilityName(b.facility_name, b.branch) || 'Hospital / Chamber'}</div>
+                          <div className="text-[11px] text-slate-500">{b.facility?.display_name || b.facility?.name || 'Hospital / Chamber'}</div>
                         </div>
                       ) : (
                         <div>
-                          <div className="font-serif font-bold text-slate-900">{formatFacilityName(b.center_name, b.branch || b.center_branch) || 'Diagnostic Center'}</div>
+                          <div className="font-serif font-bold text-slate-900">{b.facility?.display_name || b.facility?.name || 'Diagnostic Center'}</div>
                           <div className="text-[11px] text-slate-500">{b.test_name || b.test_names || 'Test Booking'}</div>
                         </div>
                       )}
@@ -138,7 +137,16 @@ export default function BookingsTab() {
                       {isDoctor ? (
                         <div>
                           <div className="font-medium">{b.date}</div>
-                          <div className="text-[11px] text-[#094cb2] font-label font-semibold">{b.slot}</div>
+                          <div className="text-[11px] text-[#094cb2] font-label font-semibold">
+                            {b.session_start && b.session_end
+                              ? `${formatDisplayTime(b.session_start)} – ${formatDisplayTime(b.session_end)}`
+                              : (b.session_key || 'Consultation Session')}
+                          </div>
+                          {b.estimated_time && (
+                            <div className="text-[10px] text-slate-500">
+                              Est: {formatDisplayTime(b.estimated_time)}
+                            </div>
+                          )}
                         </div>
                       ) : (
                         <div>

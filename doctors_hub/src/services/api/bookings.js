@@ -3,7 +3,6 @@ import {
   fetchWithTimeout,
   handleResponse,
   getHeaders,
-  flattenFacility,
 } from './core';
 
 // OTP Services
@@ -92,7 +91,7 @@ export async function getDoctorBookings() {
   const res = await fetchWithTimeout(`${BASE_URL}/bookings/doctor/`, {
     headers: getHeaders(),
   });
-  return flattenFacility(await handleResponse(res));
+  return handleResponse(res);
 }
 
 export async function updateDoctorBookingStatus(id, status) {
@@ -108,7 +107,7 @@ export async function getTestBookings() {
   const res = await fetchWithTimeout(`${BASE_URL}/bookings/test/`, {
     headers: getHeaders(),
   });
-  return flattenFacility(await handleResponse(res));
+  return handleResponse(res);
 }
 
 export const getLabBookings = getTestBookings;
@@ -128,7 +127,7 @@ export async function getHospitalServiceBookings() {
   const res = await fetchWithTimeout(`${BASE_URL}/bookings/hospital-service/`, {
     headers: getHeaders(),
   });
-  return flattenFacility(await handleResponse(res));
+  return handleResponse(res);
 }
 
 export async function updateHospitalServiceBookingStatus(id, status) {

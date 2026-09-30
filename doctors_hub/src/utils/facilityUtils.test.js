@@ -15,42 +15,37 @@ test('formatFacilityName - basic formatting and blanks', () => {
 });
 
 test('formatFacilityName - object field precedence', () => {
-  // Test 1: name wins over facility_name, center_name, etc.
+  // Test 1: display_name wins
   const obj1 = {
-    name: 'Primary Facility',
-    facility_name: 'Secondary Facility',
-    center_name: 'Tertiary Center',
+    display_name: 'Primary Facility (Mirpur)',
+    name: 'Secondary Facility',
     branch: 'Mirpur'
   };
   assert.equal(formatFacilityName(obj1), 'Primary Facility (Mirpur)');
 
-  // Test 2: facility_name wins over center_name
+  // Test 2: name with branch
   const obj2 = {
-    facility_name: 'Secondary Facility',
-    center_name: 'Tertiary Center',
+    name: 'Secondary Facility',
     branch: 'Uttara'
   };
   assert.equal(formatFacilityName(obj2), 'Secondary Facility (Uttara)');
 
-  // Test 3: center_name wins over hospital_name
+  // Test 3: nested facility summary
   const obj3 = {
-    center_name: 'Lab Diagnostic',
-    hospital_name: 'Lab Hospital',
-    branch: 'Banani'
+    facility: { display_name: 'Lab Diagnostic (Banani)' }
   };
   assert.equal(formatFacilityName(obj3), 'Lab Diagnostic (Banani)');
 
-  // Test 4: hospital_name wins over chamber_name
+  // Test 4: chamber_name fallback
   const obj4 = {
-    hospital_name: 'City Hospital',
     chamber_name: 'Private Chamber',
     branch: 'Dhanmondi'
   };
-  assert.equal(formatFacilityName(obj4), 'City Hospital (Dhanmondi)');
+  assert.equal(formatFacilityName(obj4), 'Private Chamber (Dhanmondi)');
 
-  // Test 5: nested location_details fallback
+  // Test 5: nested facility object fallback
   const obj5 = {
-    location_details: { name: 'Apollo Clinic', branch: 'Gulshan' }
+    facility: { name: 'Apollo Clinic', branch: 'Gulshan' }
   };
   assert.equal(formatFacilityName(obj5), 'Apollo Clinic (Gulshan)');
 

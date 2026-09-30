@@ -2,7 +2,7 @@ import pytest
 from rest_framework.test import APIClient
 from rest_framework import status
 
-from facilities.models import Location, Hospital, DiagnosticCenter
+from facilities.models import Location, Hospital, DiagnosticCenter, Division, District, Thana
 from doctors.models import Doctor, DoctorSpecialty, DoctorAffiliation, AffiliationSchedule
 from tests.models import TestCategory, Test, FacilityTest
 
@@ -21,11 +21,19 @@ def api_client():
 @pytest.mark.django_db
 def test_search_facets_endpoint_returns_aggregations(api_client):
     # Setup test entities
+    div_dhaka, _ = Division.objects.get_or_create(name="Dhaka")
+    dist_dhaka, _ = District.objects.get_or_create(name="Dhaka", division=div_dhaka)
+    thana_dhaka, _ = Thana.objects.get_or_create(name="Dhanmondi", district=dist_dhaka)
+
+    div_ctg, _ = Division.objects.get_or_create(name="Chattogram")
+    dist_ctg, _ = District.objects.get_or_create(name="Chattogram", division=div_ctg)
+    thana_ctg, _ = Thana.objects.get_or_create(name="Agrabad", district=dist_ctg)
+
     spec_cardio = DoctorSpecialtyFactory(name="Cardiology")
     spec_neuro = DoctorSpecialtyFactory(name="Neurology")
 
-    loc_dhaka = LocationFactory(name="Dhaka Medical", district="Dhaka", area="Dhanmondi")
-    loc_ctg = LocationFactory(name="Chittagong Hospital", district="Chittagong", area="Agrabad")
+    loc_dhaka = LocationFactory(name="Dhaka Medical", thana=thana_dhaka)
+    loc_ctg = LocationFactory(name="Chittagong Hospital", thana=thana_ctg)
 
     doc1 = DoctorFactory(name="Dr. Cardio Specialist")
     doc1.specialties.add(spec_cardio)
@@ -40,12 +48,9 @@ def test_search_facets_endpoint_returns_aggregations(api_client):
     assert res_global.status_code == status.HTTP_200_OK
     assert res_global.data["total_doctors"] >= 2
     assert "specialties" in res_global.data
-    assert "districts" in res_global.data
-    assert "Dhaka" in res_global.data["districts"]
-    assert "Chattogram" in res_global.data["districts"] or "Chittagong" in res_global.data["districts"]
 
-    # 2. Location-filtered facets (location=Dhaka)
-    res_filtered = api_client.get("/api/search-facets/?location=Dhaka")
+    # 2. Location-filtered facets (district_id)
+    res_filtered = api_client.get(f"/api/search-facets/?district_id={dist_dhaka.id}")
     assert res_filtered.status_code == status.HTTP_200_OK
     assert res_filtered.data["total_doctors"] >= 1
 
@@ -53,7 +58,7 @@ def test_search_facets_endpoint_returns_aggregations(api_client):
 @pytest.mark.django_db
 def test_doctor_search_filters_by_specialty_and_location(api_client):
     spec = DoctorSpecialtyFactory(name="Orthopedics")
-    loc = LocationFactory(name="Bone & Joint Hospital", district="Dhaka", area="Mirpur")
+    loc = LocationFactory(name="Bone & Joint Hospital")
     doc = DoctorFactory(name="Dr. Bone Doctor")
     doc.specialties.add(spec)
     DoctorAffiliationFactory(doctor=doc, location=loc, fee=800)
@@ -73,10 +78,14 @@ def test_doctor_search_filters_by_specialty_and_location(api_client):
 
 @pytest.mark.django_db
 def test_hospital_search_filters_by_location(api_client):
-    loc_banani = LocationFactory(name="Banani General Hospital", district="Dhaka", area="Banani")
+    div, _ = Division.objects.get_or_create(name="Dhaka")
+    dist, _ = District.objects.get_or_create(name="Dhaka", division=div)
+    thana, _ = Thana.objects.get_or_create(name="Banani", district=dist)
+
+    loc_banani = LocationFactory(name="Banani General Hospital", thana=thana)
     hosp = Hospital.objects.create(location=loc_banani)
 
-    res = api_client.get("/api/hospitals/?location=Dhaka&area=Banani")
+    res = api_client.get(f"/api/hospitals/?thana_id={thana.id}")
     assert res.status_code == status.HTTP_200_OK
     results = res.data.get("results") if isinstance(res.data, dict) else res.data
     assert len(results) >= 1

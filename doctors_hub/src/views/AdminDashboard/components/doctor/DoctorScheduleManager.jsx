@@ -1,11 +1,12 @@
 import React, { useState } from 'react';
 import { 
-  Clock, Calendar, Plus, Trash2, Building2, 
+  Clock, Calendar, Plus, Trash2, Edit, Building2, 
   CheckCircle, AlertCircle, RefreshCw, X, ShieldAlert 
 } from 'lucide-react';
 import { useAdminContext } from '../../context/AdminContext';
 import { api } from '../../../../services/api';
 import TimePickerInput from '../../../../components/TimePickerInput';
+import ScheduleExceptionsPanel from './ScheduleExceptionsPanel';
 import {
   DAYS_OF_WEEK,
   TIME_PRESETS,
@@ -27,18 +28,28 @@ export default function DoctorScheduleManager() {
   const affiliations = doctor?.affiliations || [];
 
   const [showModal, setShowModal] = useState(false);
+  const [editingSchedule, setEditingSchedule] = useState(null);
   const [selectedAffiliationId, setSelectedAffiliationId] = useState('');
   const [dayOfWeek, setDayOfWeek] = useState('Saturday');
   const [startTime, setStartTime] = useState('17:00:00');
   const [endTime, setEndTime] = useState('21:00:00');
+  const [maxPatients, setMaxPatients] = useState(30);
+  const [avgConsultMinutes, setAvgConsultMinutes] = useState(10);
   const [saving, setSaving] = useState(false);
   const [localErr, setLocalErr] = useState('');
   const [scheduleToDelete, setScheduleToDelete] = useState(null);
   const [isDeleting, setIsDeleting] = useState(false);
 
-  // Real-time conflict validation
+  // Real-time conflict validation (ignore the schedule currently being edited)
+  const conflictAffiliations = editingSchedule
+    ? affiliations.map(a => ({
+        ...a,
+        schedules: (a.schedules || []).filter(s => s.id !== editingSchedule.id)
+      }))
+    : affiliations;
+
   const conflictCheck = showModal
-    ? checkScheduleConflict(dayOfWeek, startTime, endTime, affiliations)
+    ? checkScheduleConflict(dayOfWeek, startTime, endTime, conflictAffiliations)
     : { hasConflict: false };
 
   const currentDuration = calculateSlotDuration(startTime, endTime);
@@ -46,7 +57,7 @@ export default function DoctorScheduleManager() {
   // Slots existing on the selected day
   const dayExistingSlots = affiliations.flatMap(a =>
     (a.schedules || [])
-      .filter(s => s.day_of_week === dayOfWeek)
+      .filter(s => s.day_of_week === dayOfWeek && (!editingSchedule || s.id !== editingSchedule.id))
       .map(s => ({
         ...s,
         loc: formatFacilityName(a.hospital || a.diagnostic_center || a.location || a) || a.chamber_name || a.facility_name || 'Practice Location'
@@ -54,10 +65,25 @@ export default function DoctorScheduleManager() {
   );
 
   const handleOpenAddModal = (affId = '') => {
+    setEditingSchedule(null);
     setSelectedAffiliationId(affId || (affiliations[0]?.id || ''));
     setDayOfWeek('Saturday');
     setStartTime('17:00:00');
     setEndTime('21:00:00');
+    setMaxPatients(30);
+    setAvgConsultMinutes(10);
+    setLocalErr('');
+    setShowModal(true);
+  };
+
+  const handleOpenEditModal = (affId, s) => {
+    setEditingSchedule(s);
+    setSelectedAffiliationId(affId);
+    setDayOfWeek(s.day_of_week);
+    setStartTime(s.start_time);
+    setEndTime(s.end_time);
+    setMaxPatients(s.max_patients || 30);
+    setAvgConsultMinutes(s.avg_consult_minutes || 10);
     setLocalErr('');
     setShowModal(true);
   };
@@ -69,7 +95,7 @@ export default function DoctorScheduleManager() {
       return;
     }
 
-    const validation = checkScheduleConflict(dayOfWeek, startTime, endTime, affiliations);
+    const validation = checkScheduleConflict(dayOfWeek, startTime, endTime, conflictAffiliations);
     if (validation.hasConflict) {
       setLocalErr(validation.error);
       return;
@@ -78,19 +104,27 @@ export default function DoctorScheduleManager() {
     setSaving(true);
     setLocalErr('');
 
+    const payload = {
+      affiliation_id: selectedAffiliationId,
+      day_of_week: dayOfWeek,
+      start_time: startTime,
+      end_time: endTime,
+      max_patients: parseInt(maxPatients, 10) || 30,
+      avg_consult_minutes: parseInt(avgConsultMinutes, 10) || 10,
+    };
+
     try {
-      await api.createAffiliationSchedule({
-        affiliation_id: selectedAffiliationId,
-        day_of_week: dayOfWeek,
-        start_time: startTime,
-        end_time: endTime
-      });
+      if (editingSchedule && editingSchedule.id) {
+        await api.updateAffiliationSchedule(editingSchedule.id, payload);
+      } else {
+        await api.createAffiliationSchedule(payload);
+      }
 
       setShowModal(false);
-      if (setSuccessMsg) setSuccessMsg('Schedule slot added successfully!');
+      if (setSuccessMsg) setSuccessMsg(editingSchedule ? 'Schedule slot updated successfully!' : 'Schedule slot added successfully!');
       await loadAllData();
     } catch (err) {
-      const msg = typeof err.message === 'string' ? err.message : 'Failed to create schedule.';
+      const msg = typeof err.message === 'string' ? err.message : 'Failed to save schedule.';
       setLocalErr(msg);
     } finally {
       setSaving(false);
@@ -194,15 +228,31 @@ export default function DoctorScheduleManager() {
                             </span>
                           )}
                         </div>
+                        <div className="text-slate-500 text-[10px] font-body mt-1 flex items-center gap-1.5">
+                          <span>Max: <strong className="font-semibold text-slate-700">{s.max_patients || 30}</strong> pts</span>
+                          <span className="text-slate-300">•</span>
+                          <span><strong className="font-semibold text-slate-700">~{s.avg_consult_minutes || 10}m</strong> / pt</span>
+                        </div>
                       </div>
 
-                      <button
-                        onClick={() => setScheduleToDelete(s)}
-                        className="p-1.5 text-slate-400 hover:text-rose-600 rounded-sm hover:bg-rose-50 transition cursor-pointer"
-                        title="Delete Slot"
-                      >
-                        <Trash2 className="w-4 h-4" />
-                      </button>
+                      <div className="flex items-center gap-1">
+                        <button
+                          type="button"
+                          onClick={() => handleOpenEditModal(aff.id, s)}
+                          className="p-1.5 text-slate-400 hover:text-[#094cb2] rounded-sm hover:bg-[#e7ebff] transition cursor-pointer"
+                          title="Edit Slot"
+                        >
+                          <Edit className="w-4 h-4" />
+                        </button>
+                        <button
+                          type="button"
+                          onClick={() => setScheduleToDelete(s)}
+                          className="p-1.5 text-slate-400 hover:text-rose-600 rounded-sm hover:bg-rose-50 transition cursor-pointer"
+                          title="Delete Slot"
+                        >
+                          <Trash2 className="w-4 h-4" />
+                        </button>
+                      </div>
                     </div>
                   );
                 })}
@@ -213,6 +263,9 @@ export default function DoctorScheduleManager() {
                   </div>
                 )}
               </div>
+
+              {/* Schedule Exceptions (Leaves, Rescheduling, Extra Sessions) */}
+              <ScheduleExceptionsPanel affiliation={aff} onChanged={loadAllData} />
 
             </div>
           );
@@ -234,7 +287,9 @@ export default function DoctorScheduleManager() {
                 <div className="w-8 h-8 rounded-sm bg-[#e7ebff] border border-[#cbd5e1] text-[#094cb2] flex items-center justify-center">
                   <Clock className="w-4 h-4" />
                 </div>
-                <h3 className="font-serif font-bold text-slate-900 text-base">Add Weekly Visiting Slot</h3>
+                <h3 className="font-serif font-bold text-slate-900 text-base">
+                  {editingSchedule ? 'Edit Weekly Visiting Slot' : 'Add Weekly Visiting Slot'}
+                </h3>
               </div>
               <button 
                 onClick={() => setShowModal(false)} 
@@ -371,6 +426,43 @@ export default function DoctorScheduleManager() {
                 )}
               </div>
 
+              {/* Capacity and Consultation Duration */}
+              <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
+                <div>
+                  <label className="block text-slate-700 font-label font-bold uppercase text-[11px] mb-1.5">
+                    Max Patients Per Session *
+                  </label>
+                  <input
+                    type="number"
+                    required
+                    min="1"
+                    max="200"
+                    value={maxPatients}
+                    onChange={e => setMaxPatients(e.target.value)}
+                    placeholder="30"
+                    className="w-full bg-white border border-[#d1d5dc] rounded-sm px-3 py-2 text-slate-800 focus:outline-none focus:border-[#094cb2] font-mono text-xs"
+                  />
+                  <p className="text-[10px] text-slate-400 mt-1">Maximum appointments per session</p>
+                </div>
+
+                <div>
+                  <label className="block text-slate-700 font-label font-bold uppercase text-[11px] mb-1.5">
+                    Avg Consult Duration (Mins) *
+                  </label>
+                  <input
+                    type="number"
+                    required
+                    min="1"
+                    max="120"
+                    value={avgConsultMinutes}
+                    onChange={e => setAvgConsultMinutes(e.target.value)}
+                    placeholder="10"
+                    className="w-full bg-white border border-[#d1d5dc] rounded-sm px-3 py-2 text-slate-800 focus:outline-none focus:border-[#094cb2] font-mono text-xs"
+                  />
+                  <p className="text-[10px] text-slate-400 mt-1">Estimated minutes per patient</p>
+                </div>
+              </div>
+
               <div className="flex justify-end gap-2 pt-3 border-t border-[#e3e5ea]">
                 <button
                   type="button"
@@ -384,7 +476,13 @@ export default function DoctorScheduleManager() {
                   disabled={saving || conflictCheck.hasConflict}
                   className="px-4 py-2 bg-[#094cb2] hover:bg-[#083e91] text-white rounded-sm font-label text-xs font-semibold uppercase tracking-wider flex items-center gap-1.5 shadow-sm disabled:opacity-50 disabled:cursor-not-allowed cursor-pointer"
                 >
-                  {saving ? <RefreshCw className="w-3.5 h-3.5 animate-spin" /> : 'Save Slot'}
+                  {saving ? (
+                    <RefreshCw className="w-3.5 h-3.5 animate-spin" />
+                  ) : editingSchedule ? (
+                    'Update Slot'
+                  ) : (
+                    'Save Slot'
+                  )}
                 </button>
               </div>
             </form>

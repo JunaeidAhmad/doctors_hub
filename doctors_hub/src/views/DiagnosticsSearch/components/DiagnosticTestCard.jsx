@@ -14,8 +14,8 @@ export default function DiagnosticTestCard({
     .map((o) => Number(o.calculated_price ?? o.price ?? 0))
     .filter((p) => p > 0);
 
-  const minPrice = prices.length > 0 ? Math.min(...prices) : (test.price || 400);
-  const maxPrice = prices.length > 0 ? Math.max(...prices) : (test.price || 450);
+  const minPrice = prices.length > 0 ? Math.min(...prices) : (test.min_price != null ? Number(test.min_price) : Number(test.price || 0));
+  const maxPrice = prices.length > 0 ? Math.max(...prices) : (test.max_price != null ? Number(test.max_price) : Number(test.price || 0));
 
   // Accurate turnaround text with correct pluralization
   const reportHours = test.report_time_hours || 4;

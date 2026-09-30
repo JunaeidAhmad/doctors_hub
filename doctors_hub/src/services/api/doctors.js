@@ -137,11 +137,11 @@ export async function batchVerifySpecialtyAliases(alias_ids) {
 // Doctors
 export async function getDoctors({
   specialty = '',
-  location = '',
-  division = '',
-  district = '',
-  area = '',
+  division_id = null,
+  district_id = null,
+  thana_id = null,
   search = '',
+  bmdc = '',
   hospital = '',
   diagnostic_center = '',
   facility = '',
@@ -151,17 +151,17 @@ export async function getDoctors({
   page = 1,
   page_size = 20,
 } = {}) {
-  const key = `doc_${specialty}_${location}_${division}_${district}_${area}_${search}_${hospital}_${diagnostic_center}_${facility}_${gender}_${fee_max}_${day}_${page}_${page_size}`;
+  const key = `doc_${specialty}_${division_id || ''}_${district_id || ''}_${thana_id || ''}_${search}_${bmdc}_${hospital}_${diagnostic_center}_${facility}_${gender}_${fee_max}_${day}_${page}_${page_size}`;
   return fetchWithDeduplicationAndCache(
     key,
     async () => {
       const url = new URL(`${BASE_URL}/doctors/`);
       if (specialty) url.searchParams.append('specialty', specialty);
-      if (location && location !== 'All Bangladesh') url.searchParams.append('location', location);
-      if (division && division !== 'All Bangladesh') url.searchParams.append('division', division);
-      if (district && district !== 'All Districts') url.searchParams.append('district', district);
-      if (area && area !== 'All Areas') url.searchParams.append('area', area);
+      if (division_id) url.searchParams.append('division_id', division_id);
+      if (district_id) url.searchParams.append('district_id', district_id);
+      if (thana_id) url.searchParams.append('thana_id', thana_id);
       if (search) url.searchParams.append('search', search);
+      if (bmdc) url.searchParams.append('bmdc', bmdc);
       if (hospital) url.searchParams.append('hospital', hospital);
       if (diagnostic_center) url.searchParams.append('diagnostic_center', diagnostic_center);
       if (facility) url.searchParams.append('facility', facility);
@@ -269,6 +269,48 @@ export async function updateAffiliationSchedule(id, data) {
 
 export async function deleteAffiliationSchedule(id) {
   const res = await fetchWithTimeout(`${BASE_URL}/schedules/${id}/`, {
+    method: 'DELETE',
+    headers: getHeaders(),
+  });
+  if (res.status === 204 || res.status === 200) return true;
+  return handleResponse(res);
+}
+
+// Affiliation Availability
+export async function getAffiliationAvailability(id, { fromDate = '', days = 7 } = {}) {
+  const url = new URL(`${BASE_URL}/affiliations/${id}/availability/`);
+  if (fromDate) url.searchParams.append('from', fromDate);
+  if (days) url.searchParams.append('days', days);
+  const cacheKey = `aff_avail_${id}_${fromDate}_${days}`;
+  return fetchWithDeduplicationAndCache(cacheKey, async () => {
+    const res = await fetchWithTimeout(url, { headers: getHeaders() });
+    return handleResponse(res);
+  }, 30000);
+}
+
+// Schedule Exceptions
+export async function getScheduleExceptions(params = {}) {
+  const url = new URL(`${BASE_URL}/schedule-exceptions/`);
+  Object.entries(params).forEach(([k, v]) => {
+    if (v !== undefined && v !== null && v !== '') {
+      url.searchParams.append(k, v);
+    }
+  });
+  const res = await fetchWithTimeout(url, { headers: getHeaders() });
+  return handleResponse(res);
+}
+
+export async function createScheduleException(data) {
+  const res = await fetchWithTimeout(`${BASE_URL}/schedule-exceptions/`, {
+    method: 'POST',
+    headers: getHeaders(),
+    body: JSON.stringify(data),
+  });
+  return handleResponse(res);
+}
+
+export async function deleteScheduleException(id) {
+  const res = await fetchWithTimeout(`${BASE_URL}/schedule-exceptions/${id}/`, {
     method: 'DELETE',
     headers: getHeaders(),
   });

@@ -1,10 +1,19 @@
 import django_filters
 from rest_framework import viewsets, filters, exceptions
-from drf_spectacular.utils import extend_schema
+from rest_framework.decorators import action
+from rest_framework.permissions import AllowAny
+from rest_framework.response import Response
+from drf_spectacular.utils import extend_schema, OpenApiParameter, OpenApiTypes
 from .models import TestCategory, Test, FacilityTest
-from .serializers import TestCategorySerializer, TestSerializer, FacilityTestSerializer
+from .serializers import (
+    TestCategorySerializer, TestSerializer, FacilityTestSerializer,
+    FacilityTestSearchGroupSerializer
+)
 from core.permissions import ScopedFacilityOrReadOnly, IsSuperAdminOrReadOnly
 from core.scoping import RoleScopedQuerysetMixin
+from core.filters import exact_slug_or_id_q
+from core.pagination import SearchPagination
+from .search import parse_params, build_row_qs, build_grouped, hydrate, build_facets
 
 
 @extend_schema(tags=['Diagnostic Tests'])
@@ -24,14 +33,10 @@ class TestFilter(django_filters.FilterSet):
         fields = ['category']
 
     def filter_category(self, queryset, name, value):
-        if not value or value.lower() in ['all', 'all categories']:
+        q = exact_slug_or_id_q('category__', value)
+        if q is None:
             return queryset
-        from django.db import models
-        return queryset.filter(
-            models.Q(category__name__icontains=value) |
-            models.Q(category__slug__icontains=value) |
-            models.Q(category__id__iexact=value if len(value) == 36 else '00000000-0000-0000-0000-000000000000')
-        ).distinct()
+        return queryset.filter(q)
 
 
 @extend_schema(tags=['Diagnostic Tests'])
@@ -54,14 +59,10 @@ class FacilityTestFilter(django_filters.FilterSet):
         fields = ['location', 'test', 'category', 'is_available', 'home_sample_collection']
 
     def filter_category(self, queryset, name, value):
-        if not value or value.lower() in ['all', 'all categories']:
+        q = exact_slug_or_id_q('test__category__', value)
+        if q is None:
             return queryset
-        from django.db import models
-        return queryset.filter(
-            models.Q(test__category__name__icontains=value) |
-            models.Q(test__category__slug__icontains=value) |
-            models.Q(test__category__id__iexact=value if len(value) == 36 else '00000000-0000-0000-0000-000000000000')
-        ).distinct()
+        return queryset.filter(q)
 
 
 @extend_schema(tags=['Diagnostic Tests'])
@@ -106,3 +107,56 @@ class FacilityTestViewSet(RoleScopedQuerysetMixin, viewsets.ModelViewSet):
                 raise exceptions.PermissionDenied("You do not have permission to manage tests for this location.")
 
         serializer.save()
+
+    @extend_schema(
+        tags=['Diagnostic Tests'],
+        summary='Search diagnostic tests grouped by test',
+        description='Public aggregated search of diagnostic tests and lab offerings across facilities.',
+        parameters=[
+            OpenApiParameter('q', OpenApiTypes.STR, OpenApiParameter.QUERY, description='Free-text search'),
+            OpenApiParameter('testcat', OpenApiTypes.STR, OpenApiParameter.QUERY, description='Category slug or UUID (alias category)'),
+            OpenApiParameter('category', OpenApiTypes.STR, OpenApiParameter.QUERY, description='Category slug or UUID'),
+            OpenApiParameter('division_id', OpenApiTypes.INT, OpenApiParameter.QUERY, description='Division ID'),
+            OpenApiParameter('district_id', OpenApiTypes.INT, OpenApiParameter.QUERY, description='District ID'),
+            OpenApiParameter('thana_id', OpenApiTypes.INT, OpenApiParameter.QUERY, description='Thana ID'),
+            OpenApiParameter('location_id', OpenApiTypes.UUID, OpenApiParameter.QUERY, description='Location UUID'),
+            OpenApiParameter('fulfillment', OpenApiTypes.STR, OpenApiParameter.QUERY, description='home | center | all'),
+            OpenApiParameter('ownership', OpenApiTypes.STR, OpenApiParameter.QUERY, description='private | government | hospital_affiliated | ngo | all'),
+            OpenApiParameter('location_type', OpenApiTypes.STR, OpenApiParameter.QUERY, description='diagnostic_center | all'),
+            OpenApiParameter('ordering', OpenApiTypes.STR, OpenApiParameter.QUERY, description='price | -price | name | -name'),
+            OpenApiParameter('page', OpenApiTypes.INT, OpenApiParameter.QUERY, description='Page number'),
+            OpenApiParameter('page_size', OpenApiTypes.INT, OpenApiParameter.QUERY, description='Page size (max 50)'),
+            OpenApiParameter('include_unavailable', OpenApiTypes.BOOL, OpenApiParameter.QUERY, description='Include unavailable tests'),
+            OpenApiParameter('offering_limit', OpenApiTypes.INT, OpenApiParameter.QUERY, description='Limit offerings per test (0=all)'),
+        ],
+    )
+    @action(detail=False, methods=['get'], url_path='search', permission_classes=[AllowAny], filter_backends=[])
+    def search(self, request):
+        try:
+            params = parse_params(request.query_params)
+        except ValueError as e:
+            return Response({'error': f'Invalid value for parameter: {e}'}, status=400)
+
+        row_qs = build_row_qs(params)
+        grouped_qs = build_grouped(row_qs, ordering=params.get('ordering', 'price'))
+
+        paginator = SearchPagination()
+        page_grouped = paginator.paginate_queryset(grouped_qs, request, view=self)
+
+        facets = build_facets(params)
+
+        if not page_grouped:
+            return paginator.get_paginated_response([], facets=facets)
+
+        test_ids = [item['test_id'] for item in page_grouped]
+        stats_map = {item['test_id']: item for item in page_grouped}
+
+        hydrated_tests = hydrate(
+            test_ids,
+            row_qs,
+            offering_limit=params.get('offering_limit', 0),
+            grouped_stats=stats_map
+        )
+
+        serializer = FacilityTestSearchGroupSerializer(hydrated_tests, many=True)
+        return paginator.get_paginated_response(serializer.data, facets=facets)

@@ -24,12 +24,12 @@ export default function DiagnosticsSearchPage({
     setSearchKeyword,
     selectedCategory,
     setSelectedCategory,
-    division,
-    setDivision,
-    district,
-    setDistrict,
-    area,
-    setArea,
+    divisionId,
+    setDivisionId,
+    districtId,
+    setDistrictId,
+    thanaId,
+    setThanaId,
     fulfillment,
     setFulfillment,
     ownership,
@@ -41,12 +41,15 @@ export default function DiagnosticsSearchPage({
     isMobileFiltersOpen,
     setIsMobileFiltersOpen,
     testCategories,
+    isLoading,
+    error,
+    results,
+    totalCount,
+    totalPages,
+    facets,
     locationLabel,
     isDefaultLanding,
     hasActiveFilters,
-    processedTests,
-    paginatedTests,
-    totalPages,
     handleResetAll,
     handleClearLocation,
     handleBookTest,
@@ -54,7 +57,6 @@ export default function DiagnosticsSearchPage({
     handleViewGuidelines,
   } = useDiagnosticsSearch({
     initialTest,
-    initialLocation,
     onBookLabTest,
   });
 
@@ -107,13 +109,13 @@ export default function DiagnosticsSearchPage({
           {/* LEFT SIDEBAR: Clinical Filters */}
           <div className={`${isMobileFiltersOpen ? 'col-span-1 block' : 'hidden'} lg:block lg:col-span-3`}>
             <DiagnosticsFilterSidebar
-              division={division}
-              district={district}
-              area={area}
-              onLocationChange={({ division: d, district: dist, area: a }) => {
-                setDivision(d);
-                setDistrict(dist);
-                setArea(a);
+              divisionId={divisionId}
+              districtId={districtId}
+              thanaId={thanaId}
+              onLocationChange={({ divisionId: d, districtId: dist, thanaId: a }) => {
+                setDivisionId(d);
+                setDistrictId(dist);
+                setThanaId(a);
                 setCurrentPage(1);
               }}
               onClearLocation={handleClearLocation}
@@ -127,12 +129,7 @@ export default function DiagnosticsSearchPage({
                 setOwnership(o);
                 setCurrentPage(1);
               }}
-              ownershipCounts={{
-                private: 18,
-                hospital_affiliated: 12,
-                government: 5,
-                ngo: 3,
-              }}
+              ownershipCounts={facets?.ownership || {}}
               onResetAll={handleResetAll}
               onClose={() => setIsMobileFiltersOpen(false)}
               onApplyFilters={() => {
@@ -147,7 +144,7 @@ export default function DiagnosticsSearchPage({
           <section className="col-span-1 lg:col-span-9 space-y-6">
             <DiagnosticsResultsHeader
               locationLabel={locationLabel}
-              totalCount={processedTests.length}
+              totalCount={totalCount}
               sortBy={sortBy}
               onSortChange={(s) => {
                 setSortBy(s);
@@ -156,7 +153,50 @@ export default function DiagnosticsSearchPage({
             />
 
             {/* Test Cards List */}
-            {paginatedTests.length === 0 ? (
+            {isLoading ? (
+              <div className="space-y-6">
+                {[1, 2, 3].map((i) => (
+                  <div
+                    key={i}
+                    className="bg-surface-container-lowest rounded-2xl border border-outline-variant/70 p-6 shadow-sm animate-pulse space-y-4"
+                  >
+                    <div className="flex flex-col md:flex-row justify-between items-start gap-4 pb-4 border-b border-outline-variant/60">
+                      <div className="space-y-2 w-full md:w-2/3">
+                        <div className="flex gap-2">
+                          <div className="h-5 bg-slate-200 rounded-full w-24" />
+                          <div className="h-5 bg-slate-200 rounded w-28" />
+                        </div>
+                        <div className="h-6 bg-slate-200 rounded w-1/2" />
+                        <div className="h-4 bg-slate-100 rounded w-3/4" />
+                      </div>
+                      <div className="space-y-1 w-28 shrink-0">
+                        <div className="h-3 bg-slate-100 rounded w-20" />
+                        <div className="h-6 bg-slate-200 rounded w-24" />
+                      </div>
+                    </div>
+                    <div className="space-y-2 pt-2">
+                      <div className="h-10 bg-slate-100 rounded-lg w-full" />
+                      <div className="h-10 bg-slate-50 rounded-lg w-full" />
+                    </div>
+                  </div>
+                ))}
+              </div>
+            ) : error ? (
+              <div className="p-8 bg-error/10 border border-error/20 rounded-2xl text-center space-y-3">
+                <span className="material-symbols-outlined text-error text-[36px]">error</span>
+                <h3 className="text-lg font-bold text-on-surface">Failed to load diagnostic tests</h3>
+                <p className="text-xs text-on-surface-variant max-w-md mx-auto">
+                  An error occurred while loading diagnostic tests. Please check your network connection or try again.
+                </p>
+                <button
+                  type="button"
+                  onClick={handleResetAll}
+                  className="px-4 py-2 bg-primary text-on-primary rounded-xl font-medium text-xs hover:bg-primary-container cursor-pointer transition-all"
+                >
+                  Reset Filters &amp; Retry
+                </button>
+              </div>
+            ) : results.length === 0 ? (
               <DiagnosticsEmptyState
                 onResetAll={handleResetAll}
                 searchKeyword={searchKeyword}
@@ -164,7 +204,7 @@ export default function DiagnosticsSearchPage({
               />
             ) : (
               <div className="space-y-6">
-                {paginatedTests.map((test) => (
+                {results.map((test) => (
                   <DiagnosticTestCard
                     key={test.id || test.name}
                     test={test}
@@ -173,8 +213,8 @@ export default function DiagnosticsSearchPage({
                   />
                 ))}
 
-                {/* Pagination (visible when user is actively searching or filtering) */}
-                {!isDefaultLanding && totalPages > 1 && (
+                {/* Pagination */}
+                {totalPages > 1 && (
                   <div className="pt-4">
                     <Pagination
                       page={currentPage}

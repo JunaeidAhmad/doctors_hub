@@ -1,5 +1,4 @@
 import React, { useMemo } from 'react';
-import { formatFacilityName } from '../../../utils/facilityUtils';
 
 export default function DoctorAffiliationsTable({ 
   doctor, 
@@ -58,11 +57,11 @@ export default function DoctorAffiliationsTable({
           <tbody className="divide-y divide-outline-variant/40 text-body-md font-body-md text-slate-700">
             {affiliations.length > 0 ? (
               affiliations.map((aff, idx) => {
-                const facilityName = formatFacilityName(aff) || 'Medical Center';
+                const facilityName = aff.facility?.display_name || aff.facility?.name || aff.display_name || aff.name || 'Medical Center';
                 const branch = '';
                 const role = aff.chamber_type || (idx === 0 ? 'Primary Visiting Consultant' : 'Visiting Consultant');
-                const locationAddress = aff.location_details?.address_line || aff.address || aff.location ||
-                  (aff.area && aff.district ? `${aff.area}, ${aff.district}` : (aff.district || 'Dhaka'));
+                const locationAddress = aff.facility?.address || aff.address ||
+                  (aff.facility?.area && aff.facility?.district ? `${aff.facility.area}, ${aff.facility.district}` : (aff.facility?.district || aff.district || 'Dhaka'));
                 const hasSchedules = (Array.isArray(aff.schedules) && aff.schedules.length > 0) || Boolean(aff.visitSchedule);
                 const isSelected = selectedAffIndex === idx;
 

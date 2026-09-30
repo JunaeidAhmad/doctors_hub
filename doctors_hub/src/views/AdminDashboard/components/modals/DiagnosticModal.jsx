@@ -2,14 +2,7 @@ import React, { useState, useEffect } from 'react';
 import { X, CheckCircle } from 'lucide-react';
 import { useAdminContext } from '../../context/AdminContext';
 import { api } from '../../../../services/api';
-import { 
-  DIVISIONS, 
-  DIVISION_DISTRICTS, 
-  DISTRICT_THANAS, 
-  findDivisionForDistrict, 
-  getDistrictsForDivision, 
-  getThanasForDistrict 
-} from '../../../../data/constants';
+import { useDivisions, useDistricts, useThanas } from '../../../../hooks/useGeo';
 
 export default function DiagnosticModal() {
   const {
@@ -27,9 +20,9 @@ export default function DiagnosticModal() {
   const [diagnosticForm, setDiagnosticForm] = useState({
     id: '',
     name: 'Popular Diagnostic Centre',
-    division: 'Dhaka',
-    district: 'Dhaka',
-    area: 'Panthapath',
+    division_id: null,
+    district_id: null,
+    thana_id: null,
     branch: 'Panthapath',
     isCustomBranch: false,
     customBranch: '',
@@ -51,6 +44,10 @@ export default function DiagnosticModal() {
     is_verified: true
   });
 
+  const { items: divisions, isLoading: loadingDivisions } = useDivisions();
+  const { items: districts, isLoading: loadingDistricts } = useDistricts(diagnosticForm.division_id);
+  const { items: thanas, isLoading: loadingThanas } = useThanas(diagnosticForm.district_id);
+
   useEffect(() => {
     if (editingDiagnostic) {
       const catId = editingDiagnostic.category?.id || editingDiagnostic.category_id || editingDiagnostic.category || editingDiagnostic.specialization_category?.id || '';
@@ -58,32 +55,22 @@ export default function DiagnosticModal() {
         ? editingDiagnostic.services.map(s => typeof s === 'object' ? s.id : s) 
         : [];
 
-      const existingTestCatIds = [];
-      if (Array.isArray(editingDiagnostic.offered_tests)) {
-        editingDiagnostic.offered_tests.forEach(ot => {
-          const testCatId = ot.test?.category || ot.test?.category_id || ot.category;
-          if (testCatId && !existingTestCatIds.includes(testCatId.toString())) {
-            existingTestCatIds.push(testCatId.toString());
-          }
-        });
-      }
-
-      const initialDistrict = editingDiagnostic.district || 'Dhaka';
-      const initialDivision = editingDiagnostic.division || findDivisionForDistrict(initialDistrict) || 'Dhaka';
-      const initialArea = editingDiagnostic.area || editingDiagnostic.branch || 'Panthapath';
+      const initialThanaId = editingDiagnostic.thana_id || (typeof editingDiagnostic.thana === 'object' ? editingDiagnostic.thana?.id : editingDiagnostic.thana) || null;
+      const initialDistrictId = editingDiagnostic.district_id || null;
+      const initialDivisionId = editingDiagnostic.division_id || null;
 
       setDiagnosticForm({
         id: editingDiagnostic.id,
-        name: editingDiagnostic.name,
-        division: initialDivision,
-        district: initialDistrict,
-        area: initialArea,
-        branch: editingDiagnostic.branch || initialArea || 'Main',
+        name: editingDiagnostic.name || '',
+        division_id: initialDivisionId,
+        district_id: initialDistrictId,
+        thana_id: initialThanaId,
+        branch: editingDiagnostic.branch || 'Main',
         isCustomBranch: false,
         customBranch: '',
         category_id: catId,
-        ownership_type: editingDiagnostic.ownership_type || editingDiagnostic.location_details?.ownership_type || 'private',
-        test_category_ids: existingTestCatIds,
+        ownership_type: editingDiagnostic.ownership_type || 'private',
+        test_category_ids: [],
         service_ids: srvIds,
         address: editingDiagnostic.address || editingDiagnostic.address_line || '',
         phone: editingDiagnostic.phone || '',
@@ -98,14 +85,47 @@ export default function DiagnosticModal() {
         description: editingDiagnostic.description || '',
         is_verified: editingDiagnostic.is_verified ?? true
       });
+
+      // Load center's tests from GET /api/facility-tests/?location=<id> following next until null
+      const locId = editingDiagnostic.location_id || editingDiagnostic.id;
+      if (locId) {
+        (async () => {
+          try {
+            const foundTestCatIds = new Set();
+            let page = 1;
+            let hasMore = true;
+            while (hasMore) {
+              const res = await api.getDiagnosticCenterTests({ location: locId, page, page_size: 50 });
+              const results = res?.results || (Array.isArray(res) ? res : []);
+              for (const ot of results) {
+                const testCatId = ot.test?.category || ot.test?.category_id || ot.category || ot.test?.category?.id;
+                if (testCatId) foundTestCatIds.add(testCatId.toString());
+              }
+              if (res?.next) {
+                page++;
+              } else {
+                hasMore = false;
+              }
+            }
+            if (foundTestCatIds.size > 0) {
+              setDiagnosticForm(prev => ({
+                ...prev,
+                test_category_ids: Array.from(foundTestCatIds)
+              }));
+            }
+          } catch (err) {
+            console.warn('Failed to load facility tests for diagnostic modal:', err);
+          }
+        })();
+      }
     } else {
       setDiagnosticForm({
         id: '',
         name: '',
-        division: 'Dhaka',
-        district: 'Dhaka',
-        area: 'Panthapath',
-        branch: 'Panthapath',
+        division_id: null,
+        district_id: null,
+        thana_id: null,
+        branch: 'Main',
         isCustomBranch: false,
         customBranch: '',
         category_id: '',
@@ -134,12 +154,10 @@ export default function DiagnosticModal() {
     e.preventDefault();
     try {
       const finalBranch = diagnosticForm.isCustomBranch ? diagnosticForm.customBranch : diagnosticForm.branch;
-      const finalArea = diagnosticForm.area || finalBranch;
       const payload = {
         name: diagnosticForm.name,
-        division: diagnosticForm.division,
-        district: diagnosticForm.district,
-        area: finalArea,
+        thana: diagnosticForm.thana_id,
+        thana_id: diagnosticForm.thana_id,
         branch: finalBranch,
         address_line: diagnosticForm.address,
         address: diagnosticForm.address,
@@ -269,26 +287,22 @@ export default function DiagnosticModal() {
                     <label className="block text-slate-700 font-label font-bold uppercase text-[10px] mb-1">1. Division *</label>
                     <select
                       required
-                      value={diagnosticForm.division}
+                      value={diagnosticForm.division_id ?? ''}
+                      disabled={loadingDivisions}
                       onChange={e => {
-                        const newDiv = e.target.value;
-                        const dists = getDistrictsForDivision(newDiv);
-                        const newDist = dists[0] || 'Dhaka';
-                        const thanas = getThanasForDistrict(newDist);
+                        const newDivId = e.target.value ? Number(e.target.value) : null;
                         setDiagnosticForm({
                           ...diagnosticForm,
-                          division: newDiv,
-                          district: newDist,
-                          area: thanas[0] || '',
-                          branch: thanas[0] || 'Main',
-                          isCustomBranch: false,
-                          customBranch: ''
+                          division_id: newDivId,
+                          district_id: null,
+                          thana_id: null,
                         });
                       }}
-                      className="w-full bg-white border border-[#d1d5dc] rounded-sm px-2.5 py-1.5 text-slate-800 font-bold focus:outline-none focus:border-[#094cb2]"
+                      className="w-full bg-white border border-[#d1d5dc] rounded-sm px-2.5 py-1.5 text-slate-800 font-bold focus:outline-none focus:border-[#094cb2] disabled:opacity-60"
                     >
-                      {DIVISIONS.map(div => (
-                        <option key={div} value={div}>{div} Division</option>
+                      <option value="">Select Division</option>
+                      {divisions.map(div => (
+                        <option key={div.id} value={div.id}>{div.label || div.name}</option>
                       ))}
                     </select>
                   </div>
@@ -298,23 +312,21 @@ export default function DiagnosticModal() {
                     <label className="block text-slate-700 font-label font-bold uppercase text-[10px] mb-1">2. District *</label>
                     <select
                       required
-                      value={diagnosticForm.district}
+                      value={diagnosticForm.district_id ?? ''}
+                      disabled={!diagnosticForm.division_id || loadingDistricts}
                       onChange={e => {
-                        const newDist = e.target.value;
-                        const thanas = getThanasForDistrict(newDist);
+                        const newDistId = e.target.value ? Number(e.target.value) : null;
                         setDiagnosticForm({
                           ...diagnosticForm,
-                          district: newDist,
-                          area: thanas[0] || '',
-                          branch: thanas[0] || 'Main',
-                          isCustomBranch: false,
-                          customBranch: ''
+                          district_id: newDistId,
+                          thana_id: null,
                         });
                       }}
-                      className="w-full bg-white border border-[#d1d5dc] rounded-sm px-2.5 py-1.5 text-slate-800 font-bold focus:outline-none focus:border-[#094cb2]"
+                      className="w-full bg-white border border-[#d1d5dc] rounded-sm px-2.5 py-1.5 text-slate-800 font-bold focus:outline-none focus:border-[#094cb2] disabled:opacity-60"
                     >
-                      {currentDistricts.map(dist => (
-                        <option key={dist} value={dist}>{dist}</option>
+                      <option value="">Select District</option>
+                      {districts.map(dist => (
+                        <option key={dist.id} value={dist.id}>{dist.label || dist.name}</option>
                       ))}
                     </select>
                   </div>
@@ -324,25 +336,29 @@ export default function DiagnosticModal() {
                     <label className="block text-slate-700 font-label font-bold uppercase text-[10px] mb-1">3. Thana / Branch *</label>
                     <select
                       required
-                      value={diagnosticForm.isCustomBranch ? 'Other' : diagnosticForm.branch}
+                      value={diagnosticForm.isCustomBranch ? 'Other' : (diagnosticForm.thana_id ?? '')}
+                      disabled={!diagnosticForm.district_id || loadingThanas}
                       onChange={e => {
                         const val = e.target.value;
                         if (val === 'Other') {
                           setDiagnosticForm({ ...diagnosticForm, isCustomBranch: true, branch: 'Other' });
                         } else {
+                          const selectedT = thanas.find(t => t.id === Number(val));
+                          const tName = selectedT?.name || '';
                           setDiagnosticForm({ 
                             ...diagnosticForm, 
                             isCustomBranch: false, 
-                            branch: val, 
-                            area: val,
+                            thana_id: val ? Number(val) : null,
+                            branch: tName || 'Main',
                             customBranch: '' 
                           });
                         }
                       }}
-                      className="w-full bg-white border border-[#d1d5dc] rounded-sm px-2.5 py-1.5 text-slate-800 font-bold focus:outline-none focus:border-[#094cb2]"
+                      className="w-full bg-white border border-[#d1d5dc] rounded-sm px-2.5 py-1.5 text-slate-800 font-bold focus:outline-none focus:border-[#094cb2] disabled:opacity-60"
                     >
-                      {currentThanas.map(th => (
-                        <option key={th} value={th}>{th}</option>
+                      <option value="">Select Thana</option>
+                      {thanas.map(th => (
+                        <option key={th.id} value={th.id}>{th.label || th.name}</option>
                       ))}
                       <option value="Other">+ Custom Branch Name</option>
                     </select>

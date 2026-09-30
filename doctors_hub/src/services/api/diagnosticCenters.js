@@ -5,7 +5,6 @@ import {
   getHeaders,
   fetchWithDeduplicationAndCache,
   clearCache,
-  flattenFacility,
 } from './core';
 import { getHospitalById } from './hospitals';
 
@@ -91,10 +90,9 @@ export async function deleteDiagnosticCenterCategory(id) {
 
 // Diagnostic Centers
 export async function getDiagnosticCenters({
-  location = '',
-  division = '',
-  district = '',
-  area = '',
+  division_id = null,
+  district_id = null,
+  thana_id = null,
   ownership_type = '',
   category = '',
   spec = '',
@@ -104,15 +102,14 @@ export async function getDiagnosticCenters({
   page = 1,
   page_size = 10,
 } = {}) {
-  const key = `diag_${location}_${division}_${district}_${area}_${ownership_type}_${category}_${spec}_${owner}_${testcat}_${search}_${page}_${page_size}`;
+  const key = `diag_${division_id || ''}_${district_id || ''}_${thana_id || ''}_${ownership_type}_${category}_${spec}_${owner}_${testcat}_${search}_${page}_${page_size}`;
   return fetchWithDeduplicationAndCache(
     key,
     async () => {
       const url = new URL(`${BASE_URL}/diagnostic-centers/`);
-      if (location && location.toLowerCase() !== 'all bangladesh' && location.toLowerCase() !== 'all') url.searchParams.append('location', location);
-      if (division && division.toLowerCase() !== 'all bangladesh' && division.toLowerCase() !== 'all') url.searchParams.append('division', division);
-      if (district && district.toLowerCase() !== 'all districts' && district.toLowerCase() !== 'all') url.searchParams.append('district', district);
-      if (area && area.toLowerCase() !== 'all areas' && area.toLowerCase() !== 'all') url.searchParams.append('area', area);
+      if (division_id) url.searchParams.append('division_id', division_id);
+      if (district_id) url.searchParams.append('district_id', district_id);
+      if (thana_id) url.searchParams.append('thana_id', thana_id);
       if (ownership_type && ownership_type !== 'all') url.searchParams.append('ownership_type', ownership_type);
       if (category) url.searchParams.append('category', category);
       if (spec) url.searchParams.append('spec', spec);
@@ -122,7 +119,7 @@ export async function getDiagnosticCenters({
       if (page) url.searchParams.append('page', page);
       if (page_size) url.searchParams.append('page_size', page_size);
       const res = await fetchWithTimeout(url, { headers: getHeaders() });
-      return flattenFacility(await handleResponse(res));
+      return handleResponse(res);
     },
     60000
   );
@@ -130,7 +127,7 @@ export async function getDiagnosticCenters({
 
 export async function getDiagnosticCenterById(id) {
   const res = await fetchWithTimeout(`${BASE_URL}/diagnostic-centers/${id}/`, { headers: getHeaders() });
-  return flattenFacility(await handleResponse(res));
+  return handleResponse(res);
 }
 
 export async function createDiagnosticCenter(data) {
@@ -173,8 +170,8 @@ export async function deleteDiagnosticCenter(id) {
 }
 
 // Backward compatibility alias for getBranches / getChambers
-export async function getBranches({ location = '' } = {}) {
-  return getDiagnosticCenters({ location });
+export async function getBranches({ division_id = null, district_id = null, thana_id = null } = {}) {
+  return getDiagnosticCenters({ division_id, district_id, thana_id });
 }
 
 export async function getBranchById(id) {

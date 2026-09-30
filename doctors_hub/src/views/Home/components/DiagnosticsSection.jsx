@@ -1,344 +1,98 @@
-import React, { useEffect, useState } from 'react';
+import React, { useState, useEffect } from 'react';
 import { 
-  Building2, FlaskConical, Heart, Brain, Dna, ShieldCheck, 
-  Activity, FileText, Sparkles, Landmark, Award, Stethoscope,
-  Microscope, Droplet, ArrowRight, ChevronDown
+  FlaskConical, 
+  Droplet, 
+  Heart, 
+  FileText, 
+  Sparkles, 
+  Eye, 
+  Baby, 
+  Brain, 
+  Smile, 
+  Flame, 
+  Wind, 
+  Landmark, 
+  ShieldCheck, 
+  Building2, 
+  Award, 
+  ChevronDown,
+  Dna,
+  Layers,
+  ChevronRight,
+  Activity,
+  Stethoscope,
+  Scissors,
+  Syringe,
+  Pill,
+  Bone
 } from 'lucide-react';
 import { api, ensureArray } from '../../../services/api';
 
 const categoryIconMap = {
-  Building2,
-  FlaskConical,
-  Heart,
-  Brain,
-  Dna,
-  ShieldCheck,
-  Activity,
-  FileText,
-  Sparkles,
-  Landmark,
-  Award,
-  Stethoscope,
-  Microscope,
-  Droplet,
-  'multi-specialty-general-diagnostic-center': Building2,
-  'pathology-lab-focused': FlaskConical,
-  'imaging-focused-radiology-ct-mri-': FileText,
-  'cardiac-diagnostics-focused': Heart,
-  'neuro-diagnostics-focused': Brain,
-  'genetic-molecular-testing-focused': Dna,
-  'government-diagnostic-center': Landmark,
-  'private-independent-': ShieldCheck,
-  'corporate-chain-multi-branch-': Building2,
-  'hospital-affiliated-lab': Award,
-  'clinical-pathology': FlaskConical,
-  'radiology-imaging': FileText,
-  'cardiology-diagnostics': Heart,
+  'Heart': Heart,
+  'Droplet': Droplet,
+  'Activity': Activity,
+  'FileText': FileText,
+  'Sparkles': Sparkles,
+  'Brain': Brain,
+  'Eye': Eye,
+  'Baby': Baby,
+  'Smile': Smile,
+  'Flame': Flame,
+  'Wind': Wind,
+  'FlaskConical': FlaskConical,
+  'Landmark': Landmark,
+  'ShieldCheck': ShieldCheck,
+  'Building2': Building2,
+  'Award': Award,
+  'Dna': Dna,
+  'Stethoscope': Stethoscope,
+  'Scissors': Scissors,
+  'Syringe': Syringe,
+  'Pill': Pill,
+  'Bone': Bone,
   'cardiac-tests': Heart,
-  'neuro-diagnostics': Brain,
-  'neuro-tests': Brain,
-  'molecular-genetics': Dna,
-  'genetic-molecular': Dna,
-  'general-diagnostic-centers': Building2,
   'hematology': Droplet,
   'biochemistry': Activity,
-  'serology': ShieldCheck,
-  'microbiology': FlaskConical,
-  'x-ray': FileText,
+  'radiology-imaging': FileText,
   'ultrasound-usg': Sparkles,
-  'ct-scan': Brain,
+  'ct-scan': FileText,
   'mri': Brain,
   'endoscopy-colonoscopy': Stethoscope,
   'mammography': Sparkles,
 };
 
-// Rich Fallback Data for Test Categories (By Test Domain - 24 Categories)
-const FALLBACK_TEST_CATEGORIES = [
-  { 
-    id: 'cardiac-tests', 
-    name: 'Cardiac Tests', 
-    slug: 'cardiac-tests', 
-    icon: 'Heart', 
-    description: 'ECG, 2D Echo, Doppler Echo, TMT, Holter & cardiac profiling', 
-    count: 9, 
-    badge: 'Popular' 
-  },
-  { 
-    id: 'hematology', 
-    name: 'Hematology & Blood', 
-    slug: 'hematology', 
-    icon: 'Droplet', 
-    description: 'CBC, ESR, Blood Grouping, PBF & routine blood pathology', 
-    count: 12, 
-    badge: 'Routine' 
-  },
-  { 
-    id: 'biochemistry', 
-    name: 'Biochemistry & LFT/KFT', 
-    slug: 'biochemistry', 
-    icon: 'Activity', 
-    description: 'Lipid Profile, Liver Function, Kidney Function, HbA1c & Sugar', 
-    count: 14, 
-    badge: 'Essential' 
-  },
-  { 
-    id: 'radiology-imaging', 
-    name: 'Radiology & X-Ray', 
-    slug: 'radiology-imaging', 
-    icon: 'FileText', 
-    description: 'Digital X-Ray, Chest X-Ray, Bone Densitometry & DEXA scans', 
-    count: 8, 
-    badge: 'Imaging' 
-  },
-  { 
-    id: 'ultrasound-usg', 
-    name: 'Ultrasound / USG', 
-    slug: 'ultrasound-usg', 
-    icon: 'Sparkles', 
-    description: '4D Pregnancy USG, Whole Abdomen, Pelvic & Doppler Ultrasound', 
-    count: 7, 
-    badge: 'High Demand' 
-  },
-  { 
-    id: 'ct-scan', 
-    name: 'CT Scan Body Imaging', 
-    slug: 'ct-scan', 
-    icon: 'Brain', 
-    description: 'High-speed Multi-Slice CT Brain, Chest, Abdomen & HRCT Scans', 
-    count: 6, 
-    badge: 'Advanced' 
-  },
-  { 
-    id: 'mri', 
-    name: 'MRI Diagnostics', 
-    slug: 'mri', 
-    icon: 'Brain', 
-    description: '1.5T & 3.0T High-Field Brain, Spine & Musculoskeletal MRI', 
-    count: 6, 
-    badge: 'Advanced' 
-  },
-  { 
-    id: 'neuro-tests', 
-    name: 'Neuro Diagnostics', 
-    slug: 'neuro-tests', 
-    icon: 'Brain', 
-    description: 'EEG, EMG, NCS, VEP & comprehensive neurological testing', 
-    count: 7, 
-    badge: 'Specialized' 
-  },
-  { 
-    id: 'genetic-molecular', 
-    name: 'Genetic & Molecular', 
-    slug: 'genetic-molecular', 
-    icon: 'Dna', 
-    description: 'PCR tests, DNA sequencing, HPV & advanced molecular diagnostics', 
-    count: 6, 
-    badge: 'Specialized' 
-  },
-  { 
-    id: 'endoscopy-colonoscopy', 
-    name: 'Endoscopy & Colonoscopy', 
-    slug: 'endoscopy-colonoscopy', 
-    icon: 'Stethoscope', 
-    description: 'Upper GI Endoscopy, Colonoscopy, Biopsy & Histopathology', 
-    count: 7, 
-    badge: 'Specialized' 
-  },
-  { 
-    id: 'serology', 
-    name: 'Serology & Immunity', 
-    slug: 'serology', 
-    icon: 'ShieldCheck', 
-    description: 'Dengue NS1, Hepatitis B/C, HIV, Widal & infectious viral panels', 
-    count: 9, 
-    badge: 'Routine' 
-  },
-  { 
-    id: 'microbiology', 
-    name: 'Microbiology & Culture', 
-    slug: 'microbiology', 
-    icon: 'FlaskConical', 
-    description: 'Urine R/M/E, Stool R/E, Blood Culture & Antibiotic Sensitivity', 
-    count: 6, 
-    badge: 'Routine' 
-  },
-  { 
-    id: 'histopathology', 
-    name: 'Histopathology & Biopsy', 
-    slug: 'histopathology', 
-    icon: 'Microscope', 
-    description: 'Surgical specimen biopsy, FNAC, Pap smear & cell cytology', 
-    count: 5, 
-    badge: 'Specialized' 
-  },
-  { 
-    id: 'hormone-endocrinology', 
-    name: 'Hormones & Thyroid', 
-    slug: 'hormone-endocrinology', 
-    icon: 'Activity', 
-    description: 'Thyroid profile (TSH, FT3, FT4), Vitamin D, B12 & fertility hormones', 
-    count: 11, 
-    badge: 'Popular' 
-  },
-  { 
-    id: 'urine-renal', 
-    name: 'Urine & Renal Tests', 
-    slug: 'urine-renal', 
-    icon: 'Droplet', 
-    description: 'Urine albumin, 24hr protein, microalbuminuria & renal clearance', 
-    count: 8, 
-    badge: 'Routine' 
-  },
-  { 
-    id: 'allergy-immunology', 
-    name: 'Allergy & Immunology', 
-    slug: 'allergy-immunology', 
-    icon: 'ShieldCheck', 
-    description: 'Total IgE, food/dust allergy panels, ANA & autoimmune screening', 
-    count: 6, 
-    badge: 'Specialized' 
-  },
-  { 
-    id: 'dental-imaging', 
-    name: 'Dental X-Ray & OPG', 
-    slug: 'dental-imaging', 
-    icon: 'FileText', 
-    description: 'Panoramic dental OPG, lateral cephalogram & RVG digital radiograph', 
-    count: 4, 
-    badge: 'Imaging' 
-  },
-  { 
-    id: 'mammography', 
-    name: 'Mammography & Breast', 
-    slug: 'mammography', 
-    icon: 'Sparkles', 
-    description: 'Digital bilateral mammography screening & breast ultrasound', 
-    count: 4, 
-    badge: 'Women Health' 
-  },
-  { 
-    id: 'pulmonary-pft', 
-    name: 'Pulmonary Function (PFT)', 
-    slug: 'pulmonary-pft', 
-    icon: 'Activity', 
-    description: 'Spirometry, lung volume capacity & asthma bronchodilator evaluation', 
-    count: 5, 
-    badge: 'Specialized' 
-  },
-  { 
-    id: 'bone-dexa', 
-    name: 'Bone Mineral DEXA Scan', 
-    slug: 'bone-dexa', 
-    icon: 'FileText', 
-    description: 'Dual-energy X-ray bone densitometry for osteoporosis detection', 
-    count: 4, 
-    badge: 'Advanced' 
-  },
-  { 
-    id: 'infectious-diseases', 
-    name: 'Infectious Disease Panels', 
-    slug: 'infectious-diseases', 
-    icon: 'FlaskConical', 
-    description: 'Malaria, Typhoid, Chikungunya, COVID PCR & seasonal viral panels', 
-    count: 8, 
-    badge: 'Essential' 
-  },
-  { 
-    id: 'ophthalmology-diagnostics', 
-    name: 'Eye & Retinal Imaging', 
-    slug: 'ophthalmology-diagnostics', 
-    icon: 'FileText', 
-    description: 'OCT retina, visual fields perimetry, fundus photo & pachymetry', 
-    count: 5, 
-    badge: 'Specialized' 
-  },
-  { 
-    id: 'pediatric-diagnostics', 
-    name: 'Pediatric Diagnostics', 
-    slug: 'pediatric-diagnostics', 
-    icon: 'Sparkles', 
-    description: 'Newborn metabolic screening, pediatric blood work & pediatric USG', 
-    count: 6, 
-    badge: 'Child Care' 
-  },
-  { 
-    id: 'health-checkup-packages', 
-    name: 'Health Checkup Packages', 
-    slug: 'health-checkup-packages', 
-    icon: 'Award', 
-    description: 'Comprehensive whole-body, executive wellness & senior citizen panels', 
-    count: 10, 
-    badge: 'Package' 
-  },
-];
-
-// Rich Fallback Data for Diagnostic Center Specialization & Types
-const FALLBACK_CENTER_CATEGORIES = [
-  { id: 'multi-specialty-general-diagnostic-center', name: 'Multi-Specialty / General Lab', slug: 'multi-specialty-general-diagnostic-center', icon: 'Building2', description: 'Comprehensive diagnostic labs with multiple testing divisions & visiting specialists', count: 52 },
-  { id: 'pathology-lab-focused', name: 'Pathology Lab Focused', slug: 'pathology-lab-focused', icon: 'FlaskConical', description: 'Fully automated clinical biochemistry, hematology, immunology & hormone testing', count: 45 },
-  { id: 'imaging-focused-radiology-ct-mri-', name: 'Imaging Hub (X-Ray, CT, MRI)', slug: 'imaging-focused-radiology-ct-mri-', icon: 'FileText', description: 'Specialized 128-slice CT, 3.0T MRI, digital radiography & ultrasound centers', count: 38 },
-  { id: 'cardiac-diagnostics-focused', name: 'Cardiac Diagnostics Focused', slug: 'cardiac-diagnostics-focused', icon: 'Heart', description: 'Dedicated centers with echocardiography, ETT, Holter & cardiac evaluations', count: 28 },
-  { id: 'neuro-diagnostics-focused', name: 'Neuro Diagnostics Focused', slug: 'neuro-diagnostics-focused', icon: 'Brain', description: 'State-of-the-art EEG, EMG, NCS & comprehensive neurological testing labs', count: 20 },
-  { id: 'genetic-molecular-testing-focused', name: 'Genetic & Molecular Testing', slug: 'genetic-molecular-testing-focused', icon: 'Dna', description: 'Advanced molecular PCR, chromosomal screening & DNA diagnostics facilities', count: 18 },
-  { id: 'government-diagnostic-center', name: 'Government Diagnostic Centers', slug: 'government-diagnostic-center', icon: 'Landmark', description: 'Subsidized public sector diagnostic & hospital-affiliated pathology units', count: 15 },
-  { id: 'private-independent-', name: 'Private & Corporate Chains', slug: 'private-independent-', icon: 'ShieldCheck', description: 'Nationwide verified private diagnostic laboratory chains with doorstep collection', count: 35 },
-];
-
-/*
-const POPULAR_QUICK_TESTS = [
-  { label: 'ECG & Echocardiogram', catId: 'cardiac-tests', icon: '🫀' },
-  { label: 'CBC Blood Count', catId: 'hematology', icon: '🩸' },
-  { label: 'Lipid & LFT Profile', catId: 'biochemistry', icon: '🧪' },
-  { label: '4D Pregnancy USG', catId: 'ultrasound-usg', icon: '👶' },
-  { label: 'Brain MRI Scan', catId: 'mri', icon: '🧠' },
-  { label: 'Digital Chest X-Ray', catId: 'radiology-imaging', icon: '☢️' },
-  { label: 'Whole Body CT Scan', catId: 'ct-scan', icon: '⚡' },
-];
-*/
-
 export default function DiagnosticsSection({
   onSelectCategory,
   onSelectTestCategory,
-  onSelectCenterCategory
 }) {
   const [testCategories, setTestCategories] = useState([]);
-  const [centerCategories, setCenterCategories] = useState([]);
+  const [loading, setLoading] = useState(true);
+  const [error, setError] = useState(null);
   const [showAll, setShowAll] = useState(false);
 
-  useEffect(() => {
-    let isMounted = true;
-    
-    // Fetch Test Categories
+  const fetchCategories = () => {
+    setLoading(true);
+    setError(null);
     api.getTestCategories()
       .then((data) => {
-        if (isMounted && data) {
-          const list = ensureArray(data);
-          const filtered = list.filter((c) => c && c.id !== 'all' && c.name !== 'All Categories' && c.name !== 'All Test Categories');
-          if (filtered.length > 0) setTestCategories(filtered);
-        }
+        const list = ensureArray(data);
+        const filtered = list.filter((c) => c && c.id !== 'all');
+        setTestCategories(filtered);
+        setLoading(false);
       })
       .catch((err) => {
-        console.warn("Failed to load test categories, using fallback", err);
+        console.warn("Failed to load test categories", err);
+        setError("Unable to load diagnostic categories. Please try again.");
+        setLoading(false);
       });
+  };
 
-    // Fetch Diagnostic Center Categories
-    api.getDiagnosticCenterCategories()
-      .then((data) => {
-        if (isMounted && data) {
-          const list = ensureArray(data);
-          const filtered = list.filter((c) => c && c.id !== 'all' && c.name !== 'All Categories' && c.name !== 'By Specialization' && c.name !== 'By Ownership & Type');
-          if (filtered.length > 0) setCenterCategories(filtered);
-        }
-      })
-      .catch((err) => {
-        console.warn("Failed to load diagnostic center categories, using fallback", err);
-      });
-
-    return () => { isMounted = false; };
+  useEffect(() => {
+    fetchCategories();
   }, []);
 
-  const displayTestCategories = testCategories.length > 0 ? testCategories : FALLBACK_TEST_CATEGORIES;
-  const visibleCategories = showAll ? displayTestCategories : displayTestCategories.slice(0, 20);
+  const visibleCategories = showAll ? testCategories : testCategories.slice(0, 20);
 
   const handleTestCategoryClick = (cat) => {
     const idOrSlug = cat.slug || cat.id || cat.name;
@@ -366,111 +120,84 @@ export default function DiagnosticsSection({
           </p>
         </div>
 
-        {/* 
-        DUAL VIEW MODE SWITCHER TABS COMMENTED OUT:
-        <div className="flex flex-col sm:flex-row items-center justify-center gap-3 max-w-2xl mx-auto">
-          <div className="bg-slate-100 p-1 rounded-2xl border border-slate-200/90 flex w-full sm:w-auto shadow-inner">
-            <button
-              type="button"
-              onClick={() => setActiveTab('test_categories')}
-              className="px-5 py-2.5 rounded-xl font-bold text-xs sm:text-sm bg-emerald-600 text-white"
-            >
-              By Test Category (Cardiac, Blood, Imaging)
-            </button>
-            <button
-              type="button"
-              onClick={() => setActiveTab('center_categories')}
-              className="px-5 py-2.5 rounded-xl font-bold text-xs sm:text-sm text-slate-600"
-            >
-              By Diagnostic Center Type
-            </button>
-          </div>
-        </div>
-        */}
-
-        {/* 
-        QUICK POPULAR TEST PILLS BAR COMMENTED OUT:
-        <div className="bg-slate-50 border border-slate-200/90 rounded-2xl p-3.5 sm:p-4 max-w-5xl mx-auto flex flex-col md:flex-row items-center justify-between gap-3 text-xs">
-          <div className="flex items-center gap-2 text-slate-700 font-extrabold shrink-0">
-            <Sparkles className="w-4 h-4 text-emerald-600" />
-            <span>Popular Test Searches:</span>
-          </div>
-          <div className="flex flex-wrap items-center justify-center md:justify-end gap-2">
-            {POPULAR_QUICK_TESTS.map((pill) => (
-              <button
-                key={pill.label}
-                type="button"
-                onClick={() => handleTestCategoryClick({ id: pill.catId, slug: pill.catId, name: pill.label })}
-                className="inline-flex items-center gap-1.5 px-3 py-1.5 rounded-full bg-white text-slate-700 border border-slate-200"
-              >
-                <span>{pill.icon}</span>
-                <span>{pill.label}</span>
-              </button>
+        {/* Loading Skeleton */}
+        {loading && (
+          <div className="grid grid-cols-2 sm:grid-cols-3 md:grid-cols-4 lg:grid-cols-6 gap-4">
+            {Array.from({ length: 12 }).map((_, i) => (
+              <div key={i} className="p-4 rounded-xl border border-slate-200 bg-white text-center flex flex-col items-center animate-pulse">
+                <div className="w-12 h-12 rounded-full bg-slate-200 mb-3" />
+                <div className="h-4 bg-slate-200 rounded w-3/4 mb-2" />
+                <div className="h-3 bg-slate-100 rounded w-1/2" />
+              </div>
             ))}
           </div>
-        </div>
-        */}
+        )}
 
-        {/* DIAGNOSTICS TEST CATEGORY GRID VIEW */}
-        <div className="space-y-4">
-          {/*
-          SUBHEADER COMMENTED OUT:
-          <div className="flex items-center justify-between px-1">
-            <h3 className="text-xs font-extrabold uppercase tracking-wider text-slate-500">
-              Select a Test Category to View Matching Tests & Centers ({displayTestCategories.length})
-            </h3>
-            <span className="text-[11px] font-bold text-emerald-700 bg-emerald-50 px-2.5 py-0.5 rounded-full border border-emerald-200">
-              Click category to search
-            </span>
+        {/* Error State */}
+        {!loading && error && (
+          <div className="text-center py-10 bg-slate-50 border border-slate-200 rounded-xl p-6">
+            <p className="text-sm font-medium text-slate-600 mb-3">{error}</p>
+            <button
+              onClick={fetchCategories}
+              className="px-4 py-2 bg-emerald-600 hover:bg-emerald-700 text-white text-xs font-semibold rounded-lg transition"
+            >
+              Retry
+            </button>
           </div>
-          */}
+        )}
 
-          <div className="grid grid-cols-2 sm:grid-cols-3 md:grid-cols-4 lg:grid-cols-6 gap-4">
-            {visibleCategories.map((cat) => {
-              const IconComp = categoryIconMap[cat.icon] || categoryIconMap[cat.slug] || categoryIconMap[cat.id] || FlaskConical;
+        {/* Categories Grid */}
+        {!loading && !error && (
+          <div className="space-y-4">
+            <div className="grid grid-cols-2 sm:grid-cols-3 md:grid-cols-4 lg:grid-cols-6 gap-4">
+              {visibleCategories.map((cat) => {
+                const IconComp = categoryIconMap[cat.icon] || categoryIconMap[cat.slug] || categoryIconMap[cat.id] || FlaskConical;
 
-              return (
-                <div
-                  key={cat.id || cat.slug || cat.name}
-                  onClick={() => handleTestCategoryClick(cat)}
-                  className="p-4 rounded-xl border cursor-pointer transition-all duration-200 text-center flex flex-col items-center justify-between bg-white text-slate-800 border-slate-200 hover:border-emerald-500 hover:shadow-md hover:-translate-y-0.5 group"
-                >
-                  <div className="w-12 h-12 rounded-full flex items-center justify-center mb-3 transition-colors bg-emerald-100 text-emerald-600 group-hover:bg-emerald-600 group-hover:text-white">
-                    <IconComp className="w-6 h-6" />
-                  </div>
-
-                  <div>
-                    <h4 className="font-bold text-sm leading-tight mb-1 text-slate-900 group-hover:text-emerald-700">
-                      {cat.name}
-                    </h4>
-                    <p className="text-[11px] line-clamp-2 text-slate-500">
-                      {cat.description || `Explore ${cat.name} diagnostic centers`}
-                    </p>
-                  </div>
-
-                  {cat.count !== undefined && cat.count !== null && (
-                    <div className="mt-3 text-[10px] font-bold px-2 py-0.5 rounded-full bg-slate-100 text-slate-600">
-                      {cat.count} Tests
+                return (
+                  <div
+                    key={cat.id || cat.slug || cat.name}
+                    onClick={() => handleTestCategoryClick(cat)}
+                    className="p-4 rounded-xl border cursor-pointer transition-all duration-200 text-center flex flex-col items-center justify-between bg-white text-slate-800 border-slate-200 hover:border-emerald-500 hover:shadow-md hover:-translate-y-0.5 group"
+                  >
+                    <div className="w-12 h-12 rounded-full flex items-center justify-center mb-3 transition-colors bg-emerald-100 text-emerald-600 group-hover:bg-emerald-600 group-hover:text-white">
+                      <IconComp className="w-6 h-6" />
                     </div>
-                  )}
-                </div>
-              );
-            })}
-          </div>
 
-          {displayTestCategories.length > 20 && (
-            <div className="mt-8 text-center">
-              <button
-                type="button"
-                onClick={() => setShowAll(!showAll)}
-                className="inline-flex items-center gap-2 px-6 py-2.5 rounded-xl font-bold text-sm bg-white text-slate-800 border border-slate-300 hover:border-emerald-500 hover:text-emerald-700 hover:shadow-md transition-all duration-200 cursor-pointer active:scale-95"
-              >
-                <span>{showAll ? 'Show Less' : `Show All (${displayTestCategories.length})`}</span>
-                <ChevronDown className={`w-4 h-4 transition-transform duration-200 ${showAll ? 'rotate-180' : ''}`} />
-              </button>
+                    <div>
+                      <h4 className="font-bold text-sm leading-tight mb-1 text-slate-900 group-hover:text-emerald-700">
+                        {cat.name}
+                      </h4>
+                      {cat.description && (
+                        <p className="text-[11px] line-clamp-2 text-slate-500">
+                          {cat.description}
+                        </p>
+                      )}
+                    </div>
+
+                    {cat.count !== undefined && cat.count !== null && (
+                      <div className="mt-3 text-[10px] font-bold px-2 py-0.5 rounded-full bg-slate-100 text-slate-600">
+                        {cat.count} Tests
+                      </div>
+                    )}
+                  </div>
+                );
+              })}
             </div>
-          )}
-        </div>
+
+            {testCategories.length > 20 && (
+              <div className="mt-8 text-center">
+                <button
+                  type="button"
+                  onClick={() => setShowAll(!showAll)}
+                  className="inline-flex items-center gap-2 px-6 py-2.5 rounded-xl font-bold text-sm bg-white text-slate-800 border border-slate-300 hover:border-emerald-500 hover:text-emerald-700 hover:shadow-md transition-all duration-200 cursor-pointer active:scale-95"
+                >
+                  <span>{showAll ? 'Show Less' : `Show All (${testCategories.length})`}</span>
+                  <ChevronDown className={`w-4 h-4 transition-transform duration-200 ${showAll ? 'rotate-180' : ''}`} />
+                </button>
+              </div>
+            )}
+          </div>
+        )}
 
       </div>
     </section>

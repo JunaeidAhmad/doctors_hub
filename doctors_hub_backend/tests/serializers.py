@@ -1,7 +1,7 @@
 from rest_framework import serializers
 from .models import TestCategory, Test, FacilityTest
 from facilities.models import Location
-from facilities.serializers import LocationSerializer
+from facilities.serializers_summary import FacilitySummarySerializer
 
 
 class TestCategorySerializer(serializers.ModelSerializer):
@@ -34,13 +34,10 @@ class FacilityTestSerializer(serializers.ModelSerializer):
     test_id = serializers.PrimaryKeyRelatedField(
         queryset=Test.objects.all(), write_only=True, source='test', required=False
     )
-    location_details = LocationSerializer(source='location', read_only=True)
+    facility = FacilitySummarySerializer(source='location', read_only=True)
     location_id = serializers.PrimaryKeyRelatedField(
         queryset=Location.objects.all(), write_only=True, source='location', required=False
     )
-    facility_name = serializers.CharField(source='location.name', read_only=True, default='')
-    branch = serializers.CharField(source='location.branch', read_only=True, default='')
-    facility_type = serializers.CharField(source='location.location_type', read_only=True, default='')
 
     calculated_price = serializers.DecimalField(max_digits=10, decimal_places=2, read_only=True)
     discounted_price = serializers.DecimalField(max_digits=10, decimal_places=2, read_only=True)
@@ -48,9 +45,9 @@ class FacilityTestSerializer(serializers.ModelSerializer):
     class Meta:
         model = FacilityTest
         fields = (
-            'id', 'location_id', 'location_details', 'test_id', 'test_details', 'price',
+            'id', 'location_id', 'facility', 'test_id', 'test_details', 'price',
             'discount_percent', 'calculated_price', 'discounted_price', 'report_time', 'is_available',
-            'home_sample_collection', 'home_sample_charge', 'home_sample_note', 'updated_at', 'facility_name', 'branch', 'facility_type'
+            'home_sample_collection', 'home_sample_charge', 'home_sample_note', 'updated_at'
         )
 
     def to_internal_value(self, data):
@@ -82,3 +79,43 @@ class FacilityTestSerializer(serializers.ModelSerializer):
                 pass
 
         return super().to_internal_value(mutable_data)
+
+
+class FacilityTestSearchOfferingSerializer(serializers.ModelSerializer):
+    facility = FacilitySummarySerializer(source='location', read_only=True)
+    price = serializers.DecimalField(max_digits=10, decimal_places=2, coerce_to_string=True)
+    discount_percent = serializers.DecimalField(max_digits=5, decimal_places=2, coerce_to_string=True, allow_null=True)
+    calculated_price = serializers.DecimalField(max_digits=10, decimal_places=2, coerce_to_string=True)
+    home_sample_charge = serializers.DecimalField(max_digits=10, decimal_places=2, coerce_to_string=True, allow_null=True)
+
+    class Meta:
+        model = FacilityTest
+        fields = (
+            'id', 'facility', 'price', 'discount_percent', 'calculated_price',
+            'report_time', 'is_available', 'home_sample_collection',
+            'home_sample_charge', 'home_sample_note'
+        )
+
+
+class FacilityTestSearchGroupSerializer(serializers.ModelSerializer):
+    category_id = serializers.UUIDField(source='category.id', read_only=True)
+    category_name = serializers.CharField(source='category.name', read_only=True)
+    category_slug = serializers.CharField(source='category.slug', read_only=True)
+    min_price = serializers.CharField(read_only=True)
+    max_price = serializers.CharField(read_only=True)
+    offering_count = serializers.IntegerField(read_only=True)
+    location_count = serializers.IntegerField(read_only=True)
+    home_collection_count = serializers.IntegerField(read_only=True)
+    offerings = FacilityTestSearchOfferingSerializer(source='matching_offerings', many=True, read_only=True)
+
+    class Meta:
+        model = Test
+        fields = (
+            'id', 'name', 'slug', 'code',
+            'category_id', 'category_name', 'category_slug',
+            'description', 'sample_type', 'preparation_instructions',
+            'fasting_required', 'report_time_hours',
+            'min_price', 'max_price',
+            'offering_count', 'location_count', 'home_collection_count',
+            'offerings'
+        )

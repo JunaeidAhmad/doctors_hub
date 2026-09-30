@@ -1,9 +1,9 @@
 import React from 'react';
 
 export default function DoctorActiveFiltersBar({
-  division,
-  district,
-  area,
+  divisionName,
+  districtName,
+  thanaName,
   specialty,
   specialtyName,
   facility,
@@ -15,7 +15,7 @@ export default function DoctorActiveFiltersBar({
   hasActiveFilters = false,
   onRemoveDivision,
   onRemoveDistrict,
-  onRemoveArea,
+  onRemoveThana,
   onRemoveSpecialty,
   onRemoveFacility,
   onRemoveDay,
@@ -40,9 +40,9 @@ export default function DoctorActiveFiltersBar({
             )}
 
             {/* Division Pill */}
-            {division && division !== 'All Bangladesh' && (
+            {divisionName && (
               <span className="inline-flex items-center gap-1.5 bg-surface-container-lowest border border-outline-variant rounded-lg px-2.5 py-1 text-label-sm text-on-surface shadow-xs">
-                <span className="text-outline font-normal">Division:</span> {division}
+                <span className="text-outline font-normal">Division:</span> {divisionName}
                 <button
                   onClick={onRemoveDivision}
                   className="text-outline hover:text-error transition-colors leading-none cursor-pointer ml-0.5"
@@ -55,9 +55,9 @@ export default function DoctorActiveFiltersBar({
             )}
 
             {/* District Pill */}
-            {district && district !== 'All Districts' && (
+            {districtName && (
               <span className="inline-flex items-center gap-1.5 bg-surface-container-lowest border border-outline-variant rounded-lg px-2.5 py-1 text-label-sm text-on-surface shadow-xs">
-                <span className="text-outline font-normal">District:</span> {district}
+                <span className="text-outline font-normal">District:</span> {districtName}
                 <button
                   onClick={onRemoveDistrict}
                   className="text-outline hover:text-error transition-colors leading-none cursor-pointer ml-0.5"
@@ -70,11 +70,11 @@ export default function DoctorActiveFiltersBar({
             )}
 
             {/* Area / Thana Pill */}
-            {area && area !== 'All Areas' && (
+            {thanaName && (
               <span className="inline-flex items-center gap-1.5 bg-surface-container-lowest border border-outline-variant rounded-lg px-2.5 py-1 text-label-sm text-on-surface shadow-xs">
-                <span className="text-outline font-normal">Area:</span> {area}
+                <span className="text-outline font-normal">Area:</span> {thanaName}
                 <button
-                  onClick={onRemoveArea}
+                  onClick={onRemoveThana}
                   className="text-outline hover:text-error transition-colors leading-none cursor-pointer ml-0.5"
                   type="button"
                   title="Remove Area"

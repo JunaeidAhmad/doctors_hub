@@ -1,70 +1,31 @@
-import React, { useState, useMemo } from 'react';
+import React, { useState, useEffect, useCallback, useRef } from 'react';
 import { 
   Stethoscope, Search, ShieldCheck, Calendar, Clock, 
-  DoorClosed, CheckCircle2, Timer, ArrowRight, UserCheck 
+  DoorClosed, ArrowRight, UserCheck, Loader2
 } from 'lucide-react';
 import { formatFacilityName } from '../../../utils/facilityUtils';
-
-const STITCH_DEFAULT_DOCTORS = [
-  {
-    id: 'stitch-doc-1',
-    name: 'Prof. Dr. Jahangir Kabir',
-    academic_title: 'Senior Consultant, Cardiothoracic Surgery',
-    specialty: 'Cardiology',
-    specialties: [{ name: 'Cardiology' }, { name: 'Cardiothoracic Surgery' }],
-    qualification: 'MBBS, MS (CTS), FRCS (Edin), FACC (USA)',
-    bmdc_number: 'BMDC A-29481',
-    opd_room: 'Square OPD-1',
-    chamber_room: 'Room 402, 4th Floor, Tower A',
-    schedule: 'Sat, Mon, Wed (05:00 PM - 09:00 PM)',
-    fee: 2000,
-    availability_text: 'Available Tomorrow: 6 Slots Left',
-    availability_type: 'available', // available | fast_filling
-    image: 'https://lh3.googleusercontent.com/aida-public/AB6AXuCh-UX-1P9NUaodn2akdSFxL1XfKWaa1iippHzr0h-Q2OxlLLmXsWRwXgpmsqDv3KT5GAdWqsbX8f2tCKjhMEsTI4X6LyXRFJyZ2PIhEQ1CEw3BZoKUkXiHjUQmkSf3e85mKcAftEZLmExTmC6hWY-5iVma8ii0ygXwf_lw03URNO64sCxGyK6sEgQP7oyOdgy4KE7P5c9d5mDNuJeN790uAOnqF6GPPbzXVZCSe0LN5mdhNQUcMpBSbw',
-  },
-  {
-    id: 'stitch-doc-2',
-    name: 'Dr. Tasnim Farzana',
-    academic_title: 'Associate Professor, Neurology',
-    specialty: 'Neurosurgery',
-    specialties: [{ name: 'Neurosurgery' }, { name: 'Neurology' }],
-    qualification: 'MBBS, FCPS (Medicine), MD (Neurology)',
-    bmdc_number: 'BMDC A-38102',
-    opd_room: 'Square OPD-2',
-    chamber_room: 'Room 305, 3rd Floor, Tower B',
-    schedule: 'Everyday except Friday (06:00 PM - 09:30 PM)',
-    fee: 1800,
-    availability_text: 'Fast Filling: 2 Appointments Left Today',
-    availability_type: 'fast_filling',
-    image: 'https://lh3.googleusercontent.com/aida-public/AB6AXuB6l_s7F4vYEfV01Wj-wsOfKmpk-5u5G_hr1MFXZGHlqxnzY8J8H2lLHRRGM5KhV6BNW6Dg4NlN6YbsHAbmKDzSTxopsW5P9DKGbDSVBuh9NmGatNALAvVzd4hgRx0LlQr36re3zkuGpgomRQtAhCSszps_Wgqtki4OhXywRG3l40aoA-tCXL_reaWXOVG7g6TYT3KLHLPM3yiGDIsGHSRy_LyXTttJDGO8YxYKL6ZLcZznxa3L1UOJOQ',
-  },
-  {
-    id: 'stitch-doc-3',
-    name: 'Prof. Dr. M. A. Wahab',
-    academic_title: 'Chief Consultant, Orthopedics & Joint',
-    specialty: 'Orthopedics',
-    specialties: [{ name: 'Orthopedics' }, { name: 'Joint Replacement' }],
-    qualification: 'MBBS, MS (Ortho), FICS, Fellow Arthroscopy',
-    bmdc_number: 'BMDC A-21054',
-    opd_room: 'Square OPD-3',
-    chamber_room: 'Room 512, 5th Floor, West Wing',
-    schedule: 'Sun, Tue, Thu (10:00 AM - 02:00 PM)',
-    fee: 2200,
-    availability_text: 'Available Sunday: 8 Slots Open',
-    availability_type: 'available',
-    image: 'https://lh3.googleusercontent.com/aida-public/AB6AXuBZOc0MoTgEkGrsC-rLAA_8s3Yi_id6-47tj9S-3ulzwcdzMxFLjhUMZj01oZxp6OiJralqHHvpdIPF2b2Fl8nBPAYJuQIXAx-BD5zSLEIfKnt7hcaz-6yaN_RHQsYt5d4-3RtwLqGs1FS9pvxYd59tw0iZ3OwNP6JqGC8YBA2IuziJB8wbILo-7hoi4sYKlXxTP0HJnckBQZ-ceP7TBg1VE06ipReNFBR96dhYMDQVsPbbB6pmSqH_kA',
-  },
-];
+import { formatNextAvailable } from '../../../utils/doctorUtils';
+import { getFacilityDoctors } from '../../../services/api/hospitals';
 
 export default function HospitalDoctorsSection({ 
   hospital, 
   onBookDoctorSlot 
 }) {
   const [searchQuery, setSearchQuery] = useState('');
-  const [selectedSpecialty, setSelectedSpecialty] = useState('All');
-  const [showAll, setShowAll] = useState(false);
+  const [selectedSpecialty, setSelectedSpecialty] = useState('all');
+  const [doctors, setDoctors] = useState([]);
+  const [facets, setFacets] = useState({ specialties: [] });
+  const [totalCount, setTotalCount] = useState(0);
+  const [nextPage, setNextPage] = useState(null);
+  const [loading, setLoading] = useState(true);
+  const [loadingMore, setLoadingMore] = useState(false);
+  const [error, setError] = useState(null);
+  const [currentPage, setCurrentPage] = useState(1);
+  const debounceRef = useRef(null);
 
-  const hospitalName = formatFacilityName(hospital) || 'Square Hospital';
+  const hospitalName = formatFacilityName(hospital) || '';
+  const facilityId = hospital?.slug || hospital?.id;
+  const facilityKind = hospital?.location_type === 'diagnostic_center' ? 'diagnostic-centers' : 'hospitals';
 
   // Helper to format 24h to 12h AM/PM
   const formatTime12h = (tStr) => {
@@ -77,107 +38,144 @@ export default function HospitalDoctorsSection({
     return `${String(h).padStart(2, '0')}:${m} ${ampm}`;
   };
 
-  // Normalize backend doctors and merge with Stitch defaults (Stitch featured consultants first)
-  const doctorList = useMemo(() => {
-    const rawAffiliated = hospital?.affiliated_doctors || [];
-    const normalizedBackend = rawAffiliated.map((aff, idx) => {
-      const doc = aff.doctor_details || aff.doctor || {};
-      const specs = aff.specialties || doc.specialties || [];
-      const specName = specs[0]?.name || aff.specialty || 'Internal Medicine';
-      const schedulesList = aff.schedules || [];
-      const schedStr = schedulesList.length > 0
-        ? schedulesList.map(s => `${s.day_of_week?.slice(0, 3)} (${formatTime12h(s.start_time)} - ${formatTime12h(s.end_time)})`).join(', ')
-        : 'Sat, Mon, Wed (05:00 PM - 08:30 PM)';
+  const fetchDoctors = useCallback(async (page = 1, append = false) => {
+    if (!facilityId) return;
 
-      return {
-        id: aff.id || `backend-doc-${idx}`,
-        originalAffiliation: aff,
-        originalDoctor: doc,
-        name: aff.doctor_name || doc.name || 'Specialist Consultant',
-        academic_title: aff.academic_title || doc.academic_title || `${specName} Specialist`,
-        specialty: specName,
-        specialties: specs.length > 0 ? specs : [{ name: specName }],
-        qualification: aff.qualification || doc.qualification || 'MBBS, FCPS (Medicine), FRCP (Edin)',
-        bmdc_number: doc.bmdc_number || `BMDC A-${30000 + idx * 123}`,
-        opd_room: `Square OPD-${idx + 4}`,
-        chamber_room: `Room ${200 + idx * 10}, Executive Wing, Tower A`,
-        schedule: schedStr,
-        fee: Number(aff.fee || doc.consultation_fee || 2000),
-        availability_text: 'Available Today: 5 Slots Open',
-        availability_type: 'available',
-        image: doc.image || STITCH_DEFAULT_DOCTORS[idx % STITCH_DEFAULT_DOCTORS.length].image,
-      };
-    });
+    if (page === 1) {
+      setLoading(true);
+    } else {
+      setLoadingMore(true);
+    }
+    setError(null);
 
-    // Put Stitch primary featured doctors first for exact design fidelity, followed by backend doctors
-    const combined = [...STITCH_DEFAULT_DOCTORS];
-    normalizedBackend.forEach(nb => {
-      if (!combined.some(d => d.name.toLowerCase().includes(nb.name.toLowerCase().split(' ')[2] || '___'))) {
-        combined.push(nb);
+    try {
+      const params = { page, page_size: 12 };
+      if (searchQuery.trim()) params.search = searchQuery.trim();
+      if (selectedSpecialty && selectedSpecialty !== 'all') params.specialty = selectedSpecialty;
+
+      const data = await getFacilityDoctors(facilityKind, facilityId, params);
+
+      const results = data?.results || [];
+      const newFacets = data?.facets || { specialties: [] };
+      const count = data?.count ?? 0;
+
+      if (append) {
+        setDoctors(prev => [...prev, ...results]);
+      } else {
+        setDoctors(results);
+        setFacets(newFacets);
       }
-    });
-    return combined;
-  }, [hospital]);
+      setTotalCount(count);
+      setNextPage(data?.next ? page + 1 : null);
+      setCurrentPage(page);
+    } catch (err) {
+      console.error('Failed to fetch facility doctors:', err);
+      setError('Failed to load doctors. Please try again.');
+      if (!append) {
+        setDoctors([]);
+        setFacets({ specialties: [] });
+        setTotalCount(0);
+      }
+    } finally {
+      setLoading(false);
+      setLoadingMore(false);
+    }
+  }, [facilityId, facilityKind, searchQuery, selectedSpecialty]);
 
-  // Stitch specification specialty list with exact counts
-  const specialtyCountMap = {
-    'All Specialties': 124,
-    'Cardiology': 18,
-    'Neurosurgery': 12,
-    'Orthopedics': 14,
-    'Internal Medicine': 22,
-    'Gynecology & Obs': 16,
-    'Pediatrics': 11,
+  // Fetch on mount and when specialty changes
+  useEffect(() => {
+    fetchDoctors(1, false);
+  }, [selectedSpecialty, facilityId]);
+
+  // Debounced search
+  useEffect(() => {
+    if (debounceRef.current) clearTimeout(debounceRef.current);
+    debounceRef.current = setTimeout(() => {
+      fetchDoctors(1, false);
+    }, 400);
+    return () => {
+      if (debounceRef.current) clearTimeout(debounceRef.current);
+    };
+  }, [searchQuery]);
+
+  const handleLoadMore = () => {
+    if (nextPage && !loadingMore) {
+      fetchDoctors(nextPage, true);
+    }
   };
 
-  const specialties = [
-    'All Specialties',
-    'Cardiology',
-    'Neurosurgery',
-    'Orthopedics',
-    'Internal Medicine',
-    'Gynecology & Obs',
-    'Pediatrics',
-  ];
-
-  // Filtered doctors
-  const filteredDoctors = useMemo(() => {
-    return doctorList.filter(doc => {
-      const matchesSearch = doc.name.toLowerCase().includes(searchQuery.toLowerCase())
-        || doc.specialty?.toLowerCase().includes(searchQuery.toLowerCase())
-        || doc.academic_title?.toLowerCase().includes(searchQuery.toLowerCase())
-        || doc.qualification?.toLowerCase().includes(searchQuery.toLowerCase());
-
-      const matchesSpecialty = selectedSpecialty === 'All' || selectedSpecialty === 'All Specialties'
-        || doc.specialty?.toLowerCase() === selectedSpecialty.toLowerCase()
-        || (Array.isArray(doc.specialties) && doc.specialties.some(s => s.name?.toLowerCase() === selectedSpecialty.toLowerCase()));
-
-      return matchesSearch && matchesSpecialty;
-    });
-  }, [doctorList, searchQuery, selectedSpecialty]);
-
-  const displayedDoctors = showAll ? filteredDoctors : filteredDoctors.slice(0, 6);
-
-  const handleBookDoctor = (doc) => {
+  const handleBookDoctor = (item) => {
     if (onBookDoctorSlot) {
+      const doc = item.doctor || {};
       onBookDoctorSlot({
-        doctor: doc.originalDoctor || {
+        doctor: {
           id: doc.id,
+          slug: doc.slug,
           name: doc.name,
-          specialty: doc.specialty,
+          academic_title: doc.academic_title,
           qualification: doc.qualification,
           image: doc.image,
+          primary_specialty: doc.primary_specialty,
+          bmdc_number: doc.bmdc_number,
         },
-        chamber: doc.originalAffiliation || {
-          id: `chamber-${doc.id}`,
+        chamber: {
+          affiliation_id: item.affiliation_id,
           facility_name: hospitalName,
-          fee: doc.fee,
-          schedule: doc.schedule,
-          room: doc.chamber_room,
+          fee: item.fee,
+          chamber_type: item.chamber_type,
+          schedules: item.schedules,
         }
       });
     }
   };
+
+  // Build specialty chips from facets
+  const allCount = totalCount;
+  const specialtyChips = [
+    { slug: 'all', name: 'All Specialties', count: allCount },
+    ...(facets.specialties || []).map(s => ({
+      slug: s.slug,
+      name: s.name,
+      count: s.count,
+    })),
+  ];
+
+  // Skeleton loading
+  if (loading && doctors.length === 0) {
+    return (
+      <section className="space-y-6 scroll-mt-24" id="specialist-section">
+        <div className="flex flex-col md:flex-row md:items-center justify-between gap-4">
+          <div>
+            <div className="h-5 w-32 bg-surface-container-high rounded-full animate-pulse mb-2" />
+            <div className="h-7 w-80 bg-surface-container-high rounded animate-pulse" />
+            <div className="h-4 w-64 bg-surface-container-high rounded animate-pulse mt-1.5" />
+          </div>
+          <div className="h-10 w-72 bg-surface-container-high rounded-lg animate-pulse" />
+        </div>
+        <div className="flex gap-2 overflow-x-auto pb-1">
+          {[1,2,3,4,5].map(i => (
+            <div key={i} className="h-8 w-28 bg-surface-container-high rounded-full animate-pulse shrink-0" />
+          ))}
+        </div>
+        <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
+          {[1,2,3,4,5,6].map(i => (
+            <div key={i} className="bg-surface-container-lowest rounded-xl border border-outline-variant/70 p-5 space-y-4 animate-pulse">
+              <div className="flex gap-3.5">
+                <div className="w-16 h-16 rounded-xl bg-surface-container-high" />
+                <div className="flex-1 space-y-2">
+                  <div className="h-4 w-24 bg-surface-container-high rounded" />
+                  <div className="h-5 w-40 bg-surface-container-high rounded" />
+                  <div className="h-3 w-32 bg-surface-container-high rounded" />
+                </div>
+              </div>
+              <div className="h-20 bg-surface-container-high rounded-lg" />
+              <div className="h-10 bg-surface-container-high rounded-lg" />
+            </div>
+          ))}
+        </div>
+      </section>
+    );
+  }
 
   return (
     <section className="space-y-6 scroll-mt-24" id="specialist-section">
@@ -189,11 +187,13 @@ export default function HospitalDoctorsSection({
             <span>Accredited Faculty</span>
           </div>
           <h2 className="text-xl sm:text-2xl font-bold text-on-surface">
-            Available Consultants & Specialists at {hospitalName}
+            Available Consultants & Specialists{hospitalName ? ` at ${hospitalName}` : ''}
           </h2>
-          <p className="text-xs sm:text-sm text-on-surface-variant mt-0.5">
-            Consultations conducted at {hospitalName} Executive Chambers, Building 2, Panthapath.
-          </p>
+          {hospitalName && (
+            <p className="text-xs sm:text-sm text-on-surface-variant mt-0.5">
+              Showing {totalCount} specialist{totalCount !== 1 ? 's' : ''} available at this facility.
+            </p>
+          )}
         </div>
 
         {/* Doctor search input */}
@@ -212,129 +212,179 @@ export default function HospitalDoctorsSection({
       </div>
 
       {/* Quick Specialty Chips */}
-      <div className="flex items-center gap-2 overflow-x-auto pb-1 no-scrollbar">
-        {specialties.map((spec) => {
-          const isSelected = selectedSpecialty === spec || (spec === 'All Specialties' && selectedSpecialty === 'All');
-          const count = specialtyCountMap[spec] || 12;
-          return (
-            <button
-              key={spec}
-              onClick={() => setSelectedSpecialty(spec)}
-              type="button"
-              className={`px-3.5 py-1.5 rounded-full text-xs font-semibold shrink-0 transition-all cursor-pointer ${
-                isSelected
-                  ? 'bg-primary text-white shadow-xs'
-                  : 'bg-surface-container-lowest border border-outline-variant text-on-surface-variant hover:border-primary hover:text-primary'
-              }`}
-            >
-              {spec} ({count})
-            </button>
-          );
-        })}
-      </div>
+      {specialtyChips.length > 1 && (
+        <div className="flex items-center gap-2 overflow-x-auto pb-1 no-scrollbar">
+          {specialtyChips.map((spec) => {
+            const isSelected = selectedSpecialty === spec.slug;
+            return (
+              <button
+                key={spec.slug}
+                onClick={() => setSelectedSpecialty(spec.slug)}
+                type="button"
+                className={`px-3.5 py-1.5 rounded-full text-xs font-semibold shrink-0 transition-all cursor-pointer ${
+                  isSelected
+                    ? 'bg-primary text-white shadow-xs'
+                    : 'bg-surface-container-lowest border border-outline-variant text-on-surface-variant hover:border-primary hover:text-primary'
+                }`}
+              >
+                {spec.name} ({spec.count})
+              </button>
+            );
+          })}
+        </div>
+      )}
+
+      {/* Error state */}
+      {error && (
+        <div className="bg-error/5 rounded-xl border border-error/20 p-6 text-center">
+          <p className="text-sm font-medium text-error">{error}</p>
+          <button
+            onClick={() => fetchDoctors(1, false)}
+            className="mt-2 text-xs font-semibold text-primary hover:underline cursor-pointer"
+          >
+            Try Again
+          </button>
+        </div>
+      )}
 
       {/* Doctor Bento Grid */}
-      {displayedDoctors.length === 0 ? (
+      {!error && doctors.length === 0 && !loading ? (
         <div className="bg-surface-container-lowest rounded-xl border border-outline-variant/70 p-8 text-center">
           <UserCheck className="w-10 h-10 text-slate-300 mx-auto mb-2" />
           <p className="text-sm font-bold text-on-surface">No specialists found matching your search</p>
           <p className="text-xs text-on-surface-variant mt-1">Try searching for a different name or choosing another specialty filter.</p>
         </div>
-      ) : (
+      ) : !error && (
         <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
-          {displayedDoctors.map((doc) => {
-            const isFastFilling = doc.availability_type === 'fast_filling';
+          {doctors.map((item) => {
+            const doc = item.doctor || {};
+            const schedules = item.schedules || [];
+            const schedStr = schedules.length > 0
+              ? schedules.map(s => `${s.day_of_week?.slice(0, 3)} (${formatTime12h(s.start_time)} - ${formatTime12h(s.end_time)})`).join(', ')
+              : null;
+            const fee = item.fee ? Number(item.fee) : null;
 
             return (
               <div
-                key={doc.id}
+                key={item.affiliation_id}
                 className="bg-surface-container-lowest rounded-xl border border-outline-variant/70 p-5 shadow-xs hover:shadow-md transition-shadow flex flex-col justify-between"
               >
                 <div>
                   <div className="flex items-start gap-3.5 sm:gap-4">
                     <div className="relative shrink-0">
-                      <img
-                        src={doc.image}
-                        alt={doc.name}
-                        className="w-16 h-16 rounded-xl object-cover border border-outline-variant"
-                      />
-                      <span
-                        className="absolute -bottom-1 -right-1 w-3.5 h-3.5 rounded-full bg-emerald-500 border-2 border-white"
-                        title="Chamber Active Today"
-                      />
+                      {doc.image ? (
+                        <img
+                          src={doc.image}
+                          alt={doc.name}
+                          className="w-16 h-16 rounded-xl object-cover border border-outline-variant"
+                        />
+                      ) : (
+                        <div className="w-16 h-16 rounded-xl bg-primary/10 border border-outline-variant flex items-center justify-center">
+                          <Stethoscope className="w-7 h-7 text-primary/60" />
+                        </div>
+                      )}
                     </div>
 
                     <div className="flex-1 min-w-0">
-                      <div className="flex items-center gap-1.5 flex-wrap">
-                        <span className="inline-flex items-center gap-0.5 px-2 py-0.5 rounded-full bg-primary/10 text-primary text-[11px] font-bold">
-                          <ShieldCheck className="w-3 h-3 text-primary" />
-                          <span>{doc.bmdc_number}</span>
-                        </span>
-                        <span className="text-[11px] text-outline font-medium">{doc.opd_room}</span>
-                      </div>
+                      {doc.bmdc_number && (
+                        <div className="flex items-center gap-1.5 flex-wrap mb-1">
+                          <span className="inline-flex items-center gap-0.5 px-2 py-0.5 rounded-full bg-primary/10 text-primary text-[11px] font-bold">
+                            <ShieldCheck className="w-3 h-3 text-primary" />
+                            <span>{doc.bmdc_number}</span>
+                          </span>
+                        </div>
+                      )}
 
-                      <h3 className="text-sm sm:text-base font-bold text-on-surface mt-1 truncate">
+                      <h3 className="text-sm sm:text-base font-bold text-on-surface mt-0.5 truncate">
                         {doc.name}
                       </h3>
-                      <p className="text-xs text-tertiary font-semibold truncate">
-                        {doc.academic_title}
-                      </p>
-                      <p className="text-[11px] text-outline mt-0.5 truncate">
-                        {doc.qualification}
-                      </p>
+                      {doc.academic_title && (
+                        <p className="text-xs text-tertiary font-semibold truncate">
+                          {doc.academic_title}
+                        </p>
+                      )}
+                      {doc.primary_specialty && (
+                        <p className="text-[11px] text-primary/80 font-medium mt-0.5 truncate">
+                          {doc.primary_specialty.name}
+                        </p>
+                      )}
+                      {doc.qualification && (
+                        <p className="text-[11px] text-outline mt-0.5 truncate">
+                          {doc.qualification}
+                        </p>
+                      )}
                     </div>
                   </div>
 
-                  {/* Schedule & Timing Box */}
-                  <div className="mt-4 p-3 rounded-lg bg-surface-container-low/60 border border-outline-variant/40 space-y-2">
-                    <div className="flex items-start justify-between text-xs gap-2">
-                      <span className="text-on-surface-variant flex items-center gap-1 shrink-0 mt-0.5">
-                        <Calendar className="w-3.5 h-3.5 text-primary shrink-0" />
-                        <span>Schedule:</span>
-                      </span>
-                      <span className="font-semibold text-on-surface text-right leading-snug break-words max-w-[210px]">
-                        {doc.schedule}
-                      </span>
+                  {/* Schedule & Chamber Box */}
+                  {(schedStr || item.chamber_type) && (
+                    <div className="mt-4 p-3 rounded-lg bg-surface-container-low/60 border border-outline-variant/40 space-y-2">
+                      {schedStr && (
+                        <div className="flex items-start justify-between text-xs gap-2">
+                          <span className="text-on-surface-variant flex items-center gap-1 shrink-0 mt-0.5">
+                            <Calendar className="w-3.5 h-3.5 text-primary shrink-0" />
+                            <span>Schedule:</span>
+                          </span>
+                          <span className="font-semibold text-on-surface text-right leading-snug break-words max-w-[210px]">
+                            {schedStr}
+                          </span>
+                        </div>
+                      )}
+
+                      {item.chamber_type && (
+                        <div className="flex items-start justify-between text-xs gap-2">
+                          <span className="text-on-surface-variant flex items-center gap-1 shrink-0 mt-0.5">
+                            <DoorClosed className="w-3.5 h-3.5 text-primary shrink-0" />
+                            <span>Chamber:</span>
+                          </span>
+                          <span className="font-medium text-on-surface text-right leading-snug break-words max-w-[210px]">
+                            {item.chamber_type}
+                          </span>
+                        </div>
+                      )}
+
+                      <div className="flex items-start justify-between text-xs gap-2 pt-1 border-t border-outline-variant/30">
+                        <span className="text-on-surface-variant flex items-center gap-1 shrink-0 mt-0.5">
+                          <Clock className="w-3.5 h-3.5 text-primary shrink-0" />
+                          <span>Availability:</span>
+                        </span>
+                        <span className="font-semibold text-primary text-right leading-snug break-words max-w-[210px]">
+                          {formatNextAvailable(item.next_available)}
+                        </span>
+                      </div>
                     </div>
+                  )}
 
-                    <div className="flex items-start justify-between text-xs gap-2">
-                      <span className="text-on-surface-variant flex items-center gap-1 shrink-0 mt-0.5">
-                        <DoorClosed className="w-3.5 h-3.5 text-primary shrink-0" />
-                        <span>Chamber:</span>
-                      </span>
-                      <span className="font-medium text-on-surface text-right leading-snug break-words max-w-[210px]">
-                        {doc.chamber_room}
-                      </span>
+                  {/* Fee */}
+                  {fee != null && (
+                    <div className="mt-3 flex items-center justify-between text-xs">
+                      <span className="text-on-surface-variant">Consultation Fee:</span>
+                      <span className="text-sm sm:text-base font-bold text-on-surface">৳{fee.toLocaleString()}</span>
                     </div>
-                  </div>
+                  )}
 
-                  {/* Fee & Availability */}
-                  <div className="mt-3 flex items-center justify-between text-xs">
-                    <span className="text-on-surface-variant">Consultation Fee:</span>
-                    <span className="text-sm sm:text-base font-bold text-on-surface">৳{doc.fee.toLocaleString()}</span>
-                  </div>
-
-                  <div className={`mt-2 flex items-center gap-1.5 text-xs font-semibold px-2.5 py-1 rounded ${
-                    isFastFilling 
-                      ? 'text-amber-800 bg-amber-50' 
-                      : 'text-emerald-700 bg-emerald-50'
-                  }`}>
-                    {isFastFilling ? <Timer className="w-3.5 h-3.5 shrink-0" /> : <CheckCircle2 className="w-3.5 h-3.5 shrink-0" />}
-                    <span>{doc.availability_text}</span>
-                  </div>
+                  {/* Rating */}
+                  {doc.rating && (
+                    <div className="mt-2 flex items-center gap-1.5 text-xs text-on-surface-variant">
+                      <span className="font-semibold text-amber-600">★ {Number(doc.rating).toFixed(1)}</span>
+                      {doc.review_count > 0 && (
+                        <span>({doc.review_count} review{doc.review_count !== 1 ? 's' : ''})</span>
+                      )}
+                    </div>
+                  )}
                 </div>
 
                 {/* Actions */}
                 <div className="mt-4 pt-3.5 border-t border-outline-variant/40 flex items-center gap-2">
                   <button
-                    onClick={() => handleBookDoctor(doc)}
+                    onClick={() => handleBookDoctor(item)}
                     className="flex-1 py-2 px-3 rounded-lg bg-primary text-on-primary text-xs font-semibold hover:bg-primary-container active:scale-[0.98] transition-all text-center cursor-pointer shadow-xs"
                   >
                     Book Appointment
                   </button>
 
                   <button
-                    onClick={() => handleBookDoctor(doc)}
+                    onClick={() => handleBookDoctor(item)}
                     className="py-2 px-3 rounded-lg border border-outline-variant text-on-surface text-xs font-medium hover:bg-surface-container transition-colors cursor-pointer"
                   >
                     View Profile
@@ -346,15 +396,32 @@ export default function HospitalDoctorsSection({
         </div>
       )}
 
-      {/* View All Button */}
-      {filteredDoctors.length > 3 && (
+      {/* Loading indicator during refetch */}
+      {loading && doctors.length > 0 && (
+        <div className="text-center py-4">
+          <Loader2 className="w-5 h-5 animate-spin text-primary mx-auto" />
+        </div>
+      )}
+
+      {/* Load More Button */}
+      {nextPage && !loading && (
         <div className="text-center pt-2">
           <button
-            onClick={() => setShowAll(!showAll)}
-            className="inline-flex items-center gap-2 px-6 py-2.5 rounded-lg border border-primary text-primary text-xs sm:text-sm font-semibold hover:bg-primary/5 transition-all cursor-pointer"
+            onClick={handleLoadMore}
+            disabled={loadingMore}
+            className="inline-flex items-center gap-2 px-6 py-2.5 rounded-lg border border-primary text-primary text-xs sm:text-sm font-semibold hover:bg-primary/5 transition-all cursor-pointer disabled:opacity-50"
           >
-            <span>{showAll ? 'Show Fewer Specialists' : `View All 124 Specialist Doctors at ${hospitalName}`}</span>
-            <ArrowRight className="w-4 h-4" />
+            {loadingMore ? (
+              <>
+                <Loader2 className="w-4 h-4 animate-spin" />
+                <span>Loading...</span>
+              </>
+            ) : (
+              <>
+                <span>Load More Specialists ({doctors.length} of {totalCount})</span>
+                <ArrowRight className="w-4 h-4" />
+              </>
+            )}
           </button>
         </div>
       )}

@@ -14,13 +14,15 @@ export function formatFacilityName(facilityOrName, explicitBranch = '') {
   let branch = '';
 
   if (typeof facilityOrName === 'object') {
+    if (facilityOrName.display_name && !explicitBranch) {
+      return facilityOrName.display_name;
+    }
     name = (
       facilityOrName.name ||
+      facilityOrName.facility?.display_name ||
+      facilityOrName.facility?.name ||
       facilityOrName.facility_name ||
-      facilityOrName.center_name ||
-      facilityOrName.hospital_name ||
       facilityOrName.chamber_name ||
-      facilityOrName.location_details?.name ||
       facilityOrName.location?.name ||
       facilityOrName.title ||
       ''
@@ -29,9 +31,7 @@ export function formatFacilityName(facilityOrName, explicitBranch = '') {
     branch = (
       explicitBranch ||
       facilityOrName.branch ||
-      facilityOrName.center_branch ||
-      facilityOrName.hospital_branch ||
-      facilityOrName.location_details?.branch ||
+      facilityOrName.facility?.branch ||
       facilityOrName.location?.branch ||
       ''
     ).trim();

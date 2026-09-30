@@ -1,5 +1,6 @@
 import uuid
 from django.db import models
+from django.core.validators import MinValueValidator
 from core.uuid7 import uuid7
 from facilities.models import Location
 from django.utils.text import slugify
@@ -138,7 +139,12 @@ class DoctorAffiliation(models.Model):
     location = models.ForeignKey(Location, on_delete=models.CASCADE, related_name="affiliations")
     fee = models.DecimalField(max_digits=8, decimal_places=2)
     chamber_type = models.CharField(max_length=100, default='Primary Chamber', blank=True)
-    status_label = models.CharField(max_length=100, default='Available Today', blank=True)
+    advance_booking_days = models.PositiveSmallIntegerField(default=14, validators=[MinValueValidator(1)])
+
+    class Meta:
+        constraints = [
+            models.UniqueConstraint(fields=['doctor', 'location'], name='unique_doctor_location')
+        ]
 
     def __str__(self):
         return f"{self.doctor.name} @ {self.location.name}"
@@ -159,6 +165,8 @@ class AffiliationSchedule(models.Model):
     day_of_week = models.CharField(max_length=20, choices=DAY_CHOICES)
     start_time = models.TimeField()
     end_time = models.TimeField()
+    max_patients = models.PositiveSmallIntegerField(default=30, validators=[MinValueValidator(1)])
+    avg_consult_minutes = models.PositiveSmallIntegerField(default=10, validators=[MinValueValidator(1)])
 
     def clean(self):
         from django.core.exceptions import ValidationError
@@ -189,3 +197,35 @@ class AffiliationSchedule(models.Model):
 
     def __str__(self):
         return f"{self.affiliation.doctor.name} - {self.day_of_week} ({self.start_time}-{self.end_time})"
+
+
+class ScheduleException(models.Model):
+    class Kind(models.TextChoices):
+        CANCEL = 'cancel', 'Cancel'
+        MODIFY = 'modify', 'Modify'
+        EXTRA = 'extra', 'Extra'
+
+    id = models.UUIDField(primary_key=True, default=uuid7, editable=False)
+    affiliation = models.ForeignKey(DoctorAffiliation, on_delete=models.CASCADE, related_name='schedule_exceptions')
+    date = models.DateField(db_index=True)
+    kind = models.CharField(max_length=20, choices=Kind.choices)
+    schedule = models.ForeignKey(AffiliationSchedule, on_delete=models.CASCADE, null=True, blank=True, related_name='exceptions')
+    start_time = models.TimeField(null=True, blank=True)
+    end_time = models.TimeField(null=True, blank=True)
+    max_patients = models.PositiveSmallIntegerField(null=True, blank=True, validators=[MinValueValidator(1)])
+    avg_consult_minutes = models.PositiveSmallIntegerField(null=True, blank=True, validators=[MinValueValidator(1)])
+    note = models.CharField(max_length=255, blank=True)
+    created_at = models.DateTimeField(auto_now_add=True)
+
+    class Meta:
+        constraints = [
+            models.UniqueConstraint(
+                fields=['affiliation', 'date', 'schedule'],
+                condition=models.Q(schedule__isnull=False),
+                name='uniq_exception_per_session_date'
+            )
+        ]
+        ordering = ['date', 'start_time', 'created_at']
+
+    def __str__(self):
+        return f"{self.affiliation.doctor.name} on {self.date} ({self.kind})"

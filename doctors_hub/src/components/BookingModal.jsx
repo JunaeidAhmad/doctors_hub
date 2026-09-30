@@ -1,24 +1,90 @@
 import React, { useState, useEffect } from 'react';
 import { X, Calendar, Clock, Phone, CheckCircle2, Building2, Stethoscope, ShieldCheck, ArrowRight, Sparkles, Award } from 'lucide-react';
 import { api } from '../services/api';
-import { formatFacilityName } from '../utils/facilityUtils';
+import { getAffiliationAvailability } from '../services/api/doctors';
 import { displayName, formatDoctorTitle } from '../utils/doctorUtils';
+import { formatDisplayTime } from '../utils/scheduleUtils';
 
-export default function BookingModal({ chamber, doctor, onClose, onConfirmBooking, showToast }) {
+export default function BookingModal({ 
+  chamber, 
+  doctor, 
+  initialDate,
+  initialSessionKey,
+  initialPatient,
+  onClose, 
+  onConfirmBooking, 
+  showToast 
+}) {
   const today = new Date().toISOString().split('T')[0];
-  const maxDate = new Date(Date.now() + 10 * 24 * 60 * 60 * 1000).toISOString().split('T')[0];
+  const affiliationId = chamber?.affiliation_id || chamber?.id || doctor?.affiliation_id || doctor?.id;
 
   const [step, setStep] = useState('details'); // 'details' | 'otp'
-  const [selectedDate, setSelectedDate] = useState(today);
-  const [selectedSlot, setSelectedSlot] = useState(doctor?.slots?.[0] || '05:15 PM');
-  const [patientName, setPatientName] = useState('');
-  const [patientPhone, setPatientPhone] = useState('01787878787');
+  const [selectedDate, setSelectedDate] = useState(initialDate || today);
+  const [selectedSessionKey, setSelectedSessionKey] = useState(initialSessionKey || '');
+  const [patientName, setPatientName] = useState(initialPatient?.name || '');
+  const [patientPhone, setPatientPhone] = useState(initialPatient?.phone || '');
   const [otpInput, setOtpInput] = useState('');
-  const [patientAge, setPatientAge] = useState('');
-  const [gender, setGender] = useState('Male');
+  const [patientAge, setPatientAge] = useState(initialPatient?.age ? String(initialPatient.age) : '');
+  const [gender, setGender] = useState(initialPatient?.gender || 'Male');
+  const [notes, setNotes] = useState(initialPatient?.symptoms || '');
   const [isSubmitting, setIsSubmitting] = useState(false);
   const [existingPatientFound, setExistingPatientFound] = useState(false);
   const [isLookingUp, setIsLookingUp] = useState(false);
+
+  // Availability & sessions for affiliation
+  const [availability, setAvailability] = useState(null);
+  const [loadingAvailability, setLoadingAvailability] = useState(false);
+
+  useEffect(() => {
+    let isMounted = true;
+    if (!affiliationId) return;
+
+    setLoadingAvailability(true);
+    getAffiliationAvailability(affiliationId, { days: 14 })
+      .then((data) => {
+        if (!isMounted) return;
+        setAvailability(data);
+        const dates = data?.dates || [];
+        // If current selectedDate not in dates, choose first available
+        const dateMatch = dates.find(d => d.date === selectedDate);
+        if (!dateMatch && dates.length > 0) {
+          const firstAvail = dates.find(d => d.status !== 'closed' && d.sessions?.some(s => s.status === 'available')) || dates[0];
+          if (firstAvail) {
+            setSelectedDate(firstAvail.date);
+          }
+        }
+      })
+      .catch((err) => {
+        if (!isMounted) return;
+        console.error('Error fetching affiliation availability in modal:', err);
+      })
+      .finally(() => {
+        if (isMounted) setLoadingAvailability(false);
+      });
+
+    return () => {
+      isMounted = false;
+    };
+  }, [affiliationId]);
+
+  // Derive sessions for currently selected date
+  const availableDates = availability?.dates || [];
+  const currentDateObj = availableDates.find(d => d.date === selectedDate);
+  const sessions = currentDateObj?.sessions || [];
+  const selectedSession = sessions.find(s => s.session_key === selectedSessionKey) || null;
+
+  // Auto-select session if none selected or if selected session is not valid for this date
+  useEffect(() => {
+    if (sessions.length > 0) {
+      const currentValid = sessions.find(s => s.session_key === selectedSessionKey && s.status === 'available');
+      if (!currentValid) {
+        const firstAvail = sessions.find(s => s.status === 'available') || sessions[0];
+        if (firstAvail) {
+          setSelectedSessionKey(firstAvail.session_key);
+        }
+      }
+    }
+  }, [sessions, selectedSessionKey]);
 
   // Auto-fetch patient details when 11-digit phone number is entered
   useEffect(() => {
@@ -59,6 +125,10 @@ export default function BookingModal({ chamber, doctor, onClose, onConfirmBookin
 
   const handleSendOtp = async (e) => {
     e.preventDefault();
+    if (!selectedSessionKey) {
+      if (showToast) showToast('Please select a consultation session.', 'error');
+      return;
+    }
     if (!patientName.trim() || !patientPhone.trim()) {
       if (showToast) showToast('Please provide patient name and phone number', 'error');
       return;
@@ -92,38 +162,50 @@ export default function BookingModal({ chamber, doctor, onClose, onConfirmBookin
 
     setIsSubmitting(true);
     try {
-      const affiliationId = chamber.affiliation_id || chamber.id || doctor.affiliation_id || doctor.id;
       const bookingRes = await api.createDoctorBooking({
         affiliation_id: affiliationId,
-        affiliation: affiliationId,
         date: selectedDate,
-        slot: selectedSlot,
+        session_key: selectedSessionKey,
         patient_name: patientName.trim(),
         patient_phone: patientPhone.trim(),
-        patient_age: patientAge ? parseInt(patientAge) : undefined,
+        patient_age: patientAge ? parseInt(patientAge, 10) : undefined,
         gender: gender.toLowerCase(),
+        notes: notes.trim(),
         otp_code: otpInput.trim(),
       });
 
-      const serialNum = bookingRes?.serial_number || 1;
-      const serialDisplay = bookingRes?.serial_display || `SL-${String(serialNum).padStart(3, '0')}`;
+      if (!bookingRes || bookingRes.serial_number == null) {
+        throw new Error('Booking failed: No serial number was returned by the server.');
+      }
+
+      const serialNum = bookingRes.serial_number;
+      const serialDisplay = bookingRes.serial_display || `SL-${String(serialNum).padStart(3, '0')}`;
+      const estimatedTime = bookingRes.estimated_time ? formatDisplayTime(bookingRes.estimated_time) : null;
+      const sessionWindow = bookingRes.session_start && bookingRes.session_end
+        ? `${formatDisplayTime(bookingRes.session_start)} – ${formatDisplayTime(bookingRes.session_end)}`
+        : null;
 
       if (showToast) {
-        showToast(`🎉 Serial #${serialNum} booked for ${patientName} with ${formatDoctorTitle(doctor)}!`, 'success');
+        showToast(
+          `🎉 Serial #${serialNum} booked for ${patientName} with ${formatDoctorTitle(doctor)}!`, 
+          'success'
+        );
       }
 
       if (onConfirmBooking) {
         onConfirmBooking({
           doctorName: displayName(doctor),
           specialty: typeof doctor.specialty === 'object' ? doctor.specialty?.name : doctor.specialty,
-          chamberName: formatFacilityName(chamber) || doctor.hospital_name || 'Specialist Chamber',
-          facility_name: formatFacilityName(chamber) || doctor.hospital_name || 'Specialist Chamber',
-          location: chamber.address || chamber.district || chamber.location || 'Dhaka, Bangladesh',
+          chamberName: chamber?.facility?.display_name || chamber?.display_name || chamber?.name || 'Specialist Chamber',
+          facility: chamber?.facility || chamber,
+          location: chamber?.facility?.address || chamber?.address || chamber?.facility?.district || chamber?.district || 'Dhaka, Bangladesh',
           date: selectedDate,
-          slot: selectedSlot,
+          sessionKey: selectedSessionKey,
+          sessionWindow,
+          estimatedTime,
           patientName,
           patientPhone,
-          fee: chamber.fee || doctor.fee || 1200,
+          fee: chamber?.fee || doctor?.fee || 1200,
           serialNumber: serialNum,
           tokenId: serialDisplay
         });
@@ -161,7 +243,7 @@ export default function BookingModal({ chamber, doctor, onClose, onConfirmBookin
           </div>
           <button
             onClick={onClose}
-            className="p-2 rounded-lg hover:bg-white/10 text-white transition-colors"
+            className="p-2 rounded-lg hover:bg-white/10 text-white transition-colors cursor-pointer"
           >
             <X className="w-5 h-5" />
           </button>
@@ -198,10 +280,10 @@ export default function BookingModal({ chamber, doctor, onClose, onConfirmBookin
                 <Building2 className="w-4 h-4 text-primary shrink-0 mt-0.5" />
                 <div className="min-w-0">
                   <div className="font-bold text-slate-900 text-xs truncate">
-                    {formatFacilityName(chamber) || doctor.hospital_name || 'Specialist Chamber'}
+                    {chamber?.facility?.display_name || chamber?.display_name || chamber?.name || 'Specialist Chamber'}
                   </div>
                   <div className="text-[11px] text-slate-500 truncate mt-0.5">
-                    {chamber.address || chamber.district || chamber.location || 'Dhaka, Bangladesh'}
+                    {chamber?.facility?.address || chamber?.address || chamber?.facility?.district || chamber?.district || 'Dhaka, Bangladesh'}
                   </div>
                 </div>
               </div>
@@ -213,7 +295,7 @@ export default function BookingModal({ chamber, doctor, onClose, onConfirmBookin
               <div className="mt-1.5 pt-1.5 border-t border-slate-100 flex items-center gap-1 text-[11px] text-slate-600">
                 <Clock className="w-3 h-3 text-slate-400 shrink-0" />
                 <span className="truncate">
-                  {chamber.visitSchedule || `${chamber.schedules.map(s => s.day_of_week.slice(0, 3)).join(', ')} (${chamber.schedules[0].start_time?.slice(0, 5)} - ${chamber.schedules[0].end_time?.slice(0, 5)})`}
+                  {chamber.visitSchedule || `${chamber.schedules.map(s => s.day_of_week?.slice(0, 3)).join(', ')} (${formatDisplayTime(chamber.schedules[0].start_time)} - ${formatDisplayTime(chamber.schedules[0].end_time)})`}
                 </span>
               </div>
             )}
@@ -223,46 +305,120 @@ export default function BookingModal({ chamber, doctor, onClose, onConfirmBookin
         {step === 'details' ? (
           /* STEP 1: Details & Serial Date */
           <form onSubmit={handleSendOtp} className="p-5 space-y-4 max-h-[75vh] overflow-y-auto">
-            {/* Date Picker & Time Slot Picker */}
+            {/* Date Picker */}
             <div>
               <label className="block text-xs font-bold text-slate-700 mb-1.5 flex items-center gap-1">
                 <Calendar className="w-3.5 h-3.5 text-emerald-600" />
-                <span>Select Serial Date:</span>
+                <span>Select Consultation Date:</span>
               </label>
-              <input
-                type="date"
-                value={selectedDate}
-                min={today}
-                max={maxDate}
-                onChange={(e) => setSelectedDate(e.target.value)}
-                className="w-full text-xs font-semibold bg-slate-50 border border-slate-300 rounded-xl px-3 py-2.5 focus:outline-none focus:ring-2 focus:ring-emerald-500"
-              />
+              {availableDates.length > 0 ? (
+                <div className="grid grid-cols-4 sm:grid-cols-7 gap-1.5 mb-2">
+                  {availableDates.slice(0, 7).map((dObj, idx) => {
+                    const isSelected = selectedDate === dObj.date;
+                    const d = new Date(dObj.date + 'T00:00:00');
+                    const dayShort = idx === 0 ? 'Today' : d.toLocaleDateString('en-US', { weekday: 'short' });
+                    const isClosed = dObj.status === 'closed';
+                    const isFull = dObj.status === 'full';
+
+                    return (
+                      <button
+                        key={dObj.date}
+                        type="button"
+                        disabled={isClosed}
+                        onClick={() => setSelectedDate(dObj.date)}
+                        className={`p-1.5 rounded-lg text-center transition-all text-xs border cursor-pointer ${
+                          isClosed
+                            ? 'opacity-40 bg-slate-100 border-slate-200 cursor-not-allowed'
+                            : isSelected
+                            ? 'border-2 border-emerald-600 bg-emerald-50 text-emerald-900 font-bold'
+                            : 'border-slate-200 bg-white text-slate-700 hover:border-emerald-400'
+                        }`}
+                      >
+                        <div className="text-[10px] text-slate-500">{dayShort}</div>
+                        <div className="font-bold text-xs">{d.getDate()}</div>
+                        <div className={`text-[9px] ${isClosed ? 'text-rose-600' : isFull ? 'text-amber-700' : 'text-emerald-700 font-medium'}`}>
+                          {isClosed ? 'Closed' : isFull ? 'Full' : `${dObj.capacity_remaining} left`}
+                        </div>
+                      </button>
+                    );
+                  })}
+                </div>
+              ) : (
+                <input
+                  type="date"
+                  value={selectedDate}
+                  min={today}
+                  onChange={(e) => setSelectedDate(e.target.value)}
+                  className="w-full text-xs font-semibold bg-slate-50 border border-slate-300 rounded-xl px-3 py-2.5 focus:outline-none focus:ring-2 focus:ring-emerald-500"
+                />
+              )}
             </div>
 
-            {doctor.slots && doctor.slots.length > 0 && (
-              <div>
-                <label className="block text-xs font-bold text-slate-700 mb-1.5 flex items-center gap-1">
-                  <Clock className="w-3.5 h-3.5 text-emerald-600" />
-                  <span>Available Chamber Time Slots:</span>
-                </label>
-                <div className="grid grid-cols-3 gap-2">
-                  {doctor.slots.map((slot) => (
-                    <button
-                      type="button"
-                      key={slot}
-                      onClick={() => setSelectedSlot(slot)}
-                      className={`py-2 px-2 rounded-xl text-xs font-bold border transition-all ${
-                        selectedSlot === slot
-                          ? 'bg-emerald-600 text-white border-emerald-600 shadow-sm'
-                          : 'bg-white text-slate-700 border-slate-300 hover:border-emerald-400'
-                      }`}
-                    >
-                      {slot}
-                    </button>
-                  ))}
+            {/* Sessions Selector */}
+            <div>
+              <label className="block text-xs font-bold text-slate-700 mb-1.5 flex items-center gap-1">
+                <Clock className="w-3.5 h-3.5 text-emerald-600" />
+                <span>Consultation Session:</span>
+              </label>
+
+              {loadingAvailability ? (
+                <div className="p-3 text-center text-xs text-slate-500 bg-slate-50 rounded-xl">
+                  Loading sessions...
                 </div>
-              </div>
-            )}
+              ) : sessions.length === 0 ? (
+                <div className="p-3 text-center text-xs text-slate-500 bg-slate-50 rounded-xl border border-slate-200">
+                  No sessions scheduled for {selectedDate}.
+                </div>
+              ) : (
+                <div className="space-y-2">
+                  {sessions.map((sess) => {
+                    const isSelected = selectedSessionKey === sess.session_key;
+                    const isAvail = sess.status === 'available';
+                    const startTimeFormatted = formatDisplayTime(sess.start_time);
+                    const endTimeFormatted = formatDisplayTime(sess.end_time);
+                    const estFormatted = sess.estimated_time ? formatDisplayTime(sess.estimated_time) : startTimeFormatted;
+
+                    return (
+                      <button
+                        type="button"
+                        key={sess.session_key}
+                        disabled={!isAvail}
+                        onClick={() => setSelectedSessionKey(sess.session_key)}
+                        className={`w-full p-2.5 rounded-xl text-left border transition-all flex items-center justify-between cursor-pointer ${
+                          !isAvail
+                            ? 'opacity-40 bg-slate-50 border-slate-200 cursor-not-allowed'
+                            : isSelected
+                            ? 'bg-emerald-50/80 border-2 border-emerald-600 text-slate-900 shadow-xs'
+                            : 'bg-white border-slate-200 hover:border-emerald-400 text-slate-700'
+                        }`}
+                      >
+                        <div className="flex items-center gap-2">
+                          <span className={`w-3.5 h-3.5 rounded-full flex items-center justify-center shrink-0 ${
+                            isSelected ? 'bg-emerald-600' : 'border border-slate-300 bg-white'
+                          }`}>
+                            {isSelected && <span className="w-1.5 h-1.5 rounded-full bg-white" />}
+                          </span>
+                          <div>
+                            <p className="font-bold text-xs">
+                              {startTimeFormatted} – {endTimeFormatted}
+                            </p>
+                            <p className="text-[11px] text-slate-500">
+                              Serial #{sess.next_serial} · approx. {estFormatted}
+                            </p>
+                          </div>
+                        </div>
+
+                        <span className={`text-[10px] font-bold px-1.5 py-0.5 rounded ${
+                          !isAvail ? 'bg-rose-100 text-rose-700' : isSelected ? 'bg-emerald-600 text-white' : 'bg-emerald-100 text-emerald-800'
+                        }`}>
+                          {isAvail ? `${sess.capacity_remaining} left` : sess.status.toUpperCase()}
+                        </span>
+                      </button>
+                    );
+                  })}
+                </div>
+              )}
+            </div>
 
             {/* Patient Info Fields */}
             <div className="pt-3 border-t border-slate-100 space-y-3">
@@ -333,11 +489,24 @@ export default function BookingModal({ chamber, doctor, onClose, onConfirmBookin
                     onChange={(e) => setGender(e.target.value)}
                     className="w-full text-xs font-medium bg-white border border-slate-300 rounded-xl px-3 py-2.5 focus:outline-none focus:ring-2 focus:ring-emerald-500"
                   >
-                    <option>Male</option>
-                    <option>Female</option>
-                    <option>Other</option>
+                    <option value="Male">Male</option>
+                    <option value="Female">Female</option>
+                    <option value="Other">Other</option>
                   </select>
                 </div>
+              </div>
+
+              <div>
+                <label className="block text-xs font-semibold text-slate-700 mb-1">
+                  Reason for Consultation / Symptoms
+                </label>
+                <input
+                  type="text"
+                  placeholder="e.g. Regular health checkup, consultation"
+                  value={notes}
+                  onChange={(e) => setNotes(e.target.value)}
+                  className="w-full text-xs font-medium bg-white border border-slate-300 rounded-xl px-3 py-2 focus:outline-none focus:ring-2 focus:ring-emerald-500"
+                />
               </div>
             </div>
 
@@ -345,8 +514,8 @@ export default function BookingModal({ chamber, doctor, onClose, onConfirmBookin
             <div className="pt-4 border-t border-slate-200">
               <button
                 type="submit"
-                disabled={isSubmitting}
-                className="w-full py-3 rounded-xl bg-gradient-to-r from-emerald-600 to-teal-600 hover:from-emerald-500 hover:to-teal-500 text-white font-black text-sm uppercase tracking-wider shadow-lg shadow-emerald-600/30 transition-all flex items-center justify-center gap-2"
+                disabled={isSubmitting || !selectedSessionKey}
+                className="w-full py-3 rounded-xl bg-gradient-to-r from-emerald-600 to-teal-600 hover:from-emerald-500 hover:to-teal-500 text-white font-black text-sm uppercase tracking-wider shadow-lg shadow-emerald-600/30 transition-all flex items-center justify-center gap-2 cursor-pointer disabled:opacity-50"
               >
                 {isSubmitting ? (
                   <span>Sending OTP...</span>
@@ -392,7 +561,7 @@ export default function BookingModal({ chamber, doctor, onClose, onConfirmBookin
               <button
                 type="button"
                 onClick={() => setStep('details')}
-                className="text-slate-600 hover:text-emerald-700 font-bold underline"
+                className="text-slate-600 hover:text-emerald-700 font-bold underline cursor-pointer"
               >
                 &larr; Change Details
               </button>
@@ -405,7 +574,7 @@ export default function BookingModal({ chamber, doctor, onClose, onConfirmBookin
               <button
                 type="submit"
                 disabled={isSubmitting}
-                className="w-full py-3 rounded-xl bg-gradient-to-r from-emerald-600 to-teal-600 hover:from-emerald-500 hover:to-teal-500 text-white font-black text-sm uppercase tracking-wider shadow-lg shadow-emerald-600/30 transition-all flex items-center justify-center gap-2"
+                className="w-full py-3 rounded-xl bg-gradient-to-r from-emerald-600 to-teal-600 hover:from-emerald-500 hover:to-teal-500 text-white font-black text-sm uppercase tracking-wider shadow-lg shadow-emerald-600/30 transition-all flex items-center justify-center gap-2 cursor-pointer disabled:opacity-50"
               >
                 {isSubmitting ? (
                   <span>Generating Serial Ticket...</span>

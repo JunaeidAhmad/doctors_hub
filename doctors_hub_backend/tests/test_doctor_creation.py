@@ -63,19 +63,17 @@ class TestDoctorCreationAndDisplay:
         doctor_id = doc_data["id"]
         doctor_slug = doc_data["slug"]
 
-        # 3. Create Doctor Affiliation with chamber_type and status_label
+        # 3. Create Doctor Affiliation with chamber_type
         aff_payload = {
             "doctor": doctor_id,
             "location_id": str(self.location.id),
             "fee": "1500.00",
-            "chamber_type": "Visiting Chamber",
-            "status_label": "Available Today"
+            "chamber_type": "Visiting Chamber"
         }
         aff_res = self.client.post("/api/affiliations/", aff_payload, format="json")
         assert aff_res.status_code == status.HTTP_201_CREATED, aff_res.data
         aff_id = aff_res.data["id"]
         assert aff_res.data["chamber_type"] == "Visiting Chamber"
-        assert aff_res.data["status_label"] == "Available Today"
         assert float(aff_res.data["fee"]) == 1500.00
 
         # 4. Create Affiliation Schedule
@@ -115,7 +113,6 @@ class TestDoctorCreationAndDisplay:
         assert len(matched_doc["affiliations"]) == 1
         aff = matched_doc["affiliations"][0]
         assert aff["chamber_type"] == "Visiting Chamber"
-        assert aff["status_label"] == "Available Today"
         assert float(aff["fee"]) == 1500.00
         assert len(aff["schedules"]) == 1
         assert aff["schedules"][0]["day_of_week"] == "Saturday"

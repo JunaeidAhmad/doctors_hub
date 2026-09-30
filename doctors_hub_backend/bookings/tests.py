@@ -1,4 +1,4 @@
-from datetime import date, time
+from datetime import date, time, timedelta
 from django.test import TestCase
 from django.utils import timezone
 from rest_framework.test import APIClient
@@ -153,11 +153,15 @@ class EnhancedFeaturesTestCase(TestCase):
         self.client.post('/api/bookings/otp/send/', {'phone': phone, 'purpose': 'doctor_booking'}, format='json')
         otp = OTPVerification.objects.filter(phone=phone).first().otp_code
 
+        target_date = timezone.localdate() + timedelta(days=2)
+        sched = self.affiliation.schedules.filter(day_of_week=target_date.strftime('%A')).first()
+        session_key = f"s:{sched.id}"
+
         # First booking
         b1_data = {
             "affiliation_id": str(self.affiliation.id),
-            "date": "2026-09-10",
-            "slot": "17:00",
+            "date": target_date.isoformat(),
+            "session_key": session_key,
             "patient_name": "Alice Smith",
             "patient_phone": phone,
             "patient_age": 28,
@@ -173,8 +177,8 @@ class EnhancedFeaturesTestCase(TestCase):
         # Second booking on same date/affiliation
         b2_data = {
             "affiliation_id": str(self.affiliation.id),
-            "date": "2026-09-10",
-            "slot": "18:00",
+            "date": target_date.isoformat(),
+            "session_key": session_key,
             "patient_name": "Bob Johnson",
             "patient_phone": "01766666666",
             "otp_code": "123" # Mock OTP bypass
@@ -220,7 +224,7 @@ class EnhancedFeaturesTestCase(TestCase):
         }
         res = self.client.post('/api/bookings/hospital-services/', data, format='json')
         self.assertEqual(res.status_code, status.HTTP_201_CREATED)
-        self.assertEqual(res.data['hospital_name'], "Square Hospital")
+        self.assertEqual(res.data['facility']['name'], "Square Hospital")
         self.assertEqual(res.data['service_name'], "Emergency & Trauma")
         self.assertEqual(res.data['patient_name'], "David Miller")
 
@@ -235,11 +239,15 @@ class EnhancedFeaturesTestCase(TestCase):
 
         # 1. Doctor booking confirmation SMS
         patient = Patient.objects.create(name="Zara Ali", phone="01799999999")
+        target_date = timezone.localdate() + timedelta(days=2)
+        sched = self.affiliation.schedules.filter(day_of_week=target_date.strftime('%A')).first()
         doc_booking = DoctorBooking.objects.create(
             affiliation=self.affiliation,
             patient=patient,
-            date=date(2026, 9, 25),
-            slot="18:00"
+            date=target_date,
+            session_key=f"s:{sched.id}",
+            serial_number=1,
+            estimated_time=time(18, 0)
         )
         with patch('services.sms.send_sms_via_sms_bd') as mock_sms:
             mock_sms.return_value = {"success": True}

@@ -58,82 +58,45 @@ def test_doctor_slug_and_lookup_mixin():
     assert response_by_slug.data["id"] == str(doc.id)
 
 
-@pytest.mark.django_db
-def test_validate_slot_against_schedule_called_on_save_and_serializer():
-    user = User.objects.create_user(phone_number="01700000000", password="password")
-    loc = Location.objects.create(
-        name="Health Care Center", location_type="hospital",
-        address_line="123 St", district="Dhaka", division="Dhaka"
-    )
-    doc = Doctor.objects.create(name="Dr. Bob", qualification="MBBS", experience="5 yrs")
-    aff = DoctorAffiliation.objects.create(doctor=doc, location=loc, fee=500)
-    
-    # Monday schedule from 09:00 to 17:00
-    AffiliationSchedule.objects.create(
-        affiliation=aff, day_of_week="Monday", start_time=time(9, 0), end_time=time(17, 0)
-    )
-
-    # 2026-08-17 is a Monday
-    monday_date = date(2026, 8, 17)
-    # 2026-08-18 is a Tuesday
-    tuesday_date = date(2026, 8, 18)
-
-    # Valid booking on Monday at 10:00
-    booking = DoctorBooking(user=user, affiliation=aff, date=monday_date, slot="10:00", patient_name="Patient A")
-    booking.save()
-    assert booking.pk is not None
-
-    # Invalid booking on Tuesday (no schedule for Tuesday) should raise ValidationError on save()
-    invalid_booking = DoctorBooking(user=user, affiliation=aff, date=tuesday_date, slot="10:00", patient_name="Patient B")
-    with pytest.raises(ValidationError):
-        invalid_booking.save()
-
-    # Invalid slot outside scheduled hours on Monday should raise ValidationError on save()
-    out_of_hours_booking = DoctorBooking(user=user, affiliation=aff, date=monday_date, slot="18:00", patient_name="Patient C")
-    with pytest.raises(ValidationError):
-        out_of_hours_booking.save()
-
-    # Test serializer validation
-    serializer_invalid = DoctorBookingSerializer(data={
-        'affiliation_id': str(aff.id),
-        'date': tuesday_date.isoformat(),
-        'slot': '10:00',
-        'patient_name': 'Patient D'
-    })
-    assert not serializer_invalid.is_valid()
-    assert 'non_field_errors' in serializer_invalid.errors
-
 
 @pytest.mark.django_db
 def test_filterset_fields_covers_district_and_division():
+    from facilities.models import Division, District, Thana
+    div_dhaka, _ = Division.objects.get_or_create(name="Dhaka")
+    dist_dhaka, _ = District.objects.get_or_create(name="Dhaka", division=div_dhaka)
+    thana_dhaka, _ = Thana.objects.get_or_create(name="Dhanmondi", district=dist_dhaka)
+
+    div_ctg, _ = Division.objects.get_or_create(name="Chattogram")
+    dist_ctg, _ = District.objects.get_or_create(name="Chattogram", division=div_ctg)
+    thana_ctg, _ = Thana.objects.get_or_create(name="Agrabad", district=dist_ctg)
+
     loc_dhaka = Location.objects.create(
         name="Dhaka Hospital", location_type="hospital",
-        address_line="Line 1", area="Dhanmondi", district="Dhaka", division="Dhaka"
+        address_line="Line 1", thana=thana_dhaka
     )
     hosp_dhaka = Hospital.objects.create(location=loc_dhaka)
 
     loc_ctg = Location.objects.create(
         name="Chittagong Hospital", location_type="hospital",
-        address_line="Line 2", area="Agrabad", district="Chittagong", division="Chittagong"
+        address_line="Line 2", thana=thana_ctg
     )
     hosp_ctg = Hospital.objects.create(location=loc_ctg)
 
-
     from facilities.views import HospitalFilter
-    filter_district = HospitalFilter({'district': 'Chittagong'}, queryset=Hospital.objects.all())
+    filter_district = HospitalFilter({'district_id': dist_ctg.id}, queryset=Hospital.objects.all())
     assert hosp_ctg in filter_district.qs
     assert hosp_dhaka not in filter_district.qs
 
-    filter_division = HospitalFilter({'division': 'Dhaka'}, queryset=Hospital.objects.all())
+    filter_division = HospitalFilter({'division_id': div_dhaka.id}, queryset=Hospital.objects.all())
     assert hosp_dhaka in filter_division.qs
     assert hosp_ctg not in filter_division.qs
 
     client = APIClient()
-    res = client.get("/api/hospitals/?district=Chittagong")
+    res = client.get(f"/api/hospitals/?district_id={dist_ctg.id}")
     assert res.status_code == 200
     results = res.data.get("results", res.data)
     assert len(results) == 1
-    assert results[0]["location_details"]["name"] == "Chittagong Hospital"
+    assert results[0]["name"] == "Chittagong Hospital"
 
 
 
