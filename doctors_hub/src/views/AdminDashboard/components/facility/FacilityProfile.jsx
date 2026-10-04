@@ -6,6 +6,7 @@ import {
 } from 'lucide-react';
 import { useAdminContext } from '../../context/AdminContext';
 import { api } from '../../../../services/api';
+import CascadingLocationFilter from '../../../../components/CascadingLocationFilter';
 import { 
   PageHeader, SectionCard, EditableField, Toggle, 
   StatusBadge, Skeleton 
@@ -37,9 +38,11 @@ export default function FacilityProfile({ kind = 'hospital' }) {
     tagline: '',
     badge: '',
     description: '',
-    division: 'Dhaka',
-    district: 'Dhaka',
+    division_id: null,
+    district_id: null,
+    thana_id: null,
     area: '',
+    district: '',
     address_line: '',
     phone: '',
     email: '',
@@ -63,9 +66,11 @@ export default function FacilityProfile({ kind = 'hospital' }) {
         tagline: loc.tagline || '',
         badge: loc.badge || facility.badge || (isHospital ? 'Hospital' : 'Diagnostic Center'),
         description: loc.description || facility.description || '',
-        division: loc.division || facility.division || 'Dhaka',
-        district: loc.district || facility.district || 'Dhaka',
+        division_id: loc.division_id || facility.division_id || null,
+        district_id: loc.district_id || facility.district_id || null,
+        thana_id: loc.thana_id || facility.thana_id || null,
         area: loc.area || facility.area || '',
+        district: loc.district || facility.district || '',
         address_line: loc.address_line || loc.address || facility.address_line || facility.address || '',
         phone: loc.phone || facility.phone || '',
         email: loc.email || facility.email || '',
@@ -97,9 +102,7 @@ export default function FacilityProfile({ kind = 'hospital' }) {
         tagline: formData.tagline,
         badge: formData.badge,
         description: formData.description,
-        division: formData.division,
-        district: formData.district,
-        area: formData.area,
+        thana: formData.thana_id,
         address_line: formData.address_line,
         phone: formData.phone,
         email: formData.email,
@@ -197,7 +200,7 @@ export default function FacilityProfile({ kind = 'hospital' }) {
           <div className="flex flex-wrap items-center justify-center md:justify-start gap-4 pt-1.5 text-xs text-slate-500 font-label">
             <span className="flex items-center gap-1.5">
               <MapPin className="w-3.5 h-3.5 text-[#094cb2]" />
-              <span>{formData.area ? `${formData.area}, ` : ''}{formData.district || 'Dhaka'}</span>
+              <span>{formData.area ? `${formData.area}, ` : ''}{formData.district || ''}</span>
             </span>
             <span className="flex items-center gap-1.5">
               <Clock className="w-3.5 h-3.5 text-slate-400" />
@@ -267,26 +270,21 @@ export default function FacilityProfile({ kind = 'hospital' }) {
           icon={MapPin}
         >
           <div className="space-y-3.5">
-            <div className="grid grid-cols-1 sm:grid-cols-3 gap-3">
-              <EditableField
-                label="Division"
-                value={formData.division}
-                onChange={val => setFormData({ ...formData, division: val })}
-                placeholder="Dhaka"
-              />
-              <EditableField
-                label="District"
-                value={formData.district}
-                onChange={val => setFormData({ ...formData, district: val })}
-                placeholder="Dhaka"
-              />
-              <EditableField
-                label="Thana / Area"
-                value={formData.area}
-                onChange={val => setFormData({ ...formData, area: val })}
-                placeholder="e.g. Dhanmondi"
-              />
-            </div>
+            <CascadingLocationFilter
+              theme="light"
+              layout="grid"
+              divisionId={formData.division_id}
+              districtId={formData.district_id}
+              thanaId={formData.thana_id}
+              onChange={({ divisionId, districtId, thanaId }) => {
+                setFormData(prev => ({
+                  ...prev,
+                  division_id: divisionId,
+                  district_id: districtId,
+                  thana_id: thanaId,
+                }));
+              }}
+            />
             <EditableField
               label="Full Street Address"
               required

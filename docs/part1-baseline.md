@@ -12,6 +12,7 @@ Recorded on: 2026-09-29 (Baseline) → 2026-09-30 (After Part 1 Completion)
 | `GET /api/doctors/` | 200 | 99,098 B (~99 KB) | 97,790 B (~97.8 KB) | **-1.32%** | Paginated doctor list (page_size default 20) with lightweight next_available |
 | `GET /api/search-metadata/` | 200 | 500,902 B (~501 KB) | 162,814 B (~163 KB) | **-67.50%** | Pruned taxonomy payload & search terms |
 | `GET /api/search-facets/` | 200 | 60,624 B (~61 KB) | 60,479 B (~60.5 KB) | **-0.24%** | Facets payload |
+| `GET /api/facility-tests/search/?page_size=4` | 200 | *Not recorded* | 52,895 B (~52.9 KB) | — | Recorded in Part 2 Phase 0 |
 
 ## Database Row Counts
 

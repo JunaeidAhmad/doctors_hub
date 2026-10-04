@@ -26,9 +26,9 @@ export default function AdminLoginForm({ onAdminLoggedIn }) {
     name: '',
     branch: '',
     license_number: '',
-    division: 'Dhaka',
-    district: 'Dhaka',
-    area: 'Dhanmondi',
+    division: '',
+    district: '',
+    area: '',
     address_line: '',
     phone_number: '',
     password: '',
@@ -42,9 +42,9 @@ export default function AdminLoginForm({ onAdminLoggedIn }) {
     name: '',
     branch: '',
     license_number: '',
-    division: 'Dhaka',
-    district: 'Dhaka',
-    area: 'Dhanmondi',
+    division: '',
+    district: '',
+    area: '',
     address_line: '',
     phone_number: '',
     password: '',
@@ -589,7 +589,7 @@ export default function AdminLoginForm({ onAdminLoggedIn }) {
                 >
                   <option value="">Select Primary Specialty...</option>
                   {specialties.map(spec => (
-                    <option key={spec.id} value={spec.id}>{spec.name}</option>
+                    <option key={spec.id} value={spec.id}>{spec.name}{spec.bn_name ? ` · ${spec.bn_name}` : ''}</option>
                   ))}
                 </select>
               </div>

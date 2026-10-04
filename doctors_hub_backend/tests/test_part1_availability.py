@@ -35,7 +35,7 @@ def base_setup(db):
         fee=1000.00,
         advance_booking_days=14
     )
-    return {"loc": loc, "doc": doc, "aff": aff, "spec": spec}
+    return {"loc": loc, "doc": doc, "aff": aff, "spec": spec, "thana": thana}
 
 
 @pytest.mark.django_db
@@ -500,16 +500,16 @@ def test_status_change_on_old_booking_succeeds(client, base_setup):
     sched.day_of_week = "Thursday"
     sched.save()
 
-    # Update status via serializer/view
+    # Update status via transition endpoint (contract changed in P2.5.2)
     from accounts.models import User
     admin_user = User.objects.create_superuser(phone_number="01799990000", password="pass")
     api_client = APIClient()
     api_client.force_authenticate(user=admin_user)
 
-    res = api_client.patch(f"/api/bookings/doctor-bookings/{b.id}/", {"status": "completed"}, format="json")
+    res = api_client.post(f"/api/bookings/doctor-bookings/{b.id}/transition/", {"to": "confirmed"}, format="json")
     assert res.status_code == 200
     b.refresh_from_db()
-    assert b.status == "completed"
+    assert b.status == "confirmed"
 
 
 @pytest.mark.django_db
@@ -525,7 +525,7 @@ def test_exception_overlapping_doctor_rejected(base_setup):
     )
 
     # Second affiliation for same doctor at different location
-    loc2 = Location.objects.create(name="Second Hospital", location_type=Location.LocationType.HOSPITAL)
+    loc2 = Location.objects.create(name="Second Hospital", location_type=Location.LocationType.HOSPITAL, thana=base_setup["thana"])
     aff2 = DoctorAffiliation.objects.create(doctor=base_setup["doc"], location=loc2, fee=800)
 
     # Attempt to create an extra session on Wed 18:00 - 21:00 on aff2 (overlaps 17:00-20:00 on aff1)
@@ -577,7 +577,10 @@ def test_batch_next_available_constant_queries(django_assert_num_queries, base_s
 class DoctorBookingConcurrencyTestCase(TransactionTestCase):
     def test_concurrency_last_slot_race(self):
         """Two concurrent bookings for the last remaining slot: exactly one succeeds."""
-        loc = Location.objects.create(name="Race Hospital", location_type=Location.LocationType.HOSPITAL)
+        div, _ = Division.objects.get_or_create(name="Dhaka Race", defaults={"slug": "dhaka-race"})
+        dist, _ = District.objects.get_or_create(division=div, name="Dhaka Dist Race", defaults={"slug": "dhaka-dist-race"})
+        thana, _ = Thana.objects.get_or_create(district=dist, name="Dhanmondi Race", defaults={"slug": "dhanmondi-race"})
+        loc = Location.objects.create(name="Race Hospital", location_type=Location.LocationType.HOSPITAL, thana=thana)
         doc = Doctor.objects.create(name="Dr. Race Specialist")
         aff = DoctorAffiliation.objects.create(doctor=doc, location=loc, fee=1000, advance_booking_days=14)
         target_date = timezone.localdate() + datetime.timedelta(days=2)

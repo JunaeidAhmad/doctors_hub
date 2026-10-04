@@ -120,7 +120,7 @@ export default function HospitalsTab() {
           </div>
           <div>
             <div className="text-2xl font-serif font-bold text-[#1b1c1d]">
-              {Array.from(new Set(tabHospitals.map(h => h.district || 'Dhaka'))).length}
+              {Array.from(new Set(tabHospitals.map(h => h.district).filter(Boolean))).length}
             </div>
             <p className="text-[10px] text-slate-500 font-label mt-0.5">
               Districts in active view
@@ -230,7 +230,7 @@ export default function HospitalsTab() {
                   const hServices = Array.isArray(h.services) ? h.services : [];
                   const hAddress = h.address || h.address_line || '';
                   const hArea = h.area || '';
-                  const hDistrict = h.district || 'Dhaka';
+                  const hDistrict = h.district || '';
                   const hDivision = h.division || '';
 
                   return (

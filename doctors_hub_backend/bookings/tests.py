@@ -7,7 +7,8 @@ from rest_framework import status
 from accounts.models import User
 from facilities.models import (
     Location, Hospital, HospitalCategory, HospitalService,
-    DiagnosticCenterCategory, DiagnosticService, Chamber
+    DiagnosticCenterCategory, DiagnosticService, Chamber,
+    Division, District, Thana
 )
 from doctors.models import Doctor, DoctorSpecialty, DoctorAffiliation, AffiliationSchedule
 from tests.models import TestCategory, Test, FacilityTest
@@ -18,20 +19,23 @@ class EnhancedFeaturesTestCase(TestCase):
     def setUp(self):
         self.client = APIClient()
 
+        # Geo rows
+        div, _ = Division.objects.get_or_create(name="Dhaka", defaults={"bn_name": "ঢাকা"})
+        dist, _ = District.objects.get_or_create(name="Dhaka", division=div, defaults={"bn_name": "ঢাকা"})
+        thana, _ = Thana.objects.get_or_create(name="Dhanmondi", district=dist, defaults={"bn_name": "ধানমন্ডি"})
+
         # 1. Facilities setup
         self.chamber_loc = Location.objects.create(
             name="Popular Diagnostic Chamber",
             location_type=Location.LocationType.CHAMBER,
             address_line="Dhanmondi 27",
-            district="Dhaka",
-            division="Dhaka"
+            thana=thana,
         )
         self.hosp_loc = Location.objects.create(
             name="Square Hospital",
             location_type=Location.LocationType.HOSPITAL,
             address_line="Panthapath",
-            district="Dhaka",
-            division="Dhaka"
+            thana=thana,
         )
         self.hosp_cat = HospitalCategory.objects.create(name="General")
         self.hospital = Hospital.objects.create(
@@ -90,8 +94,7 @@ class EnhancedFeaturesTestCase(TestCase):
             name="Another Chamber",
             location_type=Location.LocationType.CHAMBER,
             address_line="Road 1",
-            district="Dhaka",
-            division="Dhaka"
+            thana=self.chamber_loc.thana,
         )
         self.assertEqual(loc2.ownership_type, Location.OwnershipType.PRIVATE)
 
@@ -193,7 +196,7 @@ class EnhancedFeaturesTestCase(TestCase):
         phone = "01777777777"
         data = {
             "facility_test_id": str(self.facility_test.id),
-            "pickup_date": "2026-09-15",
+            "pickup_date": (timezone.localdate() + timedelta(days=3)).isoformat(),
             "patient_name": "Charlie Brown",
             "patient_phone": phone,
             "pickup_address_line": "House 10, Road 4",
@@ -215,7 +218,7 @@ class EnhancedFeaturesTestCase(TestCase):
         data = {
             "hospital_id": str(self.hospital.location_id),
             "service_id": str(self.hosp_service.id),
-            "booking_date": "2026-09-20",
+            "booking_date": (timezone.localdate() + timedelta(days=3)).isoformat(),
             "preferred_time": "10:00 AM",
             "patient_name": "David Miller",
             "patient_phone": phone,

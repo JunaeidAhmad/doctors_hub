@@ -10,7 +10,6 @@ export default function DoctorActiveFiltersBar({
   facilityName,
   selectedDay,
   gender,
-  maxFee,
   totalDoctors = 0,
   hasActiveFilters = false,
   onRemoveDivision,
@@ -20,7 +19,6 @@ export default function DoctorActiveFiltersBar({
   onRemoveFacility,
   onRemoveDay,
   onRemoveGender,
-  onRemoveFee,
   onClearAll
 }) {
   return (
@@ -138,21 +136,6 @@ export default function DoctorActiveFiltersBar({
                   className="text-outline hover:text-error transition-colors leading-none cursor-pointer ml-0.5"
                   type="button"
                   title="Remove Gender"
-                >
-                  ✕
-                </button>
-              </span>
-            )}
-
-            {/* Fee Pill */}
-            {maxFee && maxFee < 3000 && (
-              <span className="inline-flex items-center gap-1.5 bg-surface-container-lowest border border-outline-variant rounded-lg px-2.5 py-1 text-label-sm text-on-surface shadow-xs">
-                Fee: Under ৳{maxFee.toLocaleString()}
-                <button
-                  onClick={onRemoveFee}
-                  className="text-outline hover:text-error transition-colors leading-none cursor-pointer ml-0.5"
-                  type="button"
-                  title="Remove Fee Filter"
                 >
                   ✕
                 </button>

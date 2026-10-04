@@ -61,7 +61,7 @@ export default function DoctorAffiliationsTable({
                 const branch = '';
                 const role = aff.chamber_type || (idx === 0 ? 'Primary Visiting Consultant' : 'Visiting Consultant');
                 const locationAddress = aff.facility?.address || aff.address ||
-                  (aff.facility?.area && aff.facility?.district ? `${aff.facility.area}, ${aff.facility.district}` : (aff.facility?.district || aff.district || 'Dhaka'));
+                  (aff.facility?.area && aff.facility?.district ? `${aff.facility.area}, ${aff.facility.district}` : (aff.facility?.district || aff.district || '—'));
                 const hasSchedules = (Array.isArray(aff.schedules) && aff.schedules.length > 0) || Boolean(aff.visitSchedule);
                 const isSelected = selectedAffIndex === idx;
 

@@ -6,9 +6,20 @@ from django.db import connection
 
 from accounts.models import User
 from doctors.models import Doctor, DoctorSpecialty, DoctorAffiliation, AffiliationSchedule
-from facilities.models import Location, Hospital, HospitalCategory, HospitalService, DiagnosticCenter, DiagnosticCenterCategory, DiagnosticService
+from facilities.models import (
+    Location, Hospital, HospitalCategory, HospitalService,
+    DiagnosticCenter, DiagnosticCenterCategory, DiagnosticService,
+    Division, District, Thana
+)
 from tests.models import TestCategory, Test, FacilityTest
 from bookings.models import DoctorBooking, LabBooking, TestBooking, HospitalServiceBooking
+
+
+def _get_thana():
+    div, _ = Division.objects.get_or_create(name="Dhaka")
+    dist, _ = District.objects.get_or_create(name="Dhaka", division=div)
+    thana, _ = Thana.objects.get_or_create(name="Dhanmondi", district=dist)
+    return thana
 
 
 @pytest.mark.django_db
@@ -19,7 +30,7 @@ def test_doctors_list_no_n_plus_one():
     for i in range(5):
         loc = Location.objects.create(
             name=f"Hospital {i}", location_type="hospital",
-            address_line=f"{i} Street", district="Dhaka", division="Dhaka"
+            address_line=f"{i} Street", thana=_get_thana()
         )
         doc = Doctor.objects.create(name=f"Dr. Doctor {i}", qualification="MBBS", experience="5 yrs")
         doc.specialties.add(spec1, spec2)
@@ -45,7 +56,7 @@ def test_doctor_affiliations_list_no_n_plus_one():
     for i in range(5):
         loc = Location.objects.create(
             name=f"Clinic {i}", location_type="chamber",
-            address_line=f"{i} Road", district="Dhaka", division="Dhaka"
+            address_line=f"{i} Road", thana=_get_thana()
         )
         doc = Doctor.objects.create(name=f"Dr. Specialist {i}", qualification="FCPS", experience="10 yrs")
         doc.specialties.add(spec)
@@ -67,7 +78,7 @@ def test_doctor_affiliations_list_no_n_plus_one():
 def test_doctor_bookings_list_no_n_plus_one():
     user = User.objects.create_superuser(phone_number="01711111111", password="password")
     spec = DoctorSpecialty.objects.create(name="Dermatology")
-    loc = Location.objects.create(name="Skin Care Hospital", location_type="hospital", address_line="Banani", district="Dhaka", division="Dhaka")
+    loc = Location.objects.create(name="Skin Care Hospital", location_type="hospital", address_line="Banani", thana=_get_thana())
     doc = Doctor.objects.create(name="Dr. Skin", qualification="MD", experience="8 yrs")
     doc.specialties.add(spec)
     aff = DoctorAffiliation.objects.create(doctor=doc, location=loc, fee=700)
@@ -102,7 +113,7 @@ def test_lab_bookings_list_no_n_plus_one():
     user = User.objects.create_superuser(phone_number="01722222222", password="password")
     cat = TestCategory.objects.create(name="Biochemistry")
     test_obj = Test.objects.create(name="Lipid Profile", category=cat)
-    loc = Location.objects.create(name="Central Diagnostic", location_type="diagnostic_center", address_line="Dhanmondi", district="Dhaka", division="Dhaka")
+    loc = Location.objects.create(name="Central Diagnostic", location_type="diagnostic_center", address_line="Dhanmondi", thana=_get_thana())
     ft = FacilityTest.objects.create(location=loc, test=test_obj, price=1200)
 
     for i in range(5):
@@ -133,11 +144,11 @@ def test_hospitals_and_diagnostic_centers_no_n_plus_one():
     dserv = DiagnosticService.objects.create(name="MRI")
 
     for i in range(4):
-        hloc = Location.objects.create(name=f"General Hospital {i}", location_type="hospital", address_line="Street", district="Dhaka", division="Dhaka")
+        hloc = Location.objects.create(name=f"General Hospital {i}", location_type="hospital", address_line="Street", thana=_get_thana())
         h = Hospital.objects.create(location=hloc, category=hcat)
         h.services.add(hserv)
 
-        dloc = Location.objects.create(name=f"Imaging Center {i}", location_type="diagnostic_center", address_line="Road", district="Dhaka", division="Dhaka")
+        dloc = Location.objects.create(name=f"Imaging Center {i}", location_type="diagnostic_center", address_line="Road", thana=_get_thana())
         d = DiagnosticCenter.objects.create(location=dloc, category=dcat)
         d.services.add(dserv)
 
@@ -171,8 +182,7 @@ def test_facility_tests_list_no_n_plus_one():
             branch=f"Branch {i}",
             location_type="diagnostic_center",
             address_line=f"{i} Street",
-            district="Dhaka",
-            division="Dhaka"
+            thana=_get_thana()
         )
         FacilityTest.objects.create(location=loc, test=test_obj, price=500 + i * 50)
 
@@ -203,8 +213,7 @@ def test_hospital_service_bookings_list_no_n_plus_one():
             branch=f"Campus {i}",
             location_type="hospital",
             address_line=f"Road {i}",
-            district="Dhaka",
-            division="Dhaka"
+            thana=_get_thana()
         )
         h = Hospital.objects.create(location=hloc, category=hcat)
         h.services.add(hserv)

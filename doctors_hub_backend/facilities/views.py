@@ -6,13 +6,14 @@ from drf_spectacular.utils import extend_schema
 from core.mixins import SlugOrPkLookupMixin
 from core.permissions import ScopedFacilityOrReadOnly, IsSuperAdminOrReadOnly, check_location_write_permission
 from core.scoping import RoleScopedQuerysetMixin
+from core.visibility import PublicVisibilityMixin
 from core.filters import exact_slug_or_id_q
 from .models import (
     Division, District, Thana,
     Location, HospitalCategory, HospitalService, Hospital,
     DiagnosticCenterCategory, DiagnosticService, DiagnosticCenter, Chamber
 )
-from django.db.models import F, Subquery, OuterRef, Count, IntegerField, Value
+from django.db.models import F, Subquery, OuterRef, Count, IntegerField, Value, Q
 from django.db.models.functions import Coalesce
 from django.utils.decorators import method_decorator
 from django.views.decorators.cache import cache_page
@@ -81,19 +82,25 @@ class ThanaViewSet(viewsets.ReadOnlyModelViewSet):
 
 
 @extend_schema(tags=['Facilities'])
-class LocationViewSet(RoleScopedQuerysetMixin, viewsets.ModelViewSet):
+class LocationViewSet(PublicVisibilityMixin, RoleScopedQuerysetMixin, viewsets.ModelViewSet):
     queryset = Location.objects.all().order_by('name', 'branch')
     serializer_class = LocationSerializer
     permission_classes = (ScopedFacilityOrReadOnly,)
     scope_location_field = "pk__in"
+    public_filter = Q(is_active=True)
     pagination_class = None
     filter_backends = (DjangoFilterBackend, filters.SearchFilter, filters.OrderingFilter)
     filterset_fields = ('location_type', 'is_active', 'is_verified')
-    search_fields = ('name', 'branch', 'address_line', 'area', 'district')
+    search_fields = (
+        'name', 'branch', 'address_line',
+        'thana__name', 'thana__bn_name',
+        'thana__district__name', 'thana__district__bn_name'
+    )
     ordering_fields = ('name', 'branch', 'created_at')
 
     def get_queryset(self):
-        return self.get_scoped_queryset(Location.objects.all().order_by('name', 'branch'))
+        qs = self.get_scoped_queryset(Location.objects.all().order_by('name', 'branch'))
+        return self.apply_public_visibility(qs)
 
     def perform_create(self, serializer):
         user = self.request.user
@@ -118,10 +125,18 @@ class LocationViewSet(RoleScopedQuerysetMixin, viewsets.ModelViewSet):
 
 @extend_schema(tags=['Facilities'])
 class HospitalCategoryViewSet(viewsets.ModelViewSet):
-
     queryset = HospitalCategory.objects.all().order_by('name')
     serializer_class = HospitalCategorySerializer
     permission_classes = (IsSuperAdminOrReadOnly,)
+
+    def get_queryset(self):
+        return HospitalCategory.objects.annotate(
+            hospital_count=Count(
+                'hospitals',
+                filter=Q(hospitals__location__is_active=True),
+                distinct=True,
+            )
+        ).order_by('name')
 
 
 @extend_schema(tags=['Facilities'])
@@ -153,7 +168,7 @@ class HospitalFilter(django_filters.FilterSet):
 
 
 @extend_schema(tags=['Facilities'])
-class HospitalViewSet(FacilityDetailActionsMixin, SlugOrPkLookupMixin, RoleScopedQuerysetMixin, viewsets.ModelViewSet):
+class HospitalViewSet(PublicVisibilityMixin, FacilityDetailActionsMixin, SlugOrPkLookupMixin, RoleScopedQuerysetMixin, viewsets.ModelViewSet):
     queryset = Hospital.objects.all().select_related(
         'location__thana__district__division', 'category'
     ).prefetch_related(
@@ -164,6 +179,7 @@ class HospitalViewSet(FacilityDetailActionsMixin, SlugOrPkLookupMixin, RoleScope
     ).order_by('name').distinct()
     serializer_class = HospitalSerializer
     permission_classes = (ScopedFacilityOrReadOnly,)
+    public_filter = Q(location__is_active=True)
     slug_field = 'location__slug'
     filter_backends = [DjangoFilterBackend, filters.SearchFilter, filters.OrderingFilter]
     filterset_class = HospitalFilter
@@ -185,7 +201,8 @@ class HospitalViewSet(FacilityDetailActionsMixin, SlugOrPkLookupMixin, RoleScope
             name=F('location__name'),
             **get_facility_counts_annotations()
         ).order_by('name').distinct()
-        return self.get_scoped_queryset(qs)
+        qs = self.get_scoped_queryset(qs)
+        return self.apply_public_visibility(qs)
 
     def perform_create(self, serializer):
         check_location_write_permission(
@@ -201,6 +218,15 @@ class DiagnosticCenterCategoryViewSet(viewsets.ModelViewSet):
     queryset = DiagnosticCenterCategory.objects.all().order_by('name')
     serializer_class = DiagnosticCenterCategorySerializer
     permission_classes = (IsSuperAdminOrReadOnly,)
+
+    def get_queryset(self):
+        return DiagnosticCenterCategory.objects.annotate(
+            center_count=Count(
+                'centers',
+                filter=Q(centers__location__is_active=True),
+                distinct=True,
+            )
+        ).order_by('name')
 
 
 @extend_schema(tags=['Facilities'])
@@ -240,7 +266,7 @@ class DiagnosticCenterFilter(django_filters.FilterSet):
 
 
 @extend_schema(tags=['Facilities'])
-class DiagnosticCenterViewSet(FacilityDetailActionsMixin, SlugOrPkLookupMixin, RoleScopedQuerysetMixin, viewsets.ModelViewSet):
+class DiagnosticCenterViewSet(PublicVisibilityMixin, FacilityDetailActionsMixin, SlugOrPkLookupMixin, RoleScopedQuerysetMixin, viewsets.ModelViewSet):
     queryset = DiagnosticCenter.objects.all().select_related(
         'location__thana__district__division', 'category'
     ).prefetch_related(
@@ -251,6 +277,7 @@ class DiagnosticCenterViewSet(FacilityDetailActionsMixin, SlugOrPkLookupMixin, R
 
     serializer_class = DiagnosticCenterSerializer
     permission_classes = (ScopedFacilityOrReadOnly,)
+    public_filter = Q(location__is_active=True)
     slug_field = 'location__slug'
     filter_backends = [DjangoFilterBackend, filters.SearchFilter]
     filterset_class = DiagnosticCenterFilter
@@ -271,7 +298,8 @@ class DiagnosticCenterViewSet(FacilityDetailActionsMixin, SlugOrPkLookupMixin, R
         ).annotate(
             **get_facility_counts_annotations()
         ).order_by('location__name').distinct()
-        return self.get_scoped_queryset(qs)
+        qs = self.get_scoped_queryset(qs)
+        return self.apply_public_visibility(qs)
 
     def perform_create(self, serializer):
         check_location_write_permission(

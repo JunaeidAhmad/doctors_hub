@@ -1,9 +1,16 @@
 import factory
 from accounts.models import User, Role, UserRole, Permission
-from facilities.models import Location, Hospital, DiagnosticCenter
+from facilities.models import Location, Hospital, DiagnosticCenter, Division, District, Thana
 from doctors.models import Doctor, DoctorSpecialty, DoctorAffiliation, AffiliationSchedule
 from tests.models import TestCategory, Test, FacilityTest
 from bookings.models import DoctorBooking, LabBooking
+
+
+def _get_default_thana():
+    div, _ = Division.objects.get_or_create(name="Dhaka")
+    dist, _ = District.objects.get_or_create(name="Dhaka", division=div)
+    thana, _ = Thana.objects.get_or_create(name="Dhanmondi", district=dist)
+    return thana
 
 
 class UserFactory(factory.django.DjangoModelFactory):
@@ -43,6 +50,12 @@ class UserFactory(factory.django.DjangoModelFactory):
             name="Facility Admin",
             defaults={"scope_type": Role.ScopeType.FACILITY, "is_system": True}
         )
+        # Grant roles.edit so is_facility_admin returns True
+        perm, _ = Permission.objects.get_or_create(
+            codename="roles.edit",
+            defaults={"module": "roles", "action": "edit", "label": "Edit roles"}
+        )
+        role.permissions.add(perm)
         UserRole.objects.get_or_create(user=user, role=role, facility=location)
         return user
 
@@ -87,9 +100,7 @@ class LocationFactory(factory.django.DjangoModelFactory):
     name = factory.Sequence(lambda n: f"Hospital Location {n}")
     branch = factory.Sequence(lambda n: f"Branch {n}")
     address_line = "123 Health Ave"
-    area = "Dhanmondi"
-    district = "Dhaka"
-    division = "Dhaka"
+    thana = factory.LazyFunction(_get_default_thana)
     is_active = True
     is_verified = True
 
@@ -152,5 +163,5 @@ class FacilityTestFactory(factory.django.DjangoModelFactory):
 
     location = factory.SubFactory(LocationFactory)
     test = factory.SubFactory(TestFactory)
-    price = 500.00
+    price = None
     is_available = True

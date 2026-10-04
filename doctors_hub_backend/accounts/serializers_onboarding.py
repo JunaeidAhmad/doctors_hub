@@ -67,26 +67,20 @@ class FacilityRegistrationSerializer(serializers.Serializer):
 
         # 2. Resolve Thana & Create Location
         from facilities.models import Thana
+        from facilities.geo import get_thana_strict
         thana_obj = None
         thana_id = validated_data.get("thana_id")
         if thana_id:
             thana_obj = Thana.objects.filter(id=thana_id).first()
 
+        if not thana_obj and district and area:
+            try:
+                thana_obj = get_thana_strict(district, area)
+            except Exception:
+                pass
+
         if not thana_obj:
-            DIST_ALIASES = {
-                'chittagong': 'Chattogram', 'comilla': 'Cumilla', 'bogra': 'Bogura',
-                'jessore': 'Jashore', 'barisal': 'Barishal', 'ঢাকা': 'Dhaka',
-                'চট্টগ্রাম': 'Chattogram', 'সিলেট': 'Sylhet'
-            }
-            norm_dist = DIST_ALIASES.get(district.strip().lower(), district.strip())
-            norm_area = area.strip()
-            qs = Thana.objects.filter(district__name__iexact=norm_dist) if norm_dist else Thana.objects.all()
-            if norm_area:
-                thana_obj = qs.filter(name__iexact=norm_area).first() or qs.filter(bn_name__iexact=norm_area).first()
-            if not thana_obj and norm_dist:
-                thana_obj = qs.filter(name__icontains='Sadar').first() or qs.first()
-            if not thana_obj:
-                thana_obj = Thana.objects.filter(district__name='Dhaka', name='Dhanmondi').first() or Thana.objects.first()
+            raise serializers.ValidationError({"thana_id": ["A valid Thana is required."]})
 
         location = Location.objects.create(
             name=name,
@@ -125,6 +119,13 @@ class FacilityRegistrationSerializer(serializers.Serializer):
             name="Facility Admin",
             defaults={"scope_type": Role.ScopeType.FACILITY, "is_system": True}
         )
+        # Grant roles.edit so is_facility_admin returns True
+        from accounts.models import Permission
+        perm, _ = Permission.objects.get_or_create(
+            codename="roles.edit",
+            defaults={"module": "roles", "action": "edit", "label": "Edit roles"}
+        )
+        fac_admin_role.permissions.add(perm)
         UserRole.objects.create(
             user=user,
             role=fac_admin_role,

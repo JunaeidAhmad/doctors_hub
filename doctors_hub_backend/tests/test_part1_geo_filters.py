@@ -34,9 +34,9 @@ def geo_data():
 @pytest.mark.django_db
 def test_multi_join_regression_doctor_chambers(client, geo_data):
     """
-    A doctor with a Dhaka chamber (fee 1000) and a Sylhet chamber (fee 300).
-    district_id=<Dhaka>&fee_max=500 -> 0 results.
-    district_id=<Sylhet>&fee_max=500 -> 1 result.
+    A doctor with a Dhaka chamber (Monday) and a Sylhet chamber (Tuesday).
+    district_id=<Dhaka>&day=Tuesday -> 0 results.
+    district_id=<Sylhet>&day=Tuesday -> 1 result.
     """
     Doctor.objects.all().delete()
     doc = Doctor.objects.create(name="Dr. Dual Chamber")
@@ -48,6 +48,9 @@ def test_multi_join_regression_doctor_chambers(client, geo_data):
         is_active=True,
     )
     aff_dhaka = DoctorAffiliation.objects.create(doctor=doc, location=loc_dhaka, fee=1000)
+    AffiliationSchedule.objects.create(
+        affiliation=aff_dhaka, day_of_week="Monday", start_time="10:00", end_time="14:00"
+    )
 
     loc_sylhet = Location.objects.create(
         name="Sylhet Clinic",
@@ -56,14 +59,17 @@ def test_multi_join_regression_doctor_chambers(client, geo_data):
         is_active=True,
     )
     aff_sylhet = DoctorAffiliation.objects.create(doctor=doc, location=loc_sylhet, fee=300)
+    AffiliationSchedule.objects.create(
+        affiliation=aff_sylhet, day_of_week="Tuesday", start_time="10:00", end_time="14:00"
+    )
 
-    # Dhaka + fee_max 500 -> should not match (fee in Dhaka is 1000)
-    res_dhaka = client.get(f"/api/doctors/?district_id={geo_data['dist_dhaka'].id}&fee_max=500")
+    # Dhaka + day=Tuesday -> should not match (Dhaka chamber is Monday)
+    res_dhaka = client.get(f"/api/doctors/?district_id={geo_data['dist_dhaka'].id}&day=Tuesday")
     assert res_dhaka.status_code == 200
     assert len(res_dhaka.json().get("results", [])) == 0
 
-    # Sylhet + fee_max 500 -> matches Sylhet chamber (fee is 300)
-    res_sylhet = client.get(f"/api/doctors/?district_id={geo_data['dist_sylhet'].id}&fee_max=500")
+    # Sylhet + day=Tuesday -> matches Sylhet chamber (is Tuesday)
+    res_sylhet = client.get(f"/api/doctors/?district_id={geo_data['dist_sylhet'].id}&day=Tuesday")
     assert res_sylhet.status_code == 200
     assert len(res_sylhet.json().get("results", [])) == 1
     assert res_sylhet.json()["results"][0]["id"] == str(doc.id)
@@ -184,9 +190,7 @@ def test_facets_with_district_id(client, geo_data):
     res = client.get(f"/api/search-facets/?district_id={geo_data['dist_dhaka'].id}")
     assert res.status_code == 200
     data = res.json()
-    assert "total_doctors" in data
-    assert "total_hospitals" in data
-    assert "total_diagnostic_centers" in data
-    assert "specialties" in data
+    # Slim facets contract (P2.9.2): only hospital_categories
+    assert "hospital_categories" in data
     assert "districts" not in data
     assert "divisions" not in data

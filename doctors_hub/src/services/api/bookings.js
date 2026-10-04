@@ -94,11 +94,11 @@ export async function getDoctorBookings() {
   return handleResponse(res);
 }
 
-export async function updateDoctorBookingStatus(id, status) {
-  const res = await fetchWithTimeout(`${BASE_URL}/bookings/doctor/${id}/`, {
-    method: 'PATCH',
+export async function transitionBooking(kind, id, to) {
+  const res = await fetchWithTimeout(`${BASE_URL}/bookings/${kind}/${id}/transition/`, {
+    method: 'POST',
     headers: getHeaders(),
-    body: JSON.stringify({ status }),
+    body: JSON.stringify({ to }),
   });
   return handleResponse(res);
 }
@@ -112,30 +112,9 @@ export async function getTestBookings() {
 
 export const getLabBookings = getTestBookings;
 
-export async function updateTestBookingStatus(id, status) {
-  const res = await fetchWithTimeout(`${BASE_URL}/bookings/test/${id}/`, {
-    method: 'PATCH',
-    headers: getHeaders(),
-    body: JSON.stringify({ status }),
-  });
-  return handleResponse(res);
-}
-
-export const updateLabBookingStatus = updateTestBookingStatus;
-
 export async function getHospitalServiceBookings() {
   const res = await fetchWithTimeout(`${BASE_URL}/bookings/hospital-service/`, {
     headers: getHeaders(),
   });
   return handleResponse(res);
 }
-
-export async function updateHospitalServiceBookingStatus(id, status) {
-  const res = await fetchWithTimeout(`${BASE_URL}/bookings/hospital-service/${id}/`, {
-    method: 'PATCH',
-    headers: getHeaders(),
-    body: JSON.stringify({ status }),
-  });
-  return handleResponse(res);
-}
-

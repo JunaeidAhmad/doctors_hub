@@ -1,0 +1,2855 @@
+[
+  {
+    "doctor_id": "4093cc7b-e4e8-48d9-9cbe-edb5da17ee2b",
+    "doctor_name": "A. A. Md. Mohiuddin Osmani",
+    "specialty": [
+      "Medicine Specialist",
+      "Rheumatologist"
+    ],
+    "institution": "Dhaka Central International Medical College & Hospital",
+    "affiliation_id": "dcb4071d-2b94-49c1-b883-b3971f453d88",
+    "location_name": "Alliance Hospital Limited"
+  },
+  {
+    "doctor_id": "21cc8b09-3ddd-4b46-87e1-325f09ff055b",
+    "doctor_name": "Abdur Rahim",
+    "specialty": [
+      "Thoracic Surgeon"
+    ],
+    "institution": "National Institute of Diseases of the Chest & Hospital (NIDCH)",
+    "affiliation_id": "01a0e8bb-c397-7130-b2cf-a6a7f7d2caff",
+    "location_name": "Green Life Hospital"
+  },
+  {
+    "doctor_id": "90a74e58-98d1-4205-8f7c-3e2717391f00",
+    "doctor_name": "ABM Abdus Salam",
+    "specialty": [
+      "Pediatric Cardiologist",
+      "Child Specialist"
+    ],
+    "institution": "National Institute of Cardiovascular Diseases (NICVD)",
+    "affiliation_id": "a619232f-5b00-4234-939e-616a1f067790",
+    "location_name": "Alliance Hospital Limited"
+  },
+  {
+    "doctor_id": "4388ad01-78c7-49ec-a144-b5305363c0bf",
+    "doctor_name": "Abu Bakr Akand",
+    "specialty": [
+      "Pediatric Surgeon"
+    ],
+    "institution": "Bangabandhu Sheikh Mujib Medical University (BSMMU)",
+    "affiliation_id": "f3f90146-5b66-4173-b3fc-63163e213652",
+    "location_name": "Japan Bangladesh Friendship Hospital"
+  },
+  {
+    "doctor_id": "5c6dfd79-05e5-407d-a111-5755899c278a",
+    "doctor_name": "Abul Khayer",
+    "specialty": [
+      "Cardiologist"
+    ],
+    "institution": "National Heart Foundation & Hospital",
+    "affiliation_id": "2de0d15c-bb15-4d10-bb19-a904bb7de017",
+    "location_name": "Radical Hospitals Limited"
+  },
+  {
+    "doctor_id": "3e4b32d9-4ebf-4a86-b3ae-2a88a71e2f92",
+    "doctor_name": "A. F. M. Mohiuddin Khan",
+    "specialty": [
+      "ENT Specialist",
+      "Head & Neck Surgeon"
+    ],
+    "institution": "Dhaka Medical College & Hospital",
+    "affiliation_id": "224e11a2-5e10-420a-8c9d-55760ca9f38e",
+    "location_name": "Dhaka Medical College Hospital"
+  },
+  {
+    "doctor_id": "350edf75-ef99-4699-9295-698e44e7439c",
+    "doctor_name": "Ahmed Salam Mir",
+    "specialty": [
+      "Diabetologist",
+      "Endocrinologist"
+    ],
+    "institution": "Bangladesh Institute of Health Sciences",
+    "affiliation_id": "4714a2ea-e969-47f1-a672-6892e1199a5e",
+    "location_name": "Alliance Hospital Limited"
+  },
+  {
+    "doctor_id": "a75b7907-6555-4035-acf4-3624425239ad",
+    "doctor_name": "A.K.M. Asad-Ud-Doza",
+    "specialty": [
+      "Physical Medicine Specialist",
+      "Rheumatologist"
+    ],
+    "institution": "BIRDEM General Hospital, Dhaka",
+    "affiliation_id": "e7d7b69e-981c-49a0-b561-12f421eae557",
+    "location_name": "Alliance Hospital Limited"
+  },
+  {
+    "doctor_id": "916fb84f-fb88-485a-bc22-cfd6969794e0",
+    "doctor_name": "A.K.M. Mazharul Islam",
+    "specialty": [
+      "Medicine Specialist",
+      "Rheumatologist"
+    ],
+    "institution": "Patuakhali Medical College",
+    "affiliation_id": "4fbd0ce8-c9e2-462d-8916-5af679fcfbbd",
+    "location_name": "Radical Hospitals Limited"
+  },
+  {
+    "doctor_id": "280c0a6d-b522-4232-941e-e258316b5fd7",
+    "doctor_name": "Ali Imam Ahsan",
+    "specialty": [
+      "ENT Specialist",
+      "Head & Neck Surgeon"
+    ],
+    "institution": "ENT & Head-Neck Cancer Hospital & Institute, Agargaon, Dhaka",
+    "affiliation_id": "8929ba2d-9253-4d36-939f-6392c86fbfab",
+    "location_name": "Popular Diagnostic Centre Ltd."
+  },
+  {
+    "doctor_id": "4147bbc3-3b36-4802-94ae-d4fd9024a394",
+    "doctor_name": "Al Muktafi Sadi",
+    "specialty": [
+      "Child Specialist"
+    ],
+    "institution": "Japan Bangladesh Friendship Hospital",
+    "affiliation_id": "ffbb6a0e-a0b0-4c9e-b1d4-e93094461356",
+    "location_name": "Japan Bangladesh Friendship Hospital"
+  },
+  {
+    "doctor_id": "0bcce2f4-5aab-4471-96f9-6105f3121b44",
+    "doctor_name": "Alpana Adhikari",
+    "specialty": [
+      "Gynecologist & Obstetrician"
+    ],
+    "institution": "Shaheed Suhrawardy Medical College & Hospital",
+    "affiliation_id": "a4da1d0f-b9a6-423d-aa41-df5dbb891a6c",
+    "location_name": "Alliance Hospital Limited"
+  },
+  {
+    "doctor_id": "c656fdf0-33b9-4471-b782-c975ae115921",
+    "doctor_name": "A. M. Zahidur Rahman",
+    "specialty": [
+      "Laparoscopic Surgeon",
+      "General Surgeon"
+    ],
+    "institution": "Shaheed Suhrawardy Medical College & Hospital",
+    "affiliation_id": "2132b919-2f38-4e9a-8f9f-4b0b98dbb8a7",
+    "location_name": "Radical Hospitals Limited"
+  },
+  {
+    "doctor_id": "6e91f7c4-06b5-4868-a674-0be71ebad957",
+    "doctor_name": "A M Ziaul Haque (Masum)",
+    "specialty": [
+      "Cardiac Surgeon",
+      "Thoracic Surgeon"
+    ],
+    "institution": "National Institute of Cardiovascular Diseases (NICVD)",
+    "affiliation_id": "bd77903a-805f-4ac9-b2aa-5644f2cb5615",
+    "location_name": "Japan Bangladesh Friendship Hospital"
+  },
+  {
+    "doctor_id": "1be8cb04-9337-45dc-8a54-de0ac557bd16",
+    "doctor_name": "A. N. M. Mansur Patwary",
+    "specialty": [
+      "Dermatologist",
+      "Sexologist"
+    ],
+    "institution": "Shaheed Monsur Ali Medical College & Hospital, Uttara, Dhaka",
+    "affiliation_id": "70cc74ec-aa62-4bb0-8efa-61164b128697",
+    "location_name": "Radical Hospitals Limited"
+  },
+  {
+    "doctor_id": "8e92cc9a-e901-444d-b122-23a5098cdf3d",
+    "doctor_name": "Anuradha Karmakar",
+    "specialty": [
+      "Gynecologist & Obstetrician"
+    ],
+    "institution": "Enam Medical College & Hospital",
+    "affiliation_id": "612dd38c-659c-4586-aa4d-41a18eb236c1",
+    "location_name": "Japan Bangladesh Friendship Hospital"
+  },
+  {
+    "doctor_id": "c4e67ff7-b6e9-4a46-bd67-1eb9207978f9",
+    "doctor_name": "Arfatur Ahmad (Shuvo)",
+    "specialty": [
+      "Hepatobiliary Surgeon",
+      "General Surgeon"
+    ],
+    "institution": "Shaheed Suhrawardy Medical College",
+    "affiliation_id": "227bc0f5-38a6-4c8a-afd1-0f83f8551d25",
+    "location_name": "Alliance Hospital Limited"
+  },
+  {
+    "doctor_id": "bff71c69-e679-46fe-95d6-22779effc1b7",
+    "doctor_name": "Arnab Kumar Chowdhury",
+    "specialty": [
+      "Medicine Specialist",
+      "Cardiologist"
+    ],
+    "institution": "National Institute of Cardiovascular Diseases (NICVD)",
+    "affiliation_id": "33b67b67-292e-4c81-863d-2b185a301ae3",
+    "location_name": "Alliance Hospital Limited"
+  },
+  {
+    "doctor_id": "4026b480-8c06-4b5d-98a6-7efe69d6079a",
+    "doctor_name": "Arojumand Sultana",
+    "specialty": [
+      "Child Specialist"
+    ],
+    "institution": "Central Police Hospital, Rajarbagh Police Lines, Dhaka",
+    "affiliation_id": "b63bb11a-b6f0-48f3-882c-b5a5c754c664",
+    "location_name": "Japan Bangladesh Friendship Hospital"
+  },
+  {
+    "doctor_id": "c5c0ac7a-b57d-46e4-8465-4ebeeda30f9f",
+    "doctor_name": "Arun Kumar Paul",
+    "specialty": [
+      "Laparoscopic Surgeon",
+      "Colorectal Surgeon"
+    ],
+    "institution": "Dhaka Medical College Hospital, Dhaka",
+    "affiliation_id": "3784c134-ad9d-4fcc-93c5-1edf7ae10463",
+    "location_name": "Dhaka Medical College Hospital"
+  },
+  {
+    "doctor_id": "16175a6d-0128-453c-adfa-c0706a11b04c",
+    "doctor_name": "Ashraful Hoque Sium",
+    "specialty": [
+      "Cardiac Surgeon"
+    ],
+    "institution": "National Institute of Cardiovascular Diseases (NICVD)",
+    "affiliation_id": "b9f83db1-5cd4-4374-b956-6903c47c0a7a",
+    "location_name": "Universal Cardiac Hospital"
+  },
+  {
+    "doctor_id": "9f21f419-36f6-424e-a15c-26cda797273f",
+    "doctor_name": "Asif Almas Haque",
+    "specialty": [
+      "Laparoscopic Surgeon",
+      "Colorectal Surgeon",
+      "General Surgeon"
+    ],
+    "institution": "Dr. Fazlul Haque Colorectal Hospital Limited",
+    "affiliation_id": "639ddbb1-6aed-4b9e-8bed-305878bbc96b",
+    "location_name": "Dr. Fazlul Haque Colorectal Hospital Limited"
+  },
+  {
+    "doctor_id": "c68eeb20-ecf7-43be-abd1-08b372db82cb",
+    "doctor_name": "ASIT BARAN DAM",
+    "specialty": [
+      "Physical Medicine Specialist",
+      "Orthopedic Surgeon",
+      "Rheumatologist"
+    ],
+    "institution": "National Institute of Traumatology & Orthopaedic Rehabilitation (NITOR)",
+    "affiliation_id": "fc95b0d4-7090-4e53-b72e-64a6e595a821",
+    "location_name": "Trauma Center & Orthopedic Hospital (Pvt.) Ltd."
+  },
+  {
+    "doctor_id": "e6034dc4-8a28-4260-88f6-785bb384a97d",
+    "doctor_name": "Asma Hossain Noora",
+    "specialty": [
+      "Colorectal Surgeon",
+      "General Surgeon"
+    ],
+    "institution": "Dr. Fazlul Haque Colorectal Hospital Limited",
+    "affiliation_id": "349890da-26c1-41d7-a140-998265aba130",
+    "location_name": "Dr. Fazlul Haque Colorectal Hospital Limited"
+  },
+  {
+    "doctor_id": "9694f3d7-ff2c-4679-8c6a-477f5873a0cf",
+    "doctor_name": "A. S. M. Farhad-Ul-Hasan",
+    "specialty": [
+      "Laparoscopic Surgeon",
+      "General Surgeon"
+    ],
+    "institution": "Shaheed Suhrawardy Medical College Hospital",
+    "affiliation_id": "542d768d-007c-4610-a4c5-2c5ff954dc0f",
+    "location_name": "Alliance Hospital Limited"
+  },
+  {
+    "doctor_id": "84848d67-051f-4c6d-8188-b69704065d58",
+    "doctor_name": "Asraf Said",
+    "specialty": [
+      "Eye Specialist"
+    ],
+    "institution": "Barisal General Hospital & Ibrahim Medical College",
+    "affiliation_id": "93ae7177-7837-48d7-80bd-dc445ae99aa5",
+    "location_name": "Radical Hospitals Limited"
+  },
+  {
+    "doctor_id": "1f27828b-ed38-4ce7-9a33-6b3f8ccf8596",
+    "doctor_name": "Ataul Haque",
+    "specialty": [
+      "Pediatric Cardiologist",
+      "Child Specialist"
+    ],
+    "institution": "National Institute of Cardiovascular Diseases (NICVD), Dhaka",
+    "affiliation_id": "ff8aeadf-eabf-4287-9fb8-e770750ca32d",
+    "location_name": "Radical Hospitals Limited"
+  },
+  {
+    "doctor_id": "ee097a79-eaf7-41f3-b751-ba0dbb3f99b3",
+    "doctor_name": "ATM Zulfiqar Rahman",
+    "specialty": [
+      "Orthopedic Surgeon"
+    ],
+    "institution": "Uttara Adhunik Medical College, Dhaka",
+    "affiliation_id": "b5e26e46-988f-4568-af5d-96222b2f725a",
+    "location_name": "Radical Hospitals Limited"
+  },
+  {
+    "doctor_id": "8bf68b7b-da20-4656-8249-44e7af4176bc",
+    "doctor_name": "Badrul Alam Mukul",
+    "specialty": [
+      "Family Physician / GP"
+    ],
+    "institution": "Anwer Khan Modern Medical College Hospital",
+    "affiliation_id": "4e51d37e-35a6-4429-b1bf-f6afa2c0d34c",
+    "location_name": "Anwer Khan Modern Medical College Hospital"
+  },
+  {
+    "doctor_id": "b8250fe7-4f6b-4ed8-9bca-610607aeae4d",
+    "doctor_name": "Bidhan Sarkar",
+    "specialty": [
+      "Plastic Surgeon"
+    ],
+    "institution": "Dhaka Medical College and Hospital",
+    "affiliation_id": "b31bdc0a-d6d7-45e3-b5c9-c0533f1d579a",
+    "location_name": "Radical Hospitals Limited"
+  },
+  {
+    "doctor_id": "e48e14ea-41c6-40b5-b8dd-586220ca50fe",
+    "doctor_name": "Bilkis Mahmuda",
+    "specialty": [
+      "Gynecologist & Obstetrician"
+    ],
+    "institution": "Sir Salimullah Medical College & Mitford Hospital",
+    "affiliation_id": "11ba76c9-b0b5-4e41-863a-d3fe041859be",
+    "location_name": "Alliance Hospital Limited"
+  },
+  {
+    "doctor_id": "3f2f884a-6f99-46a9-9973-62446cb02631",
+    "doctor_name": "Biplab Barban Biswas",
+    "specialty": [
+      "Urologist"
+    ],
+    "institution": "Dhaka Medical College Hospital",
+    "affiliation_id": "683b6236-9bdb-4256-a1c6-516df4713507",
+    "location_name": "Radical Hospitals Limited"
+  },
+  {
+    "doctor_id": "473a083b-b776-4882-93e6-b90137856ef5",
+    "doctor_name": "Bipul Kumar Das",
+    "specialty": [
+      "Plastic Surgeon",
+      "Orthopedic Surgeon"
+    ],
+    "institution": "National Institute of Traumatology & Orthopaedic Rehabilitation (NITOR)",
+    "affiliation_id": "c140b96d-b276-4f5a-8a60-6d1da23e6619",
+    "location_name": "Alliance Hospital Limited"
+  },
+  {
+    "doctor_id": "e3211b4e-ecd4-4870-98e2-cf6726d8a9e0",
+    "doctor_name": "Capt. Md. Asaduzzaman (Retd.)",
+    "specialty": [
+      "ENT Specialist"
+    ],
+    "institution": "Shaheed Monsur Ali Medical College Hospital",
+    "affiliation_id": "a28460a9-ecdf-4b51-a2a6-d197a27caf4f",
+    "location_name": "Radical Hospitals Limited"
+  },
+  {
+    "doctor_id": "1af10eb2-bbd6-400f-a1cf-05e982d9ecb0",
+    "doctor_name": "C. H. Robin",
+    "specialty": [
+      "Orthopedic Surgeon",
+      "Sports Medicine Specialist"
+    ],
+    "institution": "National Institute of Traumatology & Orthopaedic Rehabilitation (NITOR)",
+    "affiliation_id": "30ca6fb6-8775-4766-bb6d-301504cf3244",
+    "location_name": "Trauma Center & Orthopedic Hospital (Pvt.) Ltd."
+  },
+  {
+    "doctor_id": "c45b7a49-4f10-4c73-85e2-273484c8c7ca",
+    "doctor_name": "Debashis Biswas",
+    "specialty": [
+      "Breast Surgeon",
+      "Laparoscopic Surgeon",
+      "Colorectal Surgeon",
+      "General Surgeon"
+    ],
+    "institution": "Enam Medical College & Hospital",
+    "affiliation_id": "a71637f2-dcaa-4500-b8c6-24741680b09e",
+    "location_name": "Radical Hospitals Limited"
+  },
+  {
+    "doctor_id": "48499096-54ac-4ada-80d9-a5111cb1336c",
+    "doctor_name": "Deb Prasad Pal",
+    "specialty": [
+      "Laparoscopic Surgeon",
+      "General Surgeon"
+    ],
+    "institution": "Enam Medical College & Hospital, Savar, Dhaka",
+    "affiliation_id": "dc73c23f-bd5f-42f3-8aad-59c2c382492c",
+    "location_name": "Radical Hospitals Limited"
+  },
+  {
+    "doctor_id": "57762c9a-b209-452e-8753-d40b2fca5462",
+    "doctor_name": "Deepabita Saha",
+    "specialty": [
+      "Nutritionist / Dietitian",
+      "Pediatric Gastroenterologist",
+      "Child Specialist"
+    ],
+    "institution": "Shaheed Suhrawardy Medical College & Hospital",
+    "affiliation_id": "3bbb6456-7075-46e1-a1aa-933c03bc9359",
+    "location_name": "Japan Bangladesh Friendship Hospital"
+  },
+  {
+    "doctor_id": "853aebcb-0627-4ebb-a624-8d8ee71b5f01",
+    "doctor_name": "Dev Prasad Pal",
+    "specialty": [
+      "Urologist"
+    ],
+    "institution": "Enam Medical College & Hospital, Savar, Dhaka",
+    "affiliation_id": "09c559d0-5290-49b0-85bb-ea255869aaac",
+    "location_name": "Radical Hospitals Limited"
+  },
+  {
+    "doctor_id": "0dfdda1a-6f74-45e1-a647-99929e290fad",
+    "doctor_name": "Dilruba Iyahmin Dina",
+    "specialty": [
+      "Gynecological Oncologist",
+      "Gynecologist & Obstetrician"
+    ],
+    "institution": "National Institute of Cancer Research & Hospital",
+    "affiliation_id": "a90638b7-06ce-4732-bb9e-68e0353b4896",
+    "location_name": "Alliance Hospital Limited"
+  },
+  {
+    "doctor_id": "af3c653c-2d5b-46d1-a627-a2ec07d1ab14",
+    "doctor_name": "Dipanwita Saha",
+    "specialty": [
+      "Medicine Specialist"
+    ],
+    "institution": "Sir Salimullah Medical College & Mitford Hospital",
+    "affiliation_id": "8dc4df78-ab78-44d4-8db6-0969d47d0b4e",
+    "location_name": "Alliance Hospital Limited"
+  },
+  {
+    "doctor_id": "60c7c7d0-ab7e-4b3c-a954-9bd59197d086",
+    "doctor_name": "D. S. M. Zakir Hossain",
+    "specialty": [
+      "Chest Specialist"
+    ],
+    "institution": "National Institute of Diseases of the Chest and Hospital (NIDCH)",
+    "affiliation_id": "6f198670-5bc2-4118-b833-c3d8171731f9",
+    "location_name": "Alliance Hospital Limited"
+  },
+  {
+    "doctor_id": "524b39eb-612b-483d-b48e-343be25b375a",
+    "doctor_name": "Enamur Rashid Chowdhury",
+    "specialty": [
+      "Andrologist",
+      "Nephrologist",
+      "Urologist"
+    ],
+    "institution": "Bangabandhu Sheikh Mujib Medical University (BSMMU)",
+    "affiliation_id": "8ec8f550-dcb2-47cf-a66e-43646ded43e6",
+    "location_name": "Radical Hospitals Limited"
+  },
+  {
+    "doctor_id": "6ddf4de6-e880-4f33-bbe6-3661f8bf9dc8",
+    "doctor_name": "Farhad Hossain Md. Shahed",
+    "specialty": [
+      "Medicine Specialist",
+      "Gastroenterologist",
+      "Hepatologist"
+    ],
+    "institution": "Dhaka Medical College & Hospital",
+    "affiliation_id": "2ddce1c3-aec1-44ba-9371-f1004fe89bf1",
+    "location_name": "Dhaka Medical College Hospital"
+  },
+  {
+    "doctor_id": "4287b875-ca4c-4090-91da-c26f96b81f53",
+    "doctor_name": "Farhad Uddin Ahmed (Nirbhor)",
+    "specialty": [
+      "Laparoscopic Surgeon",
+      "Colorectal Surgeon",
+      "General Surgeon"
+    ],
+    "institution": "Shaheed Suhrawardy Medical College & Hospital",
+    "affiliation_id": "5a379915-5fc9-47ee-9c20-7e3392e15f25",
+    "location_name": "Radical Hospitals Limited"
+  },
+  {
+    "doctor_id": "7ebc6fc2-9f52-4184-91c2-8f117584c63d",
+    "doctor_name": "Farhana Sharmin Bithi",
+    "specialty": [
+      "Gynecological Oncologist",
+      "Gynecologist & Obstetrician"
+    ],
+    "institution": "Bangabandhu Sheikh Mujib Medical University (BSMMU)",
+    "affiliation_id": "43b1f38f-0195-4a71-b79a-e19dbe3f22a1",
+    "location_name": "Japan Bangladesh Friendship Hospital"
+  },
+  {
+    "doctor_id": "b94b780b-f0d1-4314-a165-9cda18187c33",
+    "doctor_name": "Farhana Sharmin Jhumur",
+    "specialty": [
+      "Dermatologist"
+    ],
+    "institution": "Radical Hospitals Limited",
+    "affiliation_id": "1adee4dd-3122-4210-a7f2-b032fc40a7e5",
+    "location_name": "Radical Hospitals Limited"
+  },
+  {
+    "doctor_id": "d2228f46-a26d-4fd1-8a79-f86288be5331",
+    "doctor_name": "Farzana Islam Shawon",
+    "specialty": [
+      "Gynecologist & Obstetrician",
+      "Infertility Specialist"
+    ],
+    "institution": "Alliance Hospital Limited",
+    "affiliation_id": "d53b1d2c-f2c2-410d-805d-8c7974c76853",
+    "location_name": "Alliance Hospital Limited"
+  },
+  {
+    "doctor_id": "bdcd8f2c-41d1-451a-84bc-c4c2f07fb746",
+    "doctor_name": "Fatema Doza",
+    "specialty": [
+      "Radiologist"
+    ],
+    "institution": "National Institute of Cardiovascular Diseases (NICVD)",
+    "affiliation_id": "6060cc5a-65c0-40f1-b25e-2465bf2ab35e",
+    "location_name": "Popular Diagnostic Centre Ltd."
+  },
+  {
+    "doctor_id": "50e95c18-aa4f-4fd7-94a6-ce322f5a7f3a",
+    "doctor_name": "Fatema Sharmin (Anny)",
+    "specialty": [
+      "Anesthesiologist"
+    ],
+    "institution": "Bangladesh Medical College Hospital",
+    "affiliation_id": "377fc424-a426-4d1c-91d4-e758e9e66ceb",
+    "location_name": "Dr. Fazlul Haque Colorectal Hospital Limited"
+  },
+  {
+    "doctor_id": "70bedbe9-eeb4-4e7c-a13e-06692ae10985",
+    "doctor_name": "Firoz Kader",
+    "specialty": [
+      "Laparoscopic Surgeon",
+      "Colorectal Surgeon",
+      "General Surgeon"
+    ],
+    "institution": "Popular Medical College & Hospital",
+    "affiliation_id": "6fb8abb4-11a9-4d21-bbda-cea85cb3e88c",
+    "location_name": "Radical Hospitals Limited"
+  },
+  {
+    "doctor_id": "9fa5fc78-b279-4a59-97ac-73dbd006bebb",
+    "doctor_name": "Golam Farhad Bhuiyan",
+    "specialty": [
+      "Diabetologist",
+      "Nephrologist"
+    ],
+    "institution": "Shaheed Suhrawardy Medical College Hospital",
+    "affiliation_id": "33145c76-488e-41b8-9e19-d3dacf45df96",
+    "location_name": "Japan Bangladesh Friendship Hospital"
+  },
+  {
+    "doctor_id": "60d421ac-9fba-4dea-93a0-6fc2497fabf8",
+    "doctor_name": "Golam Mohammad (Belal)",
+    "specialty": [
+      "Cancer Specialist",
+      "ENT Specialist"
+    ],
+    "institution": "Dhaka Medical College & Hospital",
+    "affiliation_id": "b8c4795e-4816-4014-b399-c73a9c931f1e",
+    "location_name": "Radical Hospitals Limited"
+  },
+  {
+    "doctor_id": "d1751dd7-7500-4d16-a6a0-738e133e297c",
+    "doctor_name": "Golam Mursalin",
+    "specialty": [
+      "Cardiac Surgeon",
+      "Thoracic Surgeon"
+    ],
+    "institution": "Dhaka Medical College & Hospital",
+    "affiliation_id": "ee85a00f-00d2-46ef-aafc-f7565450265f",
+    "location_name": "Japan Bangladesh Friendship Hospital"
+  },
+  {
+    "doctor_id": "54de9c82-3c35-421f-be37-0f5a3638d6e4",
+    "doctor_name": "Golam Rahman Mallick",
+    "specialty": [
+      "Medicine Specialist",
+      "Cardiologist",
+      "Diabetologist"
+    ],
+    "institution": "National Institute of Cardiovascular Diseases (NICVD), Dhaka",
+    "affiliation_id": "7ce24e4f-5303-4f80-8826-5ab5425a2100",
+    "location_name": "National Institute of Cardiovascular Diseases (NICVD)"
+  },
+  {
+    "doctor_id": "54de9c82-3c35-421f-be37-0f5a3638d6e4",
+    "doctor_name": "Golam Rahman Mallick",
+    "specialty": [
+      "Medicine Specialist",
+      "Cardiologist",
+      "Diabetologist"
+    ],
+    "institution": "National Institute of Cardiovascular Diseases (NICVD), Dhaka",
+    "affiliation_id": "9a2d5bfc-f962-4cfc-8a8b-3f6db7e82dd2",
+    "location_name": "Japan Bangladesh Friendship Hospital"
+  },
+  {
+    "doctor_id": "3c1457fd-4757-41b3-bf34-3eca063f4b66",
+    "doctor_name": "Gourang Kumar Saha",
+    "specialty": [
+      "Medicine Specialist",
+      "Cardiologist",
+      "Interventional Cardiologist",
+      "Rheumatologist"
+    ],
+    "institution": "National Institute of Cardiovascular Diseases (NICVD)",
+    "affiliation_id": "019d6a32-6eb7-42df-b845-1bcc8f70f7da",
+    "location_name": "Trauma Center & Orthopedic Hospital (Pvt.) Ltd."
+  },
+  {
+    "doctor_id": "a7ac2a11-18ca-49b5-b027-c59997410251",
+    "doctor_name": "Gul Jannat Riya",
+    "specialty": [
+      "Medicine Specialist",
+      "Nephrologist"
+    ],
+    "institution": "Mugda Medical College Hospital",
+    "affiliation_id": "5d30ddcf-463f-4876-8d62-106774129922",
+    "location_name": "Japan Bangladesh Friendship Hospital"
+  },
+  {
+    "doctor_id": "da87353b-18a6-4afc-a7d9-b60e05ce1660",
+    "doctor_name": "Habiba Khatun",
+    "specialty": [
+      "Gynecologist & Obstetrician"
+    ],
+    "institution": "Ibrahim Medical College & BIRDEM Hospital",
+    "affiliation_id": "19da1e75-163e-49cf-ab8e-54ac54f697aa",
+    "location_name": "Japan Bangladesh Friendship Hospital"
+  },
+  {
+    "doctor_id": "9e9cf75f-f770-427f-b8bb-93119d119bd0",
+    "doctor_name": "Helena Begum",
+    "specialty": [
+      "Neonatologist",
+      "Hematologist",
+      "Child Specialist"
+    ],
+    "institution": "Dhaka Central International Medical College and Hospital",
+    "affiliation_id": "804659ef-8b1e-428b-b187-f00adbb658d1",
+    "location_name": "Alliance Hospital Limited"
+  },
+  {
+    "doctor_id": "39dfdd61-8f19-47f1-93ed-7b94dcdeb2e1",
+    "doctor_name": "Iftabul Islam",
+    "specialty": [
+      "Radiologist"
+    ],
+    "institution": "National Institute of Traumatology & Orthopaedic Rehabilitation (NITOR)",
+    "affiliation_id": "90e3fef1-c85c-4a02-ab61-10805b55e37e",
+    "location_name": "Popular Diagnostic Centre Ltd."
+  },
+  {
+    "doctor_id": "ba23f7c4-9e25-40f7-9236-123b15dc7041",
+    "doctor_name": "Iftadul Islam",
+    "specialty": [
+      "Radiologist"
+    ],
+    "institution": "National Institute of Traumatology and Orthopaedic Rehabilitation",
+    "affiliation_id": "470ccf24-6b96-4ad6-812c-f4f2c7370c0a",
+    "location_name": "Popular Diagnostic Centre Ltd."
+  },
+  {
+    "doctor_id": "fc0edca9-e56e-4794-ac8c-8f4045598250",
+    "doctor_name": "Isha Khan Rana",
+    "specialty": [
+      "Medicine Specialist",
+      "Hepatologist"
+    ],
+    "institution": "Bangabandhu Sheikh Mujib Medical University (BSMMU)",
+    "affiliation_id": "ef4bc48b-ab39-4d30-8664-5fce5875b6d3",
+    "location_name": "Medison Medical Services Limited"
+  },
+  {
+    "doctor_id": "cce56997-a60b-459f-92d6-0fcc7e785b1f",
+    "doctor_name": "Ishtiaq Ahmed",
+    "specialty": [
+      "ENT Specialist",
+      "Head & Neck Surgeon"
+    ],
+    "institution": "Bangabandhu Sheikh Mujib Medical University (BSMMU)",
+    "affiliation_id": "c6747a1c-afc6-4b80-8e7b-b163c8e67f50",
+    "location_name": "Bangabandhu Sheikh Mujib Medical University (BSMMU)"
+  },
+  {
+    "doctor_id": "3c800b86-b34c-4b0f-a0b4-da5018bf4e7d",
+    "doctor_name": "Ishtiaque Ahmed",
+    "specialty": [
+      "ENT Specialist",
+      "Head & Neck Surgeon"
+    ],
+    "institution": "Bangabandhu Sheikh Mujib Medical University (BSMMU)",
+    "affiliation_id": "a5a82bdd-914b-4925-a1e2-a8af31635f50",
+    "location_name": "Japan Bangladesh Friendship Hospital"
+  },
+  {
+    "doctor_id": "d4cd3054-b037-4f16-a57e-e133c18bf62e",
+    "doctor_name": "Jaglul Gaffar Khan (Zia)",
+    "specialty": [
+      "Pediatric Orthopedic Surgeon",
+      "Orthopedic Surgeon",
+      "Pediatric Surgeon"
+    ],
+    "institution": "Dhaka Medical College Hospital",
+    "affiliation_id": "b9e5a3b8-1130-4128-b57f-5a387f00be61",
+    "location_name": "Radical Hospitals Limited"
+  },
+  {
+    "doctor_id": "a5e49553-84da-4b5a-b7aa-951d2edb3035",
+    "doctor_name": "Jaynab Akter (Jhunu)",
+    "specialty": [
+      "Radiologist"
+    ],
+    "institution": "Sheikh Russel National Gastroliver Institute & Hospital, Mohakhali, Dhaka",
+    "affiliation_id": "d66be6ab-b101-4a8d-b318-5da1b79c8192",
+    "location_name": "Popular Diagnostic Centre Ltd."
+  },
+  {
+    "doctor_id": "097ae5f3-0705-43eb-b590-9e155252b76c",
+    "doctor_name": "Jesmin Ara",
+    "specialty": [
+      "Gynecologist & Obstetrician"
+    ],
+    "institution": "Sir Salimullah Medical College & Mitford Hospital",
+    "affiliation_id": "3bcad58f-6101-41f4-94a3-997fb4ca0c2c",
+    "location_name": "Popular Diagnostic Centre Ltd."
+  },
+  {
+    "doctor_id": "f9409be6-6a1c-41a1-94f3-91b3bb5b1e06",
+    "doctor_name": "Juliet Parwin",
+    "specialty": [
+      "Gynecologist & Obstetrician",
+      "Radiologist"
+    ],
+    "institution": "Madison Medical Services Limited",
+    "affiliation_id": "90538867-63bb-4f9f-b41e-e8c241e75e64",
+    "location_name": "Medison Medical Services Limited"
+  },
+  {
+    "doctor_id": "8b5f5398-330c-46a6-8c01-2019f10c929e",
+    "doctor_name": "Junaid Shafique",
+    "specialty": [
+      "Pain Specialist"
+    ],
+    "institution": "Bangabandhu Sheikh Mujib Medical University (BSMMU)",
+    "affiliation_id": "1f1b5559-82af-4761-9405-830c1f38417b",
+    "location_name": "Bangabandhu Sheikh Mujib Medical University (BSMMU)"
+  },
+  {
+    "doctor_id": "8b5f5398-330c-46a6-8c01-2019f10c929e",
+    "doctor_name": "Junaid Shafique",
+    "specialty": [
+      "Pain Specialist"
+    ],
+    "institution": "Bangabandhu Sheikh Mujib Medical University (BSMMU)",
+    "affiliation_id": "be8fa979-1fbe-4d7c-a485-2f2f7a82fa5b",
+    "location_name": "Japan Bangladesh Friendship Hospital"
+  },
+  {
+    "doctor_id": "b3ccc30e-c4f3-4e63-b7de-cd34f44fc56d",
+    "doctor_name": "Kartik Chandra Ghosh",
+    "specialty": [
+      "Nephrologist",
+      "Urologist"
+    ],
+    "institution": "Bangladesh Medical College Hospital (PGI Hospital)",
+    "affiliation_id": "090c112f-8e2e-4552-9a05-01123b324774",
+    "location_name": "Japan Bangladesh Friendship Hospital"
+  },
+  {
+    "doctor_id": "2cc28e6a-c579-4738-95e4-8f9fb2190e07",
+    "doctor_name": "Kazi Fazlur Rahman",
+    "specialty": [
+      "Medicine Specialist",
+      "Hematologist"
+    ],
+    "institution": "Bangabandhu Sheikh Mujib Medical University (BSMMU)",
+    "affiliation_id": "42f3e81c-5b39-4eea-acd2-4de2757ccda1",
+    "location_name": "Japan Bangladesh Friendship Hospital"
+  },
+  {
+    "doctor_id": "e1becbb6-4a41-4ac5-96ad-5cc8ca94f1e3",
+    "doctor_name": "Kazi Hamida Banu Barsha",
+    "specialty": [
+      "Nutritionist / Dietitian"
+    ],
+    "institution": "BIRDEM",
+    "affiliation_id": "f4d320e7-3bfd-44d4-8205-af49ea819418",
+    "location_name": "Radical Hospitals Limited"
+  },
+  {
+    "doctor_id": "ef1a6c02-46d7-43b9-8257-cc21964eedbb",
+    "doctor_name": "Khandaker Hamidul Hoque",
+    "specialty": [
+      "Family Physician / GP"
+    ],
+    "institution": "Dhaka Medical College & Hospital",
+    "affiliation_id": "c499d37f-184c-479f-8652-f2c0a34d64da",
+    "location_name": "Japan Bangladesh Friendship Hospital"
+  },
+  {
+    "doctor_id": "acf2156f-6845-46b3-863e-ce06e9dcd40a",
+    "doctor_name": "Khondker ShehNila Tasmin (Sumi)",
+    "specialty": [
+      "Gynecologist & Obstetrician",
+      "Fetomaternal Medicine Specialist"
+    ],
+    "institution": "Alliance Hospital Limited",
+    "affiliation_id": "a19b9496-bfca-4aae-bb56-0fd05cfc4c7f",
+    "location_name": "Alliance Hospital Limited"
+  },
+  {
+    "doctor_id": "bb9893ef-88cc-42ea-b38f-5ea4fc92f0d7",
+    "doctor_name": "Krisna Rani Majumder",
+    "specialty": [
+      "Cancer Surgeon"
+    ],
+    "institution": "Bangabandhu Sheikh Mujib Medical University",
+    "affiliation_id": "63a85c4e-25f6-4490-86f5-9992ed27e54d",
+    "location_name": "Bangabandhu Sheikh Mujib Medical University (BSMMU)"
+  },
+  {
+    "doctor_id": "e1177cde-ab19-46b4-be4e-c98f13648592",
+    "doctor_name": "Liaquat Amin",
+    "specialty": [
+      "Laparoscopic Surgeon",
+      "Colorectal Surgeon",
+      "General Surgeon"
+    ],
+    "institution": "Eastern Medical College & Hospital, Comilla",
+    "affiliation_id": "746ede45-ce40-4050-876c-fd961fdad916",
+    "location_name": "Radical Hospitals Limited"
+  },
+  {
+    "doctor_id": "6623d5fa-b211-4f1c-bdad-a980105055c7",
+    "doctor_name": "Lutfia Akhtar",
+    "specialty": [
+      "Gynecologist & Obstetrician"
+    ],
+    "institution": "Sir Salimullah Medical College & Hospital",
+    "affiliation_id": "5bff3272-3aac-449c-90f4-2167da39a2dc",
+    "location_name": "Radical Hospitals Limited"
+  },
+  {
+    "doctor_id": "4f80fdf5-d5b4-4410-b5a1-72144af1c3ae",
+    "doctor_name": "Mahabub Alam (Khokon)",
+    "specialty": [
+      "Orthopedic Surgeon",
+      "Spine Surgeon"
+    ],
+    "institution": "Dhaka Medical College Hospital",
+    "affiliation_id": "d61c2823-7a5b-4f2c-8c52-d9cc231d162e",
+    "location_name": "Dhaka Medical College Hospital"
+  },
+  {
+    "doctor_id": "4a924ce1-bbbb-4738-b126-a2e4f967cc40",
+    "doctor_name": "Mahatima Haque",
+    "specialty": [
+      "Breast Surgeon",
+      "Diabetologist",
+      "Colorectal Surgeon"
+    ],
+    "institution": "BIRDEM General Hospital, Shahbag, Dhaka",
+    "affiliation_id": "399de922-cef9-44ac-80a9-839c82477527",
+    "location_name": "Japan Bangladesh Friendship Hospital"
+  },
+  {
+    "doctor_id": "4a924ce1-bbbb-4738-b126-a2e4f967cc40",
+    "doctor_name": "Mahatima Haque",
+    "specialty": [
+      "Breast Surgeon",
+      "Diabetologist",
+      "Colorectal Surgeon"
+    ],
+    "institution": "BIRDEM General Hospital, Shahbag, Dhaka",
+    "affiliation_id": "82a03e4c-1cc0-40a8-956e-d2baa402ec82",
+    "location_name": "BIRDEM General Hospital"
+  },
+  {
+    "doctor_id": "ddc0f176-a625-4a40-beb8-82af0a3c6cb0",
+    "doctor_name": "Mahbuba Yasmin",
+    "specialty": [
+      "Gynecologist & Obstetrician"
+    ],
+    "institution": "Shaheed Suhrawardy Medical College & Hospital",
+    "affiliation_id": "d25e1583-0119-4167-ae63-7a8f12dbb94a",
+    "location_name": "Alliance Hospital Limited"
+  },
+  {
+    "doctor_id": "e81f4627-b319-48f3-8ae7-841a8d8e7ef0",
+    "doctor_name": "Mahfuza Akhtar",
+    "specialty": [
+      "Dermatologist",
+      "Sexologist",
+      "Allergist & Immunologist"
+    ],
+    "institution": "Shaheed Suhrawardy Medical College Hospital",
+    "affiliation_id": "be3b5620-2c1f-42e9-b672-ac52449e45af",
+    "location_name": "Japan Bangladesh Friendship Hospital"
+  },
+  {
+    "doctor_id": "681f1fa6-0ac9-48f6-8fc6-8404efeaa334",
+    "doctor_name": "Mahfuza Akter",
+    "specialty": [
+      "Dermatologist",
+      "Sexologist"
+    ],
+    "institution": "Shaheed Suhrawardy Medical College Hospital",
+    "affiliation_id": "590a34a1-162e-4e7d-b499-5600759538f5",
+    "location_name": "Japan Bangladesh Friendship Hospital"
+  },
+  {
+    "doctor_id": "a59b4e2b-318e-42f0-9092-69e62d19a85d",
+    "doctor_name": "Mahfuzul Moyeen",
+    "specialty": [
+      "Breast Surgeon",
+      "Colorectal Surgeon",
+      "General Surgeon"
+    ],
+    "institution": "General, Breast & Colorectal Surgeon",
+    "affiliation_id": "5520247b-4f55-4a88-9e18-2f2d7f12e7eb",
+    "location_name": "Radical Hospitals Limited"
+  },
+  {
+    "doctor_id": "a6563d44-bb82-41e8-b6c7-e719e354c8b4",
+    "doctor_name": "Mahin Sarwar",
+    "specialty": [
+      "Dentist",
+      "Maxillofacial Surgeon"
+    ],
+    "institution": "Bangabandhu Sheikh Mujib Medical University (BSMMU)",
+    "affiliation_id": "819d4122-87ab-47c3-bbe9-42c63861273f",
+    "location_name": "Japan Bangladesh Friendship Hospital"
+  },
+  {
+    "doctor_id": "0534dc03-57bc-4d76-8656-c1bc8601f437",
+    "doctor_name": "Mahmudun Nabi (Tanmay)",
+    "specialty": [
+      "Medicine Specialist"
+    ],
+    "institution": "Shaheed Suhrawardy Medical College Hospital",
+    "affiliation_id": "5f554ed3-764f-4dbd-9b7c-1a75438b4642",
+    "location_name": "Radical Hospitals Limited"
+  },
+  {
+    "doctor_id": "f426cfaa-e4ea-4c80-b65c-8ed41e8c31f0",
+    "doctor_name": "M. A. Khaled Raju",
+    "specialty": [
+      "Dentist",
+      "Maxillofacial Surgeon"
+    ],
+    "institution": "Radical Hospitals Limited",
+    "affiliation_id": "a880166f-6143-4db2-9932-69e13a16add4",
+    "location_name": "Radical Hospitals Limited"
+  },
+  {
+    "doctor_id": "61c6546e-f6d6-4fea-810f-3aed4ff9b764",
+    "doctor_name": "Mamunur Rashid (Sunny)",
+    "specialty": [
+      "Neurosurgeon"
+    ],
+    "institution": "Uttara Adhunik Medical College & Hospital",
+    "affiliation_id": "49700274-bd4c-463b-8266-fdefe596786f",
+    "location_name": "Radical Hospitals Limited"
+  },
+  {
+    "doctor_id": "d337a385-5589-422b-85ed-dd0c167ab105",
+    "doctor_name": "Manas Chandra Sarkar",
+    "specialty": [
+      "Orthopedic Surgeon"
+    ],
+    "institution": "NITOR (Zoo Hospital)",
+    "affiliation_id": "22c9f99e-a2b1-425d-8eab-6d5efb95a1a8",
+    "location_name": "Alliance Hospital Limited"
+  },
+  {
+    "doctor_id": "71339168-a60e-4fad-8213-b2401a4cfa97",
+    "doctor_name": "Manjura Ara Bokul",
+    "specialty": [
+      "Gynecologist & Obstetrician"
+    ],
+    "institution": "Japan Bangladesh Friendship Hospital",
+    "affiliation_id": "a67c25fb-aed9-498d-9a77-36a5ae6c2e8d",
+    "location_name": "Japan Bangladesh Friendship Hospital"
+  },
+  {
+    "doctor_id": "0b0d9218-c486-4367-9753-63033a20f953",
+    "doctor_name": "Manjurul Haque",
+    "specialty": [
+      "Psychiatrist"
+    ],
+    "institution": "City Medical College, Gazipur",
+    "affiliation_id": "8aed4426-812a-4536-890e-d093c63a8603",
+    "location_name": "Radical Hospitals Limited"
+  },
+  {
+    "doctor_id": "10244afb-fdc5-4f7c-b3d5-3468ae9a6824",
+    "doctor_name": "Masud Rana Bhuiyan",
+    "specialty": [
+      "Hepatobiliary Surgeon"
+    ],
+    "institution": "Sheikh Russel National Gastroliver Institute & Hospital",
+    "affiliation_id": "ad04985c-4574-4b03-9da2-12f9fe2272a8",
+    "location_name": "Alliance Hospital Limited"
+  },
+  {
+    "doctor_id": "69009d05-69cc-4aec-a35c-da0d8fbb09ac",
+    "doctor_name": "Md. Abdul Mahid Khan",
+    "specialty": [
+      "Medicine Specialist",
+      "Cardiologist",
+      "Diabetologist"
+    ],
+    "institution": "SIBL Foundation Hospital",
+    "affiliation_id": "284bb4c0-3af5-4eae-9671-db3b8de9d321",
+    "location_name": "SIBL Foundation Hospital"
+  },
+  {
+    "doctor_id": "98fef6d8-e858-4ee4-aa77-5059ee243092",
+    "doctor_name": "Md. Abdur Razzak",
+    "specialty": [
+      "ENT Specialist",
+      "Head & Neck Surgeon"
+    ],
+    "institution": "Kuwait Bangladesh Friendship Government Hospital",
+    "affiliation_id": "277a1ab1-16f6-4d00-84c7-985b2b161793",
+    "location_name": "Alliance Hospital Limited"
+  },
+  {
+    "doctor_id": "83dff3c2-fd47-4578-a5db-ba97175e086c",
+    "doctor_name": "Md. Abdus Sabur",
+    "specialty": [
+      "Cardiac Surgeon",
+      "Thoracic Surgeon"
+    ],
+    "institution": "National Institute of Cardiovascular Diseases & Hospital, Dhaka",
+    "affiliation_id": "e43f9ffc-d7f3-452c-9a06-cdea4e388512",
+    "location_name": "Radical Hospitals Limited"
+  },
+  {
+    "doctor_id": "5b8583f8-38e2-494f-af19-a6791d2c66f9",
+    "doctor_name": "Md. Abul Ahsan (Didar)",
+    "specialty": [
+      "Cancer Specialist"
+    ],
+    "institution": "Shaheed Suhrawardy Medical College Hospital, Dhaka",
+    "affiliation_id": "73c2f8fc-f080-42d6-9645-fda9c1b2c531",
+    "location_name": "Japan Bangladesh Friendship Hospital"
+  },
+  {
+    "doctor_id": "6bec80c7-dc17-42df-8a3b-2d2cf70c2313",
+    "doctor_name": "Md. Abu Sadik",
+    "specialty": [
+      "ENT Specialist"
+    ],
+    "institution": "ENT Department, Tayrunnesa Memorial Medical College & Hospital",
+    "affiliation_id": "c45c8b41-576e-4e7f-b1ea-bb28d07cf323",
+    "location_name": "Radical Hospitals Limited"
+  },
+  {
+    "doctor_id": "90ce7832-dc13-4753-976b-a32a70b897b7",
+    "doctor_name": "Md. Abu Tayeb",
+    "specialty": [
+      "Neonatologist",
+      "Child Specialist"
+    ],
+    "institution": "Bangladesh Shishu Hospital & Institute",
+    "affiliation_id": "5d64b96f-7951-43d2-bffa-7168353a90dc",
+    "location_name": "Alliance Hospital Limited"
+  },
+  {
+    "doctor_id": "c9e77a37-6b5c-48f7-89ef-dcf0e2bf98a8",
+    "doctor_name": "Md. Aktaruzzaman",
+    "specialty": [
+      "Medicine Specialist",
+      "Cardiologist",
+      "Diabetologist",
+      "Chest Specialist",
+      "Rheumatologist"
+    ],
+    "institution": "Shaheed Suhrawardy Medical College & Hospital",
+    "affiliation_id": "9cef2efb-4a2e-47eb-807c-993285b66737",
+    "location_name": "Trauma Center & Orthopedic Hospital (Pvt.) Ltd."
+  },
+  {
+    "doctor_id": "9a286e5a-cbe3-4d0b-a936-8f40cda50a40",
+    "doctor_name": "Md. Anisul Goni Khan",
+    "specialty": [
+      "Medicine Specialist",
+      "Cardiologist"
+    ],
+    "institution": "National Institute of Cardiovascular Diseases (NICVD)",
+    "affiliation_id": "3877badd-82ad-43a6-8a86-313da27afc9f",
+    "location_name": "Ibn Sina Diagnostic & Imaging Center"
+  },
+  {
+    "doctor_id": "bc8fa2bb-4c63-4a48-8438-80969190d8d8",
+    "doctor_name": "Md. Apel Mahmud",
+    "specialty": [
+      "Medicine Specialist",
+      "Child Specialist"
+    ],
+    "institution": "Bangladesh Shishu Hospital & Institute",
+    "affiliation_id": "c15ab249-14a4-4fab-8d43-e3cd5af48e7b",
+    "location_name": "Victoria Healthcare Ltd."
+  },
+  {
+    "doctor_id": "3f24e13a-86ae-41f2-a01e-b73c84b50645",
+    "doctor_name": "Md. Armanul Islam",
+    "specialty": [
+      "Colorectal Surgeon"
+    ],
+    "institution": "Shaheed Suhrawardy Medical College & Hospital",
+    "affiliation_id": "d0284ba7-e9e0-46b6-8521-5a416f59539a",
+    "location_name": "Medison Medical Services Limited"
+  },
+  {
+    "doctor_id": "35d4da99-3c98-46de-a9bb-08ab86a7f168",
+    "doctor_name": "Md. Ashiqul Islam",
+    "specialty": [
+      "Medicine Specialist",
+      "Neurologist"
+    ],
+    "institution": "National Institute of Neurosciences & Hospital",
+    "affiliation_id": "223d182c-4a5f-4530-befa-a602335853af",
+    "location_name": "Alliance Hospital Limited"
+  },
+  {
+    "doctor_id": "5889dd46-da97-42a7-86e1-2750c2b069b6",
+    "doctor_name": "Md. Ashraful Islam (Milan)",
+    "specialty": [
+      "Medicine Specialist",
+      "Gastroenterologist"
+    ],
+    "institution": "National Institute of Gastroenterology & Hospital, Mohakhali, Dhaka",
+    "affiliation_id": "2a1c7a48-5e43-4c44-a14e-a23a36c7ceb1",
+    "location_name": "National Institute of Gastroenterology & Hospital"
+  },
+  {
+    "doctor_id": "ad1a00de-8fbf-49d1-918f-01c222f0ceeb",
+    "doctor_name": "Md. Borhan Uddin",
+    "specialty": [
+      "Family Physician / GP"
+    ],
+    "institution": "Ibn Sina Medical College Hospital",
+    "affiliation_id": "3d9da0e1-81a9-450b-acd7-4dc3a759a532",
+    "location_name": "Japan Bangladesh Friendship Hospital"
+  },
+  {
+    "doctor_id": "5e1e9db7-1e81-4aa0-834a-3fd6b61dc35b",
+    "doctor_name": "Md. Chowdhury Taslima Nasreen",
+    "specialty": [
+      "Gynecologist & Obstetrician"
+    ],
+    "institution": "Dhaka Medical College & Hospital",
+    "affiliation_id": "b7509a62-d553-4696-9817-9df43c4753c9",
+    "location_name": "Radical Hospitals Limited"
+  },
+  {
+    "doctor_id": "65a8b0ea-8b13-42c7-b4e5-48746cdd6f39",
+    "doctor_name": "Md. Ekramul Reza",
+    "specialty": [
+      "Medicine Specialist",
+      "Cardiologist",
+      "Rheumatologist"
+    ],
+    "institution": "National Institute of Cardiovascular Diseases (NICVD)",
+    "affiliation_id": "d49fb386-91aa-491c-8d33-1d59d3e0b425",
+    "location_name": "Medison Medical Services Limited"
+  },
+  {
+    "doctor_id": "df53c7a8-c244-4446-87e4-a36b7167e09b",
+    "doctor_name": "Md. Gufran Sen",
+    "specialty": [
+      "Medicine Specialist",
+      "Chest Specialist"
+    ],
+    "institution": "Armed Forces Medical College (Retd.)",
+    "affiliation_id": "18e33ec9-a37f-4235-b61c-d6cfd50729d8",
+    "location_name": "Armed Forces Medical College"
+  },
+  {
+    "doctor_id": "0d4aa32e-b874-4c4e-8e91-f1e200e458fd",
+    "doctor_name": "Md. Hasib-Al-Mamun",
+    "specialty": [
+      "Laparoscopic Surgeon",
+      "Urologist",
+      "General Surgeon"
+    ],
+    "institution": "Sir Salimullah Medical College and Mitford Hospital",
+    "affiliation_id": "b06a9d72-1ec4-4617-9db6-582520a2afa1",
+    "location_name": "Alliance Hospital Limited"
+  },
+  {
+    "doctor_id": "ca695b3e-18e0-4cb2-871c-f14342ccdab3",
+    "doctor_name": "Md. Jahangir Alam Sarker",
+    "specialty": [
+      "Medicine Specialist",
+      "Diabetologist",
+      "Endocrinologist"
+    ],
+    "institution": "BIHS General Hospital",
+    "affiliation_id": "7b541123-add4-4ba3-a2ec-cfccf72f6442",
+    "location_name": "Anwer Khan Modern Medical College Hospital"
+  },
+  {
+    "doctor_id": "65b93d20-d4b5-424f-a71b-e1225f727ada",
+    "doctor_name": "Md. Kazim Uddin",
+    "specialty": [
+      "Medicine Specialist",
+      "Cancer Specialist",
+      "Hematologist"
+    ],
+    "institution": "Northern International Medical College Hospital",
+    "affiliation_id": "52ee6ad4-beb9-4963-95cb-1b89d4385e91",
+    "location_name": "Japan Bangladesh Friendship Hospital"
+  },
+  {
+    "doctor_id": "e3eb5ddd-5ee9-4c99-b94c-d971e16571bb",
+    "doctor_name": "Md. Khalequzzaman Linkon",
+    "specialty": [
+      "Neurologist"
+    ],
+    "institution": "National Institute of Neurosciences & Hospital",
+    "affiliation_id": "f9a1ed12-3710-4a8d-95b7-f78783098903",
+    "location_name": "Alliance Hospital Limited"
+  },
+  {
+    "doctor_id": "ebbd8788-9dca-438b-bccd-33aa12d946ec",
+    "doctor_name": "Md. Mahbub Anwar",
+    "specialty": [
+      "Medicine Specialist",
+      "Chest Specialist"
+    ],
+    "institution": "Z H Sikder Women's Medical College Hospital",
+    "affiliation_id": "64366ace-9270-4a0d-9e74-0432d4a56847",
+    "location_name": "Z H Sikder Women's Medical College Hospital"
+  },
+  {
+    "doctor_id": "fad0fca5-3539-4352-8e35-718bcc9bfb6d",
+    "doctor_name": "Md. Mahbub Hossain",
+    "specialty": [
+      "Neurosurgeon",
+      "Spine Surgeon"
+    ],
+    "institution": "Sir Salimullah Medical College & Mitford Hospital",
+    "affiliation_id": "6988dc4b-99c7-4f70-b50d-a97e4fb2c281",
+    "location_name": "Japan Bangladesh Friendship Hospital"
+  },
+  {
+    "doctor_id": "f44fb207-171f-4af1-a573-121897d62a4a",
+    "doctor_name": "Md. Mokhlesur Rahman (Mukul)",
+    "specialty": [
+      "Neurosurgeon",
+      "Spine Surgeon"
+    ],
+    "institution": "National Institute of Neurosciences & Hospital",
+    "affiliation_id": "48c6265a-6942-45c7-824b-f4a86a7aa1b3",
+    "location_name": "Alliance Hospital Limited"
+  },
+  {
+    "doctor_id": "f08a03cd-c82a-48d2-a894-3bc1e5788905",
+    "doctor_name": "Md. Monowarul Islam",
+    "specialty": [
+      "Laparoscopic Surgeon",
+      "Nephrologist",
+      "Urologist",
+      "General Surgeon"
+    ],
+    "institution": "National Institute of Kidney Diseases and Urology",
+    "affiliation_id": "cc349053-e2f3-43c0-8447-6eadd5432f7e",
+    "location_name": "Trauma Center & Orthopedic Hospital (Pvt.) Ltd."
+  },
+  {
+    "doctor_id": "7c1d382c-aade-40a4-a225-4efbae845b76",
+    "doctor_name": "Md. Mozaffar Hossain",
+    "specialty": [
+      "Anesthesiologist",
+      "Critical Care Specialist"
+    ],
+    "institution": "Dhaka Medical College Hospital",
+    "affiliation_id": "da29f0b1-9c64-4c3e-b702-7474e00f4c29",
+    "location_name": "Dhaka Medical College Hospital"
+  },
+  {
+    "doctor_id": "466cb0da-1fbb-408a-9f97-8afc81cf5746",
+    "doctor_name": "Md. Musab Khalil",
+    "specialty": [
+      "Gastroenterologist",
+      "Hepatologist"
+    ],
+    "institution": "Sheikh Russel National Gastroliver Institute & Hospital",
+    "affiliation_id": "2092ab06-c220-4a26-9fa3-ff1e99d3c712",
+    "location_name": "Alliance Hospital Limited"
+  },
+  {
+    "doctor_id": "f10541b2-2aff-430b-906b-b7e2e0454497",
+    "doctor_name": "Md. Nabir Hossain",
+    "specialty": [
+      "Cancer Surgeon",
+      "Orthopedic Surgeon",
+      "Spine Surgeon",
+      "General Surgeon"
+    ],
+    "institution": "National Institute of Cancer Research & Hospital, Mohakhali, Dhaka",
+    "affiliation_id": "3787b686-e7ea-4d73-8b2f-df99a4ec5ed9",
+    "location_name": "Radical Hospitals Limited"
+  },
+  {
+    "doctor_id": "01a0e8bb-c9f0-7b5a-8a9b-787b12725907",
+    "doctor_name": "Md. Osman Goni",
+    "specialty": [
+      "Thoracic Surgeon"
+    ],
+    "institution": "National Institute of Diseases of the Chest & Hospital (NIDCH)",
+    "affiliation_id": "01a0e8bb-ca09-72ba-ac0c-19419488cfb3",
+    "location_name": "Comfort Diagnostic Center"
+  },
+  {
+    "doctor_id": "4dda6e57-271d-4ff5-bb83-55531b099b9e",
+    "doctor_name": "Md. Rashidul Hasan",
+    "specialty": [
+      "Neurosurgeon",
+      "Spine Surgeon"
+    ],
+    "institution": "Dhaka Medical College Hospital",
+    "affiliation_id": "870b86bd-aa32-4f71-890e-90c8334af6bd",
+    "location_name": "Popular Diagnostic Centre Ltd."
+  },
+  {
+    "doctor_id": "449f2674-e073-419b-a17f-8140e7e45cca",
+    "doctor_name": "Md. Rojibul Haque",
+    "specialty": [
+      "ENT Specialist"
+    ],
+    "institution": "US-Bangla Medical College & Hospital",
+    "affiliation_id": "136175b3-3ee6-41de-8610-b5c7eaf4c283",
+    "location_name": "Victoria Healthcare Ltd."
+  },
+  {
+    "doctor_id": "369b0654-25ff-4cc6-8e79-ce03c3ce9986",
+    "doctor_name": "Md. Sagir Abdur Rahim",
+    "specialty": [
+      "Diabetologist"
+    ],
+    "institution": "BIRDEM Hospital",
+    "affiliation_id": "2a7aab7f-715b-48d4-afa6-776e0e17ed6c",
+    "location_name": "BIRDEM General Hospital"
+  },
+  {
+    "doctor_id": "49bd4ba6-a430-47a6-baae-e5757ac2afde",
+    "doctor_name": "Md. Sajjad Khandkar",
+    "specialty": [
+      "Plastic Surgeon",
+      "General Surgeon"
+    ],
+    "institution": "Dhaka Medical College and Hospital",
+    "affiliation_id": "0e339594-6eb3-4a3c-bb71-b6b60b5eed38",
+    "location_name": "Alliance Hospital Limited"
+  },
+  {
+    "doctor_id": "0d3448ab-6627-4cad-800d-0b0f5dd85542",
+    "doctor_name": "Md. Sajjad Khondoker",
+    "specialty": [
+      "Plastic Surgeon",
+      "General Surgeon"
+    ],
+    "institution": "Dhaka Medical College & Hospital",
+    "affiliation_id": "f910313f-8c63-416b-87d8-f43a74581d7a",
+    "location_name": "Alliance Hospital Limited"
+  },
+  {
+    "doctor_id": "6d8a6683-a37d-43c6-9e1d-b6cb63d2d683",
+    "doctor_name": "Md. Samiul Hasan",
+    "specialty": [
+      "Pediatric Urologist",
+      "Pediatric Surgeon"
+    ],
+    "institution": "Bangladesh Shishu Hospital & Institute",
+    "affiliation_id": "3ecc9367-e3d5-474a-bec2-70b72a0250dd",
+    "location_name": "Alliance Hospital Limited"
+  },
+  {
+    "doctor_id": "66ffd670-8903-4b45-9017-e0b615a78f6c",
+    "doctor_name": "Md. Samsuzzaman",
+    "specialty": [
+      "Pain Specialist"
+    ],
+    "institution": "Bangabandhu Sheikh Mujib Medical University (BSMMU)",
+    "affiliation_id": "92ed769e-3e05-456a-8293-f6b2d7aca41d",
+    "location_name": "Japan Bangladesh Friendship Hospital"
+  },
+  {
+    "doctor_id": "508bdf1e-bd6e-487a-972a-fcfbf9ff5a53",
+    "doctor_name": "Md. Shahin Oyadud",
+    "specialty": [
+      "Neurologist"
+    ],
+    "institution": "Dhaka National Medical College Hospital",
+    "affiliation_id": "77b3d014-ba10-41be-9a6c-efe51f73e66b",
+    "location_name": "Japan Bangladesh Friendship Hospital"
+  },
+  {
+    "doctor_id": "bf6e73a3-8554-4fc8-946d-75b1bc53ab71",
+    "doctor_name": "Md. Shamsuzzaman",
+    "specialty": [
+      "Pain Specialist",
+      "Anesthesiologist"
+    ],
+    "institution": "Bangabandhu Sheikh Mujib Medical University (BSMMU)",
+    "affiliation_id": "bf8b8e21-be0f-4631-b6e2-9574e8283129",
+    "location_name": "Bangabandhu Sheikh Mujib Medical University (BSMMU)"
+  },
+  {
+    "doctor_id": "bf6e73a3-8554-4fc8-946d-75b1bc53ab71",
+    "doctor_name": "Md. Shamsuzzaman",
+    "specialty": [
+      "Pain Specialist",
+      "Anesthesiologist"
+    ],
+    "institution": "Bangabandhu Sheikh Mujib Medical University (BSMMU)",
+    "affiliation_id": "e325a801-2581-4d6a-9b39-610be1e78cad",
+    "location_name": "Japan Bangladesh Friendship Hospital"
+  },
+  {
+    "doctor_id": "9fc0c252-8ce3-451d-913c-a4b59d45d561",
+    "doctor_name": "Md. Sharif Bhuiyan",
+    "specialty": [
+      "Neurosurgeon"
+    ],
+    "institution": "Z.H. Sikder Women's Medical College Hospital",
+    "affiliation_id": "10e32e49-96d9-4295-a527-776f8a3a5f47",
+    "location_name": "Japan Bangladesh Friendship Hospital"
+  },
+  {
+    "doctor_id": "a1aa4889-37d5-4efc-9143-fddb28e24d40",
+    "doctor_name": "Md. Wahiduzzaman Bhuiyan",
+    "specialty": [
+      "Radiologist"
+    ],
+    "institution": "Universal Medical College",
+    "affiliation_id": "79a25823-a964-4fd7-92b4-b1fbb61a6eb6",
+    "location_name": "Popular Diagnostic Centre Ltd."
+  },
+  {
+    "doctor_id": "1a9feed1-e098-4ba6-85b4-ff3673084720",
+    "doctor_name": "Md. Waysek Faisal (Rajib)",
+    "specialty": [
+      "Cardiologist",
+      "Interventional Cardiologist"
+    ],
+    "institution": "National Institute of Cardiovascular Diseases (NICVD)",
+    "affiliation_id": "beec9f6e-472b-4361-90c5-fd178abc4f7e",
+    "location_name": "Alliance Hospital Limited"
+  },
+  {
+    "doctor_id": "e034b822-bdd7-4a72-b1b8-d75ace56b334",
+    "doctor_name": "Md. Zayedul Islam",
+    "specialty": [
+      "Hepatobiliary Surgeon",
+      "Laparoscopic Surgeon",
+      "Colorectal Surgeon",
+      "General Surgeon"
+    ],
+    "institution": "Shaheed Suhrawardy Medical College & Hospital",
+    "affiliation_id": "3866ac44-f760-4bc0-a655-84b8c1f2ec07",
+    "location_name": "Popular Diagnostic Centre Ltd."
+  },
+  {
+    "doctor_id": "fd4d51b8-a35e-4abd-8be6-af9e8aeb245c",
+    "doctor_name": "Merajul Islam (Pial)",
+    "specialty": [
+      "Orthopedic Surgeon"
+    ],
+    "institution": "National Institute of Traumatology and Orthopaedic Rehabilitation (NITOR)",
+    "affiliation_id": "01fc7592-45a1-469b-a9cf-1de3e2c6c128",
+    "location_name": "Radical Hospitals Limited"
+  },
+  {
+    "doctor_id": "447e6878-3608-44f0-ad13-658099cad669",
+    "doctor_name": "Minhaj Rahim Choudhury",
+    "specialty": [
+      "Medicine Specialist",
+      "Rheumatologist"
+    ],
+    "institution": "Bangabandhu Sheikh Mujib Medical University (BSMMU)",
+    "affiliation_id": "1aabe9bd-9f72-4dfd-b063-a5e5ff416a62",
+    "location_name": "Bangabandhu Sheikh Mujib Medical University (BSMMU)"
+  },
+  {
+    "doctor_id": "16464829-1664-450d-b778-c9cd61aa0b1c",
+    "doctor_name": "Minhajur Rahman Tushar",
+    "specialty": [
+      "Neonatologist",
+      "Child Specialist"
+    ],
+    "institution": "Bangabandhu Sheikh Mujib Medical University (PGI Hospital)",
+    "affiliation_id": "ecb7be5c-960e-4d4c-9972-f36e7816c94c",
+    "location_name": "Radical Hospitals Limited"
+  },
+  {
+    "doctor_id": "18c42f3b-c803-466a-9168-a60d87f8324a",
+    "doctor_name": "Mir Md. Rayhan",
+    "specialty": [
+      "Medicine Specialist",
+      "Family Physician / GP",
+      "Diabetologist"
+    ],
+    "institution": "City Medical College & Hospital",
+    "affiliation_id": "296b0ca5-5213-410c-8369-339751b7923e",
+    "location_name": "Radical Hospitals Limited"
+  },
+  {
+    "doctor_id": "3fd5b402-aa88-46ad-8fcd-ed34bc689ec8",
+    "doctor_name": "Mirza Golam Sarwar (Moon)",
+    "specialty": [
+      "Medicine Specialist",
+      "Hematologist"
+    ],
+    "institution": "National Institute of Cancer Research & Hospital (NICRH)",
+    "affiliation_id": "805e24ff-3f2e-42b8-afa7-f88307332ff2",
+    "location_name": "Alliance Hospital Limited"
+  },
+  {
+    "doctor_id": "9bcaca9c-9c18-489b-b593-8e72ec51326f",
+    "doctor_name": "Misbah Uddin Ahmed",
+    "specialty": [
+      "Urologist"
+    ],
+    "institution": "National Institute of Neurosciences & Hospital",
+    "affiliation_id": "66d4d172-07f5-4eb5-9481-cbec0809bf00",
+    "location_name": "Radical Hospitals Limited"
+  },
+  {
+    "doctor_id": "a5d3377c-318e-4c4d-a3ef-1dca8d5f4ebc",
+    "doctor_name": "M. Karim (Reza)",
+    "specialty": [
+      "Orthopedic Surgeon",
+      "Spine Surgeon"
+    ],
+    "institution": "National Institute of Traumatology and Orthopaedic Rehabilitation (NITOR)",
+    "affiliation_id": "5f2cae35-c68d-4157-bea7-144a90a3913c",
+    "location_name": "Alliance Hospital Limited"
+  },
+  {
+    "doctor_id": "3585db79-ffc6-45aa-8ef4-e47c68e1e484",
+    "doctor_name": "M. M. Mobin Chowdhury",
+    "specialty": [
+      "Laparoscopic Surgeon",
+      "Colorectal Surgeon",
+      "General Surgeon"
+    ],
+    "institution": "Uttara Mohila Medical College & Hospital, Dhaka",
+    "affiliation_id": "a95d4600-cabe-46cd-a057-35cfeef36ca5",
+    "location_name": "Radical Hospitals Limited"
+  },
+  {
+    "doctor_id": "92f90336-95af-440c-887f-d1b70b8423a1",
+    "doctor_name": "M. M. Monzur Hasan",
+    "specialty": [
+      "Medicine Specialist"
+    ],
+    "institution": "Shaheed Suhrawardy Medical College & Hospital",
+    "affiliation_id": "fc4b0fd8-6cb8-4eca-a5ff-b0ecb82a095c",
+    "location_name": "Victoria Healthcare Ltd."
+  },
+  {
+    "doctor_id": "b8fd83b4-3a5e-41cc-85be-fad97d08ced1",
+    "doctor_name": "Moazzem Hossain Talukdar",
+    "specialty": [
+      "Neurosurgeon",
+      "Spine Surgeon"
+    ],
+    "institution": "National Institute of Neuro Sciences",
+    "affiliation_id": "ee86e149-97b3-4551-b1ed-8b3210f24eee",
+    "location_name": "Trauma Center & Orthopedic Hospital (Pvt.) Ltd."
+  },
+  {
+    "doctor_id": "a28cfc06-1cb2-4343-b0c0-9648e32a921f",
+    "doctor_name": "Mohammad Ashrafuzzaman (Dinar)",
+    "specialty": [
+      "Medicine Specialist",
+      "Critical Care Specialist"
+    ],
+    "institution": "Dhaka Dental College",
+    "affiliation_id": "b9aab398-5d65-4f2d-9700-03ae2fa633a9",
+    "location_name": "Alliance Hospital Limited"
+  },
+  {
+    "doctor_id": "c204f960-57bb-4c90-8d6e-93937480afd8",
+    "doctor_name": "Mohammad Babul Mia",
+    "specialty": [
+      "Medicine Specialist",
+      "Cardiologist",
+      "Diabetologist"
+    ],
+    "institution": "Enam Medical College Hospital, Savar, Dhaka",
+    "affiliation_id": "21b55dca-76f0-4ba6-a095-2c39e74fc0aa",
+    "location_name": "Enam Medical College Hospital"
+  },
+  {
+    "doctor_id": "51df18ef-3ab7-46f8-8fd7-0d9f8e5a2ec7",
+    "doctor_name": "Mohammad Bayes Chowdhury",
+    "specialty": [
+      "Medicine Specialist"
+    ],
+    "institution": "Shaheed Suhrawardy Medical College Hospital",
+    "affiliation_id": "b4230ced-b32d-46df-8a7e-ff0ed81a678b",
+    "location_name": "Radical Hospitals Limited"
+  },
+  {
+    "doctor_id": "d2bb1339-7695-4bb2-9af0-b3886ad7ea26",
+    "doctor_name": "Mohammad Mahbub Ullah",
+    "specialty": [
+      "Radiologist"
+    ],
+    "institution": "National Institute of ENT, Tejgaon",
+    "affiliation_id": "1bf0c124-6efc-410f-aee1-89780f57c54d",
+    "location_name": "Popular Diagnostic Centre Ltd."
+  },
+  {
+    "doctor_id": "29d4350e-ed3a-4085-aa03-ff0fe599cc70",
+    "doctor_name": "Mohammad Obaidul Sarkar",
+    "specialty": [
+      "Child Specialist"
+    ],
+    "institution": "Shishu Department",
+    "affiliation_id": "878bd63e-557c-4f59-9da8-796017d3b8c1",
+    "location_name": "Radical Hospitals Limited"
+  },
+  {
+    "doctor_id": "3a2fb095-ce55-4fd2-9d4e-3fc0c872956a",
+    "doctor_name": "Mohammad Said Bin Aziz",
+    "specialty": [
+      "Laparoscopic Surgeon",
+      "Vascular Surgeon",
+      "Colorectal Surgeon",
+      "General Surgeon"
+    ],
+    "institution": "Bangabandhu Sheikh Mujib Medical University, Shahbagh, Dhaka",
+    "affiliation_id": "a3a3a2d7-605b-4442-aeb3-f2649888659e",
+    "location_name": "Radical Hospitals Limited"
+  },
+  {
+    "doctor_id": "36bbbf52-b48b-4f5d-a325-a924b4f65558",
+    "doctor_name": "Mohammad Saiduzzaman Jewel",
+    "specialty": [
+      "General Surgeon"
+    ],
+    "institution": "Sir Salimullah Medical College & Mitford Hospital",
+    "affiliation_id": "5b18f796-0b11-4613-a996-3aec667d62f9",
+    "location_name": "Popular Diagnostic Centre Ltd."
+  },
+  {
+    "doctor_id": "3f74f2b5-8f77-4452-9d06-ce04a855ffd3",
+    "doctor_name": "Mohiuddin Saiduzzaman",
+    "specialty": [
+      "Cardiologist"
+    ],
+    "institution": "Ibn Sina Medical College & Hospital",
+    "affiliation_id": "a62d6092-d5f8-4708-93a6-8ec6c38ec8dc",
+    "location_name": "Radical Hospitals Limited"
+  },
+  {
+    "doctor_id": "6488daf3-7935-4bad-8381-fbe84e775308",
+    "doctor_name": "Monalika Khatun M.K. Shelly",
+    "specialty": [
+      "Gynecologist & Obstetrician",
+      "Infertility Specialist",
+      "Laparoscopic Surgeon"
+    ],
+    "institution": "Holy Family Red Crescent Medical College Hospital",
+    "affiliation_id": "732f2a00-1ed8-4f2e-baf7-5da20b1cbb46",
+    "location_name": "Japan Bangladesh Friendship Hospital"
+  },
+  {
+    "doctor_id": "3c5f0e07-2457-48e4-822c-21757b0f8d7c",
+    "doctor_name": "Monirunnahar Rupa",
+    "specialty": [
+      "Nutritionist / Dietitian"
+    ],
+    "institution": "Alliance Hospital Limited",
+    "affiliation_id": "919f8f75-59e5-4d99-9f40-07e633d8ef57",
+    "location_name": "Alliance Hospital Limited"
+  },
+  {
+    "doctor_id": "bbd733a0-a766-43a5-8066-5f43afc07f49",
+    "doctor_name": "Mororshed Alam",
+    "specialty": [
+      "Nephrologist"
+    ],
+    "institution": "National Institute of Kidney Diseases and Urology (NIKDU)",
+    "affiliation_id": "d0346056-47e0-4d34-a3a4-fb57510a88f3",
+    "location_name": "Radical Hospitals Limited"
+  },
+  {
+    "doctor_id": "ee42d2ea-f7a7-42dc-ab78-f0d1b2d2c634",
+    "doctor_name": "Mostafa Aziz Suman",
+    "specialty": [
+      "Cancer Specialist"
+    ],
+    "institution": "National Institute of Cancer Research & Hospital, Dhaka",
+    "affiliation_id": "8b8422ad-f09c-433b-b5ab-fc4f6dc88a22",
+    "location_name": "Japan Bangladesh Friendship Hospital"
+  },
+  {
+    "doctor_id": "f48cf3de-ea09-4f7c-8ccf-dbf1b1b572ba",
+    "doctor_name": "Mst. Khaleda Akhtar",
+    "specialty": [
+      "Gynecologist & Obstetrician"
+    ],
+    "institution": "Northern International Medical College Hospital",
+    "affiliation_id": "b87e3e03-7192-43ca-aac6-58e8773d27ba",
+    "location_name": "Northern International Medical College Hospital"
+  },
+  {
+    "doctor_id": "cd36c802-826c-4fbd-a0ec-47f584b33020",
+    "doctor_name": "Mst. Shahnaj Pervin",
+    "specialty": [
+      "Cancer Surgeon",
+      "Breast Surgeon",
+      "Laparoscopic Surgeon",
+      "Colorectal Surgeon"
+    ],
+    "institution": "Shaheed Tajuddin Ahmed Medical College & Hospital, Gazipur",
+    "affiliation_id": "b1c4e2dc-54f2-46b0-bb67-3531f22404dc",
+    "location_name": "Popular Diagnostic Centre Ltd."
+  },
+  {
+    "doctor_id": "c7c45fbf-edad-454e-a853-faa8e69e16be",
+    "doctor_name": "Muhammad Nazmul Alam",
+    "specialty": [
+      "Medicine Specialist",
+      "Neurologist"
+    ],
+    "institution": "Shaheed Suhrawardy Medical College & Hospital",
+    "affiliation_id": "c8ce2064-744b-4836-be58-9a5f3aa4ab3f",
+    "location_name": "Trauma Center & Orthopedic Hospital (Pvt.) Ltd."
+  },
+  {
+    "doctor_id": "c7c45fbf-edad-454e-a853-faa8e69e16be",
+    "doctor_name": "Muhammad Nazmul Alam",
+    "specialty": [
+      "Medicine Specialist",
+      "Neurologist"
+    ],
+    "institution": "Shaheed Suhrawardy Medical College & Hospital",
+    "affiliation_id": "f773f9ba-85ea-4d65-b21d-34a2b7c5d8fe",
+    "location_name": "Shaheed Suhrawardy Medical College & Hospital"
+  },
+  {
+    "doctor_id": "87d7c723-fdda-43e8-b5a7-499d6335b0e9",
+    "doctor_name": "Muhammad Sayedul Arefin",
+    "specialty": [
+      "Medicine Specialist",
+      "Gastroenterologist"
+    ],
+    "institution": "Shaikh Russel National Gastroliver Institute & Hospital",
+    "affiliation_id": "2d271bc0-46ea-469a-ac07-cbbd00164a72",
+    "location_name": "Radical Hospitals Limited"
+  },
+  {
+    "doctor_id": "e210c88e-ef90-4e5a-8ca3-6471abe8015c",
+    "doctor_name": "Muhammad Shahinur Rahman",
+    "specialty": [
+      "Medicine Specialist",
+      "Chest Specialist"
+    ],
+    "institution": "National Institute of Diseases of the Chest and Hospital (NIDCH)",
+    "affiliation_id": "06bda5eb-8456-4234-bf5e-82b86852dcb3",
+    "location_name": "Radical Hospitals Limited"
+  },
+  {
+    "doctor_id": "c1e1be98-aae8-4099-9f9f-c3ccc6b268d3",
+    "doctor_name": "Muhammad Zafar Iqbal Jamali",
+    "specialty": [
+      "Cardiologist",
+      "Interventional Cardiologist"
+    ],
+    "institution": "Bangabandhu Sheikh Mujib Medical University (BSMMU)",
+    "affiliation_id": "2c9500fa-a75b-4c56-9143-d2a1e6359c66",
+    "location_name": "Bangabandhu Sheikh Mujib Medical University (BSMMU)"
+  },
+  {
+    "doctor_id": "c1e1be98-aae8-4099-9f9f-c3ccc6b268d3",
+    "doctor_name": "Muhammad Zafar Iqbal Jamali",
+    "specialty": [
+      "Cardiologist",
+      "Interventional Cardiologist"
+    ],
+    "institution": "Bangabandhu Sheikh Mujib Medical University (BSMMU)",
+    "affiliation_id": "b4d2ee4e-5ab3-448d-b181-b436b72f9978",
+    "location_name": "Japan Bangladesh Friendship Hospital"
+  },
+  {
+    "doctor_id": "ad651645-9232-4e2d-907c-89ec99c305ed",
+    "doctor_name": "Mu. Masud Alam",
+    "specialty": [
+      "Physical Medicine Specialist",
+      "Rheumatologist"
+    ],
+    "institution": "National Institute of Neurosciences & Hospital",
+    "affiliation_id": "a998ef8b-2b2c-4253-9bec-6d754b91a3bc",
+    "location_name": "Alliance Hospital Limited"
+  },
+  {
+    "doctor_id": "475ee655-b5c4-4b93-ad69-9e5bb3ddfda9",
+    "doctor_name": "Munira Ferdousi",
+    "specialty": [
+      "Gynecologist & Obstetrician",
+      "Laparoscopic Surgeon"
+    ],
+    "institution": "Shaheed Suhrawardy Medical College & Hospital",
+    "affiliation_id": "962f5f44-0a1d-4554-936e-06840c2e6c9b",
+    "location_name": "Radical Hospitals Limited"
+  },
+  {
+    "doctor_id": "abb762fa-c1f5-47f8-add9-b379c1b482df",
+    "doctor_name": "Nabid Farhan",
+    "specialty": [
+      "Psychiatrist"
+    ],
+    "institution": "National Institute of Mental Health (NIMH), Dhaka",
+    "affiliation_id": "76344a8f-8761-4f6a-b1ce-c8990d990766",
+    "location_name": "Popular Diagnostic Centre Ltd."
+  },
+  {
+    "doctor_id": "920dd579-2795-47d8-af29-413ce179bc92",
+    "doctor_name": "Nabil Junaed Siddiqui",
+    "specialty": [
+      "Orthopedic Surgeon"
+    ],
+    "institution": "Shaheed M Mansoor Ali Medical College & Hospital",
+    "affiliation_id": "bee92e1c-026b-4592-8a4b-249c02f0384f",
+    "location_name": "Radical Hospitals Limited"
+  },
+  {
+    "doctor_id": "296923b4-33a4-41b5-9452-012ddbb1f8ac",
+    "doctor_name": "Nadia Afroz",
+    "specialty": [
+      "Psychiatrist",
+      "Addiction Specialist"
+    ],
+    "institution": "National Institute of Mental Health & Hospital",
+    "affiliation_id": "cbac9fdf-9c1a-4ffa-9aec-653558d2ac9d",
+    "location_name": "Alliance Hospital Limited"
+  },
+  {
+    "doctor_id": "bcd560df-d315-4a90-aa32-821db69a6160",
+    "doctor_name": "Naima Ferdousi",
+    "specialty": [
+      "Orthopedic Surgeon"
+    ],
+    "institution": "NITOR (Zoo Hospital), Dhaka",
+    "affiliation_id": "27a6b037-5b43-415c-ba29-65791b47f591",
+    "location_name": "Alliance Hospital Limited"
+  },
+  {
+    "doctor_id": "857f731c-18ad-40e9-aaac-19648cee7ab1",
+    "doctor_name": "Naresh Chandra Mandal",
+    "specialty": [
+      "Cardiac Surgeon",
+      "Vascular Surgeon"
+    ],
+    "institution": "National Institute of Cardiovascular Diseases (NICVD)",
+    "affiliation_id": "f7c44b25-f1be-47c3-a370-35ca81b987a8",
+    "location_name": "Victoria Healthcare Ltd."
+  },
+  {
+    "doctor_id": "141ae852-52e7-48c5-990c-a570848d5943",
+    "doctor_name": "Nasreen Akter Kakoli",
+    "specialty": [
+      "Hematologist"
+    ],
+    "institution": "Bangabandhu Sheikh Mujib Medical University (BSMMU)",
+    "affiliation_id": "b56a036b-c595-49bb-b0ad-035c3cdd36ab",
+    "location_name": "Radical Hospitals Limited"
+  },
+  {
+    "doctor_id": "01a0e8bb-c7b4-733f-9963-2681f17cfa2f",
+    "doctor_name": "National Professor Dr. Shahla Khatun",
+    "specialty": [
+      "Gynecologist & Obstetrician"
+    ],
+    "institution": "Bangabandhu Sheikh Mujib Medical University (BSMMU)",
+    "affiliation_id": "01a0e8bb-c7c4-7b9c-b544-4bcf0e466707",
+    "location_name": "Green Life Hospital"
+  },
+  {
+    "doctor_id": "4fdc4c90-d81c-4f87-8d3c-15bb83e253a0",
+    "doctor_name": "Nawsabah Nur",
+    "specialty": [
+      "Medicine Specialist"
+    ],
+    "institution": "Sir Salimullah Medical College & Mitford Hospital",
+    "affiliation_id": "ea847076-e1c7-4a7b-862e-b811cedc63ff",
+    "location_name": "Popular Diagnostic Centre Ltd."
+  },
+  {
+    "doctor_id": "fb43fbe7-0f30-43a1-81ef-7f7b59ef39ec",
+    "doctor_name": "Nazib Mohiuddin",
+    "specialty": [
+      "Medicine Specialist"
+    ],
+    "institution": "",
+    "affiliation_id": "023191d9-6875-45be-97a4-cce2217d69cd",
+    "location_name": "Popular Diagnostic Centre Ltd."
+  },
+  {
+    "doctor_id": "d5957335-1bef-424a-9aa3-28aed6cf1b06",
+    "doctor_name": "Nazmul Haque Sarkar",
+    "specialty": [
+      "Dermatologist",
+      "Sexologist",
+      "Plastic Surgeon"
+    ],
+    "institution": "Shaheed Monsur Ali Medical College & Hospital, Uttara, Dhaka",
+    "affiliation_id": "acc9416d-99cd-4dd8-a146-3f368c4711fa",
+    "location_name": "Radical Hospitals Limited"
+  },
+  {
+    "doctor_id": "9dc3f655-82f5-4a53-a67b-41b3d1ce2069",
+    "doctor_name": "Nihar Ranjan Das",
+    "specialty": [
+      "Medicine Specialist"
+    ],
+    "institution": "National Institute of Traumatology and Orthopaedic Rehabilitation (NITOR)",
+    "affiliation_id": "ff403dc4-c71e-4c90-9c4b-41256371b82f",
+    "location_name": "Alliance Hospital Limited"
+  },
+  {
+    "doctor_id": "d50c5338-387b-45fa-a85e-ca216b3e7ffe",
+    "doctor_name": "Nishat Jahan",
+    "specialty": [
+      "Neonatologist",
+      "Child Specialist"
+    ],
+    "institution": "Bangladesh Shishu Hospital & Institute",
+    "affiliation_id": "893aa8b2-8a89-476a-b307-672281f890eb",
+    "location_name": "Alliance Hospital Limited"
+  },
+  {
+    "doctor_id": "907e11bc-6dbf-4dcc-aa9f-0469b42cd241",
+    "doctor_name": "Noushin Taslima Hossain",
+    "specialty": [
+      "Cancer Specialist"
+    ],
+    "institution": "Ahsania Mission Cancer & General Hospital",
+    "affiliation_id": "0a824659-37d0-4a4a-8451-ae79f83d4edc",
+    "location_name": "Radical Hospitals Limited"
+  },
+  {
+    "doctor_id": "810b6651-9285-4382-ab52-ab0781ffb177",
+    "doctor_name": "Nusrat Akhtar",
+    "specialty": [
+      "Gynecologist & Obstetrician"
+    ],
+    "institution": "Ahsania Mission Cancer & General Hospital",
+    "affiliation_id": "12548607-dda2-4e5b-b1d1-d0729390097a",
+    "location_name": "Radical Hospitals Limited"
+  },
+  {
+    "doctor_id": "8e3125db-2df6-43d5-beee-1f3cbb96d2ee",
+    "doctor_name": "Nusrat Jahan Dusti",
+    "specialty": [
+      "Dermatologist",
+      "Sexologist",
+      "Plastic Surgeon"
+    ],
+    "institution": "Sir Salimullah Medical College & Mitford Hospital",
+    "affiliation_id": "23c598a8-50c1-451d-8844-2594f56bc1d3",
+    "location_name": "Japan Bangladesh Friendship Hospital"
+  },
+  {
+    "doctor_id": "c57bea87-21aa-42d8-ae73-5708d3f418d8",
+    "doctor_name": "Nusrat Sharmin",
+    "specialty": [
+      "Dentist"
+    ],
+    "institution": "Ibn Sina Medical Imaging Center",
+    "affiliation_id": "8808ea8c-5a2a-413f-9a60-2ba2bc35f5a7",
+    "location_name": "Popular Diagnostic Centre Ltd."
+  },
+  {
+    "doctor_id": "f626a61a-03b8-4748-9b85-234f2f94a327",
+    "doctor_name": "Parthasarathi Mazumdar",
+    "specialty": [
+      "Pediatric Surgeon"
+    ],
+    "institution": "Comilla Medical College Hospital",
+    "affiliation_id": "16a1d4a8-bf2b-441f-9bb7-e335613b22a8",
+    "location_name": "Japan Bangladesh Friendship Hospital"
+  },
+  {
+    "doctor_id": "01a0e8bb-c422-7a4e-b757-b6db1f5e8a03",
+    "doctor_name": "Pizush Paul",
+    "specialty": [
+      "Dermatologist",
+      "Sexologist"
+    ],
+    "institution": "Green Life Medical College & Hospital",
+    "affiliation_id": "01a0e8bb-c430-7abd-9c7c-e190d38e5dc0",
+    "location_name": "Green Life Hospital"
+  },
+  {
+    "doctor_id": "01a0e8bb-c3c9-7750-9f55-b05cdc439b74",
+    "doctor_name": "Prof. Dr. Golam Mohiuddin Akbar Chy.",
+    "specialty": [
+      "Thoracic Surgeon"
+    ],
+    "institution": "National Institute of Diseases of the Chest & Hospital (NIDCH)",
+    "affiliation_id": "01a0e8bb-c3d8-7ba7-be0f-368a411ae38c",
+    "location_name": "Green Life Hospital"
+  },
+  {
+    "doctor_id": "01a0e8bb-c8ac-7d83-a9b0-da5df16650c4",
+    "doctor_name": "Prof. Dr. M. A. (Mohiuddin Ahmed) Khan",
+    "specialty": [
+      "Hematologist"
+    ],
+    "institution": "Dhaka Medical College & Hospital (DMCH)",
+    "affiliation_id": "01a0e8bb-c8bd-78de-a004-677e52c76d7a",
+    "location_name": "Green Life Hospital"
+  },
+  {
+    "doctor_id": "01a0e8bb-c348-7c44-8f8b-02e2dfc942bf",
+    "doctor_name": "Professor Dr. Munshi Md. Mojibur Rahman",
+    "specialty": [
+      "Cardiac Surgeon",
+      "Vascular Surgeon"
+    ],
+    "institution": "Armed Forces Medical College (AFMC) & CMH",
+    "affiliation_id": "01a0e8bb-c358-7752-9599-fd367cf79754",
+    "location_name": "Green Life Hospital"
+  },
+  {
+    "doctor_id": "01a0e8bb-c31c-784d-bc8e-fbc035b2f138",
+    "doctor_name": "Prof. Md. Jalal Uddin",
+    "specialty": [
+      "Cardiac Surgeon",
+      "Vascular Surgeon"
+    ],
+    "institution": "Green Life Medical College & Hospital",
+    "affiliation_id": "01a0e8bb-c32b-73a1-bbbb-64ccd3bfeda5",
+    "location_name": "Green Life Hospital"
+  },
+  {
+    "doctor_id": "01a0e8bb-c877-728a-bdbb-8637ce80a3e3",
+    "doctor_name": "Prof. Tripti Rani Das",
+    "specialty": [
+      "Gynecologist & Obstetrician"
+    ],
+    "institution": "Bangabandhu Sheikh Mujib Medical University (BSMMU)",
+    "affiliation_id": "01a0e8bb-c889-7bfd-96e2-c8eb933c4182",
+    "location_name": "Green Life Hospital"
+  },
+  {
+    "doctor_id": "9c951e48-75d1-4a0c-ace0-ab2d575fd9c9",
+    "doctor_name": "Purnendu Biswas",
+    "specialty": [
+      "Orthopedic Surgeon",
+      "Spine Surgeon"
+    ],
+    "institution": "Shaheed Tajuddin Ahmad Medical College, Gazipur",
+    "affiliation_id": "d7d89686-13a0-4105-9645-e9b142d18e47",
+    "location_name": "Alliance Hospital Limited"
+  },
+  {
+    "doctor_id": "01a0e8bb-c747-7056-92e0-876b7dec41e8",
+    "doctor_name": "Quayuma Khanam (Keya)",
+    "specialty": [
+      "Gynecologist & Obstetrician"
+    ],
+    "institution": "Bangabandhu Sheikh Mujib Medical University (BSMMU)",
+    "affiliation_id": "01a0e8bb-c753-77ba-b512-c473d4d1171b",
+    "location_name": "Green Life Hospital"
+  },
+  {
+    "doctor_id": "3cbcca29-5d79-48c4-bfc2-020a6add4c23",
+    "doctor_name": "Rabeya Parvin",
+    "specialty": [
+      "Gynecologist & Obstetrician"
+    ],
+    "institution": "Shaheed Suhrawardy Medical College Hospital",
+    "affiliation_id": "c6d42a63-6b30-477b-abb3-55a0c3899701",
+    "location_name": "Japan Bangladesh Friendship Hospital"
+  },
+  {
+    "doctor_id": "d6c80c06-b586-46c0-a499-ea3289fe2e7a",
+    "doctor_name": "Rabeya Sultana",
+    "specialty": [
+      "Gynecological Oncologist",
+      "Gynecologist & Obstetrician"
+    ],
+    "institution": "National Institute of Cancer Research & Hospital",
+    "affiliation_id": "8d967b93-7f99-4b6b-a945-de405c228d98",
+    "location_name": "Alliance Hospital Limited"
+  },
+  {
+    "doctor_id": "f17e41cb-f3f7-4758-b88c-44519e214ee1",
+    "doctor_name": "Rajatun Nayeem Magalin",
+    "specialty": [
+      "Neurologist"
+    ],
+    "institution": "National Institute of Neurosciences & Hospital",
+    "affiliation_id": "41d52639-21c4-4ade-a9c1-b2fe6746a870",
+    "location_name": "Japan Bangladesh Friendship Hospital"
+  },
+  {
+    "doctor_id": "51f980a3-1fd8-4c33-be39-d41a005846c4",
+    "doctor_name": "Rasel Ahmed Khan Lodi",
+    "specialty": [
+      "Diabetologist",
+      "Laparoscopic Surgeon",
+      "Colorectal Surgeon",
+      "General Surgeon"
+    ],
+    "institution": "Delta Medical College Hospital, Dhaka",
+    "affiliation_id": "9113ab7c-c644-44b6-a04f-05b3ce0dc7be",
+    "location_name": "Delta Medical College Hospital"
+  },
+  {
+    "doctor_id": "51f980a3-1fd8-4c33-be39-d41a005846c4",
+    "doctor_name": "Rasel Ahmed Khan Lodi",
+    "specialty": [
+      "Diabetologist",
+      "Laparoscopic Surgeon",
+      "Colorectal Surgeon",
+      "General Surgeon"
+    ],
+    "institution": "Delta Medical College Hospital, Dhaka",
+    "affiliation_id": "ac30bb10-f281-410e-878f-4c867dde06d5",
+    "location_name": "Japan Bangladesh Friendship Hospital"
+  },
+  {
+    "doctor_id": "a3b8973b-c275-401d-926e-a6cb53349200",
+    "doctor_name": "Rashed Jahangir Kabir",
+    "specialty": [
+      "Cancer Specialist",
+      "Pediatric Oncologist",
+      "Child Specialist"
+    ],
+    "institution": "National Institute of Cancer Research & Hospital",
+    "affiliation_id": "61ba103c-766c-48d6-ade1-0fb5748af9e2",
+    "location_name": "Japan Bangladesh Friendship Hospital"
+  },
+  {
+    "doctor_id": "f1ad8411-3752-48b3-af6d-6d5d3150622a",
+    "doctor_name": "Rebeka Tarannum (Shampy)",
+    "specialty": [
+      "Gynecologist & Obstetrician",
+      "Laparoscopic Surgeon"
+    ],
+    "institution": "Sir Salimullah Medical College & Mitford Hospital",
+    "affiliation_id": "26edb49d-ac10-4bd3-ab5b-471eae33bd98",
+    "location_name": "Radical Hospitals Limited"
+  },
+  {
+    "doctor_id": "4f03844f-581a-432b-b7f3-eb76dbb0f91e",
+    "doctor_name": "Rezaul Islam",
+    "specialty": [
+      "Diabetologist",
+      "Orthopedic Surgeon"
+    ],
+    "institution": "Uttara Adhunik Medical College and Hospital",
+    "affiliation_id": "a0de7a7c-a6be-4002-83aa-42dfc885c5be",
+    "location_name": "Radical Hospitals Limited"
+  },
+  {
+    "doctor_id": "4499b7b6-8758-4f11-aa6a-b01e4b7418f4",
+    "doctor_name": "Romana Akhter Happy",
+    "specialty": [
+      "Child Specialist",
+      "Pediatric Neurologist"
+    ],
+    "institution": "National Institute of Neurosciences & Hospital",
+    "affiliation_id": "f1cfe7a4-be6e-4f19-9766-b8ce5eeb14a1",
+    "location_name": "Alliance Hospital Limited"
+  },
+  {
+    "doctor_id": "724e54c5-8516-4c3c-84fd-a0159abbab1b",
+    "doctor_name": "Ruhul Amin",
+    "specialty": [
+      "Pediatric Pulmonologist",
+      "Child Specialist"
+    ],
+    "institution": "Dhaka Shishu Hospital, Dhaka",
+    "affiliation_id": "1a67aad8-6d81-4843-a38d-40ea557742af",
+    "location_name": "Japan Bangladesh Friendship Hospital"
+  },
+  {
+    "doctor_id": "724e54c5-8516-4c3c-84fd-a0159abbab1b",
+    "doctor_name": "Ruhul Amin",
+    "specialty": [
+      "Pediatric Pulmonologist",
+      "Child Specialist"
+    ],
+    "institution": "Dhaka Shishu Hospital, Dhaka",
+    "affiliation_id": "dbeadcb3-e335-4aa6-baf9-7f9e6c65cd67",
+    "location_name": "Dhaka Medical College Hospital"
+  },
+  {
+    "doctor_id": "4bfc1a3d-2a0a-4fa3-a0b4-602658067021",
+    "doctor_name": "Rumana Selim",
+    "specialty": [
+      "Endocrinologist",
+      "Child Specialist"
+    ],
+    "institution": "Uttara East Medical College Hospital",
+    "affiliation_id": "a19d755f-ae4e-4269-b9b8-a2d5156dde08",
+    "location_name": "Radical Hospitals Limited"
+  },
+  {
+    "doctor_id": "19e54e87-d4d4-4459-bc14-dae7da39ed8e",
+    "doctor_name": "Runa Layla",
+    "specialty": [
+      "Gynecologist & Obstetrician",
+      "Infertility Specialist",
+      "Laparoscopic Surgeon"
+    ],
+    "institution": "City Medical College & Hospital",
+    "affiliation_id": "460de742-a4c3-4207-9d60-730c4fd8cb48",
+    "location_name": "Radical Hospitals Limited"
+  },
+  {
+    "doctor_id": "0d57043a-a352-47b5-9d26-443436afbf1e",
+    "doctor_name": "Rushaida Haque",
+    "specialty": [
+      "Radiologist"
+    ],
+    "institution": "Bangladesh Medical College & Hospital",
+    "affiliation_id": "3387d10c-2e3c-42bb-ab80-18787ed14b48",
+    "location_name": "Popular Diagnostic Centre Ltd."
+  },
+  {
+    "doctor_id": "1d3dc7e0-969a-470d-b648-1197304a6370",
+    "doctor_name": "Rushalda Haque",
+    "specialty": [
+      "Radiologist"
+    ],
+    "institution": "Bangladesh Medical College Hospital",
+    "affiliation_id": "307848b9-3288-405d-9979-41d28284de6e",
+    "location_name": "Popular Diagnostic Centre Ltd."
+  },
+  {
+    "doctor_id": "21003738-f3dd-4f15-bf71-fac68a77bf68",
+    "doctor_name": "Sabina Islam",
+    "specialty": [
+      "Breast Surgeon",
+      "Plastic Surgeon"
+    ],
+    "institution": "Radical Hospitals Limited",
+    "affiliation_id": "171f1dfc-14c4-4f98-bead-43ac1c1dca33",
+    "location_name": "Radical Hospitals Limited"
+  },
+  {
+    "doctor_id": "f6124b62-7745-4f1d-a5d9-18b2d0db2647",
+    "doctor_name": "Sadia Sifat",
+    "specialty": [
+      "Family Physician / GP",
+      "Chest Specialist"
+    ],
+    "institution": "Japan Bangladesh Friendship Hospital",
+    "affiliation_id": "9eec52c5-12ee-4c55-b10a-4fc9fba73a1d",
+    "location_name": "Japan Bangladesh Friendship Hospital"
+  },
+  {
+    "doctor_id": "01f55d6e-3f79-4ebf-a414-10f017193226",
+    "doctor_name": "Sadiya Mahfuza Khanam",
+    "specialty": [
+      "Gynecologist & Obstetrician",
+      "Laparoscopic Surgeon"
+    ],
+    "institution": "Dhaka Medical College & Hospital",
+    "affiliation_id": "1e4ab31d-ec6e-4cf1-9583-df3b94d6f94d",
+    "location_name": "Radical Hospitals Limited"
+  },
+  {
+    "doctor_id": "18ab9f24-1ac7-4afc-82d7-acce8d5696bd",
+    "doctor_name": "Safiul Azam Qadri",
+    "specialty": [
+      "Medicine Specialist",
+      "Chest Specialist"
+    ],
+    "institution": "National Institute of Diseases of the Chest and Hospital, Mohakhali, Dhaka",
+    "affiliation_id": "a953d3d9-e205-4fb0-9bd6-a4bb8ea8f614",
+    "location_name": "National Institute of Diseases of the Chest and Hospital"
+  },
+  {
+    "doctor_id": "568c5892-bfaa-4915-8c77-b5e4e612cd1c",
+    "doctor_name": "Saiyan Faria Setu",
+    "specialty": [
+      "Gynecologist & Obstetrician"
+    ],
+    "institution": "Sir Salimullah Medical College & Mitford Hospital",
+    "affiliation_id": "f2707026-1ee6-4d11-be40-286c20d22795",
+    "location_name": "Popular Diagnostic Centre Ltd."
+  },
+  {
+    "doctor_id": "3db6fa71-383f-4d96-b4b1-cfe7bbd0ce34",
+    "doctor_name": "Sajjad Hossain",
+    "specialty": [
+      "Medicine Specialist",
+      "Diabetologist"
+    ],
+    "institution": "Hridaypur General Hospital",
+    "affiliation_id": "a2f1f40f-713c-44e9-b4d7-dda8ffd28605",
+    "location_name": "Radical Hospitals Limited"
+  },
+  {
+    "doctor_id": "743d76c9-a0be-4761-94ca-d8555da7bd19",
+    "doctor_name": "Sakib Sarwat Haque",
+    "specialty": [
+      "Colorectal Surgeon",
+      "General Surgeon"
+    ],
+    "institution": "Dr. Fazlul Haque Colorectal Hospital Limited",
+    "affiliation_id": "c41b147a-e5cf-4dc5-8744-f7d2b337c718",
+    "location_name": "Dr. Fazlul Haque Colorectal Hospital Limited"
+  },
+  {
+    "doctor_id": "de7acfd6-2d73-40ab-a9d4-01ce685d9f42",
+    "doctor_name": "Salma Khatun",
+    "specialty": [
+      "Radiologist"
+    ],
+    "institution": "Shaheed Suhrawardy Medical College & Hospital",
+    "affiliation_id": "3ee1d1d7-af03-488d-8cfe-48bf48669120",
+    "location_name": "Popular Diagnostic Centre Ltd."
+  },
+  {
+    "doctor_id": "01a0e8bb-c626-777a-bcf6-ce02a6ea0c24",
+    "doctor_name": "Samia Shihab Uddin",
+    "specialty": [
+      "General Surgeon"
+    ],
+    "institution": "Green Life Medical College & Hospital",
+    "affiliation_id": "01a0e8bb-c636-73d8-830d-3944bcbc72ed",
+    "location_name": "Green Life Hospital"
+  },
+  {
+    "doctor_id": "29c01ca3-be48-498b-91ca-318e7f83c824",
+    "doctor_name": "Samshad Jahan Shelly",
+    "specialty": [
+      "Gynecologist & Obstetrician",
+      "Laparoscopic Surgeon"
+    ],
+    "institution": "United Medical College Hospital & United Health Care",
+    "affiliation_id": "72f909e2-e814-491d-8d6c-cfa85de2fb59",
+    "location_name": "Japan Bangladesh Friendship Hospital"
+  },
+  {
+    "doctor_id": "e2205e3e-d99f-4dbe-a08c-567531408964",
+    "doctor_name": "Sanajida Afarin",
+    "specialty": [
+      "Gynecologist & Obstetrician"
+    ],
+    "institution": "Shaheed Mansur Ali Medical College & Hospital",
+    "affiliation_id": "f647eb53-a7e1-42b2-9c3f-8e6cabb14b7a",
+    "location_name": "Radical Hospitals Limited"
+  },
+  {
+    "doctor_id": "e9188fab-0e47-4960-8d09-b1bf6bbc4265",
+    "doctor_name": "Sania Rafat",
+    "specialty": [
+      "Radiologist"
+    ],
+    "institution": "Popular Diagnostic Centre Ltd.",
+    "affiliation_id": "e5c577a1-9f86-4c9a-a621-14ec1d3b0285",
+    "location_name": "Popular Diagnostic Centre Ltd."
+  },
+  {
+    "doctor_id": "4728bf65-769f-4fd1-89ea-9f379fad61b1",
+    "doctor_name": "Sanjay Sinha",
+    "specialty": [
+      "Orthopedic Surgeon"
+    ],
+    "institution": "National Institute of Traumatology and Orthopaedic Rehabilitation (NITOR)",
+    "affiliation_id": "49c9b9a7-43be-455a-9628-bfe0d7769eaf",
+    "location_name": "National Institute of Traumatology and Orthopaedic Rehabilitation (NITOR)"
+  },
+  {
+    "doctor_id": "2f688909-a18c-4522-8188-e013143a8523",
+    "doctor_name": "S Biswas Sajal",
+    "specialty": [
+      "Gastroenterologist",
+      "Hepatologist"
+    ],
+    "institution": "Shaheed Suhrawardy Medical College Hospital",
+    "affiliation_id": "6349d654-0fde-4807-88ee-41e1bc23ec8f",
+    "location_name": "Alliance Hospital Limited"
+  },
+  {
+    "doctor_id": "dee3893f-8cf3-4dc2-a148-d4215d0ddbb1",
+    "doctor_name": "Shah Jesmin Bachir (Tamanna)",
+    "specialty": [
+      "Gynecologist & Obstetrician",
+      "Infertility Specialist"
+    ],
+    "institution": "Dhaka Medical College Hospital",
+    "affiliation_id": "5d08c2c8-4c4b-4387-9efc-100a37551b9f",
+    "location_name": "Radical Hospitals Limited"
+  },
+  {
+    "doctor_id": "765a406b-8447-49c3-844d-214349e1c1e8",
+    "doctor_name": "Shah Sikandar Tuhin",
+    "specialty": [
+      "ENT Specialist",
+      "Head & Neck Surgeon"
+    ],
+    "institution": "Shaheed Suhrawardy Medical College & Hospital",
+    "affiliation_id": "60f43286-e15b-4dc7-b1f9-28a66151dbe8",
+    "location_name": "Shaheed Suhrawardy Medical College & Hospital"
+  },
+  {
+    "doctor_id": "c43ef86e-cc06-4430-8fe6-9365490cec03",
+    "doctor_name": "Shaila Sagar",
+    "specialty": [
+      "Breast Surgeon",
+      "Laparoscopic Surgeon",
+      "Orthopedic Surgeon",
+      "Colorectal Surgeon",
+      "General Surgeon"
+    ],
+    "institution": "Bangladesh Institute of Health Sciences (BIHS)",
+    "affiliation_id": "620f990f-0656-4100-b883-ad934d84612c",
+    "location_name": "Alliance Hospital Limited"
+  },
+  {
+    "doctor_id": "111b63b9-44ff-4ec1-99cd-68caa9bb3dbd",
+    "doctor_name": "Shamima Alam",
+    "specialty": [
+      "Dentist",
+      "Maxillofacial Surgeon"
+    ],
+    "institution": "Bangabandhu Sheikh Mujib Medical University (BSMMU)",
+    "affiliation_id": "911d3dfc-e458-404f-b2c9-449b82c358d8",
+    "location_name": "Japan Bangladesh Friendship Hospital"
+  },
+  {
+    "doctor_id": "18cf232d-b647-4b9d-919c-69b8df6ba317",
+    "doctor_name": "Shamina Akhter",
+    "specialty": [
+      "Gynecologist & Obstetrician"
+    ],
+    "institution": "Dhaka Medical College Hospital",
+    "affiliation_id": "197f63ee-c244-4fed-89a5-4187b2140b11",
+    "location_name": "Japan Bangladesh Friendship Hospital"
+  },
+  {
+    "doctor_id": "1206f4fe-8bc9-4a79-871a-a2564659cc45",
+    "doctor_name": "Shamiul Islam Sadi",
+    "specialty": [
+      "Pathologist"
+    ],
+    "institution": "Mugda Medical College & Hospital",
+    "affiliation_id": "961a8f3d-d16a-41db-882f-7c629657f6ae",
+    "location_name": "Anwer Khan Modern Medical College Hospital"
+  },
+  {
+    "doctor_id": "f9f3acc7-b0f0-45bc-bc98-f1965e3492eb",
+    "doctor_name": "Shamsi Ara Begum",
+    "specialty": [
+      "Radiologist"
+    ],
+    "institution": "BIRDEM General Hospital",
+    "affiliation_id": "5c13e6bd-9640-4a40-8b85-12e531e74f9b",
+    "location_name": "Popular Diagnostic Centre Ltd."
+  },
+  {
+    "doctor_id": "8802edbc-3b79-40f6-9ca5-5594e67567ac",
+    "doctor_name": "Sharmin Akhtar Rupa",
+    "specialty": [
+      "Radiologist"
+    ],
+    "institution": "Popular Medical College Hospital",
+    "affiliation_id": "3b2c96d8-2ab0-4e86-a4da-68da53c1eb6c",
+    "location_name": "Popular Diagnostic Centre Ltd."
+  },
+  {
+    "doctor_id": "28c8d07a-8464-4e7d-9451-4e73080d8da9",
+    "doctor_name": "Sharmin Akter Rupa",
+    "specialty": [
+      "Radiologist"
+    ],
+    "institution": "Popular Medical College & Hospital",
+    "affiliation_id": "79981692-39bd-4028-a130-db872e8f724c",
+    "location_name": "Popular Diagnostic Centre Ltd."
+  },
+  {
+    "doctor_id": "37b7e945-b427-4661-a455-17c8b88c6bc9",
+    "doctor_name": "Sharmistha Dey",
+    "specialty": [
+      "Radiologist"
+    ],
+    "institution": "BIRDEM General Hospital",
+    "affiliation_id": "c48961d6-7310-4bf8-a6db-7e1e422ed362",
+    "location_name": "Popular Diagnostic Centre Ltd."
+  },
+  {
+    "doctor_id": "ccecfa11-44c0-4f8b-973e-b3ade5eff58c",
+    "doctor_name": "Shayla Imam Kanta",
+    "specialty": [
+      "Child Specialist",
+      "Pediatric Neurologist"
+    ],
+    "institution": "Bangladesh Shishu Hospital & Institute",
+    "affiliation_id": "3408fc5c-7b0c-49a4-8674-195cc196c1e9",
+    "location_name": "Alliance Hospital Limited"
+  },
+  {
+    "doctor_id": "1e719414-8302-4125-b887-86b49066fbac",
+    "doctor_name": "Sirajum Munira",
+    "specialty": [
+      "Diabetologist",
+      "Endocrinologist"
+    ],
+    "institution": "Sheikh Hasina National Institute of Burn and Plastic Surgery, Dhaka",
+    "affiliation_id": "03f8ee43-6e70-4f36-b489-fcca95e54076",
+    "location_name": "Alliance Hospital Limited"
+  },
+  {
+    "doctor_id": "585cae25-8d22-4a28-8753-b3e36be751af",
+    "doctor_name": "Sk. Ashraf Ullah",
+    "specialty": [
+      "Orthopedic Surgeon",
+      "Spine Surgeon"
+    ],
+    "institution": "Northern International Medical College Hospital",
+    "affiliation_id": "c1cfd5b6-6396-4774-a484-4af337c9c618",
+    "location_name": "Northern International Medical College Hospital"
+  },
+  {
+    "doctor_id": "65b060ef-e468-477e-a1fe-04660f146561",
+    "doctor_name": "S.M. Amir Hossain",
+    "specialty": [
+      "Orthopedic Surgeon",
+      "Spine Surgeon",
+      "General Surgeon"
+    ],
+    "institution": "Shaheed Suhrawardy Medical College & Hospital",
+    "affiliation_id": "9a07bfe9-3dc6-47cd-a9eb-d6881328b7d5",
+    "location_name": "Victoria Healthcare Ltd."
+  },
+  {
+    "doctor_id": "1ac6feb4-92f2-440a-8285-eb3f9a7179e5",
+    "doctor_name": "S. M. Farid Ahmed",
+    "specialty": [
+      "Breast Surgeon"
+    ],
+    "institution": "NHS Trust, UK",
+    "affiliation_id": "65a0b3e5-4ba3-452e-bbb7-50bf1c936d99",
+    "location_name": "Japan Bangladesh Friendship Hospital"
+  },
+  {
+    "doctor_id": "f2efb4eb-b2e6-4e93-a7bf-d83b8deb703a",
+    "doctor_name": "S.M. Jihadul Islam Sohag",
+    "specialty": [
+      "Orthopedic Surgeon"
+    ],
+    "institution": "Northern International Medical College Hospital",
+    "affiliation_id": "c046dad7-133d-4f38-a0db-0fd1d8018d71",
+    "location_name": "Northern International Medical College Hospital"
+  },
+  {
+    "doctor_id": "e23c1421-6ebc-478b-80d4-2cbc06c242c4",
+    "doctor_name": "S M Kamrul Aktar",
+    "specialty": [
+      "Breast Surgeon",
+      "Laparoscopic Surgeon",
+      "Colorectal Surgeon",
+      "General Surgeon"
+    ],
+    "institution": "Shaheed Suhrawardy Medical College & Hospital",
+    "affiliation_id": "8e2ca89f-b58e-4d39-be2e-45420bbaf178",
+    "location_name": "Trauma Center & Orthopedic Hospital (Pvt.) Ltd."
+  },
+  {
+    "doctor_id": "cd735c64-50fe-454e-aaf9-1f8a45331fae",
+    "doctor_name": "SM Nazmul Islam",
+    "specialty": [
+      "Pediatric Surgeon"
+    ],
+    "institution": "Bangladesh Shishu Hospital & Institute",
+    "affiliation_id": "f1c05f2f-a639-43e8-b8b0-74a4873eb7b6",
+    "location_name": "Alliance Hospital Limited"
+  },
+  {
+    "doctor_id": "01a0e8bb-c39e-75aa-8535-d925b9d23a66",
+    "doctor_name": "S M Tajdit Rahman (Tanim)",
+    "specialty": [
+      "Thoracic Surgeon"
+    ],
+    "institution": "National Institute of Diseases of the Chest & Hospital (NIDCH)",
+    "affiliation_id": "01a0e8bb-c3ac-75e3-a30f-f03e7f9b9d15",
+    "location_name": "Green Life Hospital"
+  },
+  {
+    "doctor_id": "1690ab0d-4b61-421e-a022-32d0a0b8c1f8",
+    "doctor_name": "Somen Sarkar",
+    "specialty": [
+      "Neurosurgeon"
+    ],
+    "institution": "National Institute of Neurosciences & Hospital, Dhaka",
+    "affiliation_id": "c182214a-c0c4-47c8-9a45-c2fa754f4b3f",
+    "location_name": "Trauma Center & Orthopedic Hospital (Pvt.) Ltd."
+  },
+  {
+    "doctor_id": "01a0e8bb-c243-7f3f-934a-5a326c57422f",
+    "doctor_name": "Sudhakar Sarker",
+    "specialty": [
+      "Cardiologist",
+      "Interventional Cardiologist"
+    ],
+    "institution": "Bangladesh Specialized Hospital",
+    "affiliation_id": "01a0e8bb-c255-708c-b99b-64046d1bb5c6",
+    "location_name": "Green Life Hospital"
+  },
+  {
+    "doctor_id": "4e1377b8-f70f-43a8-b16c-9107efd0c7a1",
+    "doctor_name": "Sumaiya Parvin",
+    "specialty": [
+      "Dermatologist",
+      "Sexologist",
+      "Allergist & Immunologist"
+    ],
+    "institution": "Sir Salimullah Medical College & Mitford Hospital",
+    "affiliation_id": "87af4bba-ef74-4279-b23e-7cbbe5abca58",
+    "location_name": "Alliance Hospital Limited"
+  },
+  {
+    "doctor_id": "ce80ecd8-e330-4434-bc27-4d0183f53b7d",
+    "doctor_name": "Sumanta Kumar Saha",
+    "specialty": [
+      "Medicine Specialist",
+      "Cardiologist"
+    ],
+    "institution": "Popular Medical College & Hospital",
+    "affiliation_id": "79ef1950-74da-4968-8ff7-4b0704394390",
+    "location_name": "Popular Diagnostic Centre Ltd."
+  },
+  {
+    "doctor_id": "8ff8e75c-bd06-499b-9cde-7d6ae6fa001c",
+    "doctor_name": "Sumanta Kundu",
+    "specialty": [
+      "Plastic Surgeon"
+    ],
+    "institution": "",
+    "affiliation_id": "4eb5ee22-297c-4e84-9444-352ef3966b40",
+    "location_name": "Popular Diagnostic Centre Ltd."
+  },
+  {
+    "doctor_id": "01a0e8bb-c79e-788b-ba05-8a82e5896e17",
+    "doctor_name": "Susmita Sarker",
+    "specialty": [
+      "Gynecological Oncologist",
+      "Gynecologist & Obstetrician"
+    ],
+    "institution": "National Institute of Cancer Research & Hospital (NICRH)",
+    "affiliation_id": "01a0e8bb-c7ad-7d1d-a39c-707b5a84c077",
+    "location_name": "Green Life Hospital"
+  },
+  {
+    "doctor_id": "fd7c3d6f-eca1-4b5e-b976-3822527102e5",
+    "doctor_name": "Syed Abul Foez",
+    "specialty": [
+      "Medicine Specialist",
+      "Gastroenterologist",
+      "Hepatologist"
+    ],
+    "institution": "Popular Diagnostic Centre Ltd.",
+    "affiliation_id": "4ee993b4-9351-4091-a964-31a61b5a3d16",
+    "location_name": "Popular Diagnostic Centre Ltd."
+  },
+  {
+    "doctor_id": "38aaca85-ce8e-4b34-ba12-21c4f4bf5f55",
+    "doctor_name": "Syed Azmal Mahmud",
+    "specialty": [
+      "Diabetologist",
+      "Endocrinologist"
+    ],
+    "institution": "Dhaka Medical College & Hospital",
+    "affiliation_id": "b39bb077-dfef-4af0-885e-91fc994aa1b7",
+    "location_name": "Dhaka Medical College Hospital"
+  },
+  {
+    "doctor_id": "526a5a8a-ad10-4365-b403-22e4989fc373",
+    "doctor_name": "Syed Imtiaz Uddin (Sajid)",
+    "specialty": [
+      "ENT Specialist",
+      "Head & Neck Surgeon"
+    ],
+    "institution": "Dhaka Medical College & Hospital",
+    "affiliation_id": "59d062e4-04d5-4be9-8f08-36b6d7942aa5",
+    "location_name": "Dhaka Medical College Hospital"
+  },
+  {
+    "doctor_id": "e696e347-d08b-4b73-847f-8c94a859d424",
+    "doctor_name": "Syed Md. Fazlul Monim Sahal",
+    "specialty": [
+      "Pediatric Surgeon"
+    ],
+    "institution": "Ad-Din Women's Medical College & General Hospital",
+    "affiliation_id": "69d15d14-8c6a-442b-8e5a-1c1727f64c29",
+    "location_name": "Radical Hospitals Limited"
+  },
+  {
+    "doctor_id": "a8c9e732-995e-4394-a2b9-b079c2cd4905",
+    "doctor_name": "Tania Akter",
+    "specialty": [
+      "Pediatric Surgeon"
+    ],
+    "institution": "",
+    "affiliation_id": "75300e98-83cd-4423-a5fb-764d2e261579",
+    "location_name": "Popular Diagnostic Centre Ltd."
+  },
+  {
+    "doctor_id": "be79c30a-4491-459c-b666-f9f7a49fd89d",
+    "doctor_name": "Tareq Amin",
+    "specialty": [
+      "Orthopedic Surgeon"
+    ],
+    "institution": "Uttara Adhunik Medical College & Hospital",
+    "affiliation_id": "7b1ed585-7891-4fff-908c-a78bfb9f1db7",
+    "location_name": "Radical Hospitals Limited"
+  },
+  {
+    "doctor_id": "8fb65040-6d8c-46e2-bd9b-a96741961c8f",
+    "doctor_name": "Taufique Ahmed",
+    "specialty": [
+      "Cardiac Surgeon",
+      "Chest Specialist",
+      "Vascular Surgeon"
+    ],
+    "institution": "Sir Salimullah Medical College & Mitford Hospital",
+    "affiliation_id": "1c82498b-433b-4931-b830-1eb868c8a9a0",
+    "location_name": "Victoria Healthcare Ltd."
+  },
+  {
+    "doctor_id": "01a0e8bb-c43a-7888-9f32-d5ae3602ecba",
+    "doctor_name": "Toioba Akter",
+    "specialty": [
+      "Dermatologist",
+      "Sexologist"
+    ],
+    "institution": "Dhaka Medical College & Hospital",
+    "affiliation_id": "01a0e8bb-c449-74fa-ad13-b1026323f42b",
+    "location_name": "Green Life Hospital"
+  },
+  {
+    "doctor_id": "c11c87d0-170b-4f30-b4c2-96123160fe91",
+    "doctor_name": "Tosiba Binte Rahman Tora",
+    "specialty": [
+      "Nutritionist / Dietitian"
+    ],
+    "institution": "BIRDEM",
+    "affiliation_id": "adbfb1a9-9c64-4201-8c46-9e183ea9711d",
+    "location_name": "Japan Bangladesh Friendship Hospital"
+  },
+  {
+    "doctor_id": "664de69c-9b45-4072-999e-05d2059007d9",
+    "doctor_name": "Ubaidullah Pathan",
+    "specialty": [
+      "Physiotherapist"
+    ],
+    "institution": "Pashu Hospital",
+    "affiliation_id": "0ee6bce4-1f49-45dd-980f-dca02add16db",
+    "location_name": "Radical Hospitals Limited"
+  },
+  {
+    "doctor_id": "01a0e8bb-c538-75c6-bd94-7cc7dcd84125",
+    "doctor_name": "Utpal Kumar Dutta",
+    "specialty": [
+      "ENT Specialist",
+      "Head & Neck Surgeon"
+    ],
+    "institution": "National Institute of ENT (NIENT), Dhaka",
+    "affiliation_id": "01a0e8bb-c548-71eb-bf59-6f33be87d566",
+    "location_name": "Green Life Hospital"
+  },
+  {
+    "doctor_id": "88494b97-c055-4b74-8943-2eab63c36118",
+    "doctor_name": "Uttam Karmakar",
+    "specialty": [
+      "Laparoscopic Surgeon",
+      "Urologist"
+    ],
+    "institution": "Dhaka Medical College & Hospital",
+    "affiliation_id": "84d71572-ed09-4238-ac0f-47273584473c",
+    "location_name": "Trauma Center & Orthopedic Hospital (Pvt.) Ltd."
+  },
+  {
+    "doctor_id": "f944e341-d7ec-44b8-9ba8-1f82ece7cf34",
+    "doctor_name": "Wahid Murad Chowdhury",
+    "specialty": [
+      "Diabetologist",
+      "Endocrinologist"
+    ],
+    "institution": "Radical Hospitals Limited",
+    "affiliation_id": "2d9ba169-cc5c-4ed7-af5d-a8802cff5574",
+    "location_name": "Radical Hospitals Limited"
+  },
+  {
+    "doctor_id": "db81cfee-ef32-4993-987a-c38afa4848d0",
+    "doctor_name": "Zaynab Akter (Jhunu)",
+    "specialty": [
+      "Radiologist"
+    ],
+    "institution": "National Institute of Kidney Diseases & Urology (NIKDU)",
+    "affiliation_id": "1ed83f04-d8c8-4365-a5ae-8c4400c7e622",
+    "location_name": "Popular Diagnostic Centre Ltd."
+  },
+  {
+    "doctor_id": "04b9727a-74c1-4211-b73c-15675d6c8cbf",
+    "doctor_name": "Zinat Nasreen",
+    "specialty": [
+      "Radiologist"
+    ],
+    "institution": "National Institute of Ophthalmology & Hospital (NIOH)",
+    "affiliation_id": "1da996be-152a-42b1-a6a0-b7192a6417ce",
+    "location_name": "Popular Diagnostic Centre Ltd."
+  },
+  {
+    "doctor_id": "190a27dd-c0f2-439b-9d1d-00d76d3697d7",
+    "doctor_name": "Zohirun Aktar",
+    "specialty": [
+      "Gynecologist & Obstetrician",
+      "Laparoscopic Surgeon"
+    ],
+    "institution": "Medical College for Women and Hospital",
+    "affiliation_id": "eaf412a6-2cef-4148-9be3-dedc9b8120ab",
+    "location_name": "Radical Hospitals Limited"
+  },
+  {
+    "doctor_id": "3aac2b34-8157-4301-b5df-0a4914a8df54",
+    "doctor_name": "Zubayer Hasan (Suman)",
+    "specialty": [
+      "General Surgeon"
+    ],
+    "institution": "Shaheed M Mansoor Ali Medical College Hospital",
+    "affiliation_id": "eb75d102-5f95-4626-9197-5e29ddc9d38a",
+    "location_name": "Radical Hospitals Limited"
+  }
+]

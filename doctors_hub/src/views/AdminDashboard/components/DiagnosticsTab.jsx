@@ -120,7 +120,7 @@ export default function DiagnosticsTab() {
           </div>
           <div>
             <div className="text-2xl font-serif font-bold text-[#1b1c1d]">
-              {Array.from(new Set(tabDiagnostics.map(dc => dc.district || 'Dhaka'))).length}
+              {Array.from(new Set(tabDiagnostics.map(dc => dc.district).filter(Boolean))).length}
             </div>
             <p className="text-[10px] text-slate-500 font-label mt-0.5">
               Geographic coverage
@@ -230,7 +230,7 @@ export default function DiagnosticsTab() {
                   const dcServices = Array.isArray(dc.services) ? dc.services : [];
                   const dcAddress = dc.address || dc.address_line || '';
                   const dcArea = dc.area || '';
-                  const dcDistrict = dc.district || 'Dhaka';
+                  const dcDistrict = dc.district || '';
                   const dcDivision = dc.division || '';
 
                   return (

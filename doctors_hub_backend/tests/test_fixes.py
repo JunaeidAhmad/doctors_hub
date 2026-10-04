@@ -13,9 +13,16 @@ import facilities.serializers as facility_serializers
 import tests.views as test_views
 import tests.serializers as test_serializers
 
-from facilities.models import Location, Hospital, DiagnosticCenter
+from facilities.models import Location, Hospital, DiagnosticCenter, Division, District, Thana
 from bookings.models import DoctorBooking
 from bookings.serializers import DoctorBookingSerializer
+
+
+def _get_thana():
+    div, _ = Division.objects.get_or_create(name="Dhaka")
+    dist, _ = District.objects.get_or_create(name="Dhaka", division=div)
+    thana, _ = Thana.objects.get_or_create(name="Dhanmondi", district=dist)
+    return thana
 
 
 @pytest.mark.django_db
@@ -158,7 +165,7 @@ def test_facility_test_discount_and_calculated_price():
     from tests.models import TestCategory, Test, FacilityTest
     cat = TestCategory.objects.create(name="Radiology")
     test_obj = Test.objects.create(name="X-Ray Chest", category=cat)
-    loc = Location.objects.create(name="Medi Diagnostic", location_type="diagnostic_center", address_line="Gulshan", district="Dhaka", division="Dhaka")
+    loc = Location.objects.create(name="Medi Diagnostic", location_type="diagnostic_center", address_line="Gulshan", thana=_get_thana())
 
     ft = FacilityTest.objects.create(
         location=loc, test=test_obj, price=Decimal("1000.00"), discount_percent=Decimal("15.00")
@@ -180,8 +187,8 @@ def test_slug_collision_resolution():
     assert doc2.slug.startswith("dr-same-name-")
     assert doc1.slug != doc2.slug
 
-    loc1 = Location.objects.create(name="Same Hospital", location_type="hospital", address_line="Line 1", district="Dhaka", division="Dhaka")
-    loc2 = Location.objects.create(name="Same Hospital", location_type="hospital", address_line="Line 2", district="Dhaka", division="Dhaka")
+    loc1 = Location.objects.create(name="Same Hospital", location_type="hospital", address_line="Line 1", thana=_get_thana())
+    loc2 = Location.objects.create(name="Same Hospital", location_type="hospital", address_line="Line 2", thana=_get_thana())
 
     assert loc1.slug == "same-hospital"
     assert loc2.slug.startswith("same-hospital-")
@@ -191,16 +198,19 @@ def test_slug_collision_resolution():
 @pytest.mark.django_db
 def test_facility_service_orchestration():
     from services.facilities import create_hospital, update_hospital
-    from facilities.models import Hospital
+    from facilities.models import Hospital, Division, District, Thana
     from tests.models import TestCategory, Test, FacilityTest
 
     cat = TestCategory.objects.create(name="Microbiology")
     test_obj = Test.objects.create(name="Culture & Sensitivity", category=cat)
 
+    div, _ = Division.objects.get_or_create(name="Dhaka", defaults={"bn_name": "ঢাকা"})
+    dist, _ = District.objects.get_or_create(name="Dhaka", division=div, defaults={"bn_name": "ঢাকা"})
+    thana, _ = Thana.objects.get_or_create(name="Uttara", district=dist, defaults={"bn_name": "উত্তরা"})
+
     location_data = {
         "name": "Service Hospital",
-        "district": "Dhaka",
-        "division": "Dhaka",
+        "thana_id": thana.pk,
         "address_line": "Uttara",
     }
     hospital = create_hospital(
@@ -274,9 +284,7 @@ def test_diagnostic_center_filter_location_no_field_error():
     loc = Location.objects.create(
         name="Popular Dhanmondi",
         location_type="diagnostic_center",
-        district="Dhaka",
-        division="Dhaka",
-        area="Dhanmondi",
+        thana=_get_thana(),
         address_line="Road 2"
     )
     DiagnosticCenter.objects.create(location=loc)
@@ -300,8 +308,7 @@ def test_dashboard_init_bounding_and_counts():
         loc = Location.objects.create(
             name=f"Hospital {i}",
             location_type="hospital",
-            district="Dhaka",
-            division="Dhaka",
+            thana=_get_thana(),
             address_line=f"Road {i}"
         )
         Hospital.objects.create(location=loc)
@@ -327,8 +334,7 @@ def test_verification_invalidates_cache():
     loc = Location.objects.create(
         name="Pending Hospital",
         location_type="hospital",
-        district="Dhaka",
-        division="Dhaka",
+        thana=_get_thana(),
         address_line="Road 10",
         is_verified=False
     )

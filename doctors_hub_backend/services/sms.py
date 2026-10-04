@@ -96,10 +96,11 @@ def send_doctor_booking_confirmation_sms(booking) -> dict:
         date_str = str(booking.date)
         est_time_str = booking.estimated_time.strftime('%I:%M %p') if booking.estimated_time else ""
         time_info = f" (Est. Time: {est_time_str})" if est_time_str else ""
+        fee_info = f" Consultation fee: ৳{booking.fee_at_booking}." if booking.fee_at_booking is not None else ""
 
         message = (
             f"Dear {patient_name}, your appointment with {doctor_name} at {chamber_name} is CONFIRMED. "
-            f"Serial No: {serial}. Date: {date_str}{time_info}. Thank you for choosing Doctors Hub."
+            f"Serial No: {serial}. Date: {date_str}{time_info}.{fee_info} Thank you for choosing Doctors Hub."
         )
         return send_sms_via_sms_bd(phone, message)
     except Exception as e:
@@ -124,10 +125,15 @@ def send_test_booking_confirmation_sms(booking) -> dict:
         facility_display = format_facility_name_sms(facility_raw, facility_branch)
         pickup_date = str(booking.pickup_date or "")
         ref_id = f"TESTBD-{booking.id}"
+        price_info = f" Price: ৳{booking.price_at_booking}." if booking.price_at_booking is not None else " Price at counter."
+        home_charge_info = (
+            f" Home collection charge: ৳{booking.home_charge_at_booking}."
+            if booking.home_charge_at_booking is not None else ""
+        )
 
         message = (
             f"Dear {patient_name}, your diagnostic test booking for {test_name} at {facility_display} is CONFIRMED. "
-            f"Ref: {ref_id}. Date: {pickup_date}. Thank you for choosing Doctors Hub."
+            f"Ref: {ref_id}. Date: {pickup_date}.{price_info}{home_charge_info} Thank you for choosing Doctors Hub."
         )
         return send_sms_via_sms_bd(phone, message)
     except Exception as e:

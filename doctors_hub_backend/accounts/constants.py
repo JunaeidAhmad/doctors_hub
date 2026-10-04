@@ -1,0 +1,1 @@
+SUPER_ADMIN_ROLE_NAME = "Super Admin"

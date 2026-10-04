@@ -94,13 +94,12 @@ class TestLocationBackwardCompatibility:
         assert "House 10, Road 4, Dhanmondi, Dhaka, Dhaka" in loc.full_address
 
     def test_legacy_kwargs_in_objects_create(self):
+        thana = Thana.objects.filter(district__name="Dhaka", name="Dhanmondi").first()
         loc = Location.objects.create(
-            name="Legacy Params Clinic",
+            name="Strict Params Clinic",
             location_type="hospital",
             address_line="Old Street",
-            district="Dhaka",
-            area="Dhanmondi",
-            division="Dhaka"
+            thana=thana
         )
         assert loc.thana is not None
         assert loc.area == "Dhanmondi"

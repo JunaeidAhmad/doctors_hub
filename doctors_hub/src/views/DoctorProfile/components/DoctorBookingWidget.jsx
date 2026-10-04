@@ -53,9 +53,9 @@ export default function DoctorBookingWidget({
   const [loadingAvailability, setLoadingAvailability] = useState(false);
   const [selectedDateStr, setSelectedDateStr] = useState('');
   const [selectedSessionKey, setSelectedSessionKey] = useState('');
+  const [confirmedBooking, setConfirmedBooking] = useState(null);
 
-  useEffect(() => {
-    let isMounted = true;
+  const fetchAvailability = React.useCallback(() => {
     if (!activeAff?.id) {
       setAvailability(null);
       setSelectedDateStr('');
@@ -64,15 +64,14 @@ export default function DoctorBookingWidget({
     }
 
     setLoadingAvailability(true);
-    getAffiliationAvailability(activeAff.id, { days: 7 })
+    getAffiliationAvailability(activeAff.id, { days: 14 })
       .then((data) => {
-        if (!isMounted) return;
         setAvailability(data);
         const dates = data?.dates || [];
-        const firstAvailDate = dates.find(d => d.status !== 'closed' && d.sessions?.some(s => s.status === 'available')) || dates[0];
+        const firstAvailDate = dates.find(d => d.status !== 'closed' && (d.sessions || []).some(s => s.status === 'available')) || dates[0];
         if (firstAvailDate) {
           setSelectedDateStr(firstAvailDate.date);
-          const firstAvailSession = firstAvailDate.sessions?.find(s => s.status === 'available') || firstAvailDate.sessions?.[0];
+          const firstAvailSession = (firstAvailDate.sessions || []).find(s => s.status === 'available') || firstAvailDate.sessions?.[0];
           setSelectedSessionKey(firstAvailSession?.session_key || '');
         } else {
           setSelectedDateStr('');
@@ -80,18 +79,17 @@ export default function DoctorBookingWidget({
         }
       })
       .catch((err) => {
-        if (!isMounted) return;
         console.error('Failed to load availability:', err);
         setAvailability(null);
       })
       .finally(() => {
-        if (isMounted) setLoadingAvailability(false);
+        setLoadingAvailability(false);
       });
-
-    return () => {
-      isMounted = false;
-    };
   }, [activeAff?.id]);
+
+  useEffect(() => {
+    fetchAvailability();
+  }, [fetchAvailability]);
 
   const dates = availability?.dates || [];
   const selectedDateObj = dates.find(d => d.date === selectedDateStr) || dates[0] || null;
@@ -146,24 +144,6 @@ export default function DoctorBookingWidget({
       return;
     }
 
-    if (onBookAppointment) {
-      onBookAppointment({
-        doctor,
-        chamber: activeAff,
-        date: selectedDateStr,
-        sessionKey: selectedSessionKey,
-        session: selectedSession,
-        time: formatDisplayTime(selectedSession?.estimated_time || selectedSession?.start_time),
-        patientName,
-        patientPhone,
-        patientAge,
-        patientGender,
-        symptoms
-      });
-      return;
-    }
-
-    // Direct booking flow if onBookAppointment not passed
     setSubmitting(true);
     try {
       const res = await api.createDoctorBooking({
@@ -181,7 +161,9 @@ export default function DoctorBookingWidget({
         throw new Error('No serial number returned from server.');
       }
 
+      setConfirmedBooking(res);
       setBookingSuccess(true);
+      fetchAvailability();
       if (showToast) {
         showToast(`Serial #${res.serial_number} confirmed for ${patientName}!`, 'success');
       }
@@ -350,23 +332,107 @@ export default function DoctorBookingWidget({
 
         {/* Interactive Booking Content */}
         {bookingSuccess ? (
-          <div className="p-6 bg-teal-50/70 border-t border-teal-200 text-center space-y-3">
-            <div className="w-12 h-12 rounded-full bg-teal-100 text-teal-700 mx-auto flex items-center justify-center">
-              <span className="material-symbols-outlined text-3xl" style={{ fontVariationSettings: "'FILL' 1" }}>
+          <div className="p-5 bg-gradient-to-b from-teal-50/90 to-surface-container-lowest border-t border-teal-200/80 space-y-4">
+            <div className="flex items-center gap-3 p-3 bg-teal-100/70 border border-teal-200 rounded-xl text-teal-950">
+              <span className="material-symbols-outlined text-teal-700 text-3xl shrink-0" style={{ fontVariationSettings: "'FILL' 1" }}>
                 check_circle
               </span>
+              <div>
+                <h4 className="text-sm font-bold text-teal-950">Appointment Confirmed!</h4>
+                <p className="text-[11px] text-teal-800">Your consultation serial has been reserved successfully.</p>
+              </div>
             </div>
-            <h4 className="text-title-lg font-bold text-teal-900">Appointment Reserved!</h4>
-            <p className="text-body-sm text-teal-800">
-              Your appointment for <strong>{patientName}</strong> has been booked for <strong>{selectedDateStr}</strong>.
+
+            {/* Serial Token Ticket Card */}
+            <div className="bg-white border-2 border-dashed border-teal-600/40 rounded-2xl p-4 shadow-sm relative overflow-hidden space-y-3">
+              <div className="flex items-center justify-between pb-2.5 border-b border-slate-100">
+                <div>
+                  <span className="text-[10px] uppercase font-bold tracking-wider text-slate-500">Your Serial Token</span>
+                  <div className="flex items-baseline gap-2">
+                    <span className="text-2xl font-black text-teal-800 font-mono">
+                      {confirmedBooking?.serial_display || `SL-${String(confirmedBooking?.serial_number || 1).padStart(3, '0')}`}
+                    </span>
+                    <span className="text-xs font-bold text-slate-500">
+                      (Serial #{confirmedBooking?.serial_number || 1})
+                    </span>
+                  </div>
+                </div>
+                <div className="text-right">
+                  <span className="px-2.5 py-1 bg-teal-600 text-white rounded-lg text-xs font-bold shadow-xs">
+                    Reserved
+                  </span>
+                </div>
+              </div>
+
+              <div className="grid grid-cols-2 gap-2.5 text-left text-xs">
+                <div>
+                  <p className="text-[10px] font-semibold text-slate-500 uppercase">Consultation Date</p>
+                  <p className="font-bold text-slate-900 mt-0.5">
+                    {confirmedBooking?.date || selectedDateStr}
+                  </p>
+                </div>
+                <div>
+                  <p className="text-[10px] font-semibold text-slate-500 uppercase">Estimated Time</p>
+                  <p className="font-bold text-teal-800 mt-0.5">
+                    {confirmedBooking?.estimated_time 
+                      ? formatDisplayTime(confirmedBooking.estimated_time) 
+                      : (confirmedBooking?.session_start ? formatDisplayTime(confirmedBooking.session_start) : 'Upon Arrival')}
+                  </p>
+                </div>
+                <div>
+                  <p className="text-[10px] font-semibold text-slate-500 uppercase">Session Window</p>
+                  <p className="font-semibold text-slate-800 mt-0.5">
+                    {confirmedBooking?.session_start && confirmedBooking?.session_end
+                      ? `${formatDisplayTime(confirmedBooking.session_start)} – ${formatDisplayTime(confirmedBooking.session_end)}`
+                      : (selectedSession ? `${formatDisplayTime(selectedSession.start_time || selectedSession.session_start)} – ${formatDisplayTime(selectedSession.end_time || selectedSession.session_end)}` : 'Visiting Hours')}
+                  </p>
+                </div>
+                <div>
+                  <p className="text-[10px] font-semibold text-slate-500 uppercase">Consultation Fee</p>
+                  <p className="font-bold text-slate-900 mt-0.5">
+                    ৳{feeAmount} <span className="text-[10px] font-normal text-slate-500">(Pay at Chamber)</span>
+                  </p>
+                </div>
+              </div>
+
+              <div className="pt-2.5 border-t border-slate-100 text-xs text-left">
+                <p className="text-[10px] font-semibold text-slate-500 uppercase">Patient Name & Phone</p>
+                <p className="font-bold text-slate-800 mt-0.5">
+                  {confirmedBooking?.patient_name || patientName}
+                  <span className="font-normal text-slate-600 ml-1.5 font-mono">
+                    ({confirmedBooking?.patient_phone || patientPhone})
+                  </span>
+                </p>
+              </div>
+
+              <div className="text-left bg-slate-50 p-2.5 rounded-xl border border-slate-100 text-xs">
+                <p className="text-[10px] font-semibold text-slate-500 uppercase">Chamber Location</p>
+                <p className="font-bold text-slate-900 mt-0.5">
+                  {confirmedBooking?.facility?.display_name || confirmedBooking?.facility?.name || activeAff?.facility?.display_name || activeAff?.facility?.name || activeAff?.name || 'Doctor Chamber'}
+                </p>
+                {(activeAff?.facility?.address || activeAff?.address) && (
+                  <p className="text-[11px] text-slate-600 mt-0.5">
+                    {activeAff.facility?.address || activeAff.address}
+                  </p>
+                )}
+              </div>
+            </div>
+
+            <p className="text-[11px] text-slate-600 bg-white/90 p-2.5 rounded-xl border border-teal-100 text-left">
+              💡 <strong>Arrival Tip:</strong> No advance payment required. Please arrive at the chamber 15 minutes before your estimated time and show your Serial Token at the reception counter.
             </p>
-            <p className="text-xs text-slate-600 bg-white/80 p-3 rounded-lg border border-teal-200">
-              No advance payment is required. Please arrive 15 minutes before your estimated time and pay ৳{feeAmount} at the chamber reception desk.
-            </p>
+
             <button
               type="button"
-              onClick={() => setBookingSuccess(false)}
-              className="mt-2 px-4 py-2 bg-teal-700 text-white rounded-lg font-semibold text-xs hover:bg-teal-800 transition cursor-pointer"
+              onClick={() => {
+                setBookingSuccess(false);
+                setConfirmedBooking(null);
+                setPatientName('');
+                setPatientPhone('');
+                setSymptoms('');
+                fetchAvailability();
+              }}
+              className="w-full py-2.5 bg-teal-700 text-white rounded-xl font-bold text-xs hover:bg-teal-800 transition cursor-pointer shadow-sm"
             >
               Book Another Consultation
             </button>
@@ -404,16 +470,17 @@ export default function DoctorBookingWidget({
                     const dayName = idx === 0 ? 'Today' : d.toLocaleDateString('en-US', { weekday: 'short' });
                     const dateNum = d.getDate();
                     const monthShort = d.toLocaleDateString('en-US', { month: 'short' });
-                    const isClosed = opt.status === 'closed';
-                    const isFull = opt.status === 'full';
+                    const remaining = opt.capacity_remaining ?? opt.remaining;
+                    const isClosed = opt.status === 'closed' || opt.has_schedule === false;
+                    const isFull = opt.status === 'full' || (remaining !== undefined && remaining <= 0);
 
                     let capacityLabel = '';
                     if (isClosed) {
-                      capacityLabel = 'Closed';
-                    } else if (isFull || opt.capacity_remaining <= 0) {
+                      capacityLabel = 'No Chamber';
+                    } else if (isFull) {
                       capacityLabel = 'Full';
-                    } else if (opt.capacity_remaining > 0) {
-                      capacityLabel = `${opt.capacity_remaining} left`;
+                    } else if (remaining !== undefined && remaining > 0) {
+                      capacityLabel = `${remaining} left`;
                     } else {
                       capacityLabel = 'Open';
                     }
@@ -458,7 +525,7 @@ export default function DoctorBookingWidget({
                 </label>
                 {selectedSession && (
                   <span className="text-label-sm font-label-sm text-slate-500 font-medium">
-                    {formatDisplayTime(selectedSession.start_time)} – {formatDisplayTime(selectedSession.end_time)}
+                    {formatDisplayTime(selectedSession.start_time || selectedSession.session_start)} – {formatDisplayTime(selectedSession.end_time || selectedSession.session_end)}
                   </span>
                 )}
               </div>
@@ -472,8 +539,11 @@ export default function DoctorBookingWidget({
                   {sessions.map((sess) => {
                     const isSelected = selectedSessionKey === sess.session_key;
                     const isAvail = sess.status === 'available';
-                    const startTimeFormatted = formatDisplayTime(sess.start_time);
-                    const endTimeFormatted = formatDisplayTime(sess.end_time);
+                    const startTime = sess.start_time || sess.session_start;
+                    const endTime = sess.end_time || sess.session_end;
+                    const remaining = sess.capacity_remaining ?? sess.remaining;
+                    const startTimeFormatted = formatDisplayTime(startTime);
+                    const endTimeFormatted = formatDisplayTime(endTime);
                     const estFormatted = sess.estimated_time ? formatDisplayTime(sess.estimated_time) : startTimeFormatted;
 
                     return (
@@ -514,7 +584,7 @@ export default function DoctorBookingWidget({
                               ? 'bg-primary text-white'
                               : 'bg-teal-100 text-teal-800'
                           }`}>
-                            {isAvail ? `${sess.capacity_remaining} left` : sess.status.toUpperCase()}
+                            {isAvail ? (remaining != null ? `${remaining} left` : 'Available') : (sess.status === 'full' ? 'FULL' : sess.status.toUpperCase())}
                           </span>
                         </div>
                       </button>

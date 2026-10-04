@@ -116,9 +116,9 @@ export default function DoctorsTab() {
   }, [tabDoctors, selectedStatus, selectedDesignation]);
 
   // Telemetry computations
-  const totalVerified = totalCount || tabDoctors.filter(d => d.is_verified).length || 4820;
-  const activeConsultants = Math.round(totalVerified * 0.7) || 3410;
-  const weeklyScheduleSlots = totalVerified * 4 || 18290;
+  const totalVerified = totalCount !== undefined && totalCount !== null ? totalCount : tabDoctors.filter(d => d.is_verified).length;
+  const activeConsultants = Math.round(totalVerified * 0.7);
+  const weeklyScheduleSlots = totalVerified * 4;
   const licenseRenewals = 28;
 
   // Export current list to CSV
@@ -360,7 +360,7 @@ export default function DoctorsTab() {
               <option value="">Specialty: All Disciplines</option>
               {doctorSpecialties.map((spec, i) => (
                 <option key={spec.id || i} value={spec.name || spec}>
-                  {spec.name || spec}
+                  {spec.name || spec}{spec.bn_name ? ` · ${spec.bn_name}` : ''}
                 </option>
               ))}
             </select>

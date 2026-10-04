@@ -43,16 +43,17 @@ def test_search_facets_endpoint_returns_aggregations(api_client):
     doc2.specialties.add(spec_neuro)
     DoctorAffiliationFactory(doctor=doc2, location=loc_ctg)
 
-    # 1. Global facets (unfiltered)
+    # 1. Global facets (unfiltered) – slim contract: only hospital_categories
     res_global = api_client.get("/api/search-facets/")
     assert res_global.status_code == status.HTTP_200_OK
-    assert res_global.data["total_doctors"] >= 2
-    assert "specialties" in res_global.data
+    assert "hospital_categories" in res_global.data
+    assert "specialties" not in res_global.data
+    assert "total_doctors" not in res_global.data
 
     # 2. Location-filtered facets (district_id)
     res_filtered = api_client.get(f"/api/search-facets/?district_id={dist_dhaka.id}")
     assert res_filtered.status_code == status.HTTP_200_OK
-    assert res_filtered.data["total_doctors"] >= 1
+    assert "hospital_categories" in res_filtered.data
 
 
 @pytest.mark.django_db

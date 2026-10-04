@@ -3,6 +3,15 @@ import { Search, Calendar, TestTube, CheckCircle, Clock, MapPin, Phone } from 'l
 import { useAdminContext } from '../context/AdminContext';
 import { api } from '../../../services/api';
 import StatusBadge from './shared/StatusBadge';
+import { formatDisplayTime } from '../../../utils/scheduleUtils';
+
+const ALLOWED_TRANSITIONS = {
+  pending: ['confirmed', 'cancelled'],
+  confirmed: ['completed', 'cancelled', 'no_show'],
+  completed: [],
+  cancelled: [],
+  no_show: [],
+};
 
 export default function BookingsTab() {
   const { 
@@ -25,9 +34,9 @@ export default function BookingsTab() {
   const handleUpdateStatus = async (id, newStatus) => {
     try {
       if (isDoctor) {
-        await api.updateDoctorBookingStatus(id, newStatus);
+        await api.transitionBooking('doctor', id, newStatus);
       } else {
-        await api.updateLabBookingStatus(id, newStatus);
+        await api.transitionBooking('test', id, newStatus);
       }
       await loadAllData();
       if (setSuccessMsg) setSuccessMsg(`Booking status updated to ${newStatus}`);
@@ -111,9 +120,9 @@ export default function BookingsTab() {
                           <span>{b.patient_name || (b.patient ? b.patient.name : 'Patient')}</span>
                         </div>
                       </div>
-                      {b.patient && (b.patient.age || b.patient.gender) && (
+                      {(b.patient_age != null || b.patient_gender) && (
                         <div className="text-[11px] text-slate-500 font-body pl-5 mt-0.5">
-                          {b.patient.age ? `Age: ${b.patient.age}` : ''} {b.patient.gender ? `• ${b.patient.gender}` : ''}
+                          {b.patient_age != null ? `Age: ${b.patient_age}` : ''} {b.patient_gender ? `• ${b.patient_gender}` : ''}
                         </div>
                       )}
                     </td>
@@ -147,11 +156,16 @@ export default function BookingsTab() {
                               Est: {formatDisplayTime(b.estimated_time)}
                             </div>
                           )}
+                          {b.fee != null && <div className="text-[10px] text-slate-500">Fee: ৳{b.fee}</div>}
                         </div>
                       ) : (
                         <div>
                           <div className="font-medium">{b.pickup_date}</div>
                           <div className="text-[11px] text-slate-500 truncate max-w-xs">{b.address || 'Home Collection'}</div>
+                          <div className="text-[10px] text-slate-500">
+                            {b.price != null ? `Price: ৳${b.price}` : 'Price at counter'}
+                            {b.home_charge_at_booking != null ? ` · Home charge: ৳${b.home_charge_at_booking}` : ''}
+                          </div>
                         </div>
                       )}
                     </td>
@@ -160,15 +174,14 @@ export default function BookingsTab() {
                     </td>
                     <td className="py-3.5 px-4 text-right">
                       <select
-                        value={b.status || 'pending'}
+                        value={b.status}
                         onChange={(e) => handleUpdateStatus(b.id, e.target.value)}
                         className="bg-white border border-[#d1d5dc] rounded-xs px-2 py-1 text-xs text-[#1b1c1d] font-label font-semibold focus:outline-none focus:border-[#094cb2] cursor-pointer"
                       >
-                        <option value="pending">Pending</option>
-                        <option value="confirmed">Confirmed</option>
-                        <option value="completed">Completed</option>
-                        <option value="cancelled">Cancelled</option>
-                        <option value="no_show">No Show</option>
+                        <option value={b.status}>{b.status.replace('_', ' ')}</option>
+                        {(ALLOWED_TRANSITIONS[b.status] || []).map((next) => (
+                          <option key={next} value={next}>{next.replace('_', ' ')}</option>
+                        ))}
                       </select>
                     </td>
                   </tr>

@@ -194,7 +194,7 @@ def test_query_count_bounds(client, django_assert_num_queries, geo_data):
         res_h = client.get("/api/hospitals/?page_size=20")
         assert res_h.status_code == 200
 
-    # 9 queries base + 3 for batch_next_available = 12
-    with django_assert_num_queries(12):
+    # 7 queries base + 3 for batch_next_available = 10 (optimized prefetch)
+    with django_assert_num_queries(10):
         res_d = client.get("/api/doctors/?page_size=20")
         assert res_d.status_code == 200

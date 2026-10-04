@@ -117,8 +117,9 @@ class Command(BaseCommand):
         self.stdout.write(self.style.SUCCESS(f'Successfully synced permissions. Created: {created_count}, Updated: {updated_count}'))
 
         # Seed only the Super Admin system role
+        from accounts.constants import SUPER_ADMIN_ROLE_NAME
         super_admin_role, role_created = Role.objects.get_or_create(
-            name="Super Admin",
+            name=SUPER_ADMIN_ROLE_NAME,
             defaults={
                 'description': 'Platform Super Administrator with full global access.',
                 'scope_type': Role.ScopeType.GLOBAL,

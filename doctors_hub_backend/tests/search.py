@@ -221,21 +221,22 @@ def build_grouped(row_qs, ordering: str = 'price'):
         min_price=Min('calculated_net_price'),
         max_price=Max('calculated_net_price'),
         offering_count=Count('id'),
+        priced_offering_count=Count('id', filter=Q(price__isnull=False)),
         location_count=Count('location_id', distinct=True),
         home_collection_count=Count('id', filter=Q(home_sample_collection=True)),
         test_name=F('test__name')
     )
 
     if ordering == 'price':
-        grouped = grouped.order_by('min_price', 'test_name', 'test_id')
+        grouped = grouped.order_by(F('min_price').asc(nulls_last=True), 'test_name', 'test_id')
     elif ordering == '-price':
-        grouped = grouped.order_by('-min_price', 'test_name', 'test_id')
+        grouped = grouped.order_by(F('min_price').desc(nulls_last=True), 'test_name', 'test_id')
     elif ordering == 'name':
         grouped = grouped.order_by('test_name', 'test_id')
     elif ordering == '-name':
         grouped = grouped.order_by('-test_name', 'test_id')
     else:
-        grouped = grouped.order_by('min_price', 'test_name', 'test_id')
+        grouped = grouped.order_by(F('min_price').asc(nulls_last=True), 'test_name', 'test_id')
 
     return grouped
 
@@ -274,18 +275,20 @@ def hydrate(
 
             if grouped_stats and tid in grouped_stats:
                 st = grouped_stats[tid]
-                t.min_price = f"{st.get('min_price', 0):.2f}"
-                t.max_price = f"{st.get('max_price', 0):.2f}"
+                t.min_price = f"{st['min_price']:.2f}" if st.get('min_price') is not None else None
+                t.max_price = f"{st['max_price']:.2f}" if st.get('max_price') is not None else None
                 t.offering_count = st.get('offering_count', 0)
+                t.priced_offering_count = st.get('priced_offering_count', 0)
                 t.location_count = st.get('location_count', 0)
                 t.home_collection_count = st.get('home_collection_count', 0)
             else:
-                prices = [o.calculated_price for o in t.matching_offerings]
-                min_p = min(prices) if prices else Decimal('0.00')
-                max_p = max(prices) if prices else Decimal('0.00')
-                t.min_price = f"{min_p:.2f}"
-                t.max_price = f"{max_p:.2f}"
+                prices = [o.calculated_price for o in t.matching_offerings if o.calculated_price is not None]
+                min_p = min(prices) if prices else None
+                max_p = max(prices) if prices else None
+                t.min_price = f"{min_p:.2f}" if min_p is not None else None
+                t.max_price = f"{max_p:.2f}" if max_p is not None else None
                 t.offering_count = len(t.matching_offerings)
+                t.priced_offering_count = sum(o.price is not None for o in t.matching_offerings)
                 t.location_count = len(set(o.location_id for o in t.matching_offerings))
                 t.home_collection_count = sum(1 for o in t.matching_offerings if o.home_sample_collection)
 

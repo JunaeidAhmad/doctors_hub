@@ -49,6 +49,7 @@ export default function AddTestsToDiagnosticsTab() {
   });
   const [selectedCatIds, setSelectedCatIds] = useState([]);
   const [searchTerm, setSearchTerm] = useState('');
+  const [pricesByTest, setPricesByTest] = useState({});
   const [isSaving, setIsSaving] = useState(false);
   const [showConfirmModal, setShowConfirmModal] = useState(false);
   const [showSuccessModal, setShowSuccessModal] = useState(false);
@@ -216,9 +217,8 @@ export default function AddTestsToDiagnosticsTab() {
             category: testObj.category || testObj.category_id || '',
             category_name: testObj.category_name || testObj.category || '',
             test_details: testObj,
-            price: testObj.price || 700,
-            discount_percent: '20% OFF',
-            calculated_price: testObj.calculated_price || 560
+            price: null,
+            calculated_price: null
           };
           newBranchTests.unshift(entry);
 
@@ -226,9 +226,6 @@ export default function AddTestsToDiagnosticsTab() {
             center: !isHosp ? facilityId : null,
             hospital: isHosp ? facilityId : null,
             test: testId,
-            calculated_price: testObj.calculated_price || 560,
-            price: testObj.price || 700,
-            discount_percent: '20% OFF',
             is_available: true
           });
         }
@@ -237,7 +234,8 @@ export default function AddTestsToDiagnosticsTab() {
       try {
         const prices = {};
         for (const testObj of associatedTests) {
-          prices[testObj.id] = { price: testObj.price || 700, discount_percent: 20 };
+          const enteredPrice = pricesByTest[testObj.id] ?? '';
+          prices[testObj.id] = { price: enteredPrice === '' ? null : enteredPrice };
         }
 
         if (!isHosp) {
@@ -246,13 +244,7 @@ export default function AddTestsToDiagnosticsTab() {
           await api.patchHospital(facilityId, { test_category_ids: selectedCatIds, prices });
         }
       } catch (e) {
-        if (testsToCreatePayload.length > 0) {
-          try {
-            await api.createDiagnosticCenterTest(testsToCreatePayload);
-          } catch (err2) {
-            console.warn("Bulk attach fallback failed:", err2);
-          }
-        }
+        throw e;
       }
 
       if (setBranchTests) {
@@ -383,10 +375,10 @@ export default function AddTestsToDiagnosticsTab() {
                   {diagnosticCenters.map(dc => {
                     const dcId = dc.id || dc.location_id;
                     const dcDisplayName = dc.display_name || (dc.branch ? `${dc.name} (${dc.branch})` : dc.name);
-                    const dcDistrict = dc.district || 'Dhaka';
+                    const dcDistrict = dc.district || '';
                     return (
                       <option key={dcId} value={dcId}>
-                        {dcDisplayName} — {dcDistrict}
+                        {dcDisplayName}{dcDistrict ? ` — ${dcDistrict}` : ''}
                       </option>
                     );
                   })}
@@ -400,10 +392,10 @@ export default function AddTestsToDiagnosticsTab() {
                   {hospitals.map(h => {
                     const hId = h.id || h.location_id;
                     const hDisplayName = h.display_name || (h.branch ? `${h.name} (${h.branch})` : h.name);
-                    const hDistrict = h.district || 'Dhaka';
+                    const hDistrict = h.district || '';
                     return (
                       <option key={hId} value={hId}>
-                        {hDisplayName} — {hDistrict}
+                        {hDisplayName}{hDistrict ? ` — ${hDistrict}` : ''}
                       </option>
                     );
                   })}
@@ -561,8 +553,7 @@ export default function AddTestsToDiagnosticsTab() {
                 <th className="py-2.5 px-4 font-semibold">Test Name</th>
                 <th className="py-2.5 px-4 font-semibold">Category</th>
                 <th className="py-2.5 px-4 font-semibold">Fasting Required</th>
-                <th className="py-2.5 px-4 font-semibold">Est. Regular Price</th>
-                <th className="py-2.5 px-4 font-semibold">Offer Price (20% OFF)</th>
+                <th className="py-2.5 px-4 font-semibold">Price (optional)</th>
                 <th className="py-2.5 px-4 text-right font-semibold">Status</th>
               </tr>
             </thead>
@@ -577,7 +568,6 @@ export default function AddTestsToDiagnosticsTab() {
                 (associatedTests || [])
                   .filter(t => `${t?.name || ''} ${t?.category_name || t?.category || ''}`.toLowerCase().includes((searchTerm || '').toLowerCase()))
                   .map(t => {
-                    const calculated_price = t.calculated_price || 560;
                     return (
                     <tr key={t.id} className="hover:bg-[#e7ebff]/25 transition-colors">
                       <td className="py-3 px-4">
@@ -596,18 +586,16 @@ export default function AddTestsToDiagnosticsTab() {
                           <span className="text-slate-400 text-[11px]">No</span>
                         )}
                       </td>
-                      <td className="py-3 px-4 line-through text-slate-400 font-mono text-xs">
-                        ৳{t.price || 700}
-                      </td>
                       <td className="py-3 px-4">
                         <input
                           type="number"
+                          min="0"
                           className="w-20 bg-white border border-[#d1d5dc] rounded-xs px-2 py-0.5 text-[#094cb2] font-serif font-bold text-xs focus:outline-none focus:border-[#094cb2]"
-                          value={calculated_price}
-                          onChange={e => {
-                            t.calculated_price = e.target.value;
-                          }}
+                          value={pricesByTest[t.id] ?? ''}
+                          placeholder="—"
+                          onChange={e => setPricesByTest(prev => ({ ...prev, [t.id]: e.target.value }))}
                         />
+                        <span className="ml-2 text-[10px] text-slate-500">Empty means price at counter</span>
                       </td>
                       <td className="py-3 px-4 text-right">
                         <span className="inline-flex items-center gap-1 px-2 py-0.5 bg-emerald-50 text-emerald-800 border border-emerald-200 rounded-xs text-[10px] font-label font-bold">

@@ -1,7 +1,7 @@
 import pytest
 from rest_framework.test import APIClient
 from accounts.models import User, Role, UserRole
-from facilities.models import Location, DiagnosticCenter
+from facilities.models import Location, DiagnosticCenter, Division, District, Thana
 from doctors.models import Doctor, DoctorSpecialty
 from tests.factories import DoctorSpecialtyFactory
 
@@ -10,6 +10,10 @@ from tests.factories import DoctorSpecialtyFactory
 class TestOnboardingRegistration:
     def setup_method(self):
         self.client = APIClient()
+        # Create geo rows needed by strict geo resolution
+        div, _ = Division.objects.get_or_create(name="Dhaka", defaults={"bn_name": "ঢাকা"})
+        dist, _ = District.objects.get_or_create(name="Dhaka", division=div, defaults={"bn_name": "ঢাকা"})
+        Thana.objects.get_or_create(name="Dhanmondi", district=dist, defaults={"bn_name": "ধানমন্ডি"})
 
     def test_facility_registration_creates_full_graph_unverified(self):
         payload = {
@@ -86,11 +90,11 @@ class TestOnboardingRegistration:
         assert spec in doctor.specialties.all()
 
     def test_duplicate_registration_returns_400(self):
+        thana = Thana.objects.first()
         payload = {
             "facility_type": "hospital",
             "name": "City Hospital",
-            "division": "Dhaka",
-            "district": "Dhaka",
+            "thana_id": thana.pk if thana else None,
             "address_line": "Main Road",
             "phone_number": "01955112233",
             "password": "password123"

@@ -39,8 +39,9 @@ class FacilityTestSerializer(serializers.ModelSerializer):
         queryset=Location.objects.all(), write_only=True, source='location', required=False
     )
 
-    calculated_price = serializers.DecimalField(max_digits=10, decimal_places=2, read_only=True)
-    discounted_price = serializers.DecimalField(max_digits=10, decimal_places=2, read_only=True)
+    price = serializers.DecimalField(max_digits=10, decimal_places=2, required=False, allow_null=True)
+    calculated_price = serializers.DecimalField(max_digits=10, decimal_places=2, read_only=True, allow_null=True)
+    discounted_price = serializers.DecimalField(max_digits=10, decimal_places=2, read_only=True, allow_null=True)
 
     class Meta:
         model = FacilityTest
@@ -68,7 +69,7 @@ class FacilityTestSerializer(serializers.ModelSerializer):
         # We can calculate discount_percent = ((price - calculated_price) / price) * 100
         calc_price_val = data.get('calculated_price') or data.get('discounted_price')
         base_price_val = mutable_data.get('price')
-        if calc_price_val is not None and base_price_val is not None and not mutable_data.get('discount_percent'):
+        if calc_price_val is not None and base_price_val not in (None, '') and not mutable_data.get('discount_percent'):
             try:
                 from decimal import Decimal
                 base = Decimal(str(base_price_val))
@@ -83,9 +84,9 @@ class FacilityTestSerializer(serializers.ModelSerializer):
 
 class FacilityTestSearchOfferingSerializer(serializers.ModelSerializer):
     facility = FacilitySummarySerializer(source='location', read_only=True)
-    price = serializers.DecimalField(max_digits=10, decimal_places=2, coerce_to_string=True)
+    price = serializers.DecimalField(max_digits=10, decimal_places=2, coerce_to_string=True, allow_null=True)
     discount_percent = serializers.DecimalField(max_digits=5, decimal_places=2, coerce_to_string=True, allow_null=True)
-    calculated_price = serializers.DecimalField(max_digits=10, decimal_places=2, coerce_to_string=True)
+    calculated_price = serializers.DecimalField(max_digits=10, decimal_places=2, coerce_to_string=True, allow_null=True)
     home_sample_charge = serializers.DecimalField(max_digits=10, decimal_places=2, coerce_to_string=True, allow_null=True)
 
     class Meta:
@@ -101,9 +102,10 @@ class FacilityTestSearchGroupSerializer(serializers.ModelSerializer):
     category_id = serializers.UUIDField(source='category.id', read_only=True)
     category_name = serializers.CharField(source='category.name', read_only=True)
     category_slug = serializers.CharField(source='category.slug', read_only=True)
-    min_price = serializers.CharField(read_only=True)
-    max_price = serializers.CharField(read_only=True)
+    min_price = serializers.CharField(read_only=True, allow_null=True)
+    max_price = serializers.CharField(read_only=True, allow_null=True)
     offering_count = serializers.IntegerField(read_only=True)
+    priced_offering_count = serializers.IntegerField(read_only=True)
     location_count = serializers.IntegerField(read_only=True)
     home_collection_count = serializers.IntegerField(read_only=True)
     offerings = FacilityTestSearchOfferingSerializer(source='matching_offerings', many=True, read_only=True)
@@ -116,6 +118,6 @@ class FacilityTestSearchGroupSerializer(serializers.ModelSerializer):
             'description', 'sample_type', 'preparation_instructions',
             'fasting_required', 'report_time_hours',
             'min_price', 'max_price',
-            'offering_count', 'location_count', 'home_collection_count',
+            'offering_count', 'priced_offering_count', 'location_count', 'home_collection_count',
             'offerings'
         )

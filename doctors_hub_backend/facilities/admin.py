@@ -36,7 +36,7 @@ class LocationAdmin(admin.ModelAdmin):
 
 @admin.register(HospitalCategory)
 class HospitalCategoryAdmin(admin.ModelAdmin):
-    list_display = ('id', 'name', 'slug', 'icon', 'count')
+    list_display = ('id', 'name', 'slug', 'icon')
     search_fields = ('name', 'slug')
 
 

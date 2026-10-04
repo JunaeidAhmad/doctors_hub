@@ -19,7 +19,6 @@ export async function getSpecialties() {
 
 export async function getCanonicalSpecialties({ search = '' } = {}) {
   const url = new URL(`${BASE_URL}/specialties/`);
-  url.searchParams.append('canonical_only', 'true');
   if (search) url.searchParams.append('search', search);
   const res = await fetchWithTimeout(url, { headers: getHeaders() });
   return handleResponse(res);
@@ -146,12 +145,11 @@ export async function getDoctors({
   diagnostic_center = '',
   facility = '',
   gender = '',
-  fee_max = '',
   day = '',
   page = 1,
   page_size = 20,
 } = {}) {
-  const key = `doc_${specialty}_${division_id || ''}_${district_id || ''}_${thana_id || ''}_${search}_${bmdc}_${hospital}_${diagnostic_center}_${facility}_${gender}_${fee_max}_${day}_${page}_${page_size}`;
+  const key = `doc_${specialty}_${division_id || ''}_${district_id || ''}_${thana_id || ''}_${search}_${bmdc}_${hospital}_${diagnostic_center}_${facility}_${gender}_${day}_${page}_${page_size}`;
   return fetchWithDeduplicationAndCache(
     key,
     async () => {
@@ -166,7 +164,6 @@ export async function getDoctors({
       if (diagnostic_center) url.searchParams.append('diagnostic_center', diagnostic_center);
       if (facility) url.searchParams.append('facility', facility);
       if (gender && gender.toLowerCase() !== 'all') url.searchParams.append('gender', gender);
-      if (fee_max) url.searchParams.append('fee_max', fee_max);
       if (day && day !== 'All' && day !== 'All Days') url.searchParams.append('day', day);
       if (page) url.searchParams.append('page', page);
       if (page_size) url.searchParams.append('page_size', page_size);
@@ -245,6 +242,15 @@ export async function deleteDoctorAffiliation(id) {
     headers: getHeaders(),
   });
   if (res.status === 204 || res.status === 200) return true;
+  return handleResponse(res);
+}
+
+export async function syncDoctorChambers(doctorId, chambers) {
+  const res = await fetchWithTimeout(`${BASE_URL}/doctors/${doctorId}/chambers/`, {
+    method: 'PUT',
+    headers: getHeaders(),
+    body: JSON.stringify({ chambers }),
+  });
   return handleResponse(res);
 }
 

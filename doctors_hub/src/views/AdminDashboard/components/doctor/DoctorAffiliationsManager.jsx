@@ -35,7 +35,7 @@ export default function DoctorAffiliationsManager() {
 
   const handleOpenAddModal = () => {
     setEditingAff(null);
-    setSelectedLocationId(allLocations[0]?.id || '');
+    setSelectedLocationId('');
     setFee('1500');
     setAdvanceBookingDays('14');
     setLocalErr('');
@@ -44,7 +44,7 @@ export default function DoctorAffiliationsManager() {
 
   const handleOpenEditModal = (aff) => {
     setEditingAff(aff);
-    setSelectedLocationId(aff.location_id || aff.location?.id || '');
+    setSelectedLocationId(aff.location_id || aff.facility?.id || '');
     setFee(String(aff.fee || '1500'));
     setAdvanceBookingDays(String(aff.advance_booking_days ?? 14));
     setLocalErr('');
@@ -53,6 +53,10 @@ export default function DoctorAffiliationsManager() {
 
   const handleSaveAffiliation = async (e) => {
     e.preventDefault();
+    if (!editingAff && !selectedLocationId) {
+      setLocalErr('Please select a facility/location.');
+      return;
+    }
     setSaving(true);
     setLocalErr('');
 
@@ -65,7 +69,7 @@ export default function DoctorAffiliationsManager() {
       } else {
         await api.createDoctorAffiliation({
           doctor: doctor?.id,
-          location_id: selectedLocationId || allLocations[0]?.id,
+          location_id: selectedLocationId,
           fee: parseFloat(fee) || 1500,
           advance_booking_days: parseInt(advanceBookingDays, 10) || 14
         });
@@ -135,11 +139,11 @@ export default function DoctorAffiliationsManager() {
                 </div>
                 <div>
                   <h3 className="text-sm font-serif font-bold text-slate-900 leading-tight">
-                    {formatFacilityName(aff.hospital || aff.diagnostic_center || aff.location || aff) || aff.chamber_name || aff.facility_name || 'Specialist Chamber'}
+                    {aff.facility?.display_name || formatFacilityName(aff.hospital || aff.diagnostic_center || aff.location || aff) || aff.chamber_name || aff.facility_name || 'Specialist Chamber'}
                   </h3>
                   <p className="text-xs font-body text-slate-500 flex items-center gap-1.5 mt-1">
                     <MapPin className="w-3.5 h-3.5 text-slate-400 shrink-0" />
-                    <span>{aff.location?.address_line || aff.location?.area || 'Dhaka, Bangladesh'}</span>
+                    <span>{aff.facility?.address || '—'}</span>
                   </p>
                   <p className="text-[11px] font-body text-slate-400 mt-0.5">
                     Advance booking window: <span className="font-semibold text-slate-600 font-mono">{aff.advance_booking_days ?? 14} days</span>

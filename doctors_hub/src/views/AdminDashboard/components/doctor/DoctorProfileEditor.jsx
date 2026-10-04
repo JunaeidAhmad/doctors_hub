@@ -48,7 +48,7 @@ export default function DoctorProfileEditor() {
 
       const currentSpecIds = (doctor.specialties || []).map(s => {
         if (typeof s === 'object' && s !== null) return s.id;
-        const matched = doctorSpecialties.find(ds => ds.name === s || ds.id === s);
+        const matched = doctorSpecialties.find(ds => ds.id === s);
         return matched ? matched.id : s;
       }).filter(Boolean);
 

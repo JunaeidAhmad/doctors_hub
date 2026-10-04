@@ -169,7 +169,7 @@ export default function BookingModal({
         patient_name: patientName.trim(),
         patient_phone: patientPhone.trim(),
         patient_age: patientAge ? parseInt(patientAge, 10) : undefined,
-        gender: gender.toLowerCase(),
+        patient_gender: gender.toLowerCase(),
         notes: notes.trim(),
         otp_code: otpInput.trim(),
       });
@@ -198,14 +198,14 @@ export default function BookingModal({
           specialty: typeof doctor.specialty === 'object' ? doctor.specialty?.name : doctor.specialty,
           chamberName: chamber?.facility?.display_name || chamber?.display_name || chamber?.name || 'Specialist Chamber',
           facility: chamber?.facility || chamber,
-          location: chamber?.facility?.address || chamber?.address || chamber?.facility?.district || chamber?.district || 'Dhaka, Bangladesh',
+          location: chamber?.facility?.address || chamber?.address || chamber?.facility?.district || chamber?.district || '',
           date: selectedDate,
           sessionKey: selectedSessionKey,
           sessionWindow,
           estimatedTime,
           patientName,
           patientPhone,
-          fee: chamber?.fee || doctor?.fee || 1200,
+          fee: bookingRes.fee,
           serialNumber: serialNum,
           tokenId: serialDisplay
         });
@@ -258,7 +258,7 @@ export default function BookingModal({
               <span>{doctor.academic_title || doctor.designation || 'Specialist Doctor'}</span>
             </span>
             <span className="text-primary font-extrabold text-sm">
-              Fee: ৳{Number(chamber?.fee || doctor?.fee || 1200).toLocaleString()}
+              {(chamber?.fee || doctor?.fee) ? `Fee: ৳${Number(chamber?.fee || doctor?.fee).toLocaleString()}` : "Fee at chamber"}
             </span>
           </div>
 
@@ -283,7 +283,7 @@ export default function BookingModal({
                     {chamber?.facility?.display_name || chamber?.display_name || chamber?.name || 'Specialist Chamber'}
                   </div>
                   <div className="text-[11px] text-slate-500 truncate mt-0.5">
-                    {chamber?.facility?.address || chamber?.address || chamber?.facility?.district || chamber?.district || 'Dhaka, Bangladesh'}
+                    {chamber?.facility?.address || chamber?.address || chamber?.facility?.district || chamber?.district || '—'}
                   </div>
                 </div>
               </div>

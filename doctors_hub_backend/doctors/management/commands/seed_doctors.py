@@ -350,21 +350,8 @@ class Command(BaseCommand):
                             phone = aff_data.get("phone", "").strip()
 
                             # Resolve canonical Thana
-                            DIST_ALIASES = {
-                                'chittagong': 'Chattogram', 'comilla': 'Cumilla', 'bogra': 'Bogura',
-                                'jessore': 'Jashore', 'barisal': 'Barishal', 'ঢাকা': 'Dhaka',
-                                'চট্টগ্রাম': 'Chattogram', 'সিলেট': 'Sylhet'
-                            }
-                            norm_dist = DIST_ALIASES.get(district.lower(), district)
-                            norm_area = area.strip()
-
-                            thana_obj = Thana.objects.filter(district__name__iexact=norm_dist, name__iexact=norm_area).first()
-                            if not thana_obj and norm_area:
-                                thana_obj = Thana.objects.filter(district__name__iexact=norm_dist, bn_name__iexact=norm_area).first()
-                            if not thana_obj:
-                                thana_obj = Thana.objects.filter(district__name__iexact=norm_dist, name__icontains='Sadar').first() or Thana.objects.filter(district__name__iexact=norm_dist).first()
-                            if not thana_obj:
-                                thana_obj = Thana.objects.filter(district__name='Dhaka', name='Dhanmondi').first() or Thana.objects.first()
+                            from facilities.geo import get_thana_strict
+                            thana_obj = get_thana_strict(district, area)
 
                             # Match or create Location:
                             location = None
@@ -375,7 +362,7 @@ class Command(BaseCommand):
                                     name__iexact=fac_name
                                 ).first()
                             else:
-                                loc_filter = {"name__iexact": fac_name, "thana__district__name__iexact": norm_dist}
+                                loc_filter = {"name__iexact": fac_name, "thana__district": thana_obj.district}
                                 if branch:
                                     loc_filter["branch__iexact"] = branch
                                 location = Location.objects.filter(**loc_filter).first()

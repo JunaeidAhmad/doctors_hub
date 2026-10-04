@@ -91,6 +91,7 @@ class Location(models.Model):
     thana = models.ForeignKey(
         Thana,
         on_delete=models.PROTECT,
+        null=False,
         related_name="locations",
         help_text="Canonical Thana/Upazila where this facility is located."
     )
@@ -120,52 +121,7 @@ class Location(models.Model):
         ]
         ordering = ["-created_at"]
 
-    def _resolve_legacy_geo(self):
-        pending_area = getattr(self, '_pending_area', None)
-        pending_dist = getattr(self, '_pending_district', None)
-        pending_div = getattr(self, '_pending_division', None)
-
-        from facilities.models import Division, District, Thana
-        DIST_ALIASES = {
-            'chittagong': 'Chattogram', 'comilla': 'Cumilla', 'bogra': 'Bogura',
-            'jessore': 'Jashore', 'barisal': 'Barishal', 'ঢাকা': 'Dhaka',
-            'চট্টগ্রাম': 'Chattogram', 'সিলেট': 'Sylhet'
-        }
-        raw_dist = (pending_dist or '').strip()
-        norm_dist = DIST_ALIASES.get(raw_dist.lower(), raw_dist)
-        norm_area = (pending_area or '').strip()
-
-        qs = Thana.objects.filter(district__name__iexact=norm_dist) if norm_dist else Thana.objects.all()
-        resolved = None
-        if norm_area:
-            resolved = qs.filter(name__iexact=norm_area).first() or qs.filter(bn_name__iexact=norm_area).first()
-        if not resolved and norm_dist:
-            resolved = qs.filter(name__icontains='Sadar').first() or qs.first()
-
-        if not resolved and (norm_dist or norm_area):
-            div_name = (pending_div or norm_dist or 'Dhaka').strip()
-            div, _ = Division.objects.get_or_create(name=div_name, defaults={'slug': slugify(div_name)})
-            dist_name = norm_dist or 'Dhaka'
-            dist, _ = District.objects.get_or_create(division=div, name=dist_name, defaults={'slug': slugify(dist_name)})
-            thana_name = norm_area or 'Sadar'
-            resolved, _ = Thana.objects.get_or_create(district=dist, name=thana_name, defaults={'slug': slugify(thana_name)})
-
-        if resolved:
-            self.thana = resolved
-
     def save(self, *args, **kwargs):
-        if not getattr(self, 'thana_id', None) or getattr(self, '_pending_area', None) or getattr(self, '_pending_district', None):
-            self._resolve_legacy_geo()
-
-        if not getattr(self, 'thana_id', None):
-            from facilities.models import Division, District, Thana
-            default_thana = Thana.objects.filter(district__name='Dhaka', name='Dhanmondi').first() or Thana.objects.first()
-            if not default_thana:
-                div, _ = Division.objects.get_or_create(name='Dhaka', defaults={'slug': 'dhaka'})
-                dist, _ = District.objects.get_or_create(division=div, name='Dhaka', defaults={'slug': 'dist-dhaka'})
-                default_thana, _ = Thana.objects.get_or_create(district=dist, name='Dhanmondi', defaults={'slug': 'dhanmondi'})
-            self.thana = default_thana
-
         if self.location_type == self.LocationType.CHAMBER and not self.ownership_type:
             self.ownership_type = self.OwnershipType.PRIVATE
         if not self.slug:
@@ -177,49 +133,17 @@ class Location(models.Model):
             self.slug = slug
         super().save(*args, **kwargs)
 
-    def __init__(self, *args, **kwargs):
-        district_kw = kwargs.pop('district', None)
-        area_kw = kwargs.pop('area', None)
-        division_kw = kwargs.pop('division', None)
-        kwargs.pop('latitude', None)
-        kwargs.pop('longitude', None)
-        super().__init__(*args, **kwargs)
-        if district_kw:
-            self._pending_district = district_kw
-        if area_kw:
-            self._pending_area = area_kw
-        if division_kw:
-            self._pending_division = division_kw
-
-        if (district_kw or area_kw) and not getattr(self, 'thana_id', None):
-            self._resolve_legacy_geo()
-
     @property
     def area(self):
         return self.thana.name if self.thana_id else ""
-
-    @area.setter
-    def area(self, value):
-        if value:
-            self._pending_area = value
 
     @property
     def district(self):
         return self.thana.district.name if (self.thana_id and self.thana.district_id) else ""
 
-    @district.setter
-    def district(self, value):
-        if value:
-            self._pending_district = value
-
     @property
     def division(self):
         return self.thana.district.division.name if (self.thana_id and self.thana.district_id and self.thana.district.division_id) else ""
-
-    @division.setter
-    def division(self, value):
-        if value:
-            self._pending_division = value
 
     @property
     def full_address(self):
@@ -246,7 +170,6 @@ class HospitalCategory(models.Model):
     slug = models.SlugField(max_length=120, unique=True, blank=True)
     icon = models.CharField(max_length=50, default='Building2')
     description = models.TextField(blank=True)
-    count = models.IntegerField(default=0)
 
     def save(self, *args, **kwargs):
         if not self.slug:
@@ -273,16 +196,16 @@ class Hospital(models.Model):
     services = models.ManyToManyField(HospitalService, related_name="hospitals", blank=True)
     has_diagnostic_center = models.BooleanField(default=True)
     details_reviewed = models.BooleanField(default=False)
-    bed_capacity = models.IntegerField(default=650)
-    icu_beds_total = models.IntegerField(default=48)
-    icu_beds_available = models.IntegerField(default=4)
-    emergency_phone = models.CharField(max_length=50, default="10678", blank=True)
-    ambulance_phone = models.CharField(max_length=50, default="+880 1700-000000", blank=True)
-    accreditation = models.CharField(max_length=150, default="JCI Accredited Facility", blank=True)
-    dghs_reg_no = models.CharField(max_length=100, default="DGHS Reg #H-098234", blank=True)
-    ot_suites_count = models.IntegerField(default=16)
-    has_helipad = models.BooleanField(default=True)
-    parking_capacity = models.CharField(max_length=100, default="280 Car Parking Available", blank=True)
+    bed_capacity = models.IntegerField(null=True, blank=True)
+    icu_beds_total = models.IntegerField(null=True, blank=True)
+    icu_beds_available = models.IntegerField(null=True, blank=True)
+    emergency_phone = models.CharField(max_length=50, default='', blank=True)
+    ambulance_phone = models.CharField(max_length=50, default='', blank=True)
+    accreditation = models.CharField(max_length=150, default='', blank=True)
+    dghs_reg_no = models.CharField(max_length=100, default='', blank=True)
+    ot_suites_count = models.IntegerField(null=True, blank=True)
+    has_helipad = models.BooleanField(null=True, blank=True)
+    parking_capacity = models.CharField(max_length=100, default='', blank=True)
 
     def __str__(self):
         return f"Hospital: {self.location.name}"

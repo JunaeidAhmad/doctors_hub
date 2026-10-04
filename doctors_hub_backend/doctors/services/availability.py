@@ -219,10 +219,13 @@ def get_availability(affiliation, start_date: datetime.date, days: int = 7) -> D
             session_dict = {
                 'session_key': s.key,
                 'session_start': s.start.strftime('%H:%M'),
+                'start_time': s.start.strftime('%H:%M'),
                 'session_end': s.end.strftime('%H:%M'),
+                'end_time': s.end.strftime('%H:%M'),
                 'capacity': s.capacity,
                 'booked': booked,
                 'remaining': remaining,
+                'capacity_remaining': remaining,
                 'next_serial': next_serial,
                 'estimated_time': est_time.strftime('%H:%M'),
                 'status': status,
@@ -235,13 +238,30 @@ def get_availability(affiliation, start_date: datetime.date, days: int = 7) -> D
                     'date': current_date.strftime('%Y-%m-%d'),
                     'session_key': s.key,
                     'session_start': s.start.strftime('%H:%M'),
+                    'start_time': s.start.strftime('%H:%M'),
                     'estimated_time': est_time.strftime('%H:%M'),
-                    'remaining': remaining
+                    'remaining': remaining,
+                    'capacity_remaining': remaining
                 }
+
+        # Date-level summary
+        date_capacity_remaining = sum(s['remaining'] for s in session_items if s['status'] == 'available')
+        if len(session_items) == 0:
+            date_status = 'closed'
+        elif any(s['status'] == 'available' for s in session_items):
+            date_status = 'available'
+        elif any(s['status'] == 'full' for s in session_items):
+            date_status = 'full'
+        else:
+            date_status = 'closed'
 
         dates_list.append({
             'date': current_date.strftime('%Y-%m-%d'),
             'weekday': weekday_name,
+            'has_schedule': len(session_items) > 0,
+            'sessions_count': len(session_items),
+            'capacity_remaining': date_capacity_remaining,
+            'status': date_status,
             'sessions': session_items
         })
 
@@ -349,8 +369,10 @@ def batch_next_available(affiliations: List[Any], days: int = 7) -> Dict[str, Op
                         'date': current_date.strftime('%Y-%m-%d'),
                         'session_key': s.key,
                         'session_start': s.start.strftime('%H:%M'),
+                        'start_time': s.start.strftime('%H:%M'),
                         'estimated_time': est_time.strftime('%H:%M'),
-                        'remaining': remaining
+                        'remaining': remaining,
+                        'capacity_remaining': remaining
                     }
                     break
 

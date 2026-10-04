@@ -140,6 +140,7 @@ class DoctorAffiliation(models.Model):
     fee = models.DecimalField(max_digits=8, decimal_places=2)
     chamber_type = models.CharField(max_length=100, default='Primary Chamber', blank=True)
     advance_booking_days = models.PositiveSmallIntegerField(default=14, validators=[MinValueValidator(1)])
+    is_active = models.BooleanField(default=True, db_index=True)
 
     class Meta:
         constraints = [

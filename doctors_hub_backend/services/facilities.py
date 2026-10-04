@@ -3,38 +3,19 @@ from facilities.models import Location, Hospital, DiagnosticCenter, Thana
 from tests.models import Test, FacilityTest
 
 
-def _resolve_thana(district_str, area_str):
-    DIST_ALIASES = {
-        'chittagong': 'Chattogram', 'comilla': 'Cumilla', 'bogra': 'Bogura',
-        'jessore': 'Jashore', 'barisal': 'Barishal', 'ঢাকা': 'Dhaka',
-        'চট্টগ্রাম': 'Chattogram', 'সিলেট': 'Sylhet'
-    }
-    norm_dist = DIST_ALIASES.get((district_str or '').strip().lower(), (district_str or '').strip())
-    norm_area = (area_str or '').strip()
-
-    qs = Thana.objects.filter(district__name__iexact=norm_dist) if norm_dist else Thana.objects.all()
-    resolved = None
-    if norm_area:
-        resolved = qs.filter(name__iexact=norm_area).first() or qs.filter(bn_name__iexact=norm_area).first()
-    if not resolved and norm_dist:
-        resolved = qs.filter(name__icontains='Sadar').first() or qs.first()
-    if not resolved:
-        resolved = Thana.objects.filter(district__name='Dhaka', name='Dhanmondi').first() or Thana.objects.first()
-    return resolved
-
-
 def _extract_or_create_location(location_data, default_type):
     if not location_data:
         return None
     thana = location_data.get('thana')
-    if isinstance(thana, int):
-        thana = Thana.objects.filter(id=thana).first()
+    if isinstance(thana, (int, str)) and str(thana).isdigit():
+        thana = Thana.objects.filter(id=int(thana)).first()
     elif not thana:
         thana_id = location_data.get('thana_id')
-        if thana_id:
-            thana = Thana.objects.filter(id=thana_id).first()
+        if thana_id and str(thana_id).isdigit():
+            thana = Thana.objects.filter(id=int(thana_id)).first()
     if not thana:
-        thana = _resolve_thana(location_data.get('district', 'Dhaka'), location_data.get('area', ''))
+        from rest_framework.exceptions import ValidationError
+        raise ValidationError({'thana_id': ['A valid thana_id is required.']})
 
     loc_fields = {
         'name': location_data.get('name', 'Facility'),
@@ -64,20 +45,21 @@ def _update_location_fields(location, location_data):
             setattr(location, field, location_data[field])
     if 'thana' in location_data and location_data['thana']:
         thana_val = location_data['thana']
-        if isinstance(thana_val, int):
-            location.thana = Thana.objects.filter(id=thana_val).first()
-        else:
+        if isinstance(thana_val, (int, str)) and str(thana_val).isdigit():
+            thana_obj = Thana.objects.filter(id=int(thana_val)).first()
+            if not thana_obj:
+                from rest_framework.exceptions import ValidationError
+                raise ValidationError({'thana': ['Invalid thana ID.']})
+            location.thana = thana_obj
+        elif isinstance(thana_val, Thana):
             location.thana = thana_val
     elif 'thana_id' in location_data and location_data['thana_id']:
-        thana_obj = Thana.objects.filter(id=location_data['thana_id']).first()
-        if thana_obj:
-            location.thana = thana_obj
-    elif 'district' in location_data or 'area' in location_data:
-        dist = location_data.get('district', location.district)
-        area = location_data.get('area', location.area)
-        resolved = _resolve_thana(dist, area)
-        if resolved:
-            location.thana = resolved
+        t_id = location_data['thana_id']
+        thana_obj = Thana.objects.filter(id=int(t_id)).first() if str(t_id).isdigit() else None
+        if not thana_obj:
+            from rest_framework.exceptions import ValidationError
+            raise ValidationError({'thana_id': ['Invalid thana_id.']})
+        location.thana = thana_obj
     if 'address' in location_data and 'address_line' not in location_data:
         location.address_line = location_data['address']
     if 'rating' in location_data:
@@ -95,9 +77,9 @@ def _attach_category_tests(location, test_cat_ids, prices=None):
     prices = prices or {}
     tests = Test.objects.filter(category_id__in=test_cat_ids)
     for test in tests:
-        price_val = prices.get(str(test.id), 500.00)
+        price_val = prices.get(str(test.id))
         if isinstance(price_val, dict):
-            price = price_val.get('price', 500.00)
+            price = price_val.get('price')
             discount_percent = price_val.get('discount_percent', 0.0)
         else:
             price = price_val

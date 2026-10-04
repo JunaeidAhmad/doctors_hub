@@ -603,7 +603,7 @@ export default function HospitalsPage({ initialCategory = '', initialKeyword = '
                       <div className="flex items-center gap-2 font-semibold text-slate-800">
                         <MapPin className="w-4 h-4 text-emerald-600 shrink-0" />
                         <span className="truncate">
-                          {typeof hospital.address === 'string' ? hospital.address : (hospital.location || hospital.district || 'Dhaka, Bangladesh')}
+                          {typeof hospital.address === 'string' ? hospital.address : (hospital.location || hospital.district || '—')}
                         </span>
                       </div>
                       <div className="flex items-center justify-between text-slate-600 pt-1">

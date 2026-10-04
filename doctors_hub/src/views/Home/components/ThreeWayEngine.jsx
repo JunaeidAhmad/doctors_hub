@@ -1,4 +1,4 @@
-import React, { useState, useEffect } from 'react';
+import React, { useState, useEffect, useMemo } from 'react';
 import { Stethoscope, FlaskConical, Search, Filter, Sparkles, MapPin, ChevronRight, Building2 } from 'lucide-react';
 import { api, ensureArray } from '../../../services/api';
 import CascadingLocationFilter from '../../../components/CascadingLocationFilter';
@@ -23,6 +23,7 @@ export default function ThreeWayEngine({
   setActiveEngineTab
 }) {
   const [specialties, setSpecialties] = useState([]);
+  const [specialtyGroups, setSpecialtyGroups] = useState([]);
   const [testCategories, setTestCategories] = useState([]);
   const [hospitalCategories, setHospitalCategories] = useState([]);
 
@@ -31,6 +32,7 @@ export default function ThreeWayEngine({
     api.getSearchMetadata()
       .then((meta) => {
         if (isMounted && meta) {
+          if (meta.specialty_groups) setSpecialtyGroups(ensureArray(meta.specialty_groups));
           if (meta.specialties_az) setSpecialties(ensureArray(meta.specialties_az));
           else if (meta.specialties) setSpecialties(ensureArray(meta.specialties));
           if (meta.test_categories) setTestCategories(ensureArray(meta.test_categories));
@@ -76,6 +78,24 @@ export default function ThreeWayEngine({
     districtId: null,
     thanaId: null
   });
+
+  // Normalize specialty value to match option values whether slug or name was passed
+  const currentSpecialtyValue = useMemo(() => {
+    if (!selectedSpecialty) return '';
+    for (const grp of specialtyGroups) {
+      const gSlug = grp.slug || grp.name;
+      if (selectedSpecialty === gSlug || selectedSpecialty === grp.name || selectedSpecialty === grp.slug) {
+        return gSlug;
+      }
+      for (const child of (grp.children || [])) {
+        const cSlug = child.slug || child.name;
+        if (selectedSpecialty === cSlug || selectedSpecialty === child.name || selectedSpecialty === child.slug) {
+          return cSlug;
+        }
+      }
+    }
+    return selectedSpecialty;
+  }, [selectedSpecialty, specialtyGroups]);
 
   const handleSearch = (mode, param, locState) => {
     if (typeof setActiveEngineTab === 'function') {
@@ -134,16 +154,63 @@ export default function ThreeWayEngine({
                 </label>
                 <div className="relative">
                   <select
-                    value={selectedSpecialty}
+                    value={currentSpecialtyValue}
                     onChange={(e) => setSelectedSpecialty(e.target.value)}
-                    className="w-full bg-white text-slate-800 font-medium text-xs border border-slate-300 rounded-xl px-3 py-2.5 focus:outline-none focus:ring-2 focus:ring-emerald-500 focus:border-emerald-500 transition-all appearance-none cursor-pointer shadow-xs"
+                    className="w-full bg-white text-slate-800 font-medium text-xs border border-slate-300 rounded-xl px-3 py-2.5 focus:outline-none focus:ring-2 focus:ring-emerald-500 focus:border-emerald-500 transition-all appearance-none cursor-pointer shadow-xs truncate"
                   >
-                    <option value="">All Specialties (Show All Doctors)</option>
-                    {specialties.map((spec) => (
-                      <option key={spec.id} value={spec.name}>
-                        {spec.name}
-                      </option>
-                    ))}
+                    <option value="">All Specialties</option>
+                    {specialtyGroups.length > 0 ? (
+                      specialtyGroups.map((grp) => {
+                        const grpVal = grp.slug || grp.name;
+                        const grpLabel = `${grp.label || grp.name}${grp.count ? ` (${grp.count})` : ''}`;
+                        return (
+                          <React.Fragment key={grp.id || grp.slug || grp.name}>
+                            <option
+                              value={grpVal}
+                              className="font-bold text-slate-900 bg-slate-50"
+                            >
+                              {grpLabel}
+                            </option>
+                            {(grp.children || []).map((child) => {
+                              const childVal = child.slug || child.name;
+                              const childLabel = `${child.label || child.name}${child.count ? ` (${child.count})` : ''}`;
+                              return (
+                                <option
+                                  key={child.id || child.slug || child.name}
+                                  value={childVal}
+                                  className="text-slate-600"
+                                >
+                                  {'\u00A0\u00A0\u00A0\u00A0'}{childLabel}
+                                </option>
+                              );
+                            })}
+                          </React.Fragment>
+                        );
+                      })
+                    ) : specialties.length > 0 ? (
+                      specialties.map((s) => {
+                        const val = typeof s === 'object' ? (s.slug || s.name) : s;
+                        const label = typeof s === 'object' ? (s.label || s.name) : s;
+                        return (
+                          <option key={val} value={val}>
+                            {label}
+                          </option>
+                        );
+                      })
+                    ) : (
+                      <>
+                        <option value="medicine-primary-care">Medicine &amp; Primary Care</option>
+                        <option value="heart-vascular">Heart &amp; Vascular</option>
+                        <option value="cancer-care">Cancer Care</option>
+                        <option value="brain-spine-nerves">Brain, Spine &amp; Nerves</option>
+                        <option value="bone-joint">Bone &amp; Joint</option>
+                        <option value="womens-health-pregnancy">Women's Health &amp; Pregnancy</option>
+                        <option value="child-health">Child Health</option>
+                        <option value="kidney-urinary">Kidney &amp; Urinary</option>
+                        <option value="digestive-liver">Digestive &amp; Liver</option>
+                        <option value="skin-hair-dermatology">Skin, Hair &amp; Dermatology</option>
+                      </>
+                    )}
                   </select>
                   <div className="pointer-events-none absolute inset-y-0 right-0 flex items-center px-3 text-slate-500">
                     <ChevronRight className="w-4 h-4 rotate-90" />

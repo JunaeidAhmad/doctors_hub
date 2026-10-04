@@ -9,6 +9,7 @@ from .serializers import (
     PatientSerializer, OTPRequestSerializer, OTPVerifySerializer
 )
 from core.permissions import PublicCreateAdminManage
+from .transitions import ALLOWED
 
 
 from services.sms import send_sms_via_sms_bd
@@ -107,6 +108,12 @@ def patient_lookup(request):
     if not phone:
         return response.Response({"found": False, "message": "Phone number query parameter required."}, status=status.HTTP_400_BAD_REQUEST)
 
+    from core.phone import canonical_bd_phone
+    try:
+        phone = canonical_bd_phone(phone)
+    except ValueError:
+        return response.Response({"found": False, "message": "Invalid phone number format."}, status=status.HTTP_400_BAD_REQUEST)
+
     patient = Patient.objects.filter(phone=phone).first()
     if patient:
         return response.Response({
@@ -172,6 +179,11 @@ class DoctorBookingViewSet(viewsets.ModelViewSet):
         else:
             serializer.save()
 
+    @decorators.action(detail=True, methods=['post'], url_path='transition')
+    def transition(self, request, pk=None):
+        booking = self.get_object()
+        return _transition_response(self, request, booking)
+
 
 @extend_schema(tags=['Bookings'])
 class TestBookingViewSet(viewsets.ModelViewSet):
@@ -210,6 +222,11 @@ class TestBookingViewSet(viewsets.ModelViewSet):
             serializer.save(booked_by_user=self.request.user)
         else:
             serializer.save()
+
+    @decorators.action(detail=True, methods=['post'], url_path='transition')
+    def transition(self, request, pk=None):
+        booking = self.get_object()
+        return _transition_response(self, request, booking)
 
 
 # Backward-compatible alias
@@ -254,3 +271,20 @@ class HospitalServiceBookingViewSet(viewsets.ModelViewSet):
         else:
             serializer.save()
 
+    @decorators.action(detail=True, methods=['post'], url_path='transition')
+    def transition(self, request, pk=None):
+        booking = self.get_object()
+        return _transition_response(self, request, booking)
+
+
+def _transition_response(view, request, booking):
+    target = request.data.get('to')
+    allowed = ALLOWED.get(booking.status, ())
+    if target not in allowed:
+        return response.Response(
+            {'to': [f'Invalid transition from {booking.status}. Allowed targets: {list(allowed)}']},
+            status=status.HTTP_400_BAD_REQUEST,
+        )
+    booking.status = target
+    booking.save(update_fields=['status', 'updated_at'])
+    return response.Response(view.get_serializer(booking).data)

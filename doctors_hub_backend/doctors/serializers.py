@@ -13,7 +13,7 @@ class SpecialtyTagSerializer(serializers.ModelSerializer):
 
 
 class DoctorSpecialtySerializer(serializers.ModelSerializer):
-    doctor_count = serializers.IntegerField(read_only=True, required=False)
+    doctor_count = serializers.SerializerMethodField()
     alias_count = serializers.IntegerField(read_only=True, required=False)
     parents = serializers.SerializerMethodField(read_only=True)
     parent_ids = serializers.PrimaryKeyRelatedField(
@@ -30,6 +30,12 @@ class DoctorSpecialtySerializer(serializers.ModelSerializer):
             'icon', 'description', 'is_umbrella', 'is_popular',
             'doctor_count', 'alias_count', 'parents', 'parent_ids', 'related_ids'
         )
+
+    def get_doctor_count(self, obj):
+        counts = self.context.get('doctor_counts')
+        if counts is not None:
+            return counts.get(obj.id, counts.get(str(obj.id), getattr(obj, 'doctor_count', 0)))
+        return getattr(obj, 'doctor_count', 0)
 
     def get_parents(self, obj):
         return [
@@ -117,26 +123,6 @@ class SpecialtyAliasSerializer(serializers.ModelSerializer):
             return existing
         return super().create(validated_data)
 
-
-class SpecialtyOptionSerializer(serializers.Serializer):
-    id = serializers.UUIDField(source='specialty.id')
-    alias_id = serializers.UUIDField(source='id')
-    name = serializers.CharField()
-    canonical_name = serializers.CharField(source='specialty.canonical_name')
-    bn_name = serializers.CharField(source='specialty.bn_name')
-    slug = serializers.CharField(source='specialty.slug')
-    icon = serializers.CharField(source='specialty.icon')
-    description = serializers.CharField(source='specialty.description')
-    doctor_count = serializers.SerializerMethodField()
-
-    def get_doctor_count(self, obj):
-        counts = self.context.get('doctor_counts')
-        spec_id = getattr(obj, 'specialty_id', None) or getattr(obj, 'id', None)
-        if counts is not None and spec_id:
-            return counts.get(spec_id, 0)
-        from doctors.services.specialty_relations import specialty_doctor_counts
-        counts = specialty_doctor_counts()
-        return counts.get(spec_id, 0) if spec_id else 0
 
 
 class AffiliationScheduleSerializer(serializers.ModelSerializer):
@@ -241,7 +227,7 @@ class DoctorAffiliationSerializer(serializers.ModelSerializer):
         model = DoctorAffiliation
         fields = (
             'id', 'doctor', 'location_id', 'facility', 'fee',
-            'schedules',
+            'schedules', 'is_active',
             'chamber_type', 'advance_booking_days', 'next_available',
             'doctor_name', 'doctor_bn_name', 'academic_title', 'institution', 'qualification', 'experience'
         )
@@ -438,6 +424,8 @@ class DoctorSerializer(serializers.ModelSerializer):
         specialty_ids = validated_data.pop('specialties', None) or validated_data.pop('specialty_ids', None)
         primary_spec = validated_data.get('primary_specialty')
         affiliations_data = validated_data.pop('affiliations', None)
+        if affiliations_data is not None:
+            raise serializers.ValidationError({'affiliations': ['Use PUT /api/doctors/{id}/chambers/.']})
 
         doctor = Doctor.objects.create(**validated_data)
 
@@ -449,16 +437,12 @@ class DoctorSerializer(serializers.ModelSerializer):
         elif primary_spec and not doctor.specialties.exists():
             doctor.specialties.add(primary_spec)
 
-        if affiliations_data:
-            for aff_data in affiliations_data:
-                schedules_data = aff_data.pop('schedules', [])
-                aff = DoctorAffiliation.objects.create(doctor=doctor, **aff_data)
-                for sched_data in schedules_data:
-                    AffiliationSchedule.objects.create(affiliation=aff, **sched_data)
         return doctor
 
     def update(self, instance, validated_data):
         specialty_ids = validated_data.pop('specialties', None) or validated_data.pop('specialty_ids', None)
+        if 'affiliations' in validated_data:
+            raise serializers.ValidationError({'affiliations': ['Use PUT /api/doctors/{id}/chambers/.']})
         validated_data.pop('affiliations', None)
 
         for attr, value in validated_data.items():

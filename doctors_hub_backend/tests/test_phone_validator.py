@@ -60,11 +60,14 @@ class TestPhoneValidationInAPI:
         assert "phone_number" in res.json()
 
     def test_facility_registration_accepts_valid_phone(self):
+        from facilities.models import Division, District, Thana
+        div, _ = Division.objects.get_or_create(name="Dhaka", defaults={"bn_name": "ঢাকা"})
+        dist, _ = District.objects.get_or_create(name="Dhaka", division=div, defaults={"bn_name": "ঢাকা"})
+        thana, _ = Thana.objects.get_or_create(name="Dhanmondi", district=dist, defaults={"bn_name": "ধানমন্ডি"})
         payload = {
             "facility_type": "hospital",
             "name": "Valid Phone Hospital",
-            "division": "Dhaka",
-            "district": "Dhaka",
+            "thana_id": thana.pk,
             "address_line": "123 Street",
             "phone_number": "+8801799887766",  # Valid
             "password": "securepassword123"

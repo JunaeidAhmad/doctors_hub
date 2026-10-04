@@ -3,14 +3,9 @@ from django.utils import timezone
 from .models import DoctorBooking, TestBooking, HospitalServiceBooking, Patient, OTPVerification
 from doctors.models import DoctorAffiliation
 from tests.models import FacilityTest
-from facilities.models import Hospital, HospitalService
+from facilities.models import Hospital, HospitalService, Thana
 from facilities.serializers_summary import FacilitySummarySerializer
-from core.validators import bangladesh_phone_validator
-from services.sms import (
-    send_doctor_booking_confirmation_sms,
-    send_test_booking_confirmation_sms,
-    send_hospital_service_booking_confirmation_sms
-)
+from core.phone import BDPhoneField
 
 
 class PatientSerializer(serializers.ModelSerializer):
@@ -21,12 +16,12 @@ class PatientSerializer(serializers.ModelSerializer):
 
 
 class OTPRequestSerializer(serializers.Serializer):
-    phone = serializers.CharField(max_length=20, validators=[bangladesh_phone_validator])
+    phone = BDPhoneField()
     purpose = serializers.CharField(max_length=50, default='booking', required=False)
 
 
 class OTPVerifySerializer(serializers.Serializer):
-    phone = serializers.CharField(max_length=20, validators=[bangladesh_phone_validator])
+    phone = BDPhoneField()
     otp_code = serializers.CharField(max_length=6)
     purpose = serializers.CharField(max_length=50, default='booking', required=False)
 
@@ -55,48 +50,6 @@ def verify_otp_helper(phone, otp_code, purpose='booking'):
     return True
 
 
-def resolve_patient(patient_data):
-    phone = patient_data.get('phone') or patient_data.get('patient_phone')
-    if not phone:
-        return None
-    name = patient_data.get('name') or patient_data.get('patient_name') or 'Patient'
-    age = patient_data.get('age') or patient_data.get('patient_age')
-    gender = patient_data.get('gender') or patient_data.get('patient_gender') or ''
-    address = patient_data.get('address') or patient_data.get('patient_address') or ''
-    blood_group = patient_data.get('blood_group') or patient_data.get('patient_blood_group') or ''
-
-    patient, created = Patient.objects.get_or_create(
-        phone=phone,
-        defaults={
-            'name': name,
-            'age': age,
-            'gender': gender,
-            'address': address,
-            'blood_group': blood_group
-        }
-    )
-    if not created:
-        updated = False
-        if name and patient.name != name:
-            patient.name = name
-            updated = True
-        if age is not None and patient.age != age:
-            patient.age = age
-            updated = True
-        if gender and patient.gender != gender:
-            patient.gender = gender
-            updated = True
-        if address and not patient.address:
-            patient.address = address
-            updated = True
-        if blood_group and not patient.blood_group:
-            patient.blood_group = blood_group
-            updated = True
-        if updated:
-            patient.save()
-    return patient
-
-
 class DoctorBookingSerializer(serializers.ModelSerializer):
     doctor_name = serializers.CharField(source='affiliation.doctor.name', read_only=True)
     facility = FacilitySummarySerializer(source='affiliation.location', read_only=True)
@@ -108,13 +61,15 @@ class DoctorBookingSerializer(serializers.ModelSerializer):
     patient_id = serializers.PrimaryKeyRelatedField(
         queryset=Patient.objects.all(), write_only=True, source='patient', required=False, allow_null=True
     )
+    patient_phone = BDPhoneField(required=False, allow_blank=True)
     serial_display = serializers.CharField(read_only=True)
     session_start = serializers.TimeField(read_only=True, format='%H:%M')
     session_end = serializers.TimeField(read_only=True, format='%H:%M')
     estimated_time = serializers.TimeField(read_only=True, format='%H:%M')
     otp_code = serializers.CharField(write_only=True, required=False, allow_blank=True)
-    patient_age = serializers.IntegerField(write_only=True, required=False, allow_null=True)
-    gender = serializers.CharField(write_only=True, required=False, allow_blank=True)
+    patient_age = serializers.IntegerField(required=False, allow_null=True)
+    patient_gender = serializers.CharField(required=False, allow_blank=True)
+    fee = serializers.DecimalField(source='fee_at_booking', max_digits=8, decimal_places=2, read_only=True, allow_null=True)
 
     class Meta:
         model = DoctorBooking
@@ -122,52 +77,37 @@ class DoctorBookingSerializer(serializers.ModelSerializer):
             'id', 'patient', 'patient_id', 'user', 'status', 'notes', 'created_at', 'updated_at',
             'affiliation_id', 'date', 'session_key', 'session_start', 'session_end', 'estimated_time',
             'serial_number', 'serial_display',
-            'patient_name', 'patient_phone', 'patient_age', 'gender',
-            'doctor_name', 'facility', 'otp_code'
+            'patient_name', 'patient_phone', 'patient_age', 'patient_gender',
+            'doctor_name', 'facility', 'otp_code', 'fee'
         )
         read_only_fields = (
             'user', 'created_at', 'updated_at', 'serial_number', 'serial_display',
-            'session_start', 'session_end', 'estimated_time'
+            'session_start', 'session_end', 'estimated_time', 'status'
         )
-
-    def __init__(self, *args, **kwargs):
-        super().__init__(*args, **kwargs)
-        if self.instance is None and 'status' in self.fields:
-            self.fields['status'].read_only = True
 
     def to_internal_value(self, data):
         if hasattr(data, 'copy'):
             data = data.copy()
             if 'affiliation' in data and 'affiliation_id' not in data:
                 data['affiliation_id'] = data['affiliation']
+            # Accept legacy 'gender' key as 'patient_gender'
+            if 'gender' in data and 'patient_gender' not in data:
+                data['patient_gender'] = data['gender']
         return super().to_internal_value(data)
 
     def validate(self, attrs):
         if not self.instance:
             otp_code = attrs.pop('otp_code', None)
-            patient_age = attrs.pop('patient_age', None)
-            gender = attrs.pop('gender', None)
             phone = attrs.get('patient_phone') or (attrs.get('patient').phone if attrs.get('patient') else None)
 
             if otp_code:
                 verify_otp_helper(phone, otp_code, purpose='doctor_booking')
 
-            if not attrs.get('patient') and phone:
-                patient = resolve_patient({
-                    'phone': phone,
-                    'name': attrs.get('patient_name', ''),
-                    'age': patient_age,
-                    'gender': gender
-                })
-                attrs['patient'] = patient
-                if not attrs.get('patient_name'):
-                    attrs['patient_name'] = patient.name
-                if not attrs.get('patient_phone'):
-                    attrs['patient_phone'] = patient.phone
         return attrs
 
     def create(self, validated_data):
         from .services import create_doctor_booking
+
         user = validated_data.pop('booked_by_user', None)
         if not user:
             request = self.context.get('request')
@@ -179,29 +119,34 @@ class DoctorBookingSerializer(serializers.ModelSerializer):
 class TestBookingSerializer(serializers.ModelSerializer):
     test_name = serializers.CharField(source='facility_test.test.name', read_only=True, default='')
     facility = FacilitySummarySerializer(source='facility_test.location', read_only=True)
-    price = serializers.DecimalField(source='facility_test.price', max_digits=10, decimal_places=2, read_only=True, default=0)
+    price = serializers.DecimalField(source='price_at_booking', max_digits=10, decimal_places=2, read_only=True, allow_null=True)
     address = serializers.CharField(source='full_pickup_address', read_only=True)
     user = serializers.PrimaryKeyRelatedField(source='booked_by_user', read_only=True)
     facility_test_id = serializers.PrimaryKeyRelatedField(
         queryset=FacilityTest.objects.all(), write_only=True, source='facility_test'
     )
+    pickup_thana_id = serializers.PrimaryKeyRelatedField(
+        queryset=Thana.objects.all(),
+        source='pickup_thana', required=False, allow_null=True, write_only=True
+    )
     patient = PatientSerializer(read_only=True)
     patient_id = serializers.PrimaryKeyRelatedField(
         queryset=Patient.objects.all(), write_only=True, source='patient', required=False, allow_null=True
     )
+    patient_phone = BDPhoneField(required=False, allow_blank=True)
     otp_code = serializers.CharField(write_only=True, required=False, allow_blank=True)
-    patient_age = serializers.IntegerField(write_only=True, required=False, allow_null=True)
-    gender = serializers.CharField(write_only=True, required=False, allow_blank=True)
+    patient_age = serializers.IntegerField(required=False, allow_null=True)
+    patient_gender = serializers.CharField(required=False, allow_blank=True)
 
     class Meta:
         model = TestBooking
         fields = (
             'id', 'patient', 'patient_id', 'user', 'status', 'notes', 'created_at', 'updated_at',
-            'facility_test_id', 'pickup_date', 'patient_name', 'patient_phone', 'patient_age', 'gender',
+            'facility_test_id', 'pickup_date', 'collection_type', 'pickup_thana_id', 'patient_name', 'patient_phone', 'patient_age', 'patient_gender',
             'pickup_address_line',
             'address', 'test_name', 'facility', 'price', 'otp_code'
         )
-        read_only_fields = ('user', 'created_at', 'updated_at')
+        read_only_fields = ('user', 'created_at', 'updated_at', 'status')
 
     def to_internal_value(self, data):
         mutable_data = data.copy() if hasattr(data, 'copy') else dict(data)
@@ -214,37 +159,27 @@ class TestBookingSerializer(serializers.ModelSerializer):
         if 'address' in mutable_data and not mutable_data.get('pickup_address_line'):
             raw_addr = mutable_data.get('address', '')
             mutable_data['pickup_address_line'] = raw_addr
+        # Accept legacy 'gender' key as 'patient_gender'
+        if 'gender' in mutable_data and 'patient_gender' not in mutable_data:
+            mutable_data['patient_gender'] = mutable_data['gender']
         return super().to_internal_value(mutable_data)
 
     def validate(self, attrs):
         otp_code = attrs.pop('otp_code', None)
-        patient_age = attrs.pop('patient_age', None)
-        gender = attrs.pop('gender', None)
         phone = attrs.get('patient_phone') or (attrs.get('patient').phone if attrs.get('patient') else None)
 
         if otp_code:
             verify_otp_helper(phone, otp_code, purpose='test_booking')
 
-        if not attrs.get('patient') and phone:
-            patient = resolve_patient({
-                'phone': phone,
-                'name': attrs.get('patient_name', ''),
-                'age': patient_age,
-                'gender': gender,
-                'address': attrs.get('pickup_address_line', '')
-            })
-            attrs['patient'] = patient
-            if not attrs.get('patient_name'):
-                attrs['patient_name'] = patient.name
-            if not attrs.get('patient_phone'):
-                attrs['patient_phone'] = patient.phone
-
         return attrs
 
     def create(self, validated_data):
-        instance = super().create(validated_data)
-        send_test_booking_confirmation_sms(instance)
-        return instance
+        from .services import create_test_booking
+        user = validated_data.pop('booked_by_user', None)
+        if not user:
+            request = self.context.get('request')
+            user = request.user if request and request.user.is_authenticated else None
+        return create_test_booking(validated_data, user=user)
 
 
 class HospitalServiceBookingSerializer(serializers.ModelSerializer):
@@ -261,19 +196,20 @@ class HospitalServiceBookingSerializer(serializers.ModelSerializer):
     patient_id = serializers.PrimaryKeyRelatedField(
         queryset=Patient.objects.all(), write_only=True, source='patient', required=False, allow_null=True
     )
+    patient_phone = BDPhoneField(required=False, allow_blank=True)
     otp_code = serializers.CharField(write_only=True, required=False, allow_blank=True)
-    patient_age = serializers.IntegerField(write_only=True, required=False, allow_null=True)
-    gender = serializers.CharField(write_only=True, required=False, allow_blank=True)
+    patient_age = serializers.IntegerField(required=False, allow_null=True)
+    patient_gender = serializers.CharField(required=False, allow_blank=True)
 
     class Meta:
         model = HospitalServiceBooking
         fields = (
             'id', 'patient', 'patient_id', 'user', 'status', 'notes', 'created_at', 'updated_at',
             'hospital_id', 'service_id', 'booking_date', 'preferred_time',
-            'patient_name', 'patient_phone', 'patient_age', 'gender',
+            'patient_name', 'patient_phone', 'patient_age', 'patient_gender',
             'facility', 'service_name', 'otp_code'
         )
-        read_only_fields = ('user', 'created_at', 'updated_at')
+        read_only_fields = ('user', 'created_at', 'updated_at', 'status')
 
     def to_internal_value(self, data):
         mutable_data = data.copy() if hasattr(data, 'copy') else dict(data)
@@ -283,48 +219,27 @@ class HospitalServiceBookingSerializer(serializers.ModelSerializer):
             mutable_data['service_id'] = mutable_data['service']
         if 'date' in mutable_data and not mutable_data.get('booking_date'):
             mutable_data['booking_date'] = mutable_data['date']
+        # Accept legacy 'gender' key as 'patient_gender'
+        if 'gender' in mutable_data and 'patient_gender' not in mutable_data:
+            mutable_data['patient_gender'] = mutable_data['gender']
         return super().to_internal_value(mutable_data)
 
     def validate(self, attrs):
         otp_code = attrs.pop('otp_code', None)
-        patient_age = attrs.pop('patient_age', None)
-        gender = attrs.pop('gender', None)
         phone = attrs.get('patient_phone') or (attrs.get('patient').phone if attrs.get('patient') else None)
 
         if otp_code:
             verify_otp_helper(phone, otp_code, purpose='hospital_service_booking')
 
-        if not attrs.get('patient') and phone:
-            patient = resolve_patient({
-                'phone': phone,
-                'name': attrs.get('patient_name', ''),
-                'age': patient_age,
-                'gender': gender
-            })
-            attrs['patient'] = patient
-            if not attrs.get('patient_name'):
-                attrs['patient_name'] = patient.name
-            if not attrs.get('patient_phone'):
-                attrs['patient_phone'] = patient.phone
-
-        valid_fields = {'hospital', 'service', 'booking_date', 'preferred_time', 'patient_name', 'patient_phone', 'status', 'notes', 'patient', 'booked_by_user'}
-        model_kwargs = {k: v for k, v in attrs.items() if k in valid_fields}
-        instance = HospitalServiceBooking(**model_kwargs)
-        try:
-            instance.clean()
-        except Exception as e:
-            if hasattr(e, 'message_dict'):
-                raise serializers.ValidationError(e.message_dict)
-            elif hasattr(e, 'messages'):
-                raise serializers.ValidationError(e.messages)
-            raise e
         return attrs
 
     def create(self, validated_data):
-        instance = super().create(validated_data)
-        send_hospital_service_booking_confirmation_sms(instance)
-        return instance
+        from .services import create_hospital_service_booking
+        user = validated_data.pop('booked_by_user', None)
+        if not user:
+            request = self.context.get('request')
+            user = request.user if request and request.user.is_authenticated else None
+        return create_hospital_service_booking(validated_data, user=user)
 
 
 LabBookingSerializer = TestBookingSerializer
-

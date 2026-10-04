@@ -157,9 +157,9 @@ export default function DoctorProfileModal({
           {affiliations.length > 0 ? (
             <div className="space-y-3">
               {affiliations.map((aff, affIdx) => {
-                const facName = formatFacilityName(aff) || 'Medical Facility';
-                const facAddr = aff.district || aff.address || 'Dhaka';
-                const affFee = aff.fee ? `৳${Number(aff.fee).toLocaleString()}` : '৳1,000';
+                const facName = aff.facility?.display_name || formatFacilityName(aff) || 'Medical Facility';
+                const facAddr = aff.facility?.address || aff.facility?.district || aff.district || aff.address || '—';
+                const affFee = aff.fee ? `৳${Number(aff.fee).toLocaleString()}` : 'Fee at chamber';
                 const schedText = aff.schedules && aff.schedules.length > 0
                   ? aff.schedules.map(s => `${s.day_of_week} (${s.start_time?.slice(0, 5)} - ${s.end_time?.slice(0, 5)})`).join(' | ')
                   : 'Consultation by Appointment';

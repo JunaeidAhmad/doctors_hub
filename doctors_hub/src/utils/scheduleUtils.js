@@ -85,7 +85,7 @@ export const checkScheduleConflict = (targetDay, startStr, endStr, allAffiliatio
 
         // Interval overlap: start1 < end2 && end1 > start2
         if (startMin < sEndMin && endMin > sStartMin) {
-          const locName = aff.hospital?.name || aff.diagnostic_center?.name || aff.chamber_name || aff.facility_name || aff.location?.name || 'another chamber/location';
+          const locName = aff.facility?.display_name || 'another chamber';
           const sStartFormatted = formatDisplayTime(s.start_time);
           const sEndFormatted = formatDisplayTime(s.end_time);
           return {

@@ -44,7 +44,7 @@ export default function TopUtilityStrip({ selectedLocation, setSelectedLocation,
 
           <div className="flex items-center gap-1 text-slate-300">
             <span className="material-symbols-outlined text-[14px] text-emerald-400">location_on</span>
-            <span className="font-medium text-slate-100">{selectedLocation || 'Dhaka'}</span>
+            <span className="font-medium text-slate-100">{selectedLocation || 'All Bangladesh'}</span>
           </div>
 
           <span className="text-slate-700 hidden sm:inline">•</span>

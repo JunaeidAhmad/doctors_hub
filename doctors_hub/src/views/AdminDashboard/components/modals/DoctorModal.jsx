@@ -2,7 +2,7 @@ import React, { useState, useEffect, useMemo } from 'react';
 import { 
   X, Stethoscope, Building2, DollarSign, Clock, 
   Plus, Trash2, AlertCircle, Save, Sparkles, User,
-  Camera, Star, ShieldCheck
+  Camera, Star, ShieldCheck, Users, Timer
 } from 'lucide-react';
 import { useAdminContext } from '../../context/AdminContext';
 import { api } from '../../../../services/api';
@@ -15,6 +15,29 @@ const DAYS_OF_WEEK = [
 const GENDER_CHOICES = ['Male', 'Female', 'Other'];
 const STATUS_CHOICES = ['Active', 'Inactive', 'On Leave', 'Retired'];
 const CHAMBER_TYPES = ['Primary Chamber', 'Visiting Chamber', 'Consultation Room', 'Evening Chamber'];
+
+const PRESET_TIMETABLES = [
+  { label: 'Morning (09:00 - 13:00)', start_time: '09:00', end_time: '13:00', max_patients: 25, avg_consult_minutes: 10 },
+  { label: 'Afternoon (14:00 - 17:00)', start_time: '14:00', end_time: '17:00', max_patients: 20, avg_consult_minutes: 10 },
+  { label: 'Evening (17:00 - 21:00)', start_time: '17:00', end_time: '21:00', max_patients: 30, avg_consult_minutes: 10 },
+  { label: 'Night (19:00 - 22:00)', start_time: '19:00', end_time: '22:00', max_patients: 20, avg_consult_minutes: 10 },
+];
+
+function calculateSlotDuration(startTime, endTime) {
+  if (!startTime || !endTime) return '';
+  const [sh, sm] = startTime.split(':').map(Number);
+  const [eh, em] = endTime.split(':').map(Number);
+  if (isNaN(sh) || isNaN(sm) || isNaN(eh) || isNaN(em)) return '';
+  const startMins = sh * 60 + sm;
+  const endMins = eh * 60 + em;
+  const diff = endMins - startMins;
+  if (diff <= 0) return 'Invalid range';
+  const hrs = Math.floor(diff / 60);
+  const mins = diff % 60;
+  if (hrs > 0 && mins > 0) return `${hrs}h ${mins}m session`;
+  if (hrs > 0) return `${hrs}h session`;
+  return `${mins}m session`;
+}
 
 export default function DoctorModal() {
   const {
@@ -125,7 +148,9 @@ export default function DoctorModal() {
               id: s.id,
               day_of_week: s.day_of_week || 'Saturday',
               start_time: s.start_time ? s.start_time.slice(0, 5) : '17:00',
-              end_time: s.end_time ? s.end_time.slice(0, 5) : '21:00'
+              end_time: s.end_time ? s.end_time.slice(0, 5) : '21:00',
+              max_patients: s.max_patients != null ? s.max_patients : 30,
+              avg_consult_minutes: s.avg_consult_minutes != null ? s.avg_consult_minutes : 10
             })) : [];
 
             return {
@@ -139,7 +164,9 @@ export default function DoctorModal() {
                   id: `temp-sched-${Date.now()}`,
                   day_of_week: 'Saturday',
                   start_time: '17:00',
-                  end_time: '21:00'
+                  end_time: '21:00',
+                  max_patients: 30,
+                  avg_consult_minutes: 10
                 }
               ]
             };
@@ -156,7 +183,9 @@ export default function DoctorModal() {
                   id: `temp-sched-${Date.now()}`,
                   day_of_week: 'Saturday',
                   start_time: '17:00',
-                  end_time: '21:00'
+                  end_time: '21:00',
+                  max_patients: 30,
+                  avg_consult_minutes: 10
                 }
               ]
             }
@@ -190,10 +219,8 @@ export default function DoctorModal() {
       setImageFile(null);
       setImagePreview('');
       setSpecialtySource('');
-      setSpecialtySourceBn('');
-      const defaultSpecId = (doctorSpecialties || [])[0] ? doctorSpecialties[0].id : '';
-      setSelectedSpecialties(defaultSpecId ? [defaultSpecId] : []);
-      setPrimarySpecialtyId(defaultSpecId);
+      setSelectedSpecialties([]);
+      setPrimarySpecialtyId('');
       setSpecialtySearchQuery('');
       setAffiliations([
         {
@@ -207,7 +234,9 @@ export default function DoctorModal() {
               id: `temp-sched-${Date.now()}`,
               day_of_week: 'Saturday',
               start_time: '17:00',
-              end_time: '21:00'
+              end_time: '21:00',
+              max_patients: 30,
+              avg_consult_minutes: 10
             }
           ]
         }
@@ -260,7 +289,9 @@ export default function DoctorModal() {
             id: `temp-sched-${Date.now()}-${Math.random()}`,
             day_of_week: 'Saturday',
             start_time: '17:00',
-            end_time: '21:00'
+            end_time: '21:00',
+            max_patients: 30,
+            avg_consult_minutes: 10
           }
         ]
       }
@@ -278,7 +309,7 @@ export default function DoctorModal() {
     }));
   };
 
-  const handleAddScheduleSlot = (affIndex) => {
+  const handleAddScheduleSlot = (affIndex, preset = null) => {
     setAffiliations(prev => prev.map((aff, idx) => {
       if (idx !== affIndex) return aff;
       return {
@@ -287,9 +318,11 @@ export default function DoctorModal() {
           ...aff.schedules,
           {
             id: `temp-sched-${Date.now()}-${Math.random()}`,
-            day_of_week: 'Monday',
-            start_time: '17:00',
-            end_time: '21:00'
+            day_of_week: 'Saturday',
+            start_time: preset ? preset.start_time : '17:00',
+            end_time: preset ? preset.end_time : '21:00',
+            max_patients: preset ? preset.max_patients : 30,
+            avg_consult_minutes: preset ? preset.avg_consult_minutes : 10
           }
         ]
       };
@@ -446,101 +479,53 @@ export default function DoctorModal() {
         throw new Error('Failed to identify doctor ID.');
       }
 
-      // 1. Delete removed affiliations
-      const currentAffIds = new Set(
-        affiliations
-          .map(a => a.id)
-          .filter(id => id && !String(id).startsWith('temp-'))
-      );
-
-      for (const initialId of initialAffiliationIds) {
-        if (!currentAffIds.has(initialId)) {
-          try {
-            await api.deleteDoctorAffiliation(initialId);
-          } catch (err) {
-            console.warn('Failed to delete affiliation:', initialId, err);
-          }
-        }
-      }
-
-      // 2. Process each chamber / affiliation
-      for (const aff of affiliations) {
-        const isTempAff = !aff.id || String(aff.id).startsWith('temp-');
-        const targetLocId = aff.location_id || allLocations[0]?.id;
-        if (!targetLocId) continue;
-
-        let affId = aff.id;
-        if (isTempAff) {
-          const createdAff = await api.createDoctorAffiliation({
-            doctor: doctorId,
-            location_id: targetLocId,
-            chamber_type: aff.chamber_type || 'Primary Chamber',
-            advance_booking_days: parseInt(aff.advance_booking_days || 14, 10),
-            fee: parseFloat(aff.fee) || 1200
-          });
-          affId = createdAff?.id;
-        } else {
-          await api.updateDoctorAffiliation(affId, {
-            chamber_type: aff.chamber_type || 'Primary Chamber',
-            advance_booking_days: parseInt(aff.advance_booking_days || 14, 10),
-            fee: parseFloat(aff.fee) || 1200
-          });
-        }
-
-        if (affId) {
-          const origSchedIds = initialScheduleIds[aff.id] || [];
-          const currentSchedIds = new Set(
-            (aff.schedules || [])
-              .map(s => s.id)
-              .filter(id => id && !String(id).startsWith('temp-'))
-          );
-
-          for (const origSchedId of origSchedIds) {
-            if (!currentSchedIds.has(origSchedId)) {
-              try {
-                await api.deleteAffiliationSchedule(origSchedId);
-              } catch (err) {
-                console.warn('Failed to delete schedule slot:', origSchedId, err);
+      // Sync all chambers atomically via PUT /api/doctors/{id}/chambers/
+      const chambersPayload = affiliations
+        .filter(a => {
+          const locId = a.location_id;
+          return locId && !String(locId).startsWith('temp-');
+        })
+        .map(a => {
+          const chamber = {
+            location_id: a.location_id,
+            fee: parseFloat(a.fee),
+            chamber_type: a.chamber_type || 'Primary Chamber',
+            advance_booking_days: parseInt(a.advance_booking_days || 14, 10),
+            schedules: (a.schedules || []).map(s => ({
+              day_of_week: s.day_of_week || 'Monday',
+              start_time: s.start_time?.length === 5 ? `${s.start_time}:00` : (s.start_time || '09:00:00'),
+              end_time: s.end_time?.length === 5 ? `${s.end_time}:00` : (s.end_time || '13:00:00'),
+              max_patients: parseInt(s.max_patients || 30, 10),
+              avg_consult_minutes: parseInt(s.avg_consult_minutes || 10, 10),
+            })),
+          };
+          if (a.id && !String(a.id).startsWith('temp-')) {
+            chamber.id = a.id;
+            chamber.schedules = (a.schedules || []).map(s => {
+              const sched = {
+                day_of_week: s.day_of_week || 'Monday',
+                start_time: s.start_time?.length === 5 ? `${s.start_time}:00` : (s.start_time || '09:00:00'),
+                end_time: s.end_time?.length === 5 ? `${s.end_time}:00` : (s.end_time || '13:00:00'),
+                max_patients: parseInt(s.max_patients || 30, 10),
+                avg_consult_minutes: parseInt(s.avg_consult_minutes || 10, 10),
+              };
+              if (s.id && !String(s.id).startsWith('temp-')) {
+                sched.id = s.id;
               }
-            }
+              return sched;
+            });
           }
+          return chamber;
+        });
 
-          for (const sched of (aff.schedules || [])) {
-            const isTempSched = !sched.id || String(sched.id).startsWith('temp-');
-            const startTimeFormatted = sched.start_time?.length === 5 
-              ? `${sched.start_time}:00` 
-              : (sched.start_time || '17:00:00');
-            const endTimeFormatted = sched.end_time?.length === 5 
-              ? `${sched.end_time}:00` 
-              : (sched.end_time || '21:00:00');
+      const syncResult = await api.syncDoctorChambers(doctorId, chambersPayload);
 
-            if (isTempSched) {
-              try {
-                await api.createAffiliationSchedule({
-                  affiliation_id: affId,
-                  day_of_week: sched.day_of_week || 'Saturday',
-                  start_time: startTimeFormatted,
-                  end_time: endTimeFormatted
-                });
-              } catch (err) {
-                console.warn('Failed to create schedule slot:', err);
-              }
-            } else {
-              try {
-                await api.updateAffiliationSchedule(sched.id, {
-                  day_of_week: sched.day_of_week || 'Saturday',
-                  start_time: startTimeFormatted,
-                  end_time: endTimeFormatted
-                });
-              } catch (err) {
-                console.warn('Failed to update schedule slot:', sched.id, err);
-              }
-            }
-          }
-        }
-      }
-
-      showNotification(editingDoctor ? `Dr. ${name} updated with fees and schedules!` : `Dr. ${name} added successfully!`);
+      const deactivated = syncResult?.deactivated || [];
+      const deleted = syncResult?.deleted || [];
+      let msg = editingDoctor ? `Dr. ${name} updated!` : `Dr. ${name} added successfully!`;
+      if (deactivated.length > 0) msg += ` ${deactivated.length} chamber(s) deactivated (has bookings).`;
+      if (deleted.length > 0) msg += ` ${deleted.length} chamber(s) deleted.`;
+      showNotification(msg);
       setShowDoctorModal(false);
       await loadAllData();
     } catch (err) {
@@ -1094,81 +1079,194 @@ export default function DoctorModal() {
                       </div>
                     </div>
 
-                    {/* Visiting Schedule Slots */}
-                    <div className="bg-[#f7f6f7] border border-[#d1d5dc] rounded-sm p-3 space-y-2.5">
-                      <div className="flex items-center justify-between">
-                        <div className="flex items-center gap-1.5 text-[11px] font-label uppercase font-bold text-slate-700">
-                          <Clock className="w-3.5 h-3.5 text-[#094cb2]" />
-                          <span>Visiting Days &amp; Timetable</span>
+                    {/* Visiting Schedules & Slot Booking */}
+                    <div className="bg-[#f7f6f7] border border-[#d1d5dc] rounded-sm p-3.5 space-y-3">
+                      <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-2 border-b border-[#e2e8f0] pb-2.5">
+                        <div>
+                          <div className="flex items-center gap-1.5 text-xs font-label uppercase font-bold text-slate-800">
+                            <Clock className="w-4 h-4 text-[#094cb2]" />
+                            <span>Visiting Schedules &amp; Slot Booking</span>
+                          </div>
+                          <p className="text-[10px] text-slate-500 mt-0.5">
+                            Manage chamber visiting days, session timings, slot capacity, and consultation pacing.
+                          </p>
                         </div>
-                        <button
-                          type="button"
-                          onClick={() => handleAddScheduleSlot(aIdx)}
-                          className="px-2 py-0.5 bg-white hover:bg-[#f7f6f7] text-[#094cb2] border border-[#cbd5e1] rounded-sm text-[10px] font-label uppercase font-bold flex items-center gap-1 transition cursor-pointer"
-                        >
-                          <Plus className="w-3 h-3" />
-                          <span>Add Time Slot</span>
-                        </button>
+
+                        <div className="flex items-center gap-2">
+                          {/* Quick Presets Menu */}
+                          <select
+                            onChange={e => {
+                              const p = PRESET_TIMETABLES.find(item => item.label === e.target.value);
+                              if (p) handleAddScheduleSlot(aIdx, p);
+                              e.target.value = '';
+                            }}
+                            defaultValue=""
+                            className="bg-white border border-[#cbd5e1] text-[#094cb2] rounded-sm text-[10px] font-label uppercase font-bold px-2 py-1 cursor-pointer hover:bg-slate-50 transition"
+                          >
+                            <option value="" disabled>+ Add Preset...</option>
+                            {PRESET_TIMETABLES.map(p => (
+                              <option key={p.label} value={p.label}>{p.label}</option>
+                            ))}
+                          </select>
+
+                          <button
+                            type="button"
+                            onClick={() => handleAddScheduleSlot(aIdx)}
+                            className="px-2.5 py-1 bg-[#094cb2] hover:bg-[#083e91] text-white rounded-sm text-[10px] font-label uppercase font-bold flex items-center gap-1 transition cursor-pointer shadow-2xs"
+                          >
+                            <Plus className="w-3 h-3" />
+                            <span>Add Slot</span>
+                          </button>
+                        </div>
                       </div>
 
                       {aff.schedules.length === 0 ? (
-                        <div className="text-[11px] text-slate-400 italic py-1">
-                          No schedule slots added yet. Click &quot;Add Time Slot&quot; above.
+                        <div className="text-[11px] text-slate-400 italic py-2 text-center bg-white border border-dashed border-[#d1d5dc] rounded-sm">
+                          No schedule slots configured for this chamber. Click &quot;Add Slot&quot; or select a preset above.
                         </div>
                       ) : (
-                        <div className="space-y-2">
-                          {aff.schedules.map((s, sIdx) => (
-                            <div key={s.id || sIdx} className="bg-white border border-[#d1d5dc] rounded-sm p-2.5 grid grid-cols-1 sm:grid-cols-4 gap-2 items-center text-xs">
-                              
-                              <div>
-                                <label className="block text-[10px] text-slate-500 font-label font-bold uppercase mb-0.5">Day</label>
-                                <select
-                                  value={s.day_of_week}
-                                  onChange={e => handleUpdateScheduleSlot(aIdx, sIdx, 'day_of_week', e.target.value)}
-                                  className="w-full bg-white border border-[#d1d5dc] rounded-sm px-2 py-1 text-slate-800 text-[11px]"
-                                >
-                                  {DAYS_OF_WEEK.map(day => (
-                                    <option key={day} value={day}>{day}</option>
-                                  ))}
-                                </select>
-                              </div>
+                        <div className="space-y-2.5">
+                          {aff.schedules.map((s, sIdx) => {
+                            const durationText = calculateSlotDuration(s.start_time, s.end_time);
 
-                              <div>
-                                <label className="block text-[10px] text-slate-500 font-label font-bold uppercase mb-0.5">Start Time</label>
-                                <input
-                                  type="time"
-                                  required
-                                  value={s.start_time}
-                                  onChange={e => handleUpdateScheduleSlot(aIdx, sIdx, 'start_time', e.target.value)}
-                                  className="w-full bg-white border border-[#d1d5dc] rounded-sm px-2 py-1 text-slate-800 text-[11px]"
-                                />
-                              </div>
+                            return (
+                              <div 
+                                key={s.id || sIdx} 
+                                className="bg-white border border-[#d1d5dc] rounded-sm p-3 space-y-2 shadow-2xs hover:border-[#094cb2]/50 transition"
+                              >
+                                <div className="grid grid-cols-1 sm:grid-cols-12 gap-2.5 items-end text-xs">
+                                  
+                                  {/* Day Selector */}
+                                  <div className="sm:col-span-3">
+                                    <label className="block text-[10px] text-slate-600 font-label font-bold uppercase mb-1">
+                                      Visiting Day
+                                    </label>
+                                    <select
+                                      value={s.day_of_week}
+                                      onChange={e => handleUpdateScheduleSlot(aIdx, sIdx, 'day_of_week', e.target.value)}
+                                      className="w-full bg-white border border-[#d1d5dc] rounded-sm px-2 py-1 text-slate-800 text-xs font-medium focus:outline-none focus:border-[#094cb2]"
+                                    >
+                                      {DAYS_OF_WEEK.map(day => (
+                                        <option key={day} value={day}>{day}</option>
+                                      ))}
+                                    </select>
+                                  </div>
 
-                              <div>
-                                <label className="block text-[10px] text-slate-500 font-label font-bold uppercase mb-0.5">End Time</label>
-                                <input
-                                  type="time"
-                                  required
-                                  value={s.end_time}
-                                  onChange={e => handleUpdateScheduleSlot(aIdx, sIdx, 'end_time', e.target.value)}
-                                  className="w-full bg-white border border-[#d1d5dc] rounded-sm px-2 py-1 text-slate-800 text-[11px]"
-                                />
-                              </div>
+                                  {/* Start Time */}
+                                  <div className="sm:col-span-2">
+                                    <label className="block text-[10px] text-slate-600 font-label font-bold uppercase mb-1">
+                                      Start Time
+                                    </label>
+                                    <input
+                                      type="time"
+                                      required
+                                      value={s.start_time}
+                                      onChange={e => handleUpdateScheduleSlot(aIdx, sIdx, 'start_time', e.target.value)}
+                                      className="w-full bg-white border border-[#d1d5dc] rounded-sm px-2 py-1 text-slate-800 text-xs focus:outline-none focus:border-[#094cb2]"
+                                    />
+                                  </div>
 
-                              <div className="flex sm:justify-end items-center pt-2 sm:pt-4">
-                                <button
-                                  type="button"
-                                  onClick={() => handleRemoveScheduleSlot(aIdx, sIdx)}
-                                  className="p-1 text-rose-600 hover:text-rose-700 hover:bg-rose-50 rounded-sm transition cursor-pointer flex items-center gap-1 text-[11px]"
-                                  title="Remove slot"
-                                >
-                                  <Trash2 className="w-3.5 h-3.5" />
-                                  <span className="sm:hidden">Remove Slot</span>
-                                </button>
-                              </div>
+                                  {/* End Time */}
+                                  <div className="sm:col-span-2">
+                                    <label className="block text-[10px] text-slate-600 font-label font-bold uppercase mb-1">
+                                      End Time
+                                    </label>
+                                    <input
+                                      type="time"
+                                      required
+                                      value={s.end_time}
+                                      onChange={e => handleUpdateScheduleSlot(aIdx, sIdx, 'end_time', e.target.value)}
+                                      className="w-full bg-white border border-[#d1d5dc] rounded-sm px-2 py-1 text-slate-800 text-xs focus:outline-none focus:border-[#094cb2]"
+                                    />
+                                  </div>
 
-                            </div>
-                          ))}
+                                  {/* Max Patients / Slot Capacity */}
+                                  <div className="sm:col-span-2">
+                                    <label className="block text-[10px] text-slate-600 font-label font-bold uppercase mb-1 flex items-center gap-1">
+                                      <Users className="w-2.5 h-2.5 text-[#094cb2]" />
+                                      <span>Max Slots</span>
+                                    </label>
+                                    <input
+                                      type="number"
+                                      required
+                                      min="1"
+                                      max="150"
+                                      value={s.max_patients ?? 30}
+                                      onChange={e => handleUpdateScheduleSlot(aIdx, sIdx, 'max_patients', parseInt(e.target.value, 10) || 1)}
+                                      className="w-full bg-white border border-[#d1d5dc] rounded-sm px-2 py-1 text-slate-800 text-xs focus:outline-none focus:border-[#094cb2]"
+                                      title="Maximum number of booking slots available for this session"
+                                    />
+                                  </div>
+
+                                  {/* Avg Consult Duration */}
+                                  <div className="sm:col-span-2">
+                                    <label className="block text-[10px] text-slate-600 font-label font-bold uppercase mb-1 flex items-center gap-1">
+                                      <Timer className="w-2.5 h-2.5 text-[#094cb2]" />
+                                      <span>Avg (Min)</span>
+                                    </label>
+                                    <input
+                                      type="number"
+                                      required
+                                      min="1"
+                                      max="60"
+                                      value={s.avg_consult_minutes ?? 10}
+                                      onChange={e => handleUpdateScheduleSlot(aIdx, sIdx, 'avg_consult_minutes', parseInt(e.target.value, 10) || 1)}
+                                      className="w-full bg-white border border-[#d1d5dc] rounded-sm px-2 py-1 text-slate-800 text-xs focus:outline-none focus:border-[#094cb2]"
+                                      title="Average consultation duration in minutes used for serial pacing estimates"
+                                    />
+                                  </div>
+
+                                  {/* Remove Action */}
+                                  <div className="sm:col-span-1 flex items-center justify-end">
+                                    <button
+                                      type="button"
+                                      onClick={() => handleRemoveScheduleSlot(aIdx, sIdx)}
+                                      className="p-1.5 text-rose-600 hover:text-rose-700 hover:bg-rose-50 rounded-sm transition cursor-pointer flex items-center gap-1 text-[11px]"
+                                      title="Remove slot"
+                                    >
+                                      <Trash2 className="w-4 h-4" />
+                                      <span className="sm:hidden">Delete</span>
+                                    </button>
+                                  </div>
+
+                                </div>
+
+                                {/* Slot Footer: Duration, Throughput & Presets */}
+                                <div className="flex flex-wrap items-center justify-between gap-1.5 pt-1.5 border-t border-slate-100 text-[10px]">
+                                  <div className="flex items-center gap-2 text-slate-600">
+                                    <span className="px-1.5 py-0.5 bg-slate-100 rounded text-slate-700 font-mono font-medium">
+                                      {durationText || 'Custom Duration'}
+                                    </span>
+                                    <span className="text-slate-400">·</span>
+                                    <span className="text-teal-700 font-medium">
+                                      Capacity: <strong>{s.max_patients || 30} patients</strong> (@ {s.avg_consult_minutes || 10}m/patient)
+                                    </span>
+                                  </div>
+
+                                  {/* Quick preset buttons for this row */}
+                                  <div className="flex items-center gap-1">
+                                    <span className="text-slate-400 uppercase font-semibold text-[9px] mr-1">Presets:</span>
+                                    {PRESET_TIMETABLES.map(p => (
+                                      <button
+                                        key={p.label}
+                                        type="button"
+                                        onClick={() => {
+                                          handleUpdateScheduleSlot(aIdx, sIdx, 'start_time', p.start_time);
+                                          handleUpdateScheduleSlot(aIdx, sIdx, 'end_time', p.end_time);
+                                          handleUpdateScheduleSlot(aIdx, sIdx, 'max_patients', p.max_patients);
+                                          handleUpdateScheduleSlot(aIdx, sIdx, 'avg_consult_minutes', p.avg_consult_minutes);
+                                        }}
+                                        className="px-1.5 py-0.5 bg-slate-50 hover:bg-slate-200 text-slate-600 border border-slate-200 rounded text-[9px] font-medium transition cursor-pointer"
+                                      >
+                                        {p.label.split(' ')[0]}
+                                      </button>
+                                    ))}
+                                  </div>
+                                </div>
+
+                              </div>
+                            );
+                          })}
                         </div>
                       )}
                     </div>

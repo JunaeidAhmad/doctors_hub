@@ -29,7 +29,7 @@ class FacilityDetailActionsMixin:
 
     def _get_facility_location(self, pk_or_slug):
         model = self.queryset.model
-        base_qs = model.objects.all().select_related('location')
+        base_qs = self.apply_public_visibility(model.objects.select_related('location'))
 
         obj = None
         try:

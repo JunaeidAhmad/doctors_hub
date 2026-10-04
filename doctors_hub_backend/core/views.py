@@ -5,6 +5,8 @@ from django.db import models
 from django.db.models import Count, Exists, OuterRef, Q
 from drf_spectacular.utils import extend_schema, OpenApiParameter, OpenApiTypes
 
+from core.cache_keys import public_cache_version
+
 from accounts.serializers import UserProfileSerializer
 from doctors.models import DoctorSpecialty, SpecialtyAlias, Doctor, DoctorAffiliation
 from facilities.models import (
@@ -79,7 +81,8 @@ class SearchMetadataAPIView(APIView):
         responses={200: SearchMetadataResponseSerializer}
     )
     def get(self, request, *args, **kwargs):
-        cached_data = cache.get('search_metadata_global_v5')
+        metadata_cache_key = f"search_metadata:v{public_cache_version()}"
+        cached_data = cache.get(metadata_cache_key)
         if cached_data is not None:
             return Response(cached_data)
 
@@ -155,7 +158,9 @@ class SearchMetadataAPIView(APIView):
         ]
         specialties_az.sort(key=lambda x: x['name'].lower())
 
-        test_categories = TestCategory.objects.annotate(test_count=Count('tests', distinct=True)).order_by('name')
+        test_categories = TestCategory.objects.filter(is_active=True).annotate(
+            test_count=Count('tests', filter=Q(tests__is_active=True), distinct=True)
+        ).order_by('name')
         hospital_categories = HospitalCategory.objects.annotate(hospital_count=Count('hospitals', distinct=True)).order_by('name')
         diagnostic_center_categories = DiagnosticCenterCategory.objects.annotate(center_count=Count('centers', distinct=True)).order_by('name')
 
@@ -175,7 +180,7 @@ class SearchMetadataAPIView(APIView):
             'hospitals': [f for f in facilities_data if f.get('location_type') == 'hospital'],
             'diagnostic_centers': [f for f in facilities_data if f.get('location_type') == 'diagnostic_center'],
         }
-        cache.set('search_metadata_global_v5', response_data, timeout=300)
+        cache.set(metadata_cache_key, response_data, timeout=300)
         return Response(response_data)
 
 
@@ -218,46 +223,13 @@ class SearchFacetsAPIView(APIView):
         except (ValueError, TypeError):
             return Response({'error': 'Location filter IDs must be integers.'}, status=status.HTTP_400_BAD_REQUEST)
 
-        cache_key = f"search_facets:v2:{parsed_div_id}:{parsed_dist_id}:{parsed_thana_id}:{search_query or ''}"
+        cache_key = f"search_facets:v{public_cache_version()}:{parsed_div_id}:{parsed_dist_id}:{parsed_thana_id}:{search_query or ''}"
         cached_data = cache.get(cache_key)
         if cached_data is not None:
             return Response(cached_data, status=status.HTTP_200_OK)
 
-        # Filtered base doctor queryset using one Exists subquery for affiliation
-        doc_qs = Doctor.objects.all()
-        affil_cond = Q(doctor=OuterRef('pk'))
-        has_geo = False
-        if parsed_div_id is not None:
-            affil_cond &= Q(location__thana__district__division_id=parsed_div_id)
-            has_geo = True
-        if parsed_dist_id is not None:
-            affil_cond &= Q(location__thana__district_id=parsed_dist_id)
-            has_geo = True
-        if parsed_thana_id is not None:
-            affil_cond &= Q(location__thana_id=parsed_thana_id)
-            has_geo = True
-
-        if has_geo:
-            doc_qs = doc_qs.filter(Exists(DoctorAffiliation.objects.filter(affil_cond)))
-
-        if search_query:
-            doc_qs = doc_qs.filter(
-                models.Q(name__icontains=search_query) |
-                models.Q(qualification__icontains=search_query) |
-                models.Q(specialties__name__icontains=search_query)
-            )
-
-        from doctors.services.specialty_relations import specialty_doctor_counts
-
-        # Annotated specialties with count of matching doctors
-        counts = specialty_doctor_counts(doc_qs)
-        specialties = list(DoctorSpecialty.objects.all())
-        for s in specialties:
-            s.doctor_count = counts.get(s.id, 0)
-        specialties.sort(key=lambda s: (-s.doctor_count, s.name))
-
         # Filtered base hospital queryset
-        hosp_qs = Hospital.objects.all()
+        hosp_qs = Hospital.objects.filter(location__is_active=True)
         if parsed_div_id is not None:
             hosp_qs = hosp_qs.filter(location__thana__district__division_id=parsed_div_id)
         if parsed_dist_id is not None:
@@ -275,38 +247,16 @@ class SearchFacetsAPIView(APIView):
             hospital_count=Count('hospitals', filter=models.Q(hospitals__in=hosp_qs), distinct=True)
         ).order_by('-hospital_count', 'name')
 
-        # Filtered base diagnostic center queryset
-        diag_qs = DiagnosticCenter.objects.all()
-        if parsed_div_id is not None:
-            diag_qs = diag_qs.filter(location__thana__district__division_id=parsed_div_id)
-        if parsed_dist_id is not None:
-            diag_qs = diag_qs.filter(location__thana__district_id=parsed_dist_id)
-        if parsed_thana_id is not None:
-            diag_qs = diag_qs.filter(location__thana_id=parsed_thana_id)
-
-        if search_query:
-            diag_qs = diag_qs.filter(
-                models.Q(location__name__icontains=search_query) |
-                models.Q(location__branch__icontains=search_query)
-            )
-
-        diagnostic_center_categories = DiagnosticCenterCategory.objects.annotate(
-            center_count=Count('centers', filter=models.Q(centers__in=diag_qs), distinct=True)
-        ).order_by('-center_count', 'name')
-
-        test_categories = TestCategory.objects.annotate(
-            test_count=Count('tests', distinct=True),
-            center_count=Count('tests__offered_at__location', filter=models.Q(tests__offered_at__location__diagnostic_center_detail__in=diag_qs), distinct=True)
-        ).order_by('-center_count', 'name')
-
         response_data = {
-            'total_doctors': doc_qs.distinct().count(),
-            'total_hospitals': hosp_qs.distinct().count(),
-            'total_diagnostic_centers': diag_qs.distinct().count(),
-            'specialties': DoctorSpecialtySerializer(specialties, many=True, context={'request': request}).data,
-            'hospital_categories': HospitalCategorySerializer(hospital_categories, many=True, context={'request': request}).data,
-            'diagnostic_center_categories': DiagnosticCenterCategorySerializer(diagnostic_center_categories, many=True, context={'request': request}).data,
-            'test_categories': TestCategorySerializer(test_categories, many=True, context={'request': request}).data,
+            'hospital_categories': [
+                {
+                    'id': str(cat.id),
+                    'slug': cat.slug,
+                    'name': cat.name,
+                    'hospital_count': cat.hospital_count,
+                }
+                for cat in hospital_categories
+            ],
         }
         cache.set(cache_key, response_data, timeout=60)
 

@@ -1,17 +1,20 @@
 import React, { useState, useEffect } from 'react';
 import { X, Calendar, User, Phone, MapPin, CheckCircle2, TestTube2, ShieldCheck, ArrowRight, Building2, Home, Sparkles } from 'lucide-react';
 import { api } from '../services/api';
+import CascadingLocationFilter from './CascadingLocationFilter';
 
 export default function LabBookingModal({ test, onClose, onConfirmLabBooking, showToast }) {
   const today = new Date().toISOString().split('T')[0];
-  const maxDate = new Date(Date.now() + 10 * 24 * 60 * 60 * 1000).toISOString().split('T')[0];
+  const maxDate = new Date(Date.now() + 30 * 24 * 60 * 60 * 1000).toISOString().split('T')[0];
 
   const [step, setStep] = useState('details'); // 'details' | 'otp'
   const [pickupDate, setPickupDate] = useState(today);
   const [patientName, setPatientName] = useState('');
-  const [patientPhone, setPatientPhone] = useState('01787878787');
+  const [patientPhone, setPatientPhone] = useState('');
   const [patientAge, setPatientAge] = useState('');
-  const [gender, setGender] = useState('Male');
+  const [gender, setGender] = useState('');
+  const [collectionType, setCollectionType] = useState('center');
+  const [pickupGeo, setPickupGeo] = useState({ divisionId: null, districtId: null, thanaId: null });
   const [otpInput, setOtpInput] = useState('');
   const [address, setAddress] = useState('');
   const [isSubmitting, setIsSubmitting] = useState(false);
@@ -38,7 +41,7 @@ export default function LabBookingModal({ test, onClose, onConfirmLabBooking, sh
     test?.discounted_price ??
     test?.calculated_price ??
     testDetails?.calculated_price ??
-    0;
+    null;
 
   const price =
     branchTest?.price ??
@@ -61,7 +64,7 @@ export default function LabBookingModal({ test, onClose, onConfirmLabBooking, sh
     testDetails?.report_time ||
     '24 Hours';
 
-  const isHomeTest = Boolean(
+  const canHomeTest = Boolean(
     branchTest?.home_sample_collection ??
     test?.home_sample_collection ??
     test?.home_sample ??
@@ -70,6 +73,7 @@ export default function LabBookingModal({ test, onClose, onConfirmLabBooking, sh
     test?.isHomeTest ??
     false
   );
+  const isHomeTest = canHomeTest && collectionType === 'home';
 
   const fac = branchTest?.facility || test?.facility || branch;
   const centerName = fac?.display_name || fac?.name || test?.name || 'Diagnostic Center';
@@ -130,6 +134,10 @@ export default function LabBookingModal({ test, onClose, onConfirmLabBooking, sh
       if (showToast) showToast('Please provide your home pickup address for sample collection', 'error');
       return;
     }
+    if (isHomeTest && !pickupGeo.thanaId) {
+      if (showToast) showToast('Please select a pickup thana.', 'error');
+      return;
+    }
 
     setIsSubmitting(true);
     try {
@@ -163,11 +171,13 @@ export default function LabBookingModal({ test, onClose, onConfirmLabBooking, sh
         facility_test_id: testId,
         facility_test: testId,
         pickup_date: pickupDate,
+        collection_type: collectionType,
+        pickup_thana_id: isHomeTest ? pickupGeo.thanaId : null,
         patient_name: patientName.trim(),
         patient_phone: patientPhone.trim(),
         patient_age: patientAge ? parseInt(patientAge) : undefined,
-        gender: gender.toLowerCase(),
-        address: isHomeTest ? address.trim() : 'In-Lab Visit / Center Appointment',
+        patient_gender: gender.toLowerCase(),
+        pickup_address_line: isHomeTest ? address.trim() : '',
         otp_code: otpInput.trim(),
       });
 
@@ -183,8 +193,9 @@ export default function LabBookingModal({ test, onClose, onConfirmLabBooking, sh
           patientPhone,
           patientAge,
           gender,
-          address: isHomeTest ? address.trim() : 'Diagnostic Center Visit',
-          calculated_price: testPrice,
+          address: isHomeTest ? address.trim() : '',
+          calculated_price: res?.price,
+          home_charge: res?.home_charge_at_booking,
           isHomeTest,
           centerName,
           bookingRef: `TESTBD-${res?.id || Math.floor(100000 + Math.random() * 900000)}`
@@ -235,7 +246,9 @@ export default function LabBookingModal({ test, onClose, onConfirmLabBooking, sh
           <div className="flex items-center justify-between font-bold text-slate-900">
             <span className="text-sm">{testName}</span>
             <div className="text-right">
-              <span className="text-teal-700 font-extrabold text-sm">৳{testPrice}</span>
+              <span className="text-teal-700 font-extrabold text-sm">
+                {testPrice != null ? `৳${testPrice}` : 'Price at counter'}
+              </span>
               {price && (
                 <span className="text-slate-400 text-xs line-through ml-1.5 font-normal">
                   ৳{price}
@@ -257,6 +270,12 @@ export default function LabBookingModal({ test, onClose, onConfirmLabBooking, sh
           )}
 
           <div className="pt-1 flex items-center gap-2">
+            {canHomeTest && (
+              <div className="flex gap-2">
+                <button type="button" onClick={() => setCollectionType('center')} className={`px-2 py-1 rounded border text-[10px] font-bold ${collectionType === 'center' ? 'border-teal-600 bg-teal-50 text-teal-800' : 'border-slate-300 text-slate-600'}`}>Center collection</button>
+                <button type="button" onClick={() => setCollectionType('home')} className={`px-2 py-1 rounded border text-[10px] font-bold ${collectionType === 'home' ? 'border-teal-600 bg-teal-50 text-teal-800' : 'border-slate-300 text-slate-600'}`}>Home collection</button>
+              </div>
+            )}
             {isHomeTest ? (
               <span className="inline-flex items-center gap-1 text-[10px] font-bold text-teal-800 bg-teal-100 px-2 py-0.5 rounded-md border border-teal-200">
                 <Home className="w-3 h-3 text-teal-700" />
@@ -358,9 +377,10 @@ export default function LabBookingModal({ test, onClose, onConfirmLabBooking, sh
                     onChange={(e) => setGender(e.target.value)}
                     className="flex-1 text-xs font-medium bg-white border border-slate-300 rounded-xl px-2 py-2.5"
                   >
-                    <option>Male</option>
-                    <option>Female</option>
-                    <option>Other</option>
+                    <option value="">Select gender</option>
+                    <option value="male">Male</option>
+                    <option value="female">Female</option>
+                    <option value="other">Other</option>
                   </select>
                 </div>
               </div>
@@ -368,6 +388,15 @@ export default function LabBookingModal({ test, onClose, onConfirmLabBooking, sh
               {/* Conditional Address Field: Only show when test offers home sample collection */}
               {isHomeTest && (
                 <div>
+                  <CascadingLocationFilter
+                    divisionId={pickupGeo.divisionId}
+                    districtId={pickupGeo.districtId}
+                    thanaId={pickupGeo.thanaId}
+                    onChange={setPickupGeo}
+                    theme="light"
+                    accent="teal"
+                    layout="grid"
+                  />
                   <label className="block text-xs font-semibold text-slate-700 mb-1 flex items-center gap-1">
                     <MapPin className="w-3.5 h-3.5 text-teal-600" />
                     <span>Home Pickup Address *</span>

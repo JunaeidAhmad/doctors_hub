@@ -39,9 +39,9 @@ export default function DiagnosticCentersTable({ offerings = [], testDetails = {
             const isHome = Boolean(offering.home_sample_collection);
             const homeNote = offering.home_sample_note || (isHome ? 'Available' : 'Center Visit Only');
 
-            const reportTime = offering.report_time || (testDetails.report_time_hours ? `Same day (${testDetails.report_time_hours} hrs)` : 'Same day (4 hrs)');
-            const fee = offering.calculated_price ?? offering.price ?? 0;
-            const originalFee = offering.price && Number(offering.price) > Number(fee) ? offering.price : null;
+            const reportTime = offering.report_time || (testDetails.report_time_hours ? `${testDetails.report_time_hours} hours` : '—');
+            const fee = offering.calculated_price ?? offering.price;
+            const originalFee = fee != null && offering.price != null && Number(offering.price) > Number(fee) ? offering.price : null;
 
             // Alternating row background tint matching Stitch reference
             const rowBg = idx % 2 === 1 ? 'bg-surface-container-low/30' : 'bg-transparent';
@@ -87,7 +87,7 @@ export default function DiagnosticCentersTable({ offerings = [], testDetails = {
                 <td className="py-3 px-4">
                   <div className="flex items-baseline gap-1.5">
                     <span className="font-bold text-on-surface text-base">
-                      ৳{Number(fee).toLocaleString('en-US')}
+                      {fee != null ? `৳${Number(fee).toLocaleString('en-US')}` : 'Price at counter'}
                     </span>
                     {originalFee && (
                       <span className="text-[11px] text-on-surface-variant line-through">

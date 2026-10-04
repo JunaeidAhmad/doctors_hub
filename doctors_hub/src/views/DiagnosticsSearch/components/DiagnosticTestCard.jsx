@@ -11,11 +11,12 @@ export default function DiagnosticTestCard({
 
   // Compute price range across all offering centers
   const prices = offerings
-    .map((o) => Number(o.calculated_price ?? o.price ?? 0))
-    .filter((p) => p > 0);
+    .map((o) => o.calculated_price ?? o.price)
+    .filter((p) => p != null && Number.isFinite(Number(p)))
+    .map(Number);
 
-  const minPrice = prices.length > 0 ? Math.min(...prices) : (test.min_price != null ? Number(test.min_price) : Number(test.price || 0));
-  const maxPrice = prices.length > 0 ? Math.max(...prices) : (test.max_price != null ? Number(test.max_price) : Number(test.price || 0));
+  const minPrice = prices.length > 0 ? Math.min(...prices) : (test.min_price != null ? Number(test.min_price) : null);
+  const maxPrice = prices.length > 0 ? Math.max(...prices) : (test.max_price != null ? Number(test.max_price) : null);
 
   // Accurate turnaround text with correct pluralization
   const reportHours = test.report_time_hours || 4;
@@ -115,10 +116,14 @@ export default function DiagnosticTestCard({
 
         {/* Price Range block */}
         <div className="shrink-0 text-left md:text-right">
-          <span className="text-xs text-on-surface-variant block">Standard Range</span>
           <span className="font-headline-sm text-base sm:text-lg text-primary font-bold">
-            ৳{Number(minPrice).toLocaleString('en-US')}
-            {maxPrice > minPrice && ` - ৳${Number(maxPrice).toLocaleString('en-US')}`}
+            {minPrice != null ? (
+              <>
+                <span className="text-xs text-on-surface-variant block">From</span>
+                ৳{minPrice.toLocaleString('en-US')}
+                {maxPrice > minPrice && ` - ৳${maxPrice.toLocaleString('en-US')}`}
+              </>
+            ) : 'Price at counter'}
           </span>
         </div>
       </div>

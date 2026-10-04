@@ -55,7 +55,7 @@ INSTALLED_APPS = [
     'django.contrib.staticfiles',
     'rest_framework',
     'corsheaders',
-    'accounts',
+    'accounts.apps.AccountsConfig',
     'facilities',
     'doctors',
     'tests',
@@ -295,4 +295,4 @@ LOGGING = {
 SMS_API_URL = env('SMS_API_URL', default='https://api.sms.net.bd/sendsms')
 SMS_API_KEY = env('SMS_API_KEY', default='wgVB8RM6vZ4h9W4F3Ba8u241z290PtJ2SYBc6hpY')
 SMS_SENDER_ID = env('SMS_SENDER_ID', default='')
-
+SMS_ASYNC = env.bool('SMS_ASYNC', default=True)

@@ -159,7 +159,7 @@ export default function AffiliateDoctorDrawer({
       institution: '',
       bmdc_number: '',
       description: '',
-      specialty_ids: doctorSpecialties[0] ? [doctorSpecialties[0].id] : []
+      specialty_ids: []
     });
     setAffiliation({
       fee: '1200',
@@ -210,7 +210,7 @@ export default function AffiliateDoctorDrawer({
     const affPayload = {
       doctor: targetDoctorId,
       location_id: facilityId,
-      fee: parseFloat(affiliation.fee) || 1200,
+      fee: parseFloat(affiliation.fee),
       advance_booking_days: parseInt(affiliation.advance_booking_days, 10) || 14
     };
 
@@ -268,6 +268,11 @@ export default function AffiliateDoctorDrawer({
       return;
     }
 
+    if (!affiliation.fee || isNaN(parseFloat(affiliation.fee))) {
+      setErrorMsg('Visiting consultation fee is required.');
+      return;
+    }
+
     // Validate schedules
     for (const sched of (schedules || [])) {
       const start = sched.start_time || '17:00:00';
@@ -297,6 +302,11 @@ export default function AffiliateDoctorDrawer({
         if (!docId) {
           if (!newDoctor.name.trim()) {
             setErrorMsg('Doctor name is required.');
+            setIsSaving(false);
+            return;
+          }
+          if (!newDoctor.specialty_ids || newDoctor.specialty_ids.length === 0) {
+            setErrorMsg('Please select at least one specialty.');
             setIsSaving(false);
             return;
           }
@@ -650,7 +660,7 @@ export default function AffiliateDoctorDrawer({
                       }`}
                     >
                       <CheckCircle2 className={`w-3 h-3 ${isSelected ? 'opacity-100 text-[#094cb2]' : 'opacity-0'}`} />
-                      <span>{spec.name}</span>
+                      <span>{spec.name}{spec.bn_name ? ` · ${spec.bn_name}` : ''}</span>
                     </button>
                   );
                 })}

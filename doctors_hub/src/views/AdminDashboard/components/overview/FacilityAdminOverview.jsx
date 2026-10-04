@@ -27,7 +27,7 @@ export default function FacilityAdminOverview() {
 
   const facilityName = facility?.display_name || facility?.name || (isHospital ? 'Hospital' : 'Diagnostic Centre');
   const branchName = facility?.branch || '';
-  const address = facility?.address || 'Dhaka, Bangladesh';
+  const address = facility?.address || '';
   const phone = facility?.phone || '';
   const email = facility?.email || '';
   const timing = facility?.open_timing || '24/7 Open';

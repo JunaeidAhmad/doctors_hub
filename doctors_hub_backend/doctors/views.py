@@ -7,7 +7,7 @@ from rest_framework.response import Response
 from rest_framework.decorators import action
 from rest_framework.parsers import MultiPartParser, FormParser, JSONParser
 from django.db.models import (
-    Count, Min, Case, When, Value, IntegerField, Exists, OuterRef, Q
+    Count, Min, Case, When, Value, IntegerField, Exists, OuterRef, Q, Prefetch
 )
 from django_filters.rest_framework import DjangoFilterBackend
 import django_filters
@@ -16,6 +16,7 @@ from core.mixins import SlugOrPkLookupMixin
 from core.permissions import IsDoctorOwnerOrReadOnly, ScopedFacilityOrReadOnly, HasPagePermissionOrReadOnly
 from core.rbac import has_permission
 from core.scoping import RoleScopedQuerysetMixin
+from core.visibility import PublicVisibilityMixin, is_admin_viewer
 from .models import (
     DoctorSpecialty, SpecialtyAlias, Doctor, DoctorAffiliation, AffiliationSchedule, ScheduleException
 )
@@ -26,7 +27,6 @@ from .services.availability import get_availability, batch_next_available
 from .serializers import (
     DoctorSpecialtySerializer,
     SpecialtyAliasSerializer,
-    SpecialtyOptionSerializer,
     DoctorSerializer,
     DoctorAffiliationSerializer,
     AffiliationScheduleSerializer,
@@ -47,19 +47,20 @@ class DoctorSpecialtyViewSet(viewsets.ModelViewSet):
     search_fields = ('name', 'canonical_name', 'bn_name')
     ordering_fields = ('name', 'canonical_name', 'doctor_count', 'alias_count')
 
-    def list(self, request, *args, **kwargs):
-        if request.query_params.get('canonical_only') == 'true' or request.query_params.get('all') == 'true':
-            qs = self.filter_queryset(self.get_queryset())
-            page = self.paginate_queryset(qs) if 'page' in request.query_params else None
-            if page is not None:
-                serializer = self.get_serializer(page, many=True)
-                return self.get_paginated_response(serializer.data)
-            serializer = self.get_serializer(qs, many=True)
-            return Response(serializer.data)
+    def get_serializer_context(self):
+        context = super().get_serializer_context()
+        from doctors.services.specialty_suggest import get_cached_specialty_doctor_counts
+        context['doctor_counts'] = get_cached_specialty_doctor_counts()
+        return context
 
-        aliases = list(SpecialtyAlias.objects.filter(is_verified=True).select_related('specialty').order_by('name'))
-        data = SpecialtyOptionSerializer(aliases, many=True).data
-        return Response(data)
+    def list(self, request, *args, **kwargs):
+        qs = self.filter_queryset(self.get_queryset())
+        page = self.paginate_queryset(qs) if 'page' in request.query_params else None
+        if page is not None:
+            serializer = self.get_serializer(page, many=True)
+            return self.get_paginated_response(serializer.data)
+        serializer = self.get_serializer(qs, many=True)
+        return Response(serializer.data)
 
     @action(detail=False, methods=['get'], url_path='suggest', permission_classes=[AllowAny], pagination_class=None, filter_backends=[])
     def suggest(self, request):
@@ -149,7 +150,6 @@ class DoctorFilter(django_filters.FilterSet):
     thana_id = django_filters.NumberFilter(method='noop_filter')
     district_id = django_filters.NumberFilter(method='noop_filter')
     division_id = django_filters.NumberFilter(method='noop_filter')
-    fee_max = django_filters.NumberFilter(method='noop_filter')
     day = django_filters.CharFilter(method='noop_filter')
     gender = django_filters.CharFilter(method='filter_gender')
     facility = django_filters.CharFilter(method='noop_filter')
@@ -161,7 +161,7 @@ class DoctorFilter(django_filters.FilterSet):
         fields = [
             'bmdc', 'specialty', 'specialties',
             'thana_id', 'district_id', 'division_id',
-            'fee_max', 'day', 'gender', 'facility', 'hospital', 'diagnostic_center'
+            'day', 'gender', 'facility', 'hospital', 'diagnostic_center'
         ]
 
     def noop_filter(self, queryset, name, value):
@@ -177,6 +177,9 @@ class DoctorFilter(django_filters.FilterSet):
         cleaned_data = getattr(self.form, 'cleaned_data', {})
 
         affil_q = Q(doctor=OuterRef('pk'))
+        user = getattr(self.request, 'user', None)
+        if not is_admin_viewer(user):
+            affil_q &= Q(location__is_active=True, is_active=True)
         has_affil_filter = False
 
         thana_id = cleaned_data.get('thana_id')
@@ -194,13 +197,8 @@ class DoctorFilter(django_filters.FilterSet):
             affil_q &= Q(location__thana__district__division_id=division_id)
             has_affil_filter = True
 
-        fee_max = cleaned_data.get('fee_max')
-        if fee_max is not None:
-            affil_q &= Q(fee__lte=fee_max)
-            has_affil_filter = True
-
         day = cleaned_data.get('day')
-        if day and str(day).lower() not in ['all', 'all days']:
+        if day and str(day).lower() not in ['all', 'all days', '']:
             day_str = str(day).strip()
             DAY_MAP = {
                 'sat': 'Saturday',
@@ -211,11 +209,17 @@ class DoctorFilter(django_filters.FilterSet):
                 'thu': 'Thursday',
                 'fri': 'Friday',
             }
-            normalized_day = DAY_MAP.get(day_str.lower(), day_str)
-            affil_q &= (
-                Q(schedules__day_of_week__iexact=normalized_day) |
-                Q(schedules__day_of_week__istartswith=day_str)
-            )
+            day_lower = day_str.lower()
+            valid_full_days = {d.lower(): d for d in DAY_MAP.values()}
+            if day_lower in DAY_MAP:
+                normalized_day = DAY_MAP[day_lower]
+            elif day_lower in valid_full_days:
+                normalized_day = valid_full_days[day_lower]
+            else:
+                from rest_framework.exceptions import ValidationError
+                raise ValidationError({'day': ['Unknown day.']})
+
+            affil_q &= Q(schedules__day_of_week__iexact=normalized_day)
             has_affil_filter = True
 
         hospital = cleaned_data.get('hospital')
@@ -321,12 +325,28 @@ class DoctorViewSet(SlugOrPkLookupMixin, RoleScopedQuerysetMixin, viewsets.Model
     scope_location_field = "affiliations__location__in"
 
     def get_queryset(self):
+        user = getattr(self.request, 'user', None)
+        if not is_admin_viewer(user):
+            aff_qs = DoctorAffiliation.objects.filter(
+                location__is_active=True, is_active=True
+            ).select_related(
+                'location__thana__district__division'
+            ).prefetch_related(
+                'schedules',
+                'doctor__specialties',
+            ).order_by('id')
+        else:
+            aff_qs = DoctorAffiliation.objects.all().select_related(
+                'location__thana__district__division'
+            ).prefetch_related(
+                'schedules',
+                'doctor__specialties',
+            ).order_by('id')
+
         qs = Doctor.objects.all().select_related('primary_specialty').prefetch_related(
             'specialties__parent_categories',
             'specialties__related',
-            'affiliations__location__thana__district__division',
-            'affiliations__schedules',
-            'affiliations__doctor__specialties',
+            Prefetch('affiliations', queryset=aff_qs),
         ).order_by('name', 'id').distinct()
         return self.get_scoped_queryset(qs)
 
@@ -409,9 +429,16 @@ class DoctorViewSet(SlugOrPkLookupMixin, RoleScopedQuerysetMixin, viewsets.Model
         else:
             raise exceptions.PermissionDenied("Only super admins, facility admins, and doctors can create doctor profiles.")
 
+    @action(detail=True, methods=['put'], url_path='chambers')
+    def chambers(self, request, pk=None):
+        from doctors.services.chambers import sync_chambers
+        doctor = self.get_object()
+        result = sync_chambers(doctor, request.data, request.user)
+        return Response(result)
+
 
 @extend_schema(tags=['Doctors'])
-class DoctorAffiliationViewSet(RoleScopedQuerysetMixin, viewsets.ModelViewSet):
+class DoctorAffiliationViewSet(PublicVisibilityMixin, RoleScopedQuerysetMixin, viewsets.ModelViewSet):
     queryset = DoctorAffiliation.objects.all().select_related(
         'doctor',
         'location__thana__district__division'
@@ -423,6 +450,7 @@ class DoctorAffiliationViewSet(RoleScopedQuerysetMixin, viewsets.ModelViewSet):
     permission_classes = (ScopedFacilityOrReadOnly,)
     scope_location_field = "location_id__in"
     scope_doctor_field = "doctor__user"
+    public_filter = Q(location__is_active=True, is_active=True)
 
     def get_queryset(self):
         qs = DoctorAffiliation.objects.all().select_related(
@@ -432,7 +460,8 @@ class DoctorAffiliationViewSet(RoleScopedQuerysetMixin, viewsets.ModelViewSet):
             'schedules',
             'doctor__specialties',
         ).order_by('id')
-        return self.get_scoped_queryset(qs)
+        qs = self.get_scoped_queryset(qs)
+        return self.apply_public_visibility(qs)
 
     @extend_schema(
         tags=['Doctors'],

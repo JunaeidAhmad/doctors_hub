@@ -9,20 +9,39 @@ from .serializers import (
     TestCategorySerializer, TestSerializer, FacilityTestSerializer,
     FacilityTestSearchGroupSerializer
 )
+from django.db.models import Q
 from core.permissions import ScopedFacilityOrReadOnly, IsSuperAdminOrReadOnly
 from core.scoping import RoleScopedQuerysetMixin
+from core.visibility import PublicVisibilityMixin
 from core.filters import exact_slug_or_id_q
 from core.pagination import SearchPagination
 from .search import parse_params, build_row_qs, build_grouped, hydrate, build_facets
 
 
 @extend_schema(tags=['Diagnostic Tests'])
-class TestCategoryViewSet(viewsets.ModelViewSet):
+class TestCategoryViewSet(PublicVisibilityMixin, viewsets.ModelViewSet):
     queryset = TestCategory.objects.all().order_by('name')
     serializer_class = TestCategorySerializer
     permission_classes = (IsSuperAdminOrReadOnly,)
+    public_filter = Q(is_active=True)
     filter_backends = [filters.SearchFilter]
     search_fields = ['name', 'description']
+
+    def get_queryset(self):
+        from django.db.models import Count
+        qs = TestCategory.objects.annotate(
+            test_count=Count('tests', filter=Q(tests__is_active=True), distinct=True),
+            center_count=Count(
+                'tests__offered_at__location',
+                filter=Q(
+                    tests__offered_at__location__is_active=True,
+                    tests__offered_at__is_available=True,
+                    tests__is_active=True,
+                ),
+                distinct=True,
+            ),
+        ).order_by('name')
+        return self.apply_public_visibility(qs)
 
 
 class TestFilter(django_filters.FilterSet):
@@ -40,10 +59,11 @@ class TestFilter(django_filters.FilterSet):
 
 
 @extend_schema(tags=['Diagnostic Tests'])
-class TestViewSet(viewsets.ModelViewSet):
+class TestViewSet(PublicVisibilityMixin, viewsets.ModelViewSet):
     queryset = Test.objects.all().select_related('category').order_by('name')
     serializer_class = TestSerializer
     permission_classes = (IsSuperAdminOrReadOnly,)
+    public_filter = Q(is_active=True, category__is_active=True)
     filter_backends = [django_filters.rest_framework.DjangoFilterBackend, filters.SearchFilter]
     filterset_class = TestFilter
     search_fields = ['name', 'code', 'sample_type', 'preparation_instructions']
@@ -66,10 +86,11 @@ class FacilityTestFilter(django_filters.FilterSet):
 
 
 @extend_schema(tags=['Diagnostic Tests'])
-class FacilityTestViewSet(RoleScopedQuerysetMixin, viewsets.ModelViewSet):
+class FacilityTestViewSet(PublicVisibilityMixin, RoleScopedQuerysetMixin, viewsets.ModelViewSet):
     queryset = FacilityTest.objects.all().select_related('location__thana__district__division', 'test', 'test__category').order_by('test__name')
     serializer_class = FacilityTestSerializer
     permission_classes = (ScopedFacilityOrReadOnly,)
+    public_filter = Q(is_available=True, location__is_active=True, test__is_active=True, test__category__is_active=True)
     filter_backends = [django_filters.rest_framework.DjangoFilterBackend, filters.SearchFilter]
     filterset_class = FacilityTestFilter
     search_fields = ['test__name', 'test__code', 'location__name', 'location__branch']
@@ -77,7 +98,8 @@ class FacilityTestViewSet(RoleScopedQuerysetMixin, viewsets.ModelViewSet):
 
     def get_queryset(self):
         qs = FacilityTest.objects.all().select_related('location__thana__district__division', 'test', 'test__category').order_by('test__name')
-        return self.get_scoped_queryset(qs)
+        qs = self.get_scoped_queryset(qs)
+        return self.apply_public_visibility(qs)
 
     def perform_create(self, serializer):
         user = self.request.user

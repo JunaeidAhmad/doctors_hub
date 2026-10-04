@@ -22,10 +22,10 @@ export default function DoctorOverview() {
     return acc + (Array.isArray(aff.schedules) ? aff.schedules.length : 0);
   }, 0);
 
-  const docName = doctor?.name || 'Prof. Dr. Harun-Or-Rashid';
-  const docQual = doctor?.qualification || 'MBBS, FCPS (Nephrology), PhD';
-  const docExp = doctor?.experience || '32 Years Exp.';
-  const docSpecs = (doctor?.specialties || []).map(s => s.name || s).join(', ') || 'Nephrology & Kidney Specialist';
+  const docName = doctor?.name || 'Doctor';
+  const docQual = doctor?.qualification || '';
+  const docExp = doctor?.experience || '';
+  const docSpecs = (doctor?.specialties || []).map(s => s.name || s).join(', ') || '';
 
   return (
     <div className="space-y-6">
@@ -174,13 +174,13 @@ export default function DoctorOverview() {
               <div key={aff.id || idx} className="p-3 rounded-xs bg-[#faf9fa] border border-[#e3e5ea] text-xs space-y-1.5">
                 <div className="flex items-center justify-between">
                   <div className="font-serif font-bold text-[#1b1c1d] text-sm">
-                    {aff.hospital?.name || aff.diagnostic_center?.name || aff.chamber_name || aff.facility_name || 'Medical Chamber'}
+                    {aff.facility?.display_name || aff.hospital?.name || aff.diagnostic_center?.name || aff.chamber_name || aff.facility_name || 'Medical Chamber'}
                   </div>
                   <div className="text-[#094cb2] font-serif font-bold text-sm">৳{aff.fee || 1500}</div>
                 </div>
                 <div className="text-slate-500 font-body flex items-center gap-1.5">
                   <MapPin className="w-3.5 h-3.5 text-slate-400 shrink-0" />
-                  <span>{aff.location?.area || 'Dhaka'}</span>
+                  <span>{aff.facility?.area || '—'}</span>
                 </div>
                 {Array.isArray(aff.schedules) && aff.schedules.length > 0 && (
                   <div className="pt-2 border-t border-[#e3e5ea] flex flex-wrap gap-1">

@@ -46,7 +46,7 @@ class HospitalCategorySerializer(serializers.ModelSerializer):
 
     class Meta:
         model = HospitalCategory
-        fields = ('id', 'name', 'slug', 'icon', 'description', 'count', 'hospital_count')
+        fields = ('id', 'name', 'slug', 'icon', 'description', 'hospital_count')
 
 
 class DiagnosticServiceSerializer(serializers.ModelSerializer):
@@ -70,75 +70,25 @@ class DiagnosticCenterCategorySerializer(serializers.ModelSerializer):
 
 
 class LocationSerializer(serializers.ModelSerializer):
-    thana = serializers.PrimaryKeyRelatedField(queryset=Thana.objects.all(), required=False, allow_null=True)
+    thana = serializers.PrimaryKeyRelatedField(queryset=Thana.objects.all(), required=False)
     thana_details = ThanaSerializer(source='thana', read_only=True)
     area = serializers.CharField(read_only=True)
     district = serializers.CharField(read_only=True)
     division = serializers.CharField(read_only=True)
-
-    input_area = serializers.CharField(write_only=True, required=False, allow_blank=True)
-    input_district = serializers.CharField(write_only=True, required=False, allow_blank=True)
-    input_division = serializers.CharField(write_only=True, required=False, allow_blank=True)
 
     class Meta:
         model = Location
         fields = (
             'id', 'location_type', 'ownership_type', 'name', 'branch', 'slug',
             'address_line', 'thana', 'thana_details', 'area', 'district', 'division',
-            'input_area', 'input_district', 'input_division',
             'phone', 'email', 'logo', 'image', 'description', 'tagline', 'badge',
             'rating', 'reviews_count', 'open_timing', 'is_verified', 'is_active', 'created_at'
         )
-
-    def to_internal_value(self, data):
-        ret = super().to_internal_value(data)
-        if 'thana' not in ret or ret.get('thana') is None:
-            raw_dist = data.get('district', '')
-            raw_area = data.get('area', '')
-            if raw_dist or raw_area:
-                ret['input_district'] = raw_dist
-                ret['input_area'] = raw_area
-        return ret
 
     def validate(self, attrs):
         if self.instance is None and not attrs.get('thana'):
             raise serializers.ValidationError({'thana': ['This field is required.']})
         return super().validate(attrs)
-
-    def _resolve_thana(self, validated_data):
-        thana = validated_data.get('thana')
-        input_district = validated_data.pop('input_district', None)
-        input_area = validated_data.pop('input_area', None)
-        validated_data.pop('input_division', None)
-
-        if not thana and (input_district or input_area):
-            DIST_ALIASES = {
-                'chittagong': 'Chattogram', 'comilla': 'Cumilla', 'bogra': 'Bogura',
-                'jessore': 'Jashore', 'barisal': 'Barishal', 'ঢাকা': 'Dhaka',
-                'চট্টগ্রাম': 'Chattogram', 'সিলেট': 'Sylhet'
-            }
-            norm_dist = DIST_ALIASES.get((input_district or '').strip().lower(), (input_district or '').strip())
-            norm_area = (input_area or '').strip()
-
-            qs = Thana.objects.filter(district__name__iexact=norm_dist) if norm_dist else Thana.objects.all()
-            resolved = None
-            if norm_area:
-                resolved = qs.filter(name__iexact=norm_area).first() or qs.filter(bn_name__iexact=norm_area).first()
-            if not resolved and norm_dist:
-                resolved = qs.filter(name__icontains='Sadar').first() or qs.first()
-            if resolved:
-                validated_data['thana'] = resolved
-        return validated_data
-
-    def create(self, validated_data):
-        validated_data = self._resolve_thana(validated_data)
-        if not validated_data.get('thana'):
-            raise serializers.ValidationError({'thana': ['This field is required.']})
-        return super().create(validated_data)
-
-    def update(self, instance, validated_data):
-        validated_data = self._resolve_thana(validated_data)
-        return super().update(instance, validated_data)
 
 
 class HospitalSerializer(serializers.ModelSerializer):
@@ -203,15 +153,8 @@ class HospitalSerializer(serializers.ModelSerializer):
         data['parking_capacity'] = instance.parking_capacity
         data['details_reviewed'] = getattr(instance, 'details_reviewed', False)
 
-        doc_cnt = getattr(instance, 'doctor_count', None)
-        if doc_cnt is None:
-            doc_cnt = instance.location.affiliations.count() if instance.location else 0
-        data['doctor_count'] = doc_cnt
-
-        t_cnt = getattr(instance, 'test_count', None)
-        if t_cnt is None:
-            t_cnt = instance.location.offered_tests.filter(is_available=True).count() if instance.location else 0
-        data['test_count'] = t_cnt
+        data['doctor_count'] = getattr(instance, 'doctor_count', 0) or 0
+        data['test_count'] = getattr(instance, 'test_count', 0) or 0
 
         return data
 
@@ -300,15 +243,8 @@ class DiagnosticCenterSerializer(serializers.ModelSerializer):
 
         data['services'] = [{'id': str(s.id), 'name': s.name, 'icon': s.icon} for s in instance.services.all()]
 
-        doc_cnt = getattr(instance, 'doctor_count', None)
-        if doc_cnt is None:
-            doc_cnt = instance.location.affiliations.count() if instance.location else 0
-        data['doctor_count'] = doc_cnt
-
-        t_cnt = getattr(instance, 'test_count', None)
-        if t_cnt is None:
-            t_cnt = instance.location.offered_tests.filter(is_available=True).count() if instance.location else 0
-        data['test_count'] = t_cnt
+        data['doctor_count'] = getattr(instance, 'doctor_count', 0) or 0
+        data['test_count'] = getattr(instance, 'test_count', 0) or 0
 
         return data
 

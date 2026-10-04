@@ -1,6 +1,6 @@
 import pytest
 from rest_framework.test import APIClient
-from facilities.models import Location, Hospital
+from facilities.models import Location, Hospital, Division, District, Thana
 
 
 @pytest.mark.django_db
@@ -11,10 +11,15 @@ def test_hospital_ordering_alphabetical_pagination():
     Hospital.objects.all().delete()
     Location.objects.filter(location_type=Location.LocationType.HOSPITAL).delete()
 
+    div, _ = Division.objects.get_or_create(name="Dhaka Order", defaults={"slug": "dhaka-order"})
+    dist, _ = District.objects.get_or_create(division=div, name="Dhaka Dist Order", defaults={"slug": "dhaka-dist-order"})
+    thana, _ = Thana.objects.get_or_create(district=dist, name="Dhanmondi Order", defaults={"slug": "dhanmondi-order"})
+
     loc_c = Location.objects.create(
         name="C Care Hospital",
         location_type=Location.LocationType.HOSPITAL,
         address_line="Road 3",
+        thana=thana,
         is_active=True,
     )
     hosp_c = Hospital.objects.create(location=loc_c)
@@ -23,6 +28,7 @@ def test_hospital_ordering_alphabetical_pagination():
         name="A Apex Hospital",
         location_type=Location.LocationType.HOSPITAL,
         address_line="Road 1",
+        thana=thana,
         is_active=True,
     )
     hosp_a = Hospital.objects.create(location=loc_a)
@@ -31,6 +37,7 @@ def test_hospital_ordering_alphabetical_pagination():
         name="B Bridge Hospital",
         location_type=Location.LocationType.HOSPITAL,
         address_line="Road 2",
+        thana=thana,
         is_active=True,
     )
     hosp_b = Hospital.objects.create(location=loc_b)

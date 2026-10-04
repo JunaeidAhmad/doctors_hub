@@ -57,7 +57,9 @@ export default function SpecialtyGrid({ selectedSpecialty, setSelectedSpecialty,
     api.getSpecialties()
       .then((data) => {
         const list = ensureArray(data);
-        const filtered = list.filter((s) => s && s.id !== 'all');
+        const filtered = list
+          .filter((s) => s && s.id !== 'all')
+          .sort((a, b) => (b.doctor_count ?? 0) - (a.doctor_count ?? 0));
         setSpecialties(filtered);
         setLoading(false);
       })
@@ -122,17 +124,18 @@ export default function SpecialtyGrid({ selectedSpecialty, setSelectedSpecialty,
             <div className="grid grid-cols-2 sm:grid-cols-3 md:grid-cols-4 lg:grid-cols-6 gap-4">
               {visibleList.map((spec) => {
                 const IconComponent = iconMap[spec.icon] || iconMap[spec.slug] || Stethoscope;
-                const isSelected = selectedSpecialty === spec.name || selectedSpecialty === spec.slug;
+                const isSelected = selectedSpecialty === spec.slug;
 
                 return (
                   <div
-                    key={spec.id || spec.slug || spec.name}
+                    key={spec.id}
                     onClick={() => {
+                      const nextVal = isSelected ? '' : spec.slug;
                       if (setSelectedSpecialty) {
-                        setSelectedSpecialty(isSelected ? '' : spec.name);
+                        setSelectedSpecialty(nextVal);
                       }
                       if (onSelectSpecialty) {
-                        onSelectSpecialty(spec.name || spec.slug);
+                        onSelectSpecialty(nextVal);
                       }
                     }}
                     className={`p-4 rounded-xl border cursor-pointer transition-all duration-200 text-center flex flex-col items-center justify-between group ${
@@ -158,11 +161,11 @@ export default function SpecialtyGrid({ selectedSpecialty, setSelectedSpecialty,
                       )}
                     </div>
 
-                    {spec.count !== undefined && spec.count !== null && (
+                    {(spec.doctor_count !== undefined && spec.doctor_count !== null) && (
                       <div className={`mt-3 text-[10px] font-bold px-2 py-0.5 rounded-full ${
                         isSelected ? 'bg-white text-emerald-800' : 'bg-slate-100 text-slate-600'
                       }`}>
-                        {spec.count} Doctors
+                        {spec.doctor_count} Doctors
                       </div>
                     )}
                   </div>

@@ -111,15 +111,28 @@ class User(AbstractBaseUser, PermissionsMixin):
     # but their logic now relies on user_roles.
     @property
     def is_super_admin(self):
-        return self.is_superuser or self.user_roles.filter(role__is_active=True, role__scope_type=Role.ScopeType.GLOBAL).exists()
-
-    @property
-    def is_facility_admin(self):
-        return self.user_roles.filter(role__scope_type=Role.ScopeType.FACILITY).exists()
+        from accounts.constants import SUPER_ADMIN_ROLE_NAME
+        return self.is_superuser or self.user_roles.filter(
+            role__is_active=True,
+            role__is_system=True,
+            role__scope_type=Role.ScopeType.GLOBAL,
+            role__name=SUPER_ADMIN_ROLE_NAME,
+        ).exists()
 
     @property
     def is_facility_staff(self):
-        return self.user_roles.filter(role__scope_type=Role.ScopeType.FACILITY).exists()
+        return self.user_roles.filter(
+            role__is_active=True,
+            role__scope_type=Role.ScopeType.FACILITY,
+        ).exists()
+
+    @property
+    def is_facility_admin(self):
+        return self.user_roles.filter(
+            role__is_active=True,
+            role__scope_type=Role.ScopeType.FACILITY,
+            role__permissions__codename='roles.edit',
+        ).exists()
 
     @property
     def is_doctor_role(self):

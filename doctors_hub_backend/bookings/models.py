@@ -28,6 +28,12 @@ class Patient(models.Model):
     class Meta:
         ordering = ['-created_at']
 
+    def save(self, *args, **kwargs):
+        if self.phone:
+            from core.phone import canonical_bd_phone
+            self.phone = canonical_bd_phone(self.phone)
+        super().save(*args, **kwargs)
+
     def __str__(self):
         return f"{self.name} ({self.phone})"
 
@@ -64,6 +70,8 @@ class BaseBooking(models.Model):
     id = models.UUIDField(primary_key=True, default=uuid7, editable=False)
     patient = models.ForeignKey(Patient, on_delete=models.CASCADE, related_name="%(class)ss", null=True, blank=True)
     booked_by_user = models.ForeignKey(User, null=True, blank=True, on_delete=models.SET_NULL, related_name="booked_%(class)ss")
+    patient_age = models.PositiveSmallIntegerField(null=True, blank=True)
+    patient_gender = models.CharField(max_length=10, blank=True, choices=Patient.Gender.choices)
     status = models.CharField(max_length=20, choices=Status.choices, default=Status.PENDING)
     notes = models.TextField(blank=True)
     created_at = models.DateTimeField(auto_now_add=True)
@@ -93,6 +101,7 @@ class DoctorBooking(BaseBooking):
     serial_number = models.PositiveIntegerField(null=True, blank=True, db_index=True)
     patient_name = models.CharField(max_length=100, blank=True)
     patient_phone = models.CharField(max_length=20, blank=True, default="", validators=[bangladesh_phone_validator])
+    fee_at_booking = models.DecimalField(max_digits=8, decimal_places=2, null=True, blank=True)
 
     class Meta:
         constraints = [
@@ -112,13 +121,6 @@ class DoctorBooking(BaseBooking):
                 self.patient_name = self.patient.name
             if not self.patient_phone:
                 self.patient_phone = self.patient.phone
-        elif self.patient_phone and self.patient_name:
-            patient_obj, _ = Patient.objects.get_or_create(
-                phone=self.patient_phone,
-                defaults={'name': self.patient_name}
-            )
-            self.patient = patient_obj
-
         super().save(*args, **kwargs)
 
     def __str__(self):
@@ -127,8 +129,13 @@ class DoctorBooking(BaseBooking):
 
 
 class TestBooking(BaseBooking):
+    class CollectionType(models.TextChoices):
+        CENTER = 'center', 'Center'
+        HOME = 'home', 'Home'
+
     facility_test = models.ForeignKey(FacilityTest, on_delete=models.CASCADE, related_name="bookings")
     pickup_date = models.DateField()
+    collection_type = models.CharField(max_length=10, choices=CollectionType.choices, default=CollectionType.CENTER)
     pickup_thana = models.ForeignKey(
         'facilities.Thana',
         on_delete=models.SET_NULL,
@@ -140,6 +147,8 @@ class TestBooking(BaseBooking):
     patient_name = models.CharField(max_length=100, blank=True)
     patient_phone = models.CharField(max_length=20, default="", validators=[bangladesh_phone_validator])
     pickup_address_line = models.CharField(max_length=300, blank=True, default="")
+    price_at_booking = models.DecimalField(max_digits=10, decimal_places=2, null=True, blank=True)
+    home_charge_at_booking = models.DecimalField(max_digits=10, decimal_places=2, null=True, blank=True)
 
     class Meta:
         ordering = ["-pickup_date", "-created_at"]
@@ -158,12 +167,6 @@ class TestBooking(BaseBooking):
                 self.patient_name = self.patient.name
             if not self.patient_phone:
                 self.patient_phone = self.patient.phone
-        elif self.patient_phone and self.patient_name:
-            patient_obj, _ = Patient.objects.get_or_create(
-                phone=self.patient_phone,
-                defaults={'name': self.patient_name}
-            )
-            self.patient = patient_obj
         super().save(*args, **kwargs)
 
     def __str__(self):
@@ -182,25 +185,12 @@ class HospitalServiceBooking(BaseBooking):
     class Meta:
         ordering = ["-booking_date", "-created_at"]
 
-    def clean(self):
-        super().clean()
-        if self.hospital_id and self.service_id:
-            if not self.hospital.services.filter(pk=self.service_id).exists():
-                from django.core.exceptions import ValidationError
-                raise ValidationError({"service": f"Service '{self.service.name}' is not offered by {self.hospital.location.name}."})
-
     def save(self, *args, **kwargs):
         if self.patient:
             if not self.patient_name:
                 self.patient_name = self.patient.name
             if not self.patient_phone:
                 self.patient_phone = self.patient.phone
-        elif self.patient_phone and self.patient_name:
-            patient_obj, _ = Patient.objects.get_or_create(
-                phone=self.patient_phone,
-                defaults={'name': self.patient_name}
-            )
-            self.patient = patient_obj
         self.full_clean()
         super().save(*args, **kwargs)
 

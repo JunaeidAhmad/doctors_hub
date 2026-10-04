@@ -26,9 +26,9 @@ export default function BranchTestModal() {
     center: '',
     hospital: '',
     test: '',
-    price: '700',
-    discount_percent: '25% OFF',
-    calculated_price: '525',
+    price: '',
+    discount_percent: '',
+    calculated_price: '',
     report_time: '',
     is_available: true,
     home_sample_collection: false
@@ -44,9 +44,9 @@ export default function BranchTestModal() {
         center: !isHosp ? (editingBranchTest.location_id || editingBranchTest.location) : '',
         hospital: isHosp ? (editingBranchTest.location_id || editingBranchTest.location) : '',
         test: editingBranchTest.test_id || editingBranchTest.test || '',
-        price: editingBranchTest.price ? editingBranchTest.price.toString() : (editingBranchTest.calculated_price ? editingBranchTest.calculated_price.toString() : ''),
-        discount_percent: editingBranchTest.discount_percent || '',
-        calculated_price: editingBranchTest.calculated_price ? editingBranchTest.calculated_price.toString() : (editingBranchTest.discounted_price ? editingBranchTest.discounted_price.toString() : ''),
+        price: editingBranchTest.price != null ? editingBranchTest.price.toString() : '',
+        discount_percent: editingBranchTest.discount_percent != null ? editingBranchTest.discount_percent.toString() : '',
+        calculated_price: editingBranchTest.calculated_price != null ? editingBranchTest.calculated_price.toString() : '',
         report_time: editingBranchTest.report_time || (editingBranchTest.test_details?.report_time_hours ? `${editingBranchTest.test_details.report_time_hours} hours` : ''),
         is_available: editingBranchTest.is_available ?? true,
         home_sample_collection: editingBranchTest.home_sample_collection ?? false
@@ -60,9 +60,9 @@ export default function BranchTestModal() {
         center: isDiagPrefill ? branchTestPrefill.id : ((diagnosticCenters || [])[0]?.id || ''),
         hospital: isHospPrefill ? branchTestPrefill.id : ((hospitals || [])[0]?.id || ''),
         test: (tests || [])[0]?.id || '',
-        price: '700',
-        discount_percent: '25% OFF',
-        calculated_price: '525',
+        price: '',
+        discount_percent: '',
+        calculated_price: '',
         report_time: '',
         is_available: true,
         home_sample_collection: false
@@ -86,9 +86,8 @@ export default function BranchTestModal() {
     try {
       if (isEditing) {
         const payload = {
-          calculated_price: parseFloat(branchTestForm.calculated_price) || 0,
-          price: branchTestForm.price ? parseFloat(branchTestForm.price) : null,
-          discount_percent: branchTestForm.discount_percent,
+          price: branchTestForm.price === '' ? null : parseFloat(branchTestForm.price),
+          discount_percent: branchTestForm.discount_percent === '' ? null : parseFloat(branchTestForm.discount_percent),
           report_time: branchTestForm.report_time,
           is_available: branchTestForm.is_available,
           home_sample_collection: branchTestForm.home_sample_collection
@@ -101,9 +100,8 @@ export default function BranchTestModal() {
           test: branchTestForm.test,
           center: !isHosp ? (branchTestForm.center || null) : null,
           hospital: isHosp ? (branchTestForm.hospital || null) : null,
-          calculated_price: parseFloat(branchTestForm.calculated_price) || 0,
-          price: branchTestForm.price ? parseFloat(branchTestForm.price) : null,
-          discount_percent: branchTestForm.discount_percent,
+          price: branchTestForm.price === '' ? null : parseFloat(branchTestForm.price),
+          discount_percent: branchTestForm.discount_percent === '' ? null : parseFloat(branchTestForm.discount_percent),
           report_time: branchTestForm.report_time,
           is_available: branchTestForm.is_available,
           home_sample_collection: branchTestForm.home_sample_collection
@@ -270,14 +268,14 @@ export default function BranchTestModal() {
         {/* PRICING FIELDS */}
         <div className="grid grid-cols-2 gap-3">
           <div>
-            <label className="block text-slate-700 font-label font-bold uppercase text-[11px] mb-1">Original Price (৳) *</label>
+            <label className="block text-slate-700 font-label font-bold uppercase text-[11px] mb-1">Price (৳, optional)</label>
             <input
               type="number"
-              required
+              min="0"
               value={branchTestForm.price}
               onChange={e => {
                 const newOrig = e.target.value;
-                const calcPrice = calculateFinalPrice(newOrig, branchTestForm.discount_percent);
+                const calcPrice = newOrig === '' ? '' : calculateFinalPrice(newOrig, branchTestForm.discount_percent);
                 setBranchTestForm({ ...branchTestForm, price: newOrig, calculated_price: calcPrice });
               }}
               className="w-full bg-white border border-[#d1d5dc] rounded-sm px-3 py-2 text-slate-900 font-mono focus:outline-none focus:border-[#094cb2]"
@@ -287,11 +285,11 @@ export default function BranchTestModal() {
             <label className="block text-slate-700 font-label font-bold uppercase text-[11px] mb-1">Discount Tag</label>
             <input
               type="text"
-              placeholder="e.g. 25% OFF"
+              placeholder="Optional"
               value={branchTestForm.discount_percent}
               onChange={e => {
                 const newDist = e.target.value;
-                const calcPrice = calculateFinalPrice(branchTestForm.price, newDist);
+                const calcPrice = branchTestForm.price === '' ? '' : calculateFinalPrice(branchTestForm.price, newDist);
                 setBranchTestForm({ ...branchTestForm, discount_percent: newDist, calculated_price: calcPrice });
               }}
               className="w-full bg-white border border-[#d1d5dc] rounded-sm px-3 py-2 text-slate-900 focus:outline-none focus:border-[#094cb2]"
@@ -299,16 +297,7 @@ export default function BranchTestModal() {
           </div>
         </div>
 
-        <div>
-          <label className="block text-slate-700 font-label font-bold uppercase text-[11px] mb-1">Final Discounted Offer Price (৳) *</label>
-          <input
-            type="number"
-            required
-            value={branchTestForm.calculated_price}
-            onChange={e => setBranchTestForm({ ...branchTestForm, calculated_price: e.target.value })}
-            className="w-full bg-white border border-[#d1d5dc] rounded-sm px-3 py-2 text-[#094cb2] font-serif font-bold text-sm focus:outline-none focus:border-[#094cb2]"
-          />
-        </div>
+        <p className="text-[11px] text-slate-500">{branchTestForm.price === '' ? 'No price entered; customers will see “Price at counter”.' : `Calculated price: ৳${branchTestForm.calculated_price || branchTestForm.price}`}</p>
 
         {/* REPORT DELIVERY TIME FIELD */}
         <div>

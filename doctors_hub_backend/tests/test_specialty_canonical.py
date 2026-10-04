@@ -188,12 +188,15 @@ class TestDropdownOptionsAndRBAC:
         set_alias(cardio, "হৃদরোগ")
         set_alias(cardio, "কার্ডিওলজি")
 
-        # GET /api/specialties/ (default public discovery) returns all verified options
+        # GET /api/specialties/ returns specialties only (contract changed in P2.1.4)
         res = api_client.get("/api/specialties/")
         assert res.status_code == status.HTTP_200_OK
         data = res.data.get("results", res.data) if isinstance(res.data, dict) else res.data
         names = [item["name"] for item in data]
-        assert "হৃদরোগ" in names or "কার্ডিওলজি" in names
+        assert "Cardiology" in names
+        # Aliases are NOT in /specialties/ (they live at /specialty-aliases/)
+        assert "হৃদরোগ" not in names
+        assert "কার্ডিওলজি" not in names
 
     def test_rbac_permissions_on_specialties(self, api_client, rbac_user_with_categories, rbac_user_read_only):
         # Anonymous can read

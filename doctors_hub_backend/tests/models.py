@@ -44,12 +44,12 @@ class FacilityTest(models.Model):
     id = models.UUIDField(primary_key=True, default=uuid7, editable=False)
     location = models.ForeignKey(Location, on_delete=models.CASCADE, related_name="offered_tests")
     test = models.ForeignKey(Test, on_delete=models.CASCADE, related_name="offered_at")
-    price = models.DecimalField(max_digits=10, decimal_places=2)
+    price = models.DecimalField(max_digits=10, decimal_places=2, null=True, blank=True)
     discount_percent = models.DecimalField(max_digits=5, decimal_places=2, null=True, blank=True, default=0.0)
     report_time = models.CharField(max_length=100, blank=True)
     is_available = models.BooleanField(default=True)
     home_sample_collection = models.BooleanField(default=False)
-    home_sample_charge = models.DecimalField(max_digits=10, decimal_places=2, null=True, blank=True, default=0.0)
+    home_sample_charge = models.DecimalField(max_digits=10, decimal_places=2, null=True, blank=True)
     home_sample_note = models.CharField(max_length=150, blank=True, default='')
     updated_at = models.DateTimeField(auto_now=True)
 
@@ -60,6 +60,8 @@ class FacilityTest(models.Model):
 
     @property
     def calculated_price(self):
+        if self.price is None:
+            return None
         if self.discount_percent and self.discount_percent > 0:
             from decimal import Decimal
             discount_amount = (self.price * Decimal(str(self.discount_percent))) / Decimal("100")

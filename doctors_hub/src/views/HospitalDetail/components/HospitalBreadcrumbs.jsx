@@ -3,8 +3,8 @@ import { ChevronRight, Home, Building2, CheckCircle } from 'lucide-react';
 import { formatFacilityName } from '../../../utils/facilityUtils';
 
 export default function HospitalBreadcrumbs({ hospital, onNavigateHome, onNavigateHospitals }) {
-  const hospitalName = formatFacilityName(hospital) || 'Hospital Details';
-  const district = hospital?.district || hospital?.city || 'Dhaka';
+  const hospitalName = hospital?.display_name || formatFacilityName(hospital) || 'Hospital Details';
+  const district = hospital?.district || hospital?.city || '';
 
   return (
     <nav aria-label="Breadcrumb" className="flex items-center justify-between text-xs text-slate-500 py-1">

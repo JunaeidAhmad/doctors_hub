@@ -49,7 +49,6 @@ export default function DoctorSearchPage({
   const debouncedKeyword = useDebounce(keyword, 350);
   const [selectedDay, setSelectedDay] = useState(() => getParam('day', 'All'));
   const [gender, setGender] = useState(() => getParam('gender', 'All'));
-  const [maxFee, setMaxFee] = useState(3000);
   const [currentPage, setCurrentPage] = useState(() => {
     const p = parseInt(getParam('page', '1'), 10);
     return isNaN(p) || p < 1 ? 1 : p;
@@ -181,7 +180,6 @@ export default function DoctorSearchPage({
       facility: facility || undefined,
       gender: gender !== 'All' ? gender : undefined,
       search: debouncedKeyword.trim() || undefined,
-      fee_max: maxFee < 3000 ? maxFee : undefined,
       day: selectedDay !== 'All' && selectedDay !== 'All Days' ? selectedDay : undefined,
       page: currentPage,
       page_size: pageSize
@@ -194,7 +192,7 @@ export default function DoctorSearchPage({
             list = ensureArray(data);
             count = (typeof data === 'object' && typeof data.count === 'number') ? data.count : list.length;
             if (data.meta) {
-              setSearchMeta(data.meta);
+               setSearchMeta(data.meta);
             } else {
               setSearchMeta(null);
             }
@@ -228,7 +226,7 @@ export default function DoctorSearchPage({
       });
 
     return () => { isMounted = false; };
-  }, [specialty, divisionId, districtId, thanaId, facility, gender, debouncedKeyword, maxFee, selectedDay, currentPage]);
+  }, [specialty, divisionId, districtId, thanaId, facility, gender, debouncedKeyword, selectedDay, currentPage]);
 
   const hasActiveFilters = Boolean(
     specialty ||
@@ -238,8 +236,7 @@ export default function DoctorSearchPage({
     facility ||
     (keyword && keyword.trim()) ||
     (selectedDay && selectedDay !== 'All' && selectedDay !== 'All Days') ||
-    (gender && gender !== 'All') ||
-    maxFee < 3000
+    (gender && gender !== 'All')
   );
 
   const handleClearAll = () => {
@@ -251,7 +248,6 @@ export default function DoctorSearchPage({
     setKeyword('');
     setSelectedDay('All');
     setGender('All');
-    setMaxFee(3000);
     setCurrentPage(1);
   };
 
@@ -293,7 +289,6 @@ export default function DoctorSearchPage({
         })()}
         selectedDay={selectedDay}
         gender={gender}
-        maxFee={maxFee}
         totalDoctors={totalCount}
         hasActiveFilters={hasActiveFilters}
         onRemoveDivision={() => { setDivisionId(null); setDistrictId(null); setThanaId(null); setCurrentPage(1); }}
@@ -303,7 +298,6 @@ export default function DoctorSearchPage({
         onRemoveFacility={() => setFacility('')}
         onRemoveDay={() => setSelectedDay('All')}
         onRemoveGender={() => setGender('All')}
-        onRemoveFee={() => setMaxFee(3000)}
         onClearAll={handleClearAll}
       />
 
