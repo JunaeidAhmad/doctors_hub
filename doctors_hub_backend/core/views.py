@@ -16,14 +16,14 @@ from facilities.models import (
 from tests.models import TestCategory, Test, FacilityTest
 from bookings.models import DoctorBooking, LabBooking
 
-from doctors.serializers import DoctorSpecialtySerializer, DoctorSerializer
+from doctors.serializers import DoctorSpecialtySerializer, DoctorSerializer, DoctorListSerializer
 from facilities.serializers import (
     LocationSerializer,
     HospitalCategorySerializer, DiagnosticCenterCategorySerializer,
     HospitalServiceSerializer, DiagnosticServiceSerializer,
     HospitalSerializer, DiagnosticCenterSerializer
 )
-from tests.serializers import TestCategorySerializer, TestSerializer, FacilityTestSerializer
+from tests.serializers import TestCategorySerializer, TestSerializer, TestOptionSerializer, FacilityTestSerializer
 from bookings.serializers import DoctorBookingSerializer, LabBookingSerializer
 
 
@@ -34,9 +34,8 @@ class SearchMetadataResponseSerializer(serializers.Serializer):
     test_categories = TestCategorySerializer(many=True)
     hospital_categories = HospitalCategorySerializer(many=True)
     diagnostic_center_categories = DiagnosticCenterCategorySerializer(many=True)
-    facilities = LocationSerializer(many=True, required=False)
-    hospitals = LocationSerializer(many=True, required=False)
-    diagnostic_centers = LocationSerializer(many=True, required=False)
+    facilities = serializers.ListField(child=serializers.DictField(), required=False)
+    test_categories = TestCategorySerializer(many=True)
 
 
 class SearchFacetsResponseSerializer(serializers.Serializer):
@@ -164,10 +163,10 @@ class SearchMetadataAPIView(APIView):
         hospital_categories = HospitalCategory.objects.annotate(hospital_count=Count('hospitals', distinct=True)).order_by('name')
         diagnostic_center_categories = DiagnosticCenterCategory.objects.annotate(center_count=Count('centers', distinct=True)).order_by('name')
 
-        from facilities.serializers_summary import FacilitySummarySerializer
+        from facilities.serializers_summary import FacilityMiniSerializer
 
         locations = Location.objects.filter(is_active=True, location_type__in=['hospital', 'diagnostic_center']).select_related('thana__district__division').order_by('name', 'branch')
-        facilities_data = FacilitySummarySerializer(locations, many=True, context={'request': request}).data
+        facilities_data = FacilityMiniSerializer(locations, many=True, context={'request': request}).data
 
         response_data = {
             'specialty_groups': specialty_groups,
@@ -177,8 +176,6 @@ class SearchMetadataAPIView(APIView):
             'hospital_categories': HospitalCategorySerializer(hospital_categories, many=True, context={'request': request}).data,
             'diagnostic_center_categories': DiagnosticCenterCategorySerializer(diagnostic_center_categories, many=True, context={'request': request}).data,
             'facilities': facilities_data,
-            'hospitals': [f for f in facilities_data if f.get('location_type') == 'hospital'],
-            'diagnostic_centers': [f for f in facilities_data if f.get('location_type') == 'diagnostic_center'],
         }
         cache.set(metadata_cache_key, response_data, timeout=300)
         return Response(response_data)
@@ -329,8 +326,8 @@ class AdminInitAPIView(APIView):
             }
             hospitals_data = HospitalSerializer(hosp_base.all()[:INIT_LIMIT], many=True, context={'request': request}).data
             diagnostic_centers_data = DiagnosticCenterSerializer(diag_base.all()[:INIT_LIMIT], many=True, context={'request': request}).data
-            doctors_data = DoctorSerializer(doc_base.all()[:INIT_LIMIT], many=True, context={'request': request}).data
-            tests_data = TestSerializer(test_base.all(), many=True, context={'request': request}).data
+            doctors_data = DoctorListSerializer(doc_base.all()[:INIT_LIMIT], many=True, context={'request': request}).data
+            tests_data = TestOptionSerializer(test_base.all(), many=True, context={'request': request}).data
             branch_tests_data = FacilityTestSerializer(branch_test_base.all()[:INIT_LIMIT], many=True, context={'request': request}).data
             doc_bookings = DoctorBookingSerializer(doc_booking_base.all()[:INIT_LIMIT], many=True, context={'request': request}).data
             lab_bookings = LabBookingSerializer(lab_booking_base.all()[:INIT_LIMIT], many=True, context={'request': request}).data
@@ -356,8 +353,8 @@ class AdminInitAPIView(APIView):
 
             hospitals_data = HospitalSerializer(hosp_scoped[:INIT_LIMIT], many=True, context={'request': request}).data
             diagnostic_centers_data = DiagnosticCenterSerializer(diag_scoped[:INIT_LIMIT], many=True, context={'request': request}).data
-            doctors_data = DoctorSerializer(doc_scoped[:INIT_LIMIT], many=True, context={'request': request}).data
-            tests_data = TestSerializer(test_base.all(), many=True, context={'request': request}).data
+            doctors_data = DoctorListSerializer(doc_scoped[:INIT_LIMIT], many=True, context={'request': request}).data
+            tests_data = TestOptionSerializer(test_base.all(), many=True, context={'request': request}).data
             branch_tests_data = FacilityTestSerializer(branch_test_scoped[:INIT_LIMIT], many=True, context={'request': request}).data
             doc_bookings = DoctorBookingSerializer(doc_booking_scoped[:INIT_LIMIT], many=True, context={'request': request}).data
             lab_bookings = LabBookingSerializer(lab_booking_scoped[:INIT_LIMIT], many=True, context={'request': request}).data
@@ -376,7 +373,7 @@ class AdminInitAPIView(APIView):
             }
             hospitals_data = []
             diagnostic_centers_data = []
-            doctors_data = DoctorSerializer(doc_scoped[:INIT_LIMIT], many=True, context={'request': request}).data
+            doctors_data = DoctorListSerializer(doc_scoped[:INIT_LIMIT], many=True, context={'request': request}).data
             tests_data = []
             branch_tests_data = []
             doc_bookings = DoctorBookingSerializer(doc_booking_scoped[:INIT_LIMIT], many=True, context={'request': request}).data

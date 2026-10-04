@@ -1,9 +1,8 @@
 import React from 'react';
 import { ChevronRight, Home, Building2, CheckCircle } from 'lucide-react';
-import { formatFacilityName } from '../../../utils/facilityUtils';
 
 export default function HospitalBreadcrumbs({ hospital, onNavigateHome, onNavigateHospitals }) {
-  const hospitalName = hospital?.display_name || formatFacilityName(hospital) || 'Hospital Details';
+  const hospitalName = hospital?.display_name || (hospital?.display_name || hospital?.name || "") || 'Hospital Details';
   const district = hospital?.district || hospital?.city || '';
 
   return (

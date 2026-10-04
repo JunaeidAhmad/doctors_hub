@@ -122,7 +122,7 @@ class RoleScopedQuerysetMixin:
         if not user or not user.is_authenticated:
             return qs.none()
 
-        if getattr(user, "is_facility_admin", False):
+        if getattr(user, "is_facility_staff", False):
             managed_ids = user.managed_location_ids
             if not managed_ids: return qs.none()
             return qs.filter(**{self.scope_location_field: managed_ids}).distinct()

@@ -1,5 +1,4 @@
 import React from 'react';
-import { formatFacilityName } from '../../../utils/facilityUtils';
 import { formatNextAvailable } from '../../../utils/doctorUtils';
 
 export default function DoctorChamberCard({
@@ -9,7 +8,7 @@ export default function DoctorChamberCard({
   onSelectHospital,
   className = ''
 }) {
-  const facilityName = formatFacilityName(chamber) || 'Specialist Chamber';
+  const facilityName = (chamber?.display_name || chamber?.name || "") || 'Specialist Chamber';
   const rawAddress = chamber.address || chamber.district || chamber.location;
   const address = (rawAddress && rawAddress.length > 8)
     ? rawAddress

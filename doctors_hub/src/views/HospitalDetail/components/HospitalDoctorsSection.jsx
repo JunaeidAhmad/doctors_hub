@@ -3,7 +3,6 @@ import {
   Stethoscope, Search, ShieldCheck, Calendar, Clock, 
   DoorClosed, ArrowRight, UserCheck, Loader2
 } from 'lucide-react';
-import { formatFacilityName } from '../../../utils/facilityUtils';
 import { formatNextAvailable } from '../../../utils/doctorUtils';
 import { getFacilityDoctors } from '../../../services/api/hospitals';
 
@@ -23,7 +22,7 @@ export default function HospitalDoctorsSection({
   const [currentPage, setCurrentPage] = useState(1);
   const debounceRef = useRef(null);
 
-  const hospitalName = formatFacilityName(hospital) || '';
+  const hospitalName = (hospital?.display_name || hospital?.name || "") || '';
   const facilityId = hospital?.slug || hospital?.id;
   const facilityKind = hospital?.location_type === 'diagnostic_center' ? 'diagnostic-centers' : 'hospitals';
 

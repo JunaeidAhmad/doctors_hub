@@ -31,11 +31,9 @@ export default function DoctorCard({
   const specialtyDisplay = doctor.specialty_display?.en || doctor.specialty_source || '';
 
   // Process canonical specialties for chips
-  const rawSpecialties = Array.isArray(doctor.specialty_tags) && doctor.specialty_tags.length > 0
-    ? doctor.specialty_tags
-    : (Array.isArray(doctor.specialties) && doctor.specialties.length > 0
-      ? doctor.specialties
-      : (doctor.specialty ? [doctor.specialty] : []));
+  const rawSpecialties = Array.isArray(doctor.specialties) && doctor.specialties.length > 0
+    ? doctor.specialties
+    : (doctor.specialty ? [doctor.specialty] : []);
 
   const seenSpecialties = new Set();
   const specialties = [];
@@ -61,9 +59,9 @@ export default function DoctorCard({
   const rating = doctor.rating ? Number(doctor.rating).toFixed(1) : null;
   const reviewCount = doctor.review_count || null;
 
-  // Process affiliations / chambers strictly from database API:
-  const chambers = Array.isArray(doctor.affiliations) && doctor.affiliations.length > 0
-    ? doctor.affiliations.map((aff, i) => {
+  // Process chambers strictly from database API:
+  const chambers = Array.isArray(doctor.chambers) && doctor.chambers.length > 0
+    ? doctor.chambers.map((aff, i) => {
         const fac = aff.facility || {};
         const facName = fac.display_name || fac.name || aff.name || '';
         const locId = fac.id || aff.location_id || aff.location || '';

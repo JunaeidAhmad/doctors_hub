@@ -88,7 +88,6 @@ class LocationViewSet(PublicVisibilityMixin, RoleScopedQuerysetMixin, viewsets.M
     permission_classes = (ScopedFacilityOrReadOnly,)
     scope_location_field = "pk__in"
     public_filter = Q(is_active=True)
-    pagination_class = None
     filter_backends = (DjangoFilterBackend, filters.SearchFilter, filters.OrderingFilter)
     filterset_fields = ('location_type', 'is_active', 'is_verified')
     search_fields = (
@@ -98,8 +97,16 @@ class LocationViewSet(PublicVisibilityMixin, RoleScopedQuerysetMixin, viewsets.M
     )
     ordering_fields = ('name', 'branch', 'created_at')
 
+    def get_serializer_class(self):
+        if self.request.query_params.get('view') == 'picker':
+            from .serializers import LocationPickerSerializer
+            return LocationPickerSerializer
+        return self.serializer_class
+
     def get_queryset(self):
-        qs = self.get_scoped_queryset(Location.objects.all().order_by('name', 'branch'))
+        qs = self.get_scoped_queryset(
+            Location.objects.select_related('thana__district__division').order_by('name', 'branch')
+        )
         return self.apply_public_visibility(qs)
 
     def perform_create(self, serializer):

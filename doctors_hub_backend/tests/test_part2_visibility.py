@@ -117,7 +117,7 @@ def test_location_visibility(geo_thana, superadmin_user, facility_admin_a):
 
     # Anonymous user:
     res = client.get("/api/locations/")
-    names = [loc["name"] for loc in res.data]
+    names = [loc["name"] for loc in res.data.get("results", res.data)]
     assert "Loc Active" in names
     assert "Hospital Alpha" not in names
     assert "Loc Beta" not in names

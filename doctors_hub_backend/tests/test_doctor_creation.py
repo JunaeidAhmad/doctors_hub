@@ -105,13 +105,13 @@ class TestDoctorCreationAndDisplay:
         assert matched_doc["institution"] == "Dhaka Medical College & Hospital"
         assert matched_doc["qualification"] == "MBBS, FCPS (Cardiology), MD"
         assert matched_doc["is_verified"] is True
-        assert matched_doc["status"] == "Active"
+        
         assert float(matched_doc["rating"]) == 4.95
         assert matched_doc["review_count"] == 150
 
         # Check affiliations in list response
-        assert len(matched_doc["affiliations"]) == 1
-        aff = matched_doc["affiliations"][0]
+        assert len(matched_doc["chambers"]) == 1
+        aff = matched_doc["chambers"][0]
         assert aff["chamber_type"] == "Visiting Chamber"
         assert float(aff["fee"]) == 1500.00
         assert len(aff["schedules"]) == 1

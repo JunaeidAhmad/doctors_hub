@@ -135,7 +135,7 @@ export default function DoctorProfilePage({
     );
   }
 
-  const primarySpecialty = doctor.specialties?.[0]?.name || 'Specialist';
+  const primarySpecialty = doctor.primary_specialty?.name;
   const isVerified = Boolean(doctor.is_verified && doctor.bmdc_number);
 
   const resolvedAffiliations = useMemo(() => {

@@ -343,12 +343,11 @@ class DoctorSerializer(serializers.ModelSerializer):
     specialty_source = serializers.CharField(required=False, allow_blank=True, default='')
     specialty_source_bn = serializers.CharField(required=False, allow_blank=True, default='')
     specialty_display = serializers.SerializerMethodField()
-    primary_specialty = SpecialtyTagSerializer(read_only=True)
+    primary_specialty = serializers.SerializerMethodField()
     primary_specialty_id = serializers.PrimaryKeyRelatedField(
         queryset=DoctorSpecialty.objects.all(), source='primary_specialty', write_only=True, required=False, allow_null=True
     )
-    specialty_tags = SpecialtyTagSerializer(source='specialties', many=True, read_only=True)
-    specialties = DoctorSpecialtySerializer(many=True, read_only=True)
+    specialties = serializers.SerializerMethodField()
     specialty_ids = serializers.PrimaryKeyRelatedField(
         queryset=DoctorSpecialty.objects.all(), many=True, write_only=True, required=False
     )
@@ -363,7 +362,7 @@ class DoctorSerializer(serializers.ModelSerializer):
         fields = (
             'id', 'name', 'bn_name', 'slug', 'old_slugs', 'academic_title', 'institution',
             'specialty_source', 'specialty_source_bn', 'specialty_display', 'primary_specialty', 'primary_specialty_id',
-            'specialty_tags', 'specialties', 'specialty_ids', 'qualification', 'experience',
+            'specialties', 'specialty_ids', 'qualification', 'experience',
             'about', 'description', 'clinical_services', 'bmdc_number', 'is_verified', 'image',
             'gender', 'rating', 'review_count', 'status', 'affiliations',
             'match_rank', 'match_tier', 'is_primary_match'
@@ -383,6 +382,24 @@ class DoctorSerializer(serializers.ModelSerializer):
             "en": en_str,
             "bn": bn_str or en_str
         }
+
+    def get_primary_specialty(self, obj):
+        ps = obj.primary_specialty
+        if not ps:
+            return None
+        return {'id': str(ps.id), 'slug': ps.slug, 'name': ps.name, 'bn_name': ps.bn_name}
+
+    def get_specialties(self, obj):
+        specs = list(obj.specialties.all())
+        primary = obj.primary_specialty
+        if primary:
+            specs.sort(key=lambda s: (0 if s.id == primary.id else 1, s.name))
+        else:
+            specs.sort(key=lambda s: s.name)
+        return [
+            {'id': str(s.id), 'slug': s.slug, 'name': s.name, 'bn_name': s.bn_name}
+            for s in specs
+        ]
 
     def get_match_rank(self, obj):
         return getattr(obj, 'match_rank', None)
@@ -458,3 +475,68 @@ class DoctorSerializer(serializers.ModelSerializer):
             instance.specialties.add(instance.primary_specialty)
 
         return instance
+
+
+class ChamberLeanSerializer(serializers.ModelSerializer):
+    """Lean chamber shape for doctor list — no doctor fields."""
+    from facilities.serializers_summary import FacilityMiniSerializer
+    facility = FacilityMiniSerializer(source='location', read_only=True)
+    schedules = AffiliationScheduleSerializer(many=True, read_only=True)
+    next_available = serializers.SerializerMethodField()
+
+    class Meta:
+        model = DoctorAffiliation
+        fields = ('id', 'fee', 'chamber_type', 'is_active', 'facility', 'schedules', 'next_available')
+        read_only_fields = fields
+
+    def get_next_available(self, obj):
+        next_available_map = self.context.get('next_available_map')
+        if next_available_map is not None:
+            return next_available_map.get(str(obj.id)) or next_available_map.get(obj.id)
+        return None
+
+
+class LeanSpecialtySerializer(serializers.Serializer):
+    id = serializers.UUIDField(read_only=True)
+    slug = serializers.CharField(read_only=True)
+    name = serializers.CharField(read_only=True)
+    bn_name = serializers.CharField(read_only=True)
+
+
+class DoctorListSerializer(serializers.ModelSerializer):
+    """Lean doctor serializer for list endpoints."""
+    primary_specialty = serializers.SerializerMethodField()
+    specialties = serializers.SerializerMethodField()
+    chambers = ChamberLeanSerializer(source='affiliations', many=True, read_only=True)
+    match_rank = serializers.SerializerMethodField()
+
+    class Meta:
+        model = Doctor
+        fields = (
+            'id', 'slug', 'name', 'bn_name', 'academic_title', 'qualification',
+            'institution', 'experience', 'image', 'gender', 'bmdc_number',
+            'rating', 'review_count', 'is_verified',
+            'primary_specialty', 'specialties', 'chambers', 'match_rank',
+        )
+        read_only_fields = fields
+
+    def get_primary_specialty(self, obj):
+        ps = obj.primary_specialty
+        if not ps:
+            return None
+        return {'id': str(ps.id), 'slug': ps.slug, 'name': ps.name, 'bn_name': ps.bn_name}
+
+    def get_specialties(self, obj):
+        specs = list(obj.specialties.all())
+        primary = obj.primary_specialty
+        if primary:
+            specs.sort(key=lambda s: (0 if s.id == primary.id else 1, s.name))
+        else:
+            specs.sort(key=lambda s: s.name)
+        return [
+            {'id': str(s.id), 'slug': s.slug, 'name': s.name, 'bn_name': s.bn_name}
+            for s in specs
+        ]
+
+    def get_match_rank(self, obj):
+        return getattr(obj, 'match_rank', None)

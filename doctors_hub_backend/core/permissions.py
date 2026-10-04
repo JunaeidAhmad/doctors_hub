@@ -90,7 +90,7 @@ class ScopedFacilityOrReadOnly(permissions.BasePermission):
             return False
         if getattr(user, "is_super_admin", False) or getattr(user, "is_superuser", False):
             return True
-        if getattr(user, "is_facility_admin", False):
+        if getattr(user, "is_facility_staff", False):
             # Check if object is affiliated with any managed facility
             managed = set(map(str, getattr(user, "managed_location_ids", [])))
             if hasattr(obj, "location_id") and str(obj.location_id) in managed:

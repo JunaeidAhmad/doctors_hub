@@ -91,6 +91,17 @@ class LocationSerializer(serializers.ModelSerializer):
         return super().validate(attrs)
 
 
+class LocationPickerSerializer(serializers.ModelSerializer):
+    display_name = serializers.CharField(read_only=True)
+    area = serializers.CharField(source='thana.name', read_only=True, allow_null=True)
+    district = serializers.CharField(source='thana.district.name', read_only=True, allow_null=True)
+
+    class Meta:
+        model = Location
+        fields = ('id', 'slug', 'display_name', 'location_type', 'area', 'district', 'is_active')
+        read_only_fields = fields
+
+
 class HospitalSerializer(serializers.ModelSerializer):
     location_id = serializers.PrimaryKeyRelatedField(
         queryset=Location.objects.all(), write_only=True, source='location'

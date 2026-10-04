@@ -11,7 +11,6 @@ import AffiliateDoctorDrawer from './facility/AffiliateDoctorDrawer';
 import AdminPagination from './AdminPagination';
 import { api, ensureArray } from '../../../services/api';
 import { useDebounce } from '../../../hooks/useDebounce';
-import { formatFacilityName } from '../../../utils/facilityUtils';
 
 export default function DoctorsTab() {
   const {
@@ -53,7 +52,7 @@ export default function DoctorsTab() {
     ? (diagnosticCenters[0] || managedLoc || hospitals[0]) 
     : (hospitals[0] || managedLoc || diagnosticCenters[0]);
   const myFacilityId = myFacility?.id || managedLoc?.id;
-  const myFacilityName = formatFacilityName(myFacility || managedLoc);
+  const myFacilityName = (myFacility || managedLoc?.display_name || myFacility || managedLoc?.name || "");
 
   // Sync back to page 1 if search or filters change
   useEffect(() => {
@@ -542,7 +541,7 @@ export default function DoctorsTab() {
                           {affiliationsList.length > 0 ? (
                             affiliationsList.slice(0, 2).map((aff, idx) => (
                               <div key={idx} className="truncate max-w-xs">
-                                • {formatFacilityName(aff.hospital || aff.diagnostic_center || aff) || aff.chamber_name || 'Consultation Suite'}
+                                • {(aff.hospital || aff.diagnostic_center || aff?.display_name || aff.hospital || aff.diagnostic_center || aff?.name || "") || aff.chamber_name || 'Consultation Suite'}
                               </div>
                             ))
                           ) : (

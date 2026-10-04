@@ -53,6 +53,7 @@ INSTALLED_APPS = [
     'django.contrib.sessions',
     'django.contrib.messages',
     'django.contrib.staticfiles',
+    'django.contrib.postgres',
     'rest_framework',
     'corsheaders',
     'accounts.apps.AccountsConfig',
@@ -217,6 +218,7 @@ SIMPLE_JWT = {
 }
 
 _REDIS_URL = env("REDIS_URL", default="")
+REDIS_URL = _REDIS_URL
 if _REDIS_URL:
     CACHES = {
         "default": {

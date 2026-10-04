@@ -1,5 +1,4 @@
 import React, { useMemo } from 'react';
-import { formatFacilityName } from '../../../utils/facilityUtils';
 
 export default function DoctorSearchBarStrip({
   specialty,
@@ -130,7 +129,7 @@ export default function DoctorSearchBarStrip({
             <option value="">Select Hospital & Diagnostic Center</option>
             {facilityOptions.map((fac) => {
               const facVal = fac.id || fac.slug || fac.name;
-              const facLabel = formatFacilityName(fac);
+              const facLabel = (fac?.display_name || fac?.name || "");
               return (
                 <option key={facVal} value={facVal}>
                   {facLabel}

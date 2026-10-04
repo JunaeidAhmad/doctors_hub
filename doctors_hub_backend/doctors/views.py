@@ -315,11 +315,17 @@ class DoctorViewSet(SlugOrPkLookupMixin, RoleScopedQuerysetMixin, viewsets.Model
     permission_classes = (IsDoctorOwnerOrReadOnly,)
     filter_backends = [DjangoFilterBackend, filters.SearchFilter]
     filterset_class = DoctorFilter
+
+    def get_serializer_class(self):
+        if self.action == 'list':
+            from .serializers import DoctorListSerializer
+            return DoctorListSerializer
+        return self.serializer_class
     search_fields = [
         'name', 'bn_name', 'bmdc_number', 'qualification', 'academic_title', 'institution',
         'specialties__name', 'specialties__bn_name', 'specialties__formal_name',
         'specialty_source', 'specialty_source_bn',
-        'affiliations__location__name', 'about'
+        'affiliations__location__name'
     ]
     scope_doctor_field = "user"
     scope_location_field = "affiliations__location__in"
@@ -376,9 +382,8 @@ class DoctorViewSet(SlugOrPkLookupMixin, RoleScopedQuerysetMixin, viewsets.Model
         if spec_param and spec_param.lower() != 'all':
             chosen = resolve_specialty_exact(spec_param)
             if chosen and isinstance(response.data, dict):
-                filtered_qs = self.filter_queryset(self.get_queryset())
                 rank_counts = dict(
-                    filtered_qs.order_by().values('match_rank').annotate(c=Count('id', distinct=True)).values_list('match_rank', 'c')
+                    queryset.order_by().values('match_rank').annotate(c=Count('id', distinct=True)).values_list('match_rank', 'c')
                 )
                 primary_count = rank_counts.get(1, 0)
                 secondary_count = rank_counts.get(2, 0)
@@ -393,8 +398,6 @@ class DoctorViewSet(SlugOrPkLookupMixin, RoleScopedQuerysetMixin, viewsets.Model
                     'secondary_count': secondary_count,
                     'related_count': related_count,
                     'match_count': match_count,
-                    'tier1_count': match_count,
-                    'tier2_count': related_count,
                 }
         return response
 
@@ -419,7 +422,7 @@ class DoctorViewSet(SlugOrPkLookupMixin, RoleScopedQuerysetMixin, viewsets.Model
             if hasattr(user, "doctor_profile") and user.doctor_profile:
                 raise exceptions.ValidationError("You already have a doctor profile.")
             serializer.save(user=user)
-        elif getattr(user, "is_facility_admin", False):
+        elif getattr(user, "is_facility_staff", False):
             affs = self.request.data.get("affiliations") or []
             loc_ids = {str(a.get("location_id") or a.get("location")) for a in affs if a.get("location_id") or a.get("location")}
             managed_ids = set(map(str, getattr(user, "managed_location_ids", [])))
@@ -517,7 +520,7 @@ class DoctorAffiliationViewSet(PublicVisibilityMixin, RoleScopedQuerysetMixin, v
         loc = serializer.validated_data.get("location")
         doc = serializer.validated_data.get("doctor")
 
-        if getattr(user, "is_facility_admin", False):
+        if getattr(user, "is_facility_staff", False):
             loc_id = loc.id if loc else None
             if not loc_id or loc_id not in user.managed_location_ids:
                 raise exceptions.PermissionDenied("You can only create affiliations for locations you manage.")
@@ -565,7 +568,7 @@ class AffiliationScheduleViewSet(RoleScopedQuerysetMixin, viewsets.ModelViewSet)
         if not aff:
             raise exceptions.ValidationError("Affiliation is required.")
 
-        if getattr(user, "is_facility_admin", False):
+        if getattr(user, "is_facility_staff", False):
             if aff.location_id not in user.managed_location_ids:
                 raise exceptions.PermissionDenied("You can only create schedules for locations you manage.")
             serializer.save()
@@ -626,7 +629,7 @@ class ScheduleExceptionViewSet(RoleScopedQuerysetMixin, viewsets.ModelViewSet):
         if not aff:
             raise exceptions.ValidationError("Affiliation is required.")
 
-        if getattr(user, "is_facility_admin", False):
+        if getattr(user, "is_facility_staff", False):
             if aff.location_id not in user.managed_location_ids:
                 raise exceptions.PermissionDenied("You can only create schedule exceptions for locations you manage.")
             serializer.save()

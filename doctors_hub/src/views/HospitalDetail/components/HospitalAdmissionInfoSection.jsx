@@ -3,10 +3,9 @@ import {
   Info, Clock, CheckSquare, ShieldCheck, 
   FileText, HeartHandshake, AlertTriangle 
 } from 'lucide-react';
-import { formatFacilityName } from '../../../utils/facilityUtils';
 
 export default function HospitalAdmissionInfoSection({ hospital }) {
-  const hospitalName = formatFacilityName(hospital) || '';
+  const hospitalName = (hospital?.display_name || hospital?.name || "") || '';
 
   return (
     <section className="bg-surface-container-lowest rounded-2xl border border-outline-variant/70 p-5 sm:p-6 lg:p-8 space-y-6 scroll-mt-24" id="admission-section">

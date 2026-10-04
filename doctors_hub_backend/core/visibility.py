@@ -12,7 +12,7 @@ def is_admin_viewer(user) -> bool:
         return True
     if hasattr(user, "user_roles"):
         return user.user_roles.filter(role__is_active=True, role__scope_type=Role.ScopeType.FACILITY).exists()
-    if getattr(user, "is_facility_admin", False):
+    if getattr(user, "is_facility_staff", False):
         return True
     return False
 

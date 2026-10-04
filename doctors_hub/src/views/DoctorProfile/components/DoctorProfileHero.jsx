@@ -15,7 +15,7 @@ export default function DoctorProfileHero({ doctor, onShare, onSave, onPrint }) 
   const defaultAvatar = getDoctorDefaultAvatar(doctor);
   const avatarUrl = doctor.image || defaultAvatar;
   const isVerified = Boolean(doctor.is_verified && doctor.bmdc_number);
-  const specialtyName = doctor.specialties?.[0]?.name || 'Specialist Physician';
+  const specialtyName = doctor.primary_specialty?.name;
   const doctorDisplayName = formatDoctorTitle(doctor);
 
   const ratingNum = parseFloat(doctor.rating) || 4.9;

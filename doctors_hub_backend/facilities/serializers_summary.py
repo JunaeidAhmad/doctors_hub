@@ -75,3 +75,15 @@ class FacilitySummarySerializer(serializers.ModelSerializer):
             return url
         except Exception:
             return val or None
+
+
+class FacilityMiniSerializer(serializers.ModelSerializer):
+    """Minimal facility shape for lean doctor payloads."""
+    area = serializers.CharField(source='thana.name', read_only=True, allow_null=True)
+    district = serializers.CharField(source='thana.district.name', read_only=True, allow_null=True)
+    district_id = serializers.IntegerField(source='thana.district.id', read_only=True, allow_null=True)
+
+    class Meta:
+        model = Location
+        fields = ('id', 'slug', 'display_name', 'location_type', 'area', 'district', 'district_id')
+        read_only_fields = fields

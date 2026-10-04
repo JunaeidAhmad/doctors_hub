@@ -14,7 +14,6 @@ import {
   calculateSlotDuration,
   checkScheduleConflict
 } from '../../../../utils/scheduleUtils';
-import { formatFacilityName } from '../../../../utils/facilityUtils';
 
 export default function DoctorScheduleManager() {
   const {
@@ -60,7 +59,7 @@ export default function DoctorScheduleManager() {
       .filter(s => s.day_of_week === dayOfWeek && (!editingSchedule || s.id !== editingSchedule.id))
       .map(s => ({
         ...s,
-        loc: formatFacilityName(a.hospital || a.diagnostic_center || a.location || a) || a.chamber_name || a.facility_name || 'Practice Location'
+        loc: (a.hospital || a.diagnostic_center || a.location || a?.display_name || a.hospital || a.diagnostic_center || a.location || a?.name || "") || a.chamber_name || a.facility_name || 'Practice Location'
       }))
   );
 
@@ -330,7 +329,7 @@ export default function DoctorScheduleManager() {
                 >
                   {affiliations.map(aff => (
                     <option key={aff.id} value={aff.id}>
-                      {formatFacilityName(aff.hospital || aff.diagnostic_center || aff.location || aff) || aff.facility_name || aff.chamber_name}
+                      {(aff.hospital || aff.diagnostic_center || aff.location || aff?.display_name || aff.hospital || aff.diagnostic_center || aff.location || aff?.name || "") || aff.facility_name || aff.chamber_name}
                     </option>
                   ))}
                 </select>

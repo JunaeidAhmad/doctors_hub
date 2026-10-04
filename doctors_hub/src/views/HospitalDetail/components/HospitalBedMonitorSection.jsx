@@ -3,10 +3,9 @@ import {
   Activity, HeartPulse, Baby, Bed, Users, 
   PhoneCall, Clock, Info, ShieldAlert 
 } from 'lucide-react';
-import { formatFacilityName } from '../../../utils/facilityUtils';
 
 export default function HospitalBedMonitorSection({ hospital }) {
-  const hospitalName = formatFacilityName(hospital) || '';
+  const hospitalName = (hospital?.display_name || hospital?.name || "") || '';
   const emergencyPhone = hospital?.emergency_phone || null;
   const icuAvailable = hospital?.icu_beds_available ?? null;
   const icuTotal = hospital?.icu_beds_total ?? null;

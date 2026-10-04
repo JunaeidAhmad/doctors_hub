@@ -61,6 +61,23 @@ export async function getLocations() {
   return handleResponse(res);
 }
 
+export async function searchLocations(params = {}) {
+  const query = new URLSearchParams({ view: 'picker', page_size: 20 });
+  if (params.search) query.set('search', params.search);
+  if (params.location_type) query.set('location_type', params.location_type);
+  const res = await fetchWithTimeout(`${BASE_URL}/locations/?${query}`, {
+    headers: getHeaders(),
+  });
+  return handleResponse(res);
+}
+
+export async function getLocationLabel(id) {
+  const res = await fetchWithTimeout(`${BASE_URL}/locations/${id}/?view=picker`, {
+    headers: getHeaders(),
+  });
+  return handleResponse(res);
+}
+
 export async function getPracticeLocations() {
   return getLocations();
 }

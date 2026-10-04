@@ -3,10 +3,9 @@ import {
   Navigation, ExternalLink, Car, Ambulance, PhoneCall, 
   ArrowRight, ShieldAlert, ParkingCircle, MapPin 
 } from 'lucide-react';
-import { formatFacilityName } from '../../../utils/facilityUtils';
 
 export default function HospitalLocationSection({ hospital }) {
-  const hospitalName = formatFacilityName(hospital) || '';
+  const hospitalName = (hospital?.display_name || hospital?.name || "") || '';
   const address = hospital?.address_line || hospital?.address || '';
   const parkingText = hospital?.parking_capacity || null;
   const ambulancePhone = hospital?.ambulance_phone || null;

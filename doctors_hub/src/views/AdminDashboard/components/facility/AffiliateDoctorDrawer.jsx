@@ -56,7 +56,7 @@ export default function AffiliateDoctorDrawer({
 
   // Affiliation Details State
   const [affiliation, setAffiliation] = useState({
-    fee: '1200',
+    fee: '',
     advance_booking_days: '14'
   });
 
@@ -162,7 +162,7 @@ export default function AffiliateDoctorDrawer({
       specialty_ids: []
     });
     setAffiliation({
-      fee: '1200',
+      fee: '',
       advance_booking_days: '14'
     });
     setSchedules([

@@ -6,7 +6,7 @@ export default function DoctorAboutSection({ doctor }) {
 
   const doctorDisplayName = formatDoctorTitle(doctor);
 
-  const primarySpecialty = doctor.specialties?.[0]?.name || 'Specialist Physician';
+  const primarySpecialty = doctor.primary_specialty?.name;
 
   // Format paragraphs from doctor.about or intelligent fallback
   const aboutText = doctor.about?.trim() || '';

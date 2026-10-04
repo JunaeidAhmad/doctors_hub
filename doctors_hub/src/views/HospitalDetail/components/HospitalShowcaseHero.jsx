@@ -4,12 +4,11 @@ import {
   Users, AlertCircle, Bed, Stethoscope, Plane, Clock, Activity,
   CheckCircle2, Copy, Check
 } from 'lucide-react';
-import { formatFacilityName } from '../../../utils/facilityUtils';
 
 export default function HospitalShowcaseHero({ hospital, onScrollToSection }) {
   const [copied, setCopied] = useState(false);
 
-  const name = formatFacilityName(hospital) || '';
+  const name = (hospital?.display_name || hospital?.name || "") || '';
   const address = hospital?.address_line || '';
   const rating = hospital?.rating ? Number(hospital.rating).toFixed(1) : null;
   const reviewsCount = hospital?.reviews_count ?? null;

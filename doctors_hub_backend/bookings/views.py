@@ -164,7 +164,7 @@ class DoctorBookingViewSet(viewsets.ModelViewSet):
         if getattr(user, "is_super_admin", False):
             return qs.order_by('-created_at')
 
-        if getattr(user, "is_facility_admin", False):
+        if getattr(user, "is_facility_staff", False):
             managed_ids = user.managed_location_ids
             return qs.filter(affiliation__location__in=managed_ids).order_by('-created_at')
 
@@ -211,7 +211,7 @@ class TestBookingViewSet(viewsets.ModelViewSet):
         if getattr(user, "is_super_admin", False):
             return qs.order_by('-created_at')
 
-        if getattr(user, "is_facility_admin", False):
+        if getattr(user, "is_facility_staff", False):
             managed_ids = user.managed_location_ids
             return qs.filter(facility_test__location__in=managed_ids).order_by('-created_at')
 
@@ -259,7 +259,7 @@ class HospitalServiceBookingViewSet(viewsets.ModelViewSet):
         if getattr(user, "is_super_admin", False):
             return qs.order_by('-created_at')
 
-        if getattr(user, "is_facility_admin", False):
+        if getattr(user, "is_facility_staff", False):
             managed_ids = user.managed_location_ids
             return qs.filter(hospital__location_id__in=managed_ids).order_by('-created_at')
 

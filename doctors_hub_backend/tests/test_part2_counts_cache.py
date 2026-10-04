@@ -134,3 +134,12 @@ def test_system_check_warns_without_redis(settings):
     warnings = run_checks()
     w001 = [w for w in warnings if getattr(w, 'id', '') == 'core.W001']
     assert len(w001) > 0
+
+
+def test_system_check_no_warning_with_redis(settings):
+    settings.DEBUG = False
+    settings.REDIS_URL = 'redis://localhost:6379/0'
+    from django.core.checks import run_checks
+    warnings = run_checks()
+    w001 = [w for w in warnings if getattr(w, 'id', '') == 'core.W001']
+    assert len(w001) == 0

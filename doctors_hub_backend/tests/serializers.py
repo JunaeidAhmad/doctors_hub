@@ -121,3 +121,14 @@ class FacilityTestSearchGroupSerializer(serializers.ModelSerializer):
             'offering_count', 'priced_offering_count', 'location_count', 'home_collection_count',
             'offerings'
         )
+
+
+class TestOptionSerializer(serializers.ModelSerializer):
+    """Lean test picker for admin init."""
+    category_id = serializers.UUIDField(source='category.id', read_only=True)
+    category_name = serializers.CharField(source='category.name', read_only=True)
+
+    class Meta:
+        model = Test
+        fields = ('id', 'name', 'code', 'category_id', 'category_name', 'is_active')
+        read_only_fields = fields

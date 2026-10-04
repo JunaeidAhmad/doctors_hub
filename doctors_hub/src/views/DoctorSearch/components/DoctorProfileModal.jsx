@@ -1,5 +1,4 @@
 import React from 'react';
-import { formatFacilityName } from '../../../utils/facilityUtils';
 import { displayName, formatDoctorTitle } from '../../../utils/doctorUtils';
 
 export default function DoctorProfileModal({
@@ -157,7 +156,7 @@ export default function DoctorProfileModal({
           {affiliations.length > 0 ? (
             <div className="space-y-3">
               {affiliations.map((aff, affIdx) => {
-                const facName = aff.facility?.display_name || formatFacilityName(aff) || 'Medical Facility';
+                const facName = aff.facility?.display_name || (aff?.display_name || aff?.name || "") || 'Medical Facility';
                 const facAddr = aff.facility?.address || aff.facility?.district || aff.district || aff.address || '—';
                 const affFee = aff.fee ? `৳${Number(aff.fee).toLocaleString()}` : 'Fee at chamber';
                 const schedText = aff.schedules && aff.schedules.length > 0

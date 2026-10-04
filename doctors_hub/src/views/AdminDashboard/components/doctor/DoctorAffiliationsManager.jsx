@@ -5,7 +5,7 @@ import {
 } from 'lucide-react';
 import { useAdminContext } from '../../context/AdminContext';
 import { api } from '../../../../services/api';
-import { formatFacilityName } from '../../../../utils/facilityUtils';
+import FacilityPicker from '../../../../components/FacilityPicker';
 
 export default function DoctorAffiliationsManager() {
   const {
@@ -23,20 +23,15 @@ export default function DoctorAffiliationsManager() {
   const [showModal, setShowModal] = useState(false);
   const [editingAff, setEditingAff] = useState(null);
   const [selectedLocationId, setSelectedLocationId] = useState('');
-  const [fee, setFee] = useState('1500');
+  const [fee, setFee] = useState('');
   const [advanceBookingDays, setAdvanceBookingDays] = useState('14');
   const [saving, setSaving] = useState(false);
   const [localErr, setLocalErr] = useState('');
 
-  const allLocations = [
-    ...(hospitals || []).map(h => ({ id: h.id, name: formatFacilityName(h), type: 'hospital' })),
-    ...(diagnosticCenters || []).map(dc => ({ id: dc.id, name: formatFacilityName(dc), type: 'diagnostic' }))
-  ];
-
   const handleOpenAddModal = () => {
     setEditingAff(null);
     setSelectedLocationId('');
-    setFee('1500');
+    setFee('');
     setAdvanceBookingDays('14');
     setLocalErr('');
     setShowModal(true);
@@ -45,7 +40,7 @@ export default function DoctorAffiliationsManager() {
   const handleOpenEditModal = (aff) => {
     setEditingAff(aff);
     setSelectedLocationId(aff.location_id || aff.facility?.id || '');
-    setFee(String(aff.fee || '1500'));
+    setFee(aff.fee != null ? String(aff.fee) : '');
     setAdvanceBookingDays(String(aff.advance_booking_days ?? 14));
     setLocalErr('');
     setShowModal(true);
@@ -57,20 +52,25 @@ export default function DoctorAffiliationsManager() {
       setLocalErr('Please select a facility/location.');
       return;
     }
+    const feeVal = parseFloat(fee);
+    if (!feeVal || feeVal <= 0) {
+      setLocalErr('Fee must be greater than 0.');
+      return;
+    }
     setSaving(true);
     setLocalErr('');
 
     try {
       if (editingAff && editingAff.id) {
         await api.updateDoctorAffiliation(editingAff.id, {
-          fee: parseFloat(fee) || 1500,
+          fee: parseFloat(fee),
           advance_booking_days: parseInt(advanceBookingDays, 10) || 14
         });
       } else {
         await api.createDoctorAffiliation({
           doctor: doctor?.id,
           location_id: selectedLocationId,
-          fee: parseFloat(fee) || 1500,
+          fee: parseFloat(fee),
           advance_booking_days: parseInt(advanceBookingDays, 10) || 14
         });
       }
@@ -139,7 +139,7 @@ export default function DoctorAffiliationsManager() {
                 </div>
                 <div>
                   <h3 className="text-sm font-serif font-bold text-slate-900 leading-tight">
-                    {aff.facility?.display_name || formatFacilityName(aff.hospital || aff.diagnostic_center || aff.location || aff) || aff.chamber_name || aff.facility_name || 'Specialist Chamber'}
+                    {aff.facility?.display_name || (aff.hospital || aff.diagnostic_center || aff.location || aff?.display_name || aff.hospital || aff.diagnostic_center || aff.location || aff?.name || "") || aff.chamber_name || aff.facility_name || 'Specialist Chamber'}
                   </h3>
                   <p className="text-xs font-body text-slate-500 flex items-center gap-1.5 mt-1">
                     <MapPin className="w-3.5 h-3.5 text-slate-400 shrink-0" />
@@ -152,7 +152,7 @@ export default function DoctorAffiliationsManager() {
               </div>
 
               <div className="text-right shrink-0">
-                <div className="text-base font-serif font-bold text-[#094cb2]">৳{aff.fee || 1500}</div>
+                <div className="text-base font-serif font-bold text-[#094cb2]">{aff.fee != null ? '৳' + aff.fee : '—'}</div>
                 <div className="font-label text-[10px] uppercase font-bold text-slate-400 tracking-wider">Visiting Fee</div>
               </div>
             </div>
@@ -231,20 +231,11 @@ export default function DoctorAffiliationsManager() {
                 <label className="block text-slate-700 font-label font-bold uppercase text-[11px] mb-1.5">
                   Hospital or Chamber Facility *
                 </label>
-                <select
-                  required
-                  disabled={Boolean(editingAff)}
+                <FacilityPicker
                   value={selectedLocationId}
-                  onChange={e => setSelectedLocationId(e.target.value)}
-                  className="w-full bg-white border border-[#d1d5dc] rounded-sm px-3 py-2 text-slate-800 focus:outline-none focus:border-[#094cb2] disabled:opacity-60 font-semibold"
-                >
-                  <option value="">Select Hospital / Chamber</option>
-                  {allLocations.map(loc => (
-                    <option key={loc.id} value={loc.id}>
-                      {loc.name} {loc.type === 'hospital' ? '(Hospital)' : '(Diagnostic Center)'}
-                    </option>
-                  ))}
-                </select>
+                  onChange={setSelectedLocationId}
+                  disabled={Boolean(editingAff)}
+                />
               </div>
 
               <div>

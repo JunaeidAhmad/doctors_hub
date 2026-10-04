@@ -2,7 +2,6 @@ import React, { useState, useEffect, useCallback, useRef } from 'react';
 import { 
   FlaskConical, Truck, Search, ArrowRight, Loader2, TestTube2
 } from 'lucide-react';
-import { formatFacilityName } from '../../../utils/facilityUtils';
 import { getFacilityTests } from '../../../services/api/hospitals';
 
 export default function HospitalDiagnosticsSection({ 
@@ -19,7 +18,7 @@ export default function HospitalDiagnosticsSection({
   const [error, setError] = useState(null);
   const debounceRef = useRef(null);
 
-  const hospitalName = formatFacilityName(hospital) || '';
+  const hospitalName = (hospital?.display_name || hospital?.name || "") || '';
   const facilityId = hospital?.slug || hospital?.id;
   const facilityKind = hospital?.location_type === 'diagnostic_center' ? 'diagnostic-centers' : 'hospitals';
 

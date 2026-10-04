@@ -6,6 +6,7 @@ import {
 } from 'lucide-react';
 import { useAdminContext } from '../../context/AdminContext';
 import { api } from '../../../../services/api';
+import FacilityPicker from '../../../../components/FacilityPicker';
 
 const DAYS_OF_WEEK = [
   'Saturday', 'Sunday', 'Monday', 'Tuesday', 
@@ -158,7 +159,7 @@ export default function DoctorModal() {
               location_id: String(locId),
               chamber_type: a.chamber_type || 'Primary Chamber',
               advance_booking_days: a.advance_booking_days || 14,
-              fee: String(a.fee != null ? a.fee : '1200'),
+              fee: a.fee != null ? String(a.fee) : '',
               schedules: schedules.length > 0 ? schedules : [
                 {
                   id: `temp-sched-${Date.now()}`,
@@ -174,10 +175,10 @@ export default function DoctorModal() {
         : [
             {
               id: `temp-aff-${Date.now()}`,
-              location_id: allLocations[0]?.id || '',
+              location_id: '',
               chamber_type: 'Primary Chamber',
               advance_booking_days: 14,
-              fee: '1200',
+              fee: '',
               schedules: [
                 {
                   id: `temp-sched-${Date.now()}`,
@@ -225,10 +226,10 @@ export default function DoctorModal() {
       setAffiliations([
         {
           id: `temp-aff-${Date.now()}`,
-          location_id: allLocations[0]?.id || '',
+          location_id: '',
           chamber_type: 'Primary Chamber',
           advance_booking_days: 14,
-          fee: '1200',
+          fee: '',
           schedules: [
             {
               id: `temp-sched-${Date.now()}`,
@@ -275,7 +276,7 @@ export default function DoctorModal() {
   };
 
   const handleAddChamber = () => {
-    const defaultLoc = allLocations[0]?.id || '';
+    const defaultLoc = '';
     setAffiliations(prev => [
       ...prev,
       {
@@ -283,7 +284,7 @@ export default function DoctorModal() {
         location_id: defaultLoc,
         chamber_type: 'Primary Chamber',
         advance_booking_days: 14,
-        fee: '1200',
+        fee: '',
         schedules: [
           {
             id: `temp-sched-${Date.now()}-${Math.random()}`,
@@ -363,6 +364,20 @@ export default function DoctorModal() {
     if (selectedSpecialties.length === 0) {
       setErrorMsg('Please select at least one medical specialty.');
       return;
+    }
+
+    // Validate chamber location and fee
+    for (let i = 0; i < affiliations.length; i++) {
+      const aff = affiliations[i];
+      if (!aff.location_id) {
+        setErrorMsg(`Chamber ${i + 1}: Please select a facility.`);
+        return;
+      }
+      const feeVal = parseFloat(aff.fee);
+      if (!feeVal || feeVal <= 0) {
+        setErrorMsg(`Chamber ${i + 1}: Fee must be greater than 0.`);
+        return;
+      }
     }
 
     // Check schedule validity and overlaps across all chambers
@@ -1019,21 +1034,10 @@ export default function DoctorModal() {
                     <div className="grid grid-cols-1 sm:grid-cols-4 gap-3">
                       <div>
                         <label className="block text-slate-700 font-label font-bold uppercase text-[10px] mb-1">Facility / Hospital *</label>
-                        <select
+                        <FacilityPicker
                           value={aff.location_id}
-                          onChange={e => handleUpdateChamberField(aIdx, 'location_id', e.target.value)}
-                          className="w-full bg-white border border-[#d1d5dc] rounded-sm px-2.5 py-1.5 text-slate-800 text-xs focus:outline-none focus:border-[#094cb2] transition cursor-pointer"
-                        >
-                          {allLocations.length === 0 ? (
-                            <option value="">No locations available</option>
-                          ) : (
-                            allLocations.map(loc => (
-                              <option key={loc.id} value={loc.id}>
-                                [{loc.type}] {loc.name}
-                              </option>
-                            ))
-                          )}
-                        </select>
+                          onChange={(val) => handleUpdateChamberField(aIdx, 'location_id', val)}
+                        />
                       </div>
 
                       <div>

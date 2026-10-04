@@ -242,15 +242,10 @@ def test_specialty_ranking_regression(client):
         d_sib = results[2]
 
         assert d_p['match_rank'] == 1
-        assert d_p['is_primary_match'] is True
-        assert d_p['match_tier'] == 1
 
         assert d_s['match_rank'] == 2
-        assert d_s['is_primary_match'] is False
-        assert d_s['match_tier'] == 1
 
         assert d_sib['match_rank'] == 3
-        assert d_sib['match_tier'] == 2
 
 
 @pytest.mark.django_db

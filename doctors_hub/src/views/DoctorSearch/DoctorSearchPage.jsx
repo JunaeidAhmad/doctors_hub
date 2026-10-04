@@ -12,7 +12,6 @@ import DoctorCard from './components/DoctorCard';
 import DoctorPagination from './components/DoctorPagination';
 import DoctorTrustSeal from './components/DoctorTrustSeal';
 import DoctorProfileModal from './components/DoctorProfileModal';
-import { formatFacilityName } from '../../utils/facilityUtils';
 
 export default function DoctorSearchPage({
   initialSpecialty = '',
@@ -136,12 +135,6 @@ export default function DoctorSearchPage({
           }
           if (meta.facilities) {
             setFacilities(ensureArray(meta.facilities));
-          } else if (meta.hospitals || meta.diagnostic_centers) {
-            const list = [
-              ...ensureArray(meta.hospitals),
-              ...ensureArray(meta.diagnostic_centers)
-            ];
-            if (list.length > 0) setFacilities(list);
           }
         }
       })
@@ -150,19 +143,6 @@ export default function DoctorSearchPage({
           if (isMounted && s) setSpecialties(ensureArray(s));
         }).catch(() => {});
       });
-
-    // Ensure all hospital & diagnostic center locations are loaded from system
-    api.getLocations()
-      .then((res) => {
-        if (isMounted && res) {
-          const locs = ensureArray(res);
-          if (locs.length > 0) {
-            const validLocs = locs.filter(l => l.location_type === 'hospital' || l.location_type === 'diagnostic_center' || !l.location_type);
-            setFacilities(validLocs);
-          }
-        }
-      })
-      .catch(() => {});
 
     return () => { isMounted = false; };
   }, []);
@@ -285,7 +265,7 @@ export default function DoctorSearchPage({
         facility={facility}
         facilityName={(() => {
           const found = facilities.find(f => String(f.id) === String(facility) || String(f.slug) === String(facility) || String(f.name) === String(facility));
-          return found ? formatFacilityName(found) : facility;
+          return found ? (found?.display_name || found?.name || "") : facility;
         })()}
         selectedDay={selectedDay}
         gender={gender}

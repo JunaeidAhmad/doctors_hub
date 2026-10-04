@@ -6,7 +6,7 @@ export default function DoctorReviewsSection({ doctor }) {
 
   const ratingNum = parseFloat(doctor.rating) || 4.9;
   const reviewCount = doctor.review_count || 120;
-  const specialtyName = doctor.specialties?.[0]?.name || 'Specialist Consultation';
+  const specialtyName = doctor.primary_specialty?.name;
 
   const sampleReviews = [
     {

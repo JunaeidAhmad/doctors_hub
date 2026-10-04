@@ -235,21 +235,6 @@
 
 ---
 
-## Phase 10 — Final sweep (partial)
-
-### Gate Results:
-- Full backend suite: **289 passed** ✅
-- `npm run build`: built cleanly ✅
-- `npm test -- --run`: 6 passed ✅
-- `spectacular --validate`: exit 0 (pre-existing APIView warnings only) ✅
-- Phase gate greps all pass ✅
-
-### Remaining work (not yet done):
-- Phase 9: Counts on read, slim facets, cache invalidation
-- Phase 10: `test_part2_regressions.py`, `docs/part2-api-changes.md`
-
----
-
 ## Phase 9 — Counts, facets & cache invalidation (#19, #20, #22)
 
 ### Tasks Completed:
@@ -297,3 +282,11 @@
 
 ### Open questions:
 - None.
+
+---
+
+## Errata (found in Part 3 review)
+
+- **DoctorModal defaults** (fixed in P3.1.3): The DoctorModal still had `'1200'` fee defaults and `allLocations[0]?.id` location defaults from Part 2 Phase 7, despite the plan requiring their removal. Fixed in Part 3.
+- **Missing role call-site inventory** (Part 2 Phase 8): The role property rewrite was done but the call-site classification table was never created. Addressed in Part 3 Phase 2.
+- **REDIS_URL check bug** (P3.1.5): `core/settings.py` defined `_REDIS_URL` but not `REDIS_URL`, so `core.W001` always warned. Fixed in Part 3.
