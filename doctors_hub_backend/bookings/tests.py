@@ -111,7 +111,7 @@ class EnhancedFeaturesTestCase(TestCase):
         """8. Test OTP send and verify flow."""
         phone = "01712345678"
         # Send OTP
-        resp = self.client.post('/api/bookings/otp/send/', {'phone': phone, 'purpose': 'doctor_booking'}, format='json')
+        resp = self.client.post('/api/v1/bookings/otp/send/', {'phone': phone, 'purpose': 'doctor_booking'}, format='json')
         self.assertEqual(resp.status_code, status.HTTP_200_OK)
         self.assertTrue(resp.data['success'])
 
@@ -120,7 +120,7 @@ class EnhancedFeaturesTestCase(TestCase):
         otp_code = otp_record.otp_code
 
         # Verify OTP
-        verify_resp = self.client.post('/api/bookings/otp/verify/', {'phone': phone, 'otp_code': otp_code}, format='json')
+        verify_resp = self.client.post('/api/v1/bookings/otp/verify/', {'phone': phone, 'otp_code': otp_code}, format='json')
         self.assertEqual(verify_resp.status_code, status.HTTP_200_OK)
         self.assertTrue(verify_resp.data['success'])
         otp_record.refresh_from_db()
@@ -130,7 +130,7 @@ class EnhancedFeaturesTestCase(TestCase):
         """7. Test Patient creation and lookup API."""
         phone = "01798765432"
         # Lookup non-existing
-        lookup_resp = self.client.get(f'/api/bookings/patients/lookup/?phone={phone}')
+        lookup_resp = self.client.get(f'/api/v1/bookings/patients/lookup/?phone={phone}')
         self.assertEqual(lookup_resp.status_code, status.HTTP_200_OK)
         self.assertFalse(lookup_resp.data['found'])
 
@@ -143,7 +143,7 @@ class EnhancedFeaturesTestCase(TestCase):
             address="Gulshan, Dhaka"
         )
         # Lookup existing
-        lookup_resp2 = self.client.get(f'/api/bookings/patients/lookup/?phone={phone}')
+        lookup_resp2 = self.client.get(f'/api/v1/bookings/patients/lookup/?phone={phone}')
         self.assertEqual(lookup_resp2.status_code, status.HTTP_200_OK)
         self.assertTrue(lookup_resp2.data['found'])
         self.assertEqual(lookup_resp2.data['patient']['name'], "John Doe")
@@ -153,7 +153,7 @@ class EnhancedFeaturesTestCase(TestCase):
         """6, 7, 8. Test Doctor Booking generates sequential serial numbers, links patient, and validates OTP."""
         phone = "01755555555"
         # Send OTP
-        self.client.post('/api/bookings/otp/send/', {'phone': phone, 'purpose': 'doctor_booking'}, format='json')
+        self.client.post('/api/v1/bookings/otp/send/', {'phone': phone, 'purpose': 'doctor_booking'}, format='json')
         otp = OTPVerification.objects.filter(phone=phone).first().otp_code
 
         target_date = timezone.localdate() + timedelta(days=2)
@@ -171,7 +171,7 @@ class EnhancedFeaturesTestCase(TestCase):
             "gender": "female",
             "otp_code": otp
         }
-        res1 = self.client.post('/api/bookings/doctor-bookings/', b1_data, format='json')
+        res1 = self.client.post('/api/v1/bookings/doctor-bookings/', b1_data, format='json')
         self.assertEqual(res1.status_code, status.HTTP_201_CREATED)
         self.assertEqual(res1.data['serial_number'], 1)
         self.assertEqual(res1.data['serial_display'], "SL-001")
@@ -186,7 +186,7 @@ class EnhancedFeaturesTestCase(TestCase):
             "patient_phone": "01766666666",
             "otp_code": "123" # Mock OTP bypass
         }
-        res2 = self.client.post('/api/bookings/doctor-bookings/', b2_data, format='json')
+        res2 = self.client.post('/api/v1/bookings/doctor-bookings/', b2_data, format='json')
         self.assertEqual(res2.status_code, status.HTTP_201_CREATED)
         self.assertEqual(res2.data['serial_number'], 2)
         self.assertEqual(res2.data['serial_display'], "SL-002")
@@ -203,13 +203,13 @@ class EnhancedFeaturesTestCase(TestCase):
             "otp_code": "123"
         }
         # Test endpoint
-        res = self.client.post('/api/bookings/test-bookings/', data, format='json')
+        res = self.client.post('/api/v1/bookings/test-bookings/', data, format='json')
         self.assertEqual(res.status_code, status.HTTP_201_CREATED)
         self.assertEqual(res.data['patient_name'], "Charlie Brown")
         self.assertEqual(res.data['test_name'], "Complete Blood Count (CBC)")
 
         # Lab alias endpoint
-        res_lab = self.client.post('/api/bookings/lab/', data, format='json')
+        res_lab = self.client.post('/api/v1/bookings/lab/', data, format='json')
         self.assertEqual(res_lab.status_code, status.HTTP_201_CREATED)
 
     def test_hospital_service_booking(self):
@@ -225,7 +225,7 @@ class EnhancedFeaturesTestCase(TestCase):
             "notes": "Need urgent ICU bed booking",
             "otp_code": "123"
         }
-        res = self.client.post('/api/bookings/hospital-services/', data, format='json')
+        res = self.client.post('/api/v1/bookings/hospital-services/', data, format='json')
         self.assertEqual(res.status_code, status.HTTP_201_CREATED)
         self.assertEqual(res.data['facility']['name'], "Square Hospital")
         self.assertEqual(res.data['service_name'], "Emergency & Trauma")

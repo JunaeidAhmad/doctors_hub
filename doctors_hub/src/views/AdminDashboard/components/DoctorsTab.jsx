@@ -541,7 +541,7 @@ export default function DoctorsTab() {
                           {affiliationsList.length > 0 ? (
                             affiliationsList.slice(0, 2).map((aff, idx) => (
                               <div key={idx} className="truncate max-w-xs">
-                                • {(aff.hospital || aff.diagnostic_center || aff?.display_name || aff.hospital || aff.diagnostic_center || aff?.name || "") || aff.chamber_name || 'Consultation Suite'}
+                                • {aff.facility?.display_name || aff.facility?.name || (typeof aff.hospital === 'string' ? aff.hospital : aff.hospital?.name) || (typeof aff.diagnostic_center === 'string' ? aff.diagnostic_center : aff.diagnostic_center?.name) || aff.display_name || aff.chamber_name || aff.facility_name || 'Consultation Suite'}
                               </div>
                             ))
                           ) : (

@@ -16,7 +16,7 @@ def bump_taxonomy_version():
     except Exception:
         cache.set(TAXONOMY_VERSION_KEY, get_taxonomy_version() + 1)
     _cached_match_node_ids.cache_clear()
-    _cached_related_node_ids.cache_clear()
+    _cached_curated_related_ids.cache_clear()
 
 
 def expand(ids):
@@ -46,25 +46,47 @@ def match_node_ids(node):
 
 
 @functools.lru_cache(maxsize=512)
-def _cached_related_node_ids(node_id, version):
-    node = DoctorSpecialty.objects.prefetch_related('parent_categories', 'related').get(id=node_id)
-    direct = expand([node.id])
-    if node.is_umbrella:
-        rel = expand(node.related.values_list('id', flat=True))
-    else:
-        parents = list(node.parent_categories.all())
-        siblings = DoctorSpecialty.objects.filter(parent_categories__in=parents).values_list('id', flat=True)
-        own_related = expand(node.related.values_list('id', flat=True))
-        parents_related = expand(DoctorSpecialty.objects.filter(related__in=parents).values_list('id', flat=True))
-        rel = set(siblings) | own_related | parents_related
-    return frozenset(rel - direct)
+def _cached_curated_related_ids(node_id, version):
+    node = DoctorSpecialty.objects.prefetch_related('related_leaves').get(id=node_id)
+    return frozenset(node.related_leaves.values_list('id', flat=True))
 
 
-def related_node_ids(node):
-    """Nodes whose doctors appear as rank 3 'related'."""
+def curated_related_ids(node):
+    """IDs of the curated leaf-to-leaf related_leaves of node."""
     if not node:
         return set()
-    return set(_cached_related_node_ids(node.id, get_taxonomy_version()))
+    return set(_cached_curated_related_ids(node.id, get_taxonomy_version()))
+
+
+@functools.lru_cache(maxsize=1)
+def _related_leaves_order_by_slug():
+    """Ordered related_leaves slugs per leaf slug, from the taxonomy fixture."""
+    import yaml
+    from pathlib import Path
+    candidates = [
+        Path(__file__).resolve().parent.parent / 'fixtures' / 'taxonomy_v3.yaml',
+        Path('/home/ltl/Tomal/project_doctors_hub/doctors_hub_backend/doctors/fixtures/taxonomy_v3.yaml'),
+    ]
+    path = next((p for p in candidates if p.exists()), None)
+    if path is None:
+        return {}
+    with open(path, 'r', encoding='utf-8') as f:
+        tax = yaml.safe_load(f) or {}
+    return tuple(
+        (leaf.get('slug'), tuple(leaf.get('related_leaves') or []))
+        for leaf in tax.get('leaves', [])
+    )
+
+
+def curated_related_nodes(node):
+    """node.related_leaves as DoctorSpecialty objects in YAML related_leaves order."""
+    if not node:
+        return []
+    order = dict(_related_leaves_order_by_slug()).get(node.slug, ())
+    by_slug = {n.slug: n for n in node.related_leaves.all()}
+    ordered = [by_slug[s] for s in order if s in by_slug]
+    ordered += [by_slug[s] for s in sorted(by_slug) if s not in order]
+    return ordered
 
 
 def specialty_doctor_counts(doc_qs=None):

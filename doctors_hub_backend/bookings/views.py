@@ -2,11 +2,16 @@ import random
 from rest_framework import viewsets, permissions, status, decorators, response
 from django.utils import timezone
 from django.conf import settings
-from drf_spectacular.utils import extend_schema
+from drf_spectacular.utils import extend_schema, OpenApiTypes
 from .models import DoctorBooking, TestBooking, HospitalServiceBooking, Patient, OTPVerification
 from .serializers import (
     DoctorBookingSerializer, TestBookingSerializer, HospitalServiceBookingSerializer,
     PatientSerializer, OTPRequestSerializer, OTPVerifySerializer
+)
+from .schema_serializers import (
+    SendOtpRequestSerializer, SendOtpResponseSerializer,
+    VerifyOtpRequestSerializer, VerifyOtpSuccessSerializer, VerifyOtpFailureSerializer,
+    PatientLookupQuerySerializer, PatientLookupResponseSerializer,
 )
 from core.permissions import PublicCreateAdminManage
 from .transitions import ALLOWED
@@ -15,10 +20,14 @@ from .transitions import ALLOWED
 from services.sms import send_sms_via_sms_bd
 
 
-@extend_schema(tags=['Bookings - OTP'])
+@extend_schema(
+    tags=['Bookings - OTP'],
+    request=SendOtpRequestSerializer,
+    responses={200: SendOtpResponseSerializer, 400: OpenApiTypes.OBJECT},
+)
 @decorators.api_view(['POST'])
 @decorators.permission_classes([permissions.AllowAny])
-def send_otp(request):
+def send_otp(request, *args, **kwargs):
     serializer = OTPRequestSerializer(data=request.data)
     serializer.is_valid(raise_exception=True)
     phone = serializer.validated_data['phone']
@@ -59,10 +68,14 @@ def send_otp(request):
     return response.Response(resp_data, status=status.HTTP_200_OK)
 
 
-@extend_schema(tags=['Bookings - OTP'])
+@extend_schema(
+    tags=['Bookings - OTP'],
+    request=VerifyOtpRequestSerializer,
+    responses={200: VerifyOtpSuccessSerializer, 400: VerifyOtpFailureSerializer},
+)
 @decorators.api_view(['POST'])
 @decorators.permission_classes([permissions.AllowAny])
-def verify_otp(request):
+def verify_otp(request, *args, **kwargs):
     serializer = OTPVerifySerializer(data=request.data)
     serializer.is_valid(raise_exception=True)
     phone = serializer.validated_data['phone']
@@ -100,10 +113,14 @@ def verify_otp(request):
     }, status=status.HTTP_200_OK)
 
 
-@extend_schema(tags=['Bookings - Patients'])
+@extend_schema(
+    tags=['Bookings - Patients'],
+    parameters=[PatientLookupQuerySerializer],
+    responses={200: PatientLookupResponseSerializer, 400: PatientLookupResponseSerializer},
+)
 @decorators.api_view(['GET'])
 @decorators.permission_classes([permissions.AllowAny])
-def patient_lookup(request):
+def patient_lookup(request, *args, **kwargs):
     phone = request.query_params.get('phone', '').strip()
     if not phone:
         return response.Response({"found": False, "message": "Phone number query parameter required."}, status=status.HTTP_400_BAD_REQUEST)
@@ -180,7 +197,7 @@ class DoctorBookingViewSet(viewsets.ModelViewSet):
             serializer.save()
 
     @decorators.action(detail=True, methods=['post'], url_path='transition')
-    def transition(self, request, pk=None):
+    def transition(self, request, pk=None, **kwargs):
         booking = self.get_object()
         return _transition_response(self, request, booking)
 
@@ -224,7 +241,7 @@ class TestBookingViewSet(viewsets.ModelViewSet):
             serializer.save()
 
     @decorators.action(detail=True, methods=['post'], url_path='transition')
-    def transition(self, request, pk=None):
+    def transition(self, request, pk=None, **kwargs):
         booking = self.get_object()
         return _transition_response(self, request, booking)
 
@@ -272,7 +289,7 @@ class HospitalServiceBookingViewSet(viewsets.ModelViewSet):
             serializer.save()
 
     @decorators.action(detail=True, methods=['post'], url_path='transition')
-    def transition(self, request, pk=None):
+    def transition(self, request, pk=None, **kwargs):
         booking = self.get_object()
         return _transition_response(self, request, booking)
 

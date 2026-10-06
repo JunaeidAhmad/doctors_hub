@@ -5,7 +5,7 @@ from django.db import models
 from django.db.models import Count, Exists, OuterRef, Q
 from drf_spectacular.utils import extend_schema, OpenApiParameter, OpenApiTypes
 
-from core.cache_keys import public_cache_version
+from core.cache_keys import public_cache_version, versioned_key
 
 from accounts.serializers import UserProfileSerializer
 from doctors.models import DoctorSpecialty, SpecialtyAlias, Doctor, DoctorAffiliation
@@ -38,14 +38,15 @@ class SearchMetadataResponseSerializer(serializers.Serializer):
     test_categories = TestCategorySerializer(many=True)
 
 
+class SearchFacetCategorySerializer(serializers.Serializer):
+    id = serializers.UUIDField()
+    slug = serializers.CharField()
+    name = serializers.CharField()
+    hospital_count = serializers.IntegerField()
+
+
 class SearchFacetsResponseSerializer(serializers.Serializer):
-    total_doctors = serializers.IntegerField()
-    total_hospitals = serializers.IntegerField()
-    total_diagnostic_centers = serializers.IntegerField()
-    specialties = DoctorSpecialtySerializer(many=True)
-    hospital_categories = HospitalCategorySerializer(many=True)
-    diagnostic_center_categories = DiagnosticCenterCategorySerializer(many=True)
-    test_categories = TestCategorySerializer(many=True)
+    hospital_categories = SearchFacetCategorySerializer(many=True)
 
 
 class AdminDashboardInitResponseSerializer(serializers.Serializer):
@@ -80,7 +81,7 @@ class SearchMetadataAPIView(APIView):
         responses={200: SearchMetadataResponseSerializer}
     )
     def get(self, request, *args, **kwargs):
-        metadata_cache_key = f"search_metadata:v{public_cache_version()}"
+        metadata_cache_key = versioned_key(request, f"search_metadata:v{public_cache_version()}")
         cached_data = cache.get(metadata_cache_key)
         if cached_data is not None:
             return Response(cached_data)
@@ -220,7 +221,10 @@ class SearchFacetsAPIView(APIView):
         except (ValueError, TypeError):
             return Response({'error': 'Location filter IDs must be integers.'}, status=status.HTTP_400_BAD_REQUEST)
 
-        cache_key = f"search_facets:v{public_cache_version()}:{parsed_div_id}:{parsed_dist_id}:{parsed_thana_id}:{search_query or ''}"
+        cache_key = versioned_key(
+            request,
+            f"search_facets:v{public_cache_version()}:{parsed_div_id}:{parsed_dist_id}:{parsed_thana_id}:{search_query or ''}",
+        )
         cached_data = cache.get(cache_key)
         if cached_data is not None:
             return Response(cached_data, status=status.HTTP_200_OK)

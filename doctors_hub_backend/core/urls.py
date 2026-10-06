@@ -1,5 +1,5 @@
 from django.contrib import admin
-from django.urls import path, include
+from django.urls import path, include, re_path
 from django.conf import settings
 from django.conf.urls.static import static
 from drf_spectacular.views import (
@@ -7,34 +7,27 @@ from drf_spectacular.views import (
     SpectacularRedocView,
     SpectacularSwaggerView
 )
-from .views import SearchMetadataAPIView, SearchFacetsAPIView, AdminInitAPIView
+from .views_app_config import AppConfigAPIView
 
 urlpatterns = [
     path('admin/', admin.site.urls),
 
-    # OpenAPI Schema & Interactive Documentation
+    # OpenAPI Schema & Interactive Documentation (unversioned, describe the latest)
     path('api/schema/', SpectacularAPIView.as_view(), name='schema'),
     path('api/docs/', SpectacularSwaggerView.as_view(url_name='schema'), name='swagger-ui'),
     path('api/redoc/', SpectacularRedocView.as_view(url_name='schema'), name='redoc'),
 
-    path('api/search-metadata/', SearchMetadataAPIView.as_view(), name='search-metadata'),
-    path('api/search/metadata/', SearchMetadataAPIView.as_view(), name='search-metadata-slash'),
-    path('api/search-facets/', SearchFacetsAPIView.as_view(), name='search-facets'),
-    path('api/admin/dashboard-init/', AdminInitAPIView.as_view(), name='admin-dashboard-init'),
+    # Permanent unversioned app config (decision D4) — before the versioned mount
+    path('api/app-config/', AppConfigAPIView.as_view(), name='app-config'),
 
-    # Standard /api/ prefix
-    path('api/', include('accounts.urls')),
-    path('api/', include('facilities.urls')),
-    path('api/', include('doctors.urls')),
-    path('api/', include('tests.urls')),
-    path('api/bookings/', include('bookings.urls')),
+    # Canonical versioned API (/api/v1/, /api/v2/ when it exists).
+    # re_path with v\d+, not path('api/<str:version>/'): the str converter would
+    # capture /api/doctors/ as version='doctors' and 404 it.
+    re_path(r'^api/(?P<version>v\d+)/', include('core.api_urls')),
 
-    # Versioned /api/v1/ prefix alias
-    path('api/v1/', include('accounts.urls')),
-    path('api/v1/', include('facilities.urls')),
-    path('api/v1/', include('doctors.urls')),
-    path('api/v1/', include('tests.urls')),
-    path('api/v1/bookings/', include('bookings.urls')),
+    # Legacy unversioned alias -> DEFAULT_VERSION (v1). Hidden from the schema,
+    # gets deprecation headers once enabled (Phase 7).
+    path('api/', include('core.api_urls')),
 ]
 
 if settings.DEBUG:

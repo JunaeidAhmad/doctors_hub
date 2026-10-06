@@ -56,7 +56,7 @@ class TestOptionalPrice:
         import datetime
         from django.utils import timezone
         tomorrow = (timezone.localdate() + datetime.timedelta(days=1)).isoformat()
-        resp = anon_client.post("/api/bookings/test/", {
+        resp = anon_client.post("/api/v1/bookings/test/", {
             "facility_test_id": str(ft.pk),
             "pickup_date": tomorrow,
             "patient_name": "Counter",

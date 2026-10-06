@@ -2,6 +2,8 @@ import React, { useState, useMemo } from 'react';
 import DoctorChamberCard from './DoctorChamberCard';
 import { displayName, formatDoctorTitle, formatNextAvailable } from '../../../utils/doctorUtils';
 import { formatDisplayTime } from '../../../utils/scheduleUtils';
+import { useLang } from '../../../hooks/useLang';
+import { t } from '../../../data/strings';
 
 function getDoctorDefaultAvatar(doctor) {
   const g = String(doctor?.gender || '').toLowerCase();
@@ -18,8 +20,13 @@ export default function DoctorCard({
   onBookDoctorSlot,
   onViewProfile,
   onSelectHospital,
-  onSelectSpecialty
+  onSelectSpecialty,
+  specialtyFilterActive = false,
+  activeSpecialtyName = '',
+  activeSpecialtyBnName = '',
+  relatedVia = null
 }) {
+  const lang = useLang();
   const defaultAvatar = getDoctorDefaultAvatar(doctor);
   const avatarUrl = doctor.image || defaultAvatar;
   const bmdcNo = doctor.bmdc_number;
@@ -200,13 +207,28 @@ export default function DoctorCard({
                 )}
               </div>
 
-              {/* BMDC Verified Badge (rendered only if real BMDC number exists) */}
-              {bmdcNo && (
-                <div className="inline-flex items-center gap-1.5 px-3 py-1 rounded-full border border-sky-300/80 bg-sky-50/60 text-[#0284c7] font-bold text-xs shrink-0 self-start sm:self-auto shadow-2xs">
-                  <span className="material-symbols-outlined text-[#007a8c] text-[16px]" style={{ fontVariationSettings: "'FILL' 1" }}>
-                    verified
-                  </span>
-                  <span>BMDC: {bmdcNo}</span>
+              {(bmdcNo || relatedVia) && (
+                <div className="flex flex-wrap items-center gap-2 shrink-0 self-start sm:self-auto">
+                  {relatedVia && (
+                    <span className="inline-flex items-center gap-1.5 px-3 py-1 rounded-full border border-indigo-300/80 bg-indigo-50/60 text-indigo-800 font-bold text-xs shadow-2xs">
+                      <span className="material-symbols-outlined text-indigo-700 text-[16px]" style={{ fontVariationSettings: "'FILL' 1" }}>
+                        link
+                      </span>
+                      <span>
+                        {t('relatedBadge', {
+                          name: lang === 'bn' ? (relatedVia.bn_name || relatedVia.name) : relatedVia.name
+                        })}
+                      </span>
+                    </span>
+                  )}
+                  {bmdcNo && (
+                    <div className="inline-flex items-center gap-1.5 px-3 py-1 rounded-full border border-sky-300/80 bg-sky-50/60 text-[#0284c7] font-bold text-xs shadow-2xs">
+                      <span className="material-symbols-outlined text-[#007a8c] text-[16px]" style={{ fontVariationSettings: "'FILL' 1" }}>
+                        verified
+                      </span>
+                      <span>BMDC: {bmdcNo}</span>
+                    </div>
+                  )}
                 </div>
               )}
             </div>
@@ -252,6 +274,18 @@ export default function DoctorCard({
                     </button>
                   ))}
                 </div>
+              </div>
+            )}
+
+            {specialtyFilterActive && doctor.match_rank === 2 && activeSpecialtyName && (
+              <div className="mt-2">
+                <span className="inline-flex items-center px-2.5 py-0.5 rounded-md text-xs font-semibold bg-indigo-50 hover:bg-indigo-100 text-indigo-800 border border-indigo-200/70 shadow-2xs">
+                  {t('alsoPractices', {
+                    specialty: lang === 'bn'
+                      ? (activeSpecialtyBnName || activeSpecialtyName)
+                      : activeSpecialtyName
+                  })}
+                </span>
               </div>
             )}
 

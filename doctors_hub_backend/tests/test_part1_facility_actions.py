@@ -77,7 +77,7 @@ def test_facility_doctors_pagination(client, hospital_setup):
         )
 
     # Page 1 (default page_size 12)
-    res_p1 = client.get(f"/api/hospitals/{loc.slug}/doctors/?page=1&page_size=12")
+    res_p1 = client.get(f"/api/v1/hospitals/{loc.slug}/doctors/?page=1&page_size=12")
     assert res_p1.status_code == 200
     assert res_p1.data["count"] == 15
     assert res_p1.data["total_pages"] == 2
@@ -96,7 +96,7 @@ def test_facility_doctors_pagination(client, hospital_setup):
     assert first_item["doctor"]["primary_specialty"]["slug"] == "general-medicine"
 
     # Page 2
-    res_p2 = client.get(f"/api/hospitals/{loc.slug}/doctors/?page=2&page_size=12")
+    res_p2 = client.get(f"/api/v1/hospitals/{loc.slug}/doctors/?page=2&page_size=12")
     assert res_p2.status_code == 200
     assert len(res_p2.data["results"]) == 3
 
@@ -143,7 +143,7 @@ def test_facility_doctors_specialty_umbrella_expansion(client, hospital_setup):
     DoctorAffiliation.objects.create(doctor=doc_other, location=loc, fee=800)
 
     # Filter by umbrella parent slug
-    res = client.get(f"/api/hospitals/{loc.slug}/doctors/?specialty=cardiology")
+    res = client.get(f"/api/v1/hospitals/{loc.slug}/doctors/?specialty=cardiology")
     assert res.status_code == 200
     assert res.data["count"] == 1
     assert res.data["results"][0]["doctor"]["slug"] == "dr-child-spec"
@@ -160,7 +160,7 @@ def test_search_does_not_404_facility(client, hospital_setup):
     DoctorAffiliation.objects.create(doctor=doc, location=loc, fee=1500)
 
     # Search query param that does NOT match the hospital name "Evercare"
-    res = client.get(f"/api/hospitals/{loc.slug}/doctors/?search=Zaman")
+    res = client.get(f"/api/v1/hospitals/{loc.slug}/doctors/?search=Zaman")
     assert res.status_code == 200
     assert res.data["count"] == 1
     assert res.data["results"][0]["doctor"]["name"] == "Dr. Kamrul Zaman"
@@ -182,7 +182,7 @@ def test_facets_ignore_specialty_filter(client, hospital_setup):
     DoctorAffiliation.objects.create(doctor=doc2, location=loc, fee=1000)
 
     # Query with specialty=cardiology
-    res = client.get(f"/api/hospitals/{loc.slug}/doctors/?specialty=cardiology")
+    res = client.get(f"/api/v1/hospitals/{loc.slug}/doctors/?specialty=cardiology")
     assert res.status_code == 200
     # Results only has 1 doctor
     assert res.data["count"] == 1
@@ -213,7 +213,7 @@ def test_bmdc_number_is_null_when_empty(client, hospital_setup):
     )
     DoctorAffiliation.objects.create(doctor=doc_with_bmdc, location=loc, fee=500)
 
-    res = client.get(f"/api/hospitals/{loc.slug}/doctors/")
+    res = client.get(f"/api/v1/hospitals/{loc.slug}/doctors/")
     assert res.status_code == 200
     results_by_slug = {r["doctor"]["slug"]: r["doctor"] for r in res.data["results"]}
 
@@ -248,7 +248,7 @@ def test_facility_tests_endpoint_returns_only_facility_offerings(client, hospita
     FacilityTest.objects.create(location=loc2, test=test_cbc, price=600)
     FacilityTest.objects.create(location=loc2, test=test_xray, price=800)
 
-    res = client.get(f"/api/hospitals/{loc1.slug}/tests/")
+    res = client.get(f"/api/v1/hospitals/{loc1.slug}/tests/")
     assert res.status_code == 200
     assert res.data["count"] == 2
     returned_slugs = {item["slug"] for item in res.data["results"]}
@@ -271,7 +271,7 @@ def test_hospital_list_payload_no_embedded_lists_and_has_counts(client, hospital
     t = Test.objects.create(name="Blood Test", slug="blood-test", category=cat)
     FacilityTest.objects.create(location=loc, test=t, price=400, is_available=True)
 
-    res = client.get("/api/hospitals/")
+    res = client.get("/api/v1/hospitals/")
     assert res.status_code == 200
     results = res.data["results"] if isinstance(res.data, dict) and "results" in res.data else res.data
     hosp_data = next((h for h in results if h["id"] == str(loc.id) or h["slug"] == loc.slug), None)
@@ -302,15 +302,15 @@ def test_num_queries_bounds(client, hospital_setup, django_assert_num_queries):
 
     # 1. Doctors endpoint should be <= 9 queries (base 6 queries + 3 for batch_next_available)
     with django_assert_num_queries(9):
-        res_docs = client.get(f"/api/hospitals/{loc.slug}/doctors/")
+        res_docs = client.get(f"/api/v1/hospitals/{loc.slug}/doctors/")
         assert res_docs.status_code == 200
 
     # 2. Tests endpoint should be <= 6 queries
     with django_assert_num_queries(6):
-        res_tests = client.get(f"/api/hospitals/{loc.slug}/tests/")
+        res_tests = client.get(f"/api/v1/hospitals/{loc.slug}/tests/")
         assert res_tests.status_code == 200
 
     # 3. Hospital list endpoint should be <= 4 queries
     with django_assert_num_queries(3):
-        res_list = client.get("/api/hospitals/")
+        res_list = client.get("/api/v1/hospitals/")
         assert res_list.status_code == 200

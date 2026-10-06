@@ -123,21 +123,21 @@ class TestDoctorOnboardingDuplicates:
         doc = self.DoctorFactory.create(name="Dr. Unique BMDC", bmdc_number="BMDC-TEST-12345")
         
         # Test lowercase query
-        res_lower = self.client.get("/api/doctors/?bmdc=bmdc-test-12345")
+        res_lower = self.client.get("/api/v1/doctors/?bmdc=bmdc-test-12345")
         assert res_lower.status_code == 200
         data_lower = res_lower.json()
         results_lower = data_lower if isinstance(data_lower, list) else data_lower.get("results", [])
         assert any(d["id"] == str(doc.id) for d in results_lower)
 
         # Test uppercase query
-        res_upper = self.client.get("/api/doctors/?bmdc=BMDC-TEST-12345")
+        res_upper = self.client.get("/api/v1/doctors/?bmdc=BMDC-TEST-12345")
         assert res_upper.status_code == 200
         data_upper = res_upper.json()
         results_upper = data_upper if isinstance(data_upper, list) else data_upper.get("results", [])
         assert any(d["id"] == str(doc.id) for d in results_upper)
 
         # Test non-matching query
-        res_none = self.client.get("/api/doctors/?bmdc=BMDC-NONEXISTENT")
+        res_none = self.client.get("/api/v1/doctors/?bmdc=BMDC-NONEXISTENT")
         assert res_none.status_code == 200
         data_none = res_none.json()
         results_none = data_none if isinstance(data_none, list) else data_none.get("results", [])
@@ -154,11 +154,11 @@ class TestDoctorOnboardingDuplicates:
         }
 
         # First affiliation succeeds
-        res1 = self.client.post("/api/affiliations/", payload, format="json")
+        res1 = self.client.post("/api/v1/affiliations/", payload, format="json")
         assert res1.status_code == 201
 
         # Second affiliation with same doctor and location returns 400
-        res2 = self.client.post("/api/affiliations/", payload, format="json")
+        res2 = self.client.post("/api/v1/affiliations/", payload, format="json")
         assert res2.status_code == 400
         assert "This doctor is already affiliated with this facility" in str(res2.data)
 
@@ -172,7 +172,7 @@ class TestDoctorOnboardingDuplicates:
             "experience": "5 years",
         }
 
-        res = self.client.post("/api/doctors/", payload, format="json")
+        res = self.client.post("/api/v1/doctors/", payload, format="json")
         assert res.status_code == 400
         assert "bmdc_number" in res.data or "already exists" in str(res.data)
 

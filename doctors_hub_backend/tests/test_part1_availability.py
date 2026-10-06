@@ -55,7 +55,7 @@ def test_weekly_session_appears_on_right_weekday(client, base_setup):
     frozen_now = datetime.datetime(2026, 10, 6, 10, 0, tzinfo=timezone.get_current_timezone())
     with patch("django.utils.timezone.localtime", return_value=frozen_now):
         with patch("django.utils.timezone.localdate", return_value=frozen_now.date()):
-            res = client.get(f"/api/affiliations/{aff.id}/availability/?days=3")
+            res = client.get(f"/api/v1/affiliations/{aff.id}/availability/?days=3")
             assert res.status_code == 200
             data = res.data
             dates = data["dates"]
@@ -97,7 +97,7 @@ def test_cancel_exception_closes_session(client, base_setup):
     frozen_now = datetime.datetime(2026, 10, 6, 10, 0, tzinfo=timezone.get_current_timezone())
     with patch("django.utils.timezone.localtime", return_value=frozen_now):
         with patch("django.utils.timezone.localdate", return_value=frozen_now.date()):
-            res = client.get(f"/api/affiliations/{aff.id}/availability/?days=2")
+            res = client.get(f"/api/v1/affiliations/{aff.id}/availability/?days=2")
             assert res.status_code == 200
             wed = res.data["dates"][1]
             assert len(wed["sessions"]) == 1
@@ -129,7 +129,7 @@ def test_modify_exception_changes_hours_and_capacity(client, base_setup):
     frozen_now = datetime.datetime(2026, 10, 6, 10, 0, tzinfo=timezone.get_current_timezone())
     with patch("django.utils.timezone.localtime", return_value=frozen_now):
         with patch("django.utils.timezone.localdate", return_value=frozen_now.date()):
-            res = client.get(f"/api/affiliations/{aff.id}/availability/?days=2")
+            res = client.get(f"/api/v1/affiliations/{aff.id}/availability/?days=2")
             assert res.status_code == 200
             session = res.data["dates"][1]["sessions"][0]
             assert session["session_start"] == "18:00"
@@ -153,7 +153,7 @@ def test_extra_session_appears(client, base_setup):
     frozen_now = datetime.datetime(2026, 10, 6, 10, 0, tzinfo=timezone.get_current_timezone())
     with patch("django.utils.timezone.localtime", return_value=frozen_now):
         with patch("django.utils.timezone.localdate", return_value=frozen_now.date()):
-            res = client.get(f"/api/affiliations/{aff.id}/availability/?days=2")
+            res = client.get(f"/api/v1/affiliations/{aff.id}/availability/?days=2")
             assert res.status_code == 200
             wed = res.data["dates"][1]
             assert len(wed["sessions"]) == 1
@@ -179,7 +179,7 @@ def test_advance_booking_days_enforced(client, base_setup):
     with patch("django.utils.timezone.localtime", return_value=frozen_now):
         with patch("django.utils.timezone.localdate", return_value=frozen_now.date()):
             # Requesting 7 days, but advance_booking_days is 3
-            res = client.get(f"/api/affiliations/{aff.id}/availability/?days=7")
+            res = client.get(f"/api/v1/affiliations/{aff.id}/availability/?days=7")
             assert res.status_code == 200
             assert len(res.data["dates"]) == 3
 
@@ -193,7 +193,7 @@ def test_advance_booking_days_enforced(client, base_setup):
                 "patient_phone": "01711112222",
                 "otp_code": "123"
             }
-            book_res = client.post("/api/bookings/doctor-bookings/", booking_payload, format="json")
+            book_res = client.post("/api/v1/bookings/doctor-bookings/", booking_payload, format="json")
             assert book_res.status_code == 400
             assert "advance" in str(book_res.data)
 
@@ -219,7 +219,7 @@ def test_past_date_booking_rejected(client, base_setup):
                 "patient_phone": "01711112222",
                 "otp_code": "123"
             }
-            res = client.post("/api/bookings/doctor-bookings/", booking_payload, format="json")
+            res = client.post("/api/v1/bookings/doctor-bookings/", booking_payload, format="json")
             assert res.status_code == 400
             assert "past" in str(res.data)
 
@@ -248,7 +248,7 @@ def test_full_capacity_booking_rejected(client, base_setup):
                 "patient_phone": "01711110001",
                 "otp_code": "123"
             }
-            res1 = client.post("/api/bookings/doctor-bookings/", p1, format="json")
+            res1 = client.post("/api/v1/bookings/doctor-bookings/", p1, format="json")
             assert res1.status_code == 201
 
             # 2. Second booking -> ok
@@ -260,7 +260,7 @@ def test_full_capacity_booking_rejected(client, base_setup):
                 "patient_phone": "01711110002",
                 "otp_code": "123"
             }
-            res2 = client.post("/api/bookings/doctor-bookings/", p2, format="json")
+            res2 = client.post("/api/v1/bookings/doctor-bookings/", p2, format="json")
             assert res2.status_code == 201
 
             # 3. Third booking -> rejected 400
@@ -272,7 +272,7 @@ def test_full_capacity_booking_rejected(client, base_setup):
                 "patient_phone": "01711110003",
                 "otp_code": "123"
             }
-            res3 = client.post("/api/bookings/doctor-bookings/", p3, format="json")
+            res3 = client.post("/api/v1/bookings/doctor-bookings/", p3, format="json")
             assert res3.status_code == 400
             assert "fully booked" in str(res3.data)
 
@@ -300,7 +300,7 @@ def test_serials_increment_per_session_and_restart(client, base_setup):
     with patch("django.utils.timezone.localtime", return_value=frozen_now):
         with patch("django.utils.timezone.localdate", return_value=frozen_now.date()):
             # Booking 1 in morning session -> serial 1
-            r1 = client.post("/api/bookings/doctor-bookings/", {
+            r1 = client.post("/api/v1/bookings/doctor-bookings/", {
                 "affiliation_id": str(aff.id),
                 "date": wed_date,
                 "session_key": f"s:{sched1.id}",
@@ -313,7 +313,7 @@ def test_serials_increment_per_session_and_restart(client, base_setup):
             assert r1.data["serial_display"] == "SL-001"
 
             # Booking 2 in morning session -> serial 2
-            r2 = client.post("/api/bookings/doctor-bookings/", {
+            r2 = client.post("/api/v1/bookings/doctor-bookings/", {
                 "affiliation_id": str(aff.id),
                 "date": wed_date,
                 "session_key": f"s:{sched1.id}",
@@ -326,7 +326,7 @@ def test_serials_increment_per_session_and_restart(client, base_setup):
             assert r2.data["serial_display"] == "SL-002"
 
             # Booking in evening session -> serial 1 (restarts per session)
-            r3 = client.post("/api/bookings/doctor-bookings/", {
+            r3 = client.post("/api/v1/bookings/doctor-bookings/", {
                 "affiliation_id": str(aff.id),
                 "date": wed_date,
                 "session_key": f"s:{sched2.id}",
@@ -354,7 +354,7 @@ def test_cancelled_booking_frees_capacity_serial_not_reused(client, base_setup):
     frozen_now = datetime.datetime(2026, 10, 6, 10, 0, tzinfo=timezone.get_current_timezone())
     with patch("django.utils.timezone.localtime", return_value=frozen_now):
         with patch("django.utils.timezone.localdate", return_value=frozen_now.date()):
-            r1 = client.post("/api/bookings/doctor-bookings/", {
+            r1 = client.post("/api/v1/bookings/doctor-bookings/", {
                 "affiliation_id": str(aff.id),
                 "date": wed_date,
                 "session_key": f"s:{sched.id}",
@@ -362,7 +362,7 @@ def test_cancelled_booking_frees_capacity_serial_not_reused(client, base_setup):
                 "patient_phone": "01711110001",
                 "otp_code": "123"
             }, format="json")
-            r2 = client.post("/api/bookings/doctor-bookings/", {
+            r2 = client.post("/api/v1/bookings/doctor-bookings/", {
                 "affiliation_id": str(aff.id),
                 "date": wed_date,
                 "session_key": f"s:{sched.id}",
@@ -377,7 +377,7 @@ def test_cancelled_booking_frees_capacity_serial_not_reused(client, base_setup):
             b1.save()
 
             # Now active booking count is 1 out of capacity 2. A 3rd booking succeeds!
-            r3 = client.post("/api/bookings/doctor-bookings/", {
+            r3 = client.post("/api/v1/bookings/doctor-bookings/", {
                 "affiliation_id": str(aff.id),
                 "date": wed_date,
                 "session_key": f"s:{sched.id}",
@@ -407,7 +407,7 @@ def test_estimated_time_today_not_before_now(client, base_setup):
     frozen_now = datetime.datetime(2026, 10, 7, 11, 23, tzinfo=timezone.get_current_timezone())
     with patch("django.utils.timezone.localtime", return_value=frozen_now):
         with patch("django.utils.timezone.localdate", return_value=frozen_now.date()):
-            res = client.get(f"/api/affiliations/{aff.id}/availability/?days=1")
+            res = client.get(f"/api/v1/affiliations/{aff.id}/availability/?days=1")
             assert res.status_code == 200
             session = res.data["dates"][0]["sessions"][0]
             assert session["estimated_time"] == "11:25"
@@ -426,7 +426,7 @@ def test_status_payload_ignored_always_pending(client, base_setup):
     frozen_now = datetime.datetime(2026, 10, 6, 10, 0, tzinfo=timezone.get_current_timezone())
     with patch("django.utils.timezone.localtime", return_value=frozen_now):
         with patch("django.utils.timezone.localdate", return_value=frozen_now.date()):
-            res = client.post("/api/bookings/doctor-bookings/", {
+            res = client.post("/api/v1/bookings/doctor-bookings/", {
                 "affiliation_id": str(aff.id),
                 "date": "2026-10-07",
                 "session_key": f"s:{sched.id}",
@@ -454,7 +454,7 @@ def test_weekly_session_change_retains_booking_counts(client, base_setup):
     frozen_now = datetime.datetime(2026, 10, 6, 10, 0, tzinfo=timezone.get_current_timezone())
     with patch("django.utils.timezone.localtime", return_value=frozen_now):
         with patch("django.utils.timezone.localdate", return_value=frozen_now.date()):
-            client.post("/api/bookings/doctor-bookings/", {
+            client.post("/api/v1/bookings/doctor-bookings/", {
                 "affiliation_id": str(aff.id),
                 "date": wed_date,
                 "session_key": f"s:{sched.id}",
@@ -469,7 +469,7 @@ def test_weekly_session_change_retains_booking_counts(client, base_setup):
             sched.save()
 
             # Check availability: booked is still 1, remaining is 4
-            res = client.get(f"/api/affiliations/{aff.id}/availability/?days=2")
+            res = client.get(f"/api/v1/affiliations/{aff.id}/availability/?days=2")
             assert res.status_code == 200
             session = res.data["dates"][1]["sessions"][0]
             assert session["booked"] == 1
@@ -506,7 +506,7 @@ def test_status_change_on_old_booking_succeeds(client, base_setup):
     api_client = APIClient()
     api_client.force_authenticate(user=admin_user)
 
-    res = api_client.post(f"/api/bookings/doctor-bookings/{b.id}/transition/", {"to": "confirmed"}, format="json")
+    res = api_client.post(f"/api/v1/bookings/doctor-bookings/{b.id}/transition/", {"to": "confirmed"}, format="json")
     assert res.status_code == 200
     b.refresh_from_db()
     assert b.status == "confirmed"
@@ -545,7 +545,7 @@ def test_exception_overlapping_doctor_rejected(base_setup):
 @pytest.mark.django_db
 def test_anonymous_availability_allowed(client, base_setup):
     aff = base_setup["aff"]
-    res = client.get(f"/api/affiliations/{aff.id}/availability/")
+    res = client.get(f"/api/v1/affiliations/{aff.id}/availability/")
     assert res.status_code == 200
     assert "dates" in res.data
     assert res.data["affiliation_id"] == str(aff.id)
@@ -598,7 +598,7 @@ class DoctorBookingConcurrencyTestCase(TransactionTestCase):
         def attempt_booking(phone, name):
             client = APIClient()
             try:
-                res = client.post("/api/bookings/doctor-bookings/", {
+                res = client.post("/api/v1/bookings/doctor-bookings/", {
                     "affiliation_id": str(aff.id),
                     "date": target_date.isoformat(),
                     "session_key": f"s:{sched.id}",

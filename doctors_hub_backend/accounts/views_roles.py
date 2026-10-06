@@ -10,7 +10,7 @@ from core.scoping import RoleScopedQuerysetMixin
 
 @api_view(['GET'])
 @permission_classes([permissions.IsAuthenticated])
-def my_permissions(request):
+def my_permissions(request, *args, **kwargs):
     """
     GET /api/auth/me/permissions/
     Returns the user's effective permissions and scope.
@@ -86,7 +86,7 @@ class UserRoleViewSet(RoleScopedQuerysetMixin, viewsets.ModelViewSet):
 
     from rest_framework.decorators import action
     @action(detail=False, methods=['get'], url_path='search-users')
-    def search_users(self, request):
+    def search_users(self, request, **kwargs):
         query = request.query_params.get('q', '').strip()
         from accounts.models import User
         from django.db.models import Q
@@ -104,7 +104,7 @@ class UserRoleViewSet(RoleScopedQuerysetMixin, viewsets.ModelViewSet):
         return Response(UserSimpleSerializer(users, many=True).data)
 
     @action(detail=False, methods=['get'], url_path='user-permissions/(?P<user_id>[^/.]+)')
-    def user_permissions(self, request, user_id=None):
+    def user_permissions(self, request, user_id=None, **kwargs):
         from accounts.models import User
         from django.shortcuts import get_object_or_404
         target_user = get_object_or_404(User, id=user_id)

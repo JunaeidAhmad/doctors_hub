@@ -142,16 +142,16 @@ class TestTwoTierRanking:
         doc_pure_med = DoctorFactory(name="Dr. Pure Medicine", primary_specialty=med, specialty_source="Medicine")
         doc_pure_med.specialties.set([med])
 
-        # Doctor B: Related Allergy (Tier 2)
+        # Doctor B: Secondary medicine match (Rank 2)
         doc_compound = DoctorFactory(name="Dr. Medicine Allergy", primary_specialty=allergy, specialty_source="Allergy")
-        doc_compound.specialties.set([allergy])
+        doc_compound.specialties.set([allergy, med])
 
         # Doctor C: Neurology / Neuro-medicine (Should be excluded)
         doc_neuro = DoctorFactory(name="Dr. Neurologist", primary_specialty=neuro, specialty_source="Neurology")
         doc_neuro.specialties.set([neuro])
 
         # 4. Search for 'মেডিসিন'
-        res = api_client.get("/api/doctors/?specialty=মেডিসিন")
+        res = api_client.get("/api/v1/doctors/?specialty=মেডিসিন")
         assert res.status_code == status.HTTP_200_OK
 
         data = res.data.get("results", res.data) if isinstance(res.data, dict) else res.data
@@ -162,16 +162,16 @@ class TestTwoTierRanking:
         assert "Dr. Medicine Allergy" in doc_names
         assert "Dr. Neurologist" not in doc_names  # Substring trap successfully avoided!
 
-        # Verify Tier 1 is returned before Tier 2
+        # Verify Rank 1 is returned before Rank 2
         pure_idx = doc_names.index("Dr. Pure Medicine")
         compound_idx = doc_names.index("Dr. Medicine Allergy")
         assert pure_idx < compound_idx
 
-        # Check match_tier serialization
+        # Check match_rank serialization
         pure_doc_data = next(d for d in data if d["name"] == "Dr. Pure Medicine")
         compound_doc_data = next(d for d in data if d["name"] == "Dr. Medicine Allergy")
-        assert pure_doc_data.get("match_rank") in (1, 2, 3)
-        assert compound_doc_data.get("match_rank") in (1, 2, 3)
+        assert pure_doc_data.get("match_rank") == 1
+        assert compound_doc_data.get("match_rank") == 2
 
         # Check meta in response
         if isinstance(res.data, dict) and "meta" in res.data:
@@ -187,7 +187,7 @@ class TestDropdownOptionsAndRBAC:
         set_alias(cardio, "কার্ডিওলজি")
 
         # GET /api/specialties/ returns specialties only (contract changed in P2.1.4)
-        res = api_client.get("/api/specialties/")
+        res = api_client.get("/api/v1/specialties/")
         assert res.status_code == status.HTTP_200_OK
         data = res.data.get("results", res.data) if isinstance(res.data, dict) else res.data
         names = [item["name"] for item in data]
@@ -198,16 +198,16 @@ class TestDropdownOptionsAndRBAC:
 
     def test_rbac_permissions_on_specialties(self, api_client, rbac_user_with_categories, rbac_user_read_only):
         # Anonymous can read
-        res_anon = api_client.get("/api/specialties/?canonical_only=true")
+        res_anon = api_client.get("/api/v1/specialties/?canonical_only=true")
         assert res_anon.status_code == status.HTTP_200_OK
 
         # Anonymous cannot create
-        res_anon_post = api_client.post("/api/specialties/", {"name": "New Specialty"})
+        res_anon_post = api_client.post("/api/v1/specialties/", {"name": "New Specialty"})
         assert res_anon_post.status_code in (status.HTTP_401_UNAUTHORIZED, status.HTTP_403_FORBIDDEN)
 
         # Read-only user cannot create
         api_client.force_authenticate(user=rbac_user_read_only)
-        res_ro_post = api_client.post("/api/specialties/", {"name": "New Specialty"})
+        res_ro_post = api_client.post("/api/v1/specialties/", {"name": "New Specialty"})
         assert res_ro_post.status_code == status.HTTP_403_FORBIDDEN
 
         # User with categories.edit / create can mutate
@@ -218,7 +218,7 @@ class TestDropdownOptionsAndRBAC:
         clear_user_permissions_cache(rbac_user_with_categories.id)
 
         api_client.force_authenticate(user=rbac_user_with_categories)
-        res_auth_post = api_client.post("/api/specialties/", {"name": "Surgical Oncology", "canonical_name": "Surgical Oncology"})
+        res_auth_post = api_client.post("/api/v1/specialties/", {"name": "Surgical Oncology", "canonical_name": "Surgical Oncology"})
         assert res_auth_post.status_code in (status.HTTP_200_OK, status.HTTP_201_CREATED)
 
 
@@ -254,11 +254,11 @@ class TestSpecialtyAliasEndpoints:
         cardio = DoctorSpecialty.objects.create(name="Cardiology", canonical_name="Cardiology", bn_name="হৃদরোগ")
         
         # 1. Unauthenticated can list aliases
-        res_list = api_client.get("/api/specialty-aliases/")
+        res_list = api_client.get("/api/v1/specialty-aliases/")
         assert res_list.status_code == status.HTTP_200_OK
 
         # 2. Counts endpoint
-        res_counts = api_client.get("/api/specialty-aliases/counts/")
+        res_counts = api_client.get("/api/v1/specialty-aliases/counts/")
         assert res_counts.status_code == status.HTTP_200_OK
         assert "total_aliases" in res_counts.data
         assert "unverified_aliases" in res_counts.data
@@ -272,7 +272,7 @@ class TestSpecialtyAliasEndpoints:
         clear_user_permissions_cache(rbac_user_with_categories.id)
 
         api_client.force_authenticate(user=rbac_user_with_categories)
-        res_create = api_client.post("/api/specialty-aliases/", {
+        res_create = api_client.post("/api/v1/specialty-aliases/", {
             "specialty": str(cardio.id),
             "name": "হৃদরোগ বিশেষজ্ঞ ডাক্তার",
             "is_verified": False
@@ -283,13 +283,13 @@ class TestSpecialtyAliasEndpoints:
         assert res_create.data["language"] == "bn"
 
         # 4. Verify action
-        res_verify = api_client.post(f"/api/specialty-aliases/{alias_id}/verify/")
+        res_verify = api_client.post(f"/api/v1/specialty-aliases/{alias_id}/verify/")
         assert res_verify.status_code == status.HTTP_200_OK
         assert res_verify.data["is_verified"] is True
 
         # 5. Batch verify
         alias2 = SpecialtyAlias.objects.create(specialty=cardio, name="Heart Doctor Clinic", is_verified=False)
-        res_batch = api_client.post("/api/specialty-aliases/batch-verify/", {"alias_ids": [str(alias2.id)]}, format='json')
+        res_batch = api_client.post("/api/v1/specialty-aliases/batch-verify/", {"alias_ids": [str(alias2.id)]}, format='json')
         assert res_batch.status_code == status.HTTP_200_OK
         assert res_batch.data["updated_count"] == 1
         alias2.refresh_from_db()

@@ -333,7 +333,7 @@ class FacilityStaffListCreateAPIView(APIView):
             403: OpenApiTypes.OBJECT
         }
     )
-    def get(self, request, location_id):
+    def get(self, request, location_id, **kwargs):
         if not self._check_facility_admin_permission(request.user, location_id):
             return Response({"detail": "You do not have permission to manage staff for this facility."}, status=status.HTTP_403_FORBIDDEN)
 
@@ -380,7 +380,7 @@ class FacilityStaffListCreateAPIView(APIView):
             403: OpenApiTypes.OBJECT
         }
     )
-    def post(self, request, location_id):
+    def post(self, request, location_id, **kwargs):
         if not self._check_facility_admin_permission(request.user, location_id):
             return Response({"detail": "You do not have permission to add staff to this facility."}, status=status.HTTP_403_FORBIDDEN)
 
@@ -461,7 +461,7 @@ class FacilityStaffDeleteAPIView(APIView):
             404: OpenApiTypes.OBJECT
         }
     )
-    def delete(self, request, location_id, user_id):
+    def delete(self, request, location_id, user_id, **kwargs):
         if not (request.user.is_super_admin or request.user.user_roles.filter(
             facility_id=location_id, role__scope_type=Role.ScopeType.FACILITY
         ).exists()):
@@ -489,7 +489,7 @@ class VerificationQueueAPIView(APIView):
             403: OpenApiTypes.OBJECT
         }
     )
-    def get(self, request):
+    def get(self, request, **kwargs):
         pending_locations = Location.objects.filter(is_verified=False).select_related(
             "hospital_detail", "diagnostic_center_detail"
         )
@@ -554,7 +554,7 @@ class VerificationApproveRejectAPIView(APIView):
             404: OpenApiTypes.OBJECT
         }
     )
-    def post(self, request, entity_type, entity_id):
+    def post(self, request, entity_type, entity_id, **kwargs):
         action = request.data.get("action", "approve").lower()
 
         if entity_type in ["facility", "location", "diagnostic_center", "hospital"]:
@@ -605,7 +605,7 @@ class PlatformAdminListCreateAPIView(APIView):
             403: OpenApiTypes.OBJECT
         }
     )
-    def get(self, request):
+    def get(self, request, **kwargs):
         super_admins = User.objects.filter(is_superuser=True)
         data = [
             {
@@ -631,7 +631,7 @@ class PlatformAdminListCreateAPIView(APIView):
             403: OpenApiTypes.OBJECT
         }
     )
-    def post(self, request):
+    def post(self, request, **kwargs):
         phone = request.data.get("phone_number", "").strip()
         pwd = request.data.get("password", "").strip()
         first_name = request.data.get("first_name", "").strip() or "Platform Admin"

@@ -53,7 +53,7 @@ def geo(db):
 @pytest.mark.django_db
 def test_item_1_location_search_works(anon_client, geo):
     loc = LocationFactory.create(name="Dhanmondi Hospital", thana=geo["thana"])
-    resp = anon_client.get("/api/locations/?search=dhan")
+    resp = anon_client.get("/api/v1/locations/?search=dhan")
     assert resp.status_code == 200
 
 
@@ -62,7 +62,7 @@ def test_item_1_location_search_works(anon_client, geo):
 # ---------------------------------------------------------------------------
 @pytest.mark.django_db
 def test_item_2_fee_max_ignored(anon_client, db):
-    resp = anon_client.get("/api/doctors/?fee_max=500")
+    resp = anon_client.get("/api/v1/doctors/?fee_max=500")
     assert resp.status_code == 200  # unknown param is ignored, not 500
 
 
@@ -73,7 +73,7 @@ def test_item_2_fee_max_ignored(anon_client, db):
 def test_item_3_doctor_ordering_stable(anon_client, db):
     DoctorFactory.create(name="Dr. Alpha")
     DoctorFactory.create(name="Dr. Beta")
-    resp = anon_client.get("/api/doctors/")
+    resp = anon_client.get("/api/v1/doctors/")
     assert resp.status_code == 200
     results = resp.data.get("results", resp.data)
     names = [d["name"] for d in results]
@@ -87,7 +87,7 @@ def test_item_3_doctor_ordering_stable(anon_client, db):
 def test_item_4_hospital_ordering(anon_client, geo):
     LocationFactory.create(name="Zeta Hospital", thana=geo["thana"])
     LocationFactory.create(name="Alpha Hospital", thana=geo["thana"])
-    resp = anon_client.get("/api/hospitals/?ordering=name")
+    resp = anon_client.get("/api/v1/hospitals/?ordering=name")
     assert resp.status_code == 200
 
 
@@ -98,9 +98,9 @@ def test_item_4_hospital_ordering(anon_client, geo):
 def test_item_5_inactive_hidden_from_public(anon_client, admin_client, geo):
     loc = LocationFactory.create(name="Inactive Hospital", thana=geo["thana"], is_active=False)
     Hospital.objects.create(location=loc)
-    resp = anon_client.get(f"/api/hospitals/{loc.pk}/")
+    resp = anon_client.get(f"/api/v1/hospitals/{loc.pk}/")
     assert resp.status_code == 404
-    resp_admin = admin_client.get(f"/api/hospitals/{loc.pk}/")
+    resp_admin = admin_client.get(f"/api/v1/hospitals/{loc.pk}/")
     assert resp_admin.status_code == 200
 
 
@@ -118,7 +118,7 @@ def test_item_6_status_readonly(anon_client, geo):
         day_of_week=(timezone.localdate() + datetime.timedelta(days=1)).strftime("%A"),
         start_time="09:00:00", end_time="12:00:00",
     )
-    resp = anon_client.post("/api/bookings/doctor/", {
+    resp = anon_client.post("/api/v1/bookings/doctor/", {
         "affiliation_id": str(aff.pk),
         "date": (timezone.localdate() + datetime.timedelta(days=1)).isoformat(),
         "session_key": f"s:{sched.pk}",
@@ -145,7 +145,7 @@ def test_item_7_patient_snapshot(anon_client, geo):
         day_of_week=(timezone.localdate() + datetime.timedelta(days=1)).strftime("%A"),
         start_time="09:00:00", end_time="12:00:00",
     )
-    resp = anon_client.post("/api/bookings/doctor/", {
+    resp = anon_client.post("/api/v1/bookings/doctor/", {
         "affiliation_id": str(aff.pk),
         "date": (timezone.localdate() + datetime.timedelta(days=1)).isoformat(),
         "session_key": f"s:{sched.pk}",
@@ -181,7 +181,7 @@ def test_item_8_canonical_phone(db):
 def test_item_9_geo_by_id(anon_client, geo):
     loc = LocationFactory.create(name="Geo Hospital", thana=geo["thana"])
     Hospital.objects.create(location=loc)
-    resp = anon_client.get(f"/api/hospitals/?thana_id={geo['thana'].pk}")
+    resp = anon_client.get(f"/api/v1/hospitals/?thana_id={geo['thana'].pk}")
     assert resp.status_code == 200
 
 
@@ -192,7 +192,7 @@ def test_item_9_geo_by_id(anon_client, geo):
 def test_item_10_flat_facility_shape(anon_client, geo):
     loc = LocationFactory.create(name="Flat Hospital", thana=geo["thana"])
     Hospital.objects.create(location=loc)
-    resp = anon_client.get(f"/api/hospitals/{loc.pk}/")
+    resp = anon_client.get(f"/api/v1/hospitals/{loc.pk}/")
     assert resp.status_code == 200
     assert "display_name" in resp.data
 
@@ -203,7 +203,7 @@ def test_item_10_flat_facility_shape(anon_client, geo):
     @pytest.mark.django_db
     def test_item_11_exact_category(anon_client, db):
         cat = TestCategoryFactory.create(name="Exact Cat")
-        resp = anon_client.get(f"/api/test-categories/{cat.pk}/")
+        resp = anon_client.get(f"/api/v1/test-categories/{cat.pk}/")
         assert resp.status_code == 200
 
 
@@ -216,7 +216,7 @@ def test_item_12_test_booking_date_range(anon_client, db):
     cat = TestCategoryFactory.create(name="Range Cat")
     t = TestFactory.create(name="Range Test", category=cat)
     ft = FacilityTestFactory.create(location=loc, test=t, price=100)
-    resp = anon_client.post("/api/bookings/test/", {
+    resp = anon_client.post("/api/v1/bookings/test/", {
         "facility_test_id": str(ft.pk),
         "pickup_date": (timezone.localdate() + datetime.timedelta(days=31)).isoformat(),
         "patient_name": "Range",
@@ -235,7 +235,7 @@ def test_item_13_price_snapshot(anon_client, db):
     cat = TestCategoryFactory.create(name="Snap Cat")
     t = TestFactory.create(name="Snap Test", category=cat)
     ft = FacilityTestFactory.create(location=loc, test=t, price=200)
-    resp = anon_client.post("/api/bookings/test/", {
+    resp = anon_client.post("/api/v1/bookings/test/", {
         "facility_test_id": str(ft.pk),
         "pickup_date": (timezone.localdate() + datetime.timedelta(days=1)).isoformat(),
         "patient_name": "Snap",
@@ -300,7 +300,7 @@ def test_item_17_role_properties(db):
 @pytest.mark.django_db
 def test_item_18_nested_affiliations_rejected(admin_client, db):
     doc = DoctorFactory.create(name="Dr. Nested")
-    resp = admin_client.post("/api/doctors/", {
+    resp = admin_client.post("/api/v1/doctors/", {
         "name": "Dr. Nested Create",
         "qualification": "MBBS",
         "affiliations": [{"location_id": "x", "fee": "500"}],
@@ -313,7 +313,7 @@ def test_item_18_nested_affiliations_rejected(admin_client, db):
 # ---------------------------------------------------------------------------
 @pytest.mark.django_db
 def test_item_19_slim_facets(anon_client, db):
-    resp = anon_client.get("/api/search-facets/")
+    resp = anon_client.get("/api/v1/search-facets/")
     assert resp.status_code == 200
     assert "hospital_categories" in resp.data
     assert "specialties" not in resp.data
@@ -352,7 +352,7 @@ def test_item_21_timezone_regression(admin_client, db):
                                        tzinfo=timezone.get_current_timezone())
     with patch("django.utils.timezone.localtime", return_value=frozen):
         with patch("django.utils.timezone.localdate", return_value=tuesday):
-            resp = admin_client.post("/api/bookings/doctor/", {
+            resp = admin_client.post("/api/v1/bookings/doctor/", {
                 "affiliation_id": str(aff.pk),
                 "date": monday.isoformat(),
                 "session_key": f"s:{sched_mon.pk}",
@@ -371,7 +371,7 @@ def test_item_22_category_counts(anon_client, db):
     cat = HospitalCategory.objects.create(name="P2 Regression Cat")
     loc = LocationFactory.create(name="Count Hosp")
     Hospital.objects.create(location=loc, category=cat)
-    resp = anon_client.get("/api/hospital-categories/")
+    resp = anon_client.get("/api/v1/hospital-categories/")
     assert resp.status_code == 200
     data = resp.data.get("results", resp.data)
     cat_data = next(c for c in data if c["name"] == "P2 Regression Cat")
@@ -384,7 +384,7 @@ def test_item_22_category_counts(anon_client, db):
     @pytest.mark.django_db
     def test_item_23_specialties_not_aliases(anon_client, db):
         DoctorSpecialty.objects.create(name="P2 Regression Spec")
-        resp = anon_client.get("/api/specialties/")
+        resp = anon_client.get("/api/v1/specialties/")
         assert resp.status_code == 200
         data = resp.data if isinstance(resp.data, list) else resp.data.get("results", resp.data)
         names = [s["name"] for s in data]

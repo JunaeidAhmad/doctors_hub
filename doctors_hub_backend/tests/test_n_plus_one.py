@@ -40,7 +40,7 @@ def test_doctors_list_no_n_plus_one():
 
     client = APIClient()
     with CaptureQueriesContext(connection) as ctx:
-        res = client.get("/api/doctors/")
+        res = client.get("/api/v1/doctors/")
         assert res.status_code == 200
         data = res.data.get("results", res.data)
         assert len(data) == 5
@@ -65,7 +65,7 @@ def test_doctor_affiliations_list_no_n_plus_one():
 
     client = APIClient()
     with CaptureQueriesContext(connection) as ctx:
-        res = client.get("/api/affiliations/")
+        res = client.get("/api/v1/affiliations/")
         assert res.status_code == 200
         data = res.data.get("results", res.data)
         assert len(data) == 5
@@ -99,7 +99,7 @@ def test_doctor_bookings_list_no_n_plus_one():
     client = APIClient()
     client.force_authenticate(user=user)
     with CaptureQueriesContext(connection) as ctx:
-        res = client.get("/api/bookings/doctor/")
+        res = client.get("/api/v1/bookings/doctor/")
         assert res.status_code == 200
         data = res.data.get("results", res.data)
         assert len(data) == 5
@@ -126,7 +126,7 @@ def test_lab_bookings_list_no_n_plus_one():
     client = APIClient()
     client.force_authenticate(user=user)
     with CaptureQueriesContext(connection) as ctx:
-        res = client.get("/api/bookings/lab/")
+        res = client.get("/api/v1/bookings/lab/")
         assert res.status_code == 200
         data = res.data.get("results", res.data)
         assert len(data) == 5
@@ -155,7 +155,7 @@ def test_hospitals_and_diagnostic_centers_no_n_plus_one():
 
     client = APIClient()
     with CaptureQueriesContext(connection) as ctx_h:
-        res_h = client.get("/api/hospitals/")
+        res_h = client.get("/api/v1/hospitals/")
         assert res_h.status_code == 200
         data_h = res_h.data.get("results", res_h.data)
         assert len(data_h) == 4
@@ -163,7 +163,7 @@ def test_hospitals_and_diagnostic_centers_no_n_plus_one():
     assert len(ctx_h.captured_queries) <= 5
 
     with CaptureQueriesContext(connection) as ctx_d:
-        res_d = client.get("/api/diagnostic-centers/")
+        res_d = client.get("/api/v1/diagnostic-centers/")
         assert res_d.status_code == 200
         data_d = res_d.data.get("results", res_d.data)
         assert len(data_d) == 4
@@ -188,7 +188,7 @@ def test_facility_tests_list_no_n_plus_one():
 
     client = APIClient()
     with CaptureQueriesContext(connection) as ctx:
-        res = client.get("/api/facility-tests/")
+        res = client.get("/api/v1/facility-tests/")
         assert res.status_code == 200
         data = res.data.get("results", res.data)
         assert len(data) == 5
@@ -229,7 +229,7 @@ def test_hospital_service_bookings_list_no_n_plus_one():
     client = APIClient()
     client.force_authenticate(user=user)
     with CaptureQueriesContext(connection) as ctx:
-        res = client.get("/api/bookings/hospital-services/")
+        res = client.get("/api/v1/bookings/hospital-services/")
         assert res.status_code == 200
         data = res.data.get("results", res.data)
         assert len(data) == 5

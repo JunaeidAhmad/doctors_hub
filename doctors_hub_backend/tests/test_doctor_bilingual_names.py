@@ -93,13 +93,13 @@ class TestDoctorBilingualNames:
         )
 
         # 1. Search in English
-        res_en = api_client.get("/api/doctors/?search=Rahman")
+        res_en = api_client.get("/api/v1/doctors/?search=Rahman")
         assert res_en.status_code == 200
         results_en = res_en.data.get("results", res_en.data)
         assert any(d["id"] == str(doc.id) for d in results_en)
 
         # 2. Search in Bangla
-        res_bn = api_client.get("/api/doctors/?search=রহমান")
+        res_bn = api_client.get("/api/v1/doctors/?search=রহমান")
         assert res_bn.status_code == 200
         results_bn = res_bn.data.get("results", res_bn.data)
         assert any(d["id"] == str(doc.id) for d in results_bn)
@@ -166,7 +166,7 @@ class TestDoctorBilingualNames:
             assert doc_broken.bn_name == "তানভীর আহমেদ"
 
             # Test SlugOrPkLookupMixin backwards compatibility with old slug
-            res = api_client.get("/api/doctors/doctor-12345678/")
+            res = api_client.get("/api/v1/doctors/doctor-12345678/")
             assert res.status_code == 200
             assert res.data["id"] == str(doc_broken.id)
 

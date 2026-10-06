@@ -59,7 +59,7 @@ class TestFacilityStaffRowScoping:
     def test_staff_can_list_own_facility_bookings(self, facility_staff_user, facility_location):
         client = APIClient()
         client.force_authenticate(user=facility_staff_user)
-        resp = client.get("/api/bookings/doctor/")
+        resp = client.get("/api/v1/bookings/doctor/")
         # Staff user should be able to access the endpoint (may return empty list)
         assert resp.status_code == 200
 

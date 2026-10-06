@@ -302,6 +302,23 @@ class Command(BaseCommand):
             if rel_nodes:
                 leaf_obj.related.set(rel_nodes)
 
+            rel_leaf_nodes = []
+            for rid in l.get('related_leaves', []):
+                if not isinstance(rid, str) or rid not in node_objects:
+                    raise CommandError(
+                        f"Leaf '{leaf_obj.name}' ({leaf_obj.slug}) related_leaves references unknown slug '{rid}'!"
+                    )
+                if rid == l['slug']:
+                    raise CommandError(
+                        f"Leaf '{leaf_obj.name}' ({leaf_obj.slug}) related_leaves links to itself!"
+                    )
+                rel_leaf_nodes.append(node_objects[rid])
+            if len(rel_leaf_nodes) > 6:
+                raise CommandError(
+                    f"Leaf '{leaf_obj.name}' ({leaf_obj.slug}) has more than 6 related_leaves!"
+                )
+            leaf_obj.related_leaves.set(rel_leaf_nodes)
+
             # Validate constraints
             validate_node_parents(leaf_obj)
 

@@ -44,14 +44,14 @@ def test_search_facets_endpoint_returns_aggregations(api_client):
     DoctorAffiliationFactory(doctor=doc2, location=loc_ctg)
 
     # 1. Global facets (unfiltered) – slim contract: only hospital_categories
-    res_global = api_client.get("/api/search-facets/")
+    res_global = api_client.get("/api/v1/search-facets/")
     assert res_global.status_code == status.HTTP_200_OK
     assert "hospital_categories" in res_global.data
     assert "specialties" not in res_global.data
     assert "total_doctors" not in res_global.data
 
     # 2. Location-filtered facets (district_id)
-    res_filtered = api_client.get(f"/api/search-facets/?district_id={dist_dhaka.id}")
+    res_filtered = api_client.get(f"/api/v1/search-facets/?district_id={dist_dhaka.id}")
     assert res_filtered.status_code == status.HTTP_200_OK
     assert "hospital_categories" in res_filtered.data
 
@@ -65,13 +65,13 @@ def test_doctor_search_filters_by_specialty_and_location(api_client):
     DoctorAffiliationFactory(doctor=doc, location=loc, fee=800)
 
     # Search with matching specialty
-    res = api_client.get(f"/api/doctors/?specialty=Orthopedics")
+    res = api_client.get(f"/api/v1/doctors/?specialty=Orthopedics")
     assert res.status_code == status.HTTP_200_OK
     results = res.data.get("results") if isinstance(res.data, dict) else res.data
     assert any(d["name"] == "Dr. Bone Doctor" for d in results)
 
     # Search with non-matching specialty
-    res_empty = api_client.get(f"/api/doctors/?specialty=NonExistentSpecialty")
+    res_empty = api_client.get(f"/api/v1/doctors/?specialty=NonExistentSpecialty")
     assert res_empty.status_code == status.HTTP_200_OK
     results_empty = res_empty.data.get("results") if isinstance(res_empty.data, dict) else res_empty.data
     assert len(results_empty) == 0
@@ -86,7 +86,7 @@ def test_hospital_search_filters_by_location(api_client):
     loc_banani = LocationFactory(name="Banani General Hospital", thana=thana)
     hosp = Hospital.objects.create(location=loc_banani)
 
-    res = api_client.get(f"/api/hospitals/?thana_id={thana.id}")
+    res = api_client.get(f"/api/v1/hospitals/?thana_id={thana.id}")
     assert res.status_code == status.HTTP_200_OK
     results = res.data.get("results") if isinstance(res.data, dict) else res.data
     assert len(results) >= 1

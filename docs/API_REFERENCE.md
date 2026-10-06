@@ -16,9 +16,11 @@ The backend provides interactive OpenAPI 3.0 documentation using offline-bundled
 | **OpenAPI Schema (YAML)** | [`/api/schema/`](http://localhost:8000/api/schema/) | Raw OpenAPI 3.0 YAML schema download |
 
 ### Base URLs & Versioning
-All endpoints are available with both the root prefix and versioned alias:
-- **Standard Prefix**: `/api/...` (e.g., `/api/doctors/`)
-- **Version 1 Prefix**: `/api/v1/...` (e.g., `/api/v1/doctors/`)
+The canonical prefix is versioned:
+- **Canonical Prefix**: `/api/v1/...` (e.g., `/api/v1/doctors/`)
+- **Legacy alias**: `/api/...` still resolves to v1 but is deprecated and slated for removal; do not use it in new clients.
+
+See [`docs/api/VERSIONING.md`](api/VERSIONING.md) for the full versioning policy and the frozen patient contract.
 
 ---
 
@@ -57,7 +59,7 @@ Authorization: Bearer <access_token>
 ### 3.1. Authentication & Profile (`Authentication & Profile`)
 
 #### User Login
-- **Endpoint**: `POST /api/auth/login/`
+- **Endpoint**: `POST /api/v1/auth/login/`
 - **Throttling**: `120/hour`
 - **Request Body**:
   ```json
@@ -87,12 +89,12 @@ Authorization: Bearer <access_token>
 
 #### Current User Profile
 - **Endpoints**:
-  - `GET /api/auth/me/` (Retrieve authenticated user profile)
-  - `PATCH /api/auth/me/` (Update `first_name`, `last_name`)
+  - `GET /api/v1/auth/me/` (Retrieve authenticated user profile)
+  - `PATCH /api/v1/auth/me/` (Update `first_name`, `last_name`)
 - **Headers**: `Authorization: Bearer <access_token>`
 
 #### Self-Registration (Public)
-- **Facility Registration**: `POST /api/auth/register/facility/`
+- **Facility Registration**: `POST /api/v1/auth/register/facility/`
   ```json
   {
     "phone_number": "01811223344",
@@ -112,7 +114,7 @@ Authorization: Bearer <access_token>
   ```
   *Note*: Creates the facility with `is_verified=False`. It becomes live once verified by a Super Admin.
 
-- **Doctor Self-Registration**: `POST /api/auth/register/doctor/`
+- **Doctor Self-Registration**: `POST /api/v1/auth/register/doctor/`
   ```json
   {
     "phone_number": "01911223344",
@@ -130,11 +132,11 @@ Authorization: Bearer <access_token>
 ### 3.2. Search & Discovery (`Search & Discovery`)
 
 #### Search Metadata Dropdowns
-- **Endpoint**: `GET /api/search-metadata/`
+- **Endpoint**: `GET /api/v1/search-metadata/`
 - **Description**: Returns all distinct doctor specialties, test categories, hospital categories, and diagnostic center categories with active item counts.
 
 #### Real-time Faceted Search
-- **Endpoint**: `GET /api/search-facets/`
+- **Endpoint**: `GET /api/v1/search-facets/`
 - **Query Parameters**:
   - `location` (or `loc`): Division, district, or area (e.g., `"Dhaka"`, `"Chittagong"`)
   - `area`: Specific area (e.g., `"Dhanmondi"`, `"Banani"`, `"Uttara"`)
@@ -159,7 +161,7 @@ Authorization: Bearer <access_token>
 ### 3.3. Doctors (`Doctors`)
 
 #### Doctor Directory & Search
-- **Endpoint**: `GET /api/doctors/` | `GET /api/doctors/{id}/`
+- **Endpoint**: `GET /api/v1/doctors/` | `GET /api/v1/doctors/{id}/`
 - **Filtering Options**:
   - `?specialty=<name|slug|uuid>`
   - `?location=<district|division|area>`
@@ -173,12 +175,12 @@ Authorization: Bearer <access_token>
   - `?search=<keyword>`
 
 #### Specialties
-- **Endpoint**: `GET /api/specialties/` | `POST /api/specialties/` (Super Admin)
+- **Endpoint**: `GET /api/v1/specialties/` | `POST /api/v1/specialties/` (Super Admin)
 
 #### Doctor Affiliations & Visiting Schedules
-- **Affiliations**: `GET /api/affiliations/` | `POST /api/affiliations/`
+- **Affiliations**: `GET /api/v1/affiliations/` | `POST /api/v1/affiliations/`
   - Links a doctor to a hospital/diagnostic facility location with consultation fee.
-- **Schedules**: `GET /api/schedules/` | `POST /api/schedules/`
+- **Schedules**: `GET /api/v1/schedules/` | `POST /api/v1/schedules/`
   - Visiting days (`day_of_week`), start time, end time, and patient limit per slot.
 
 ---
@@ -186,38 +188,38 @@ Authorization: Bearer <access_token>
 ### 3.4. Facilities (`Facilities`)
 
 #### Locations (Master Facility Records)
-- **Endpoint**: `GET /api/locations/` | `POST /api/locations/`
+- **Endpoint**: `GET /api/v1/locations/` | `POST /api/v1/locations/`
 - **Location Types**: `hospital`, `diagnostic_center`, `both`
 
 #### Hospitals & Categories
-- **Hospitals**: `GET /api/hospitals/` | `POST /api/hospitals/` | `GET /api/hospitals/{slug_or_id}/`
+- **Hospitals**: `GET /api/v1/hospitals/` | `POST /api/v1/hospitals/` | `GET /api/v1/hospitals/{slug_or_id}/`
   - Filters: `category`, `district`, `division`, `area`, `has_diagnostic_center`, `search`
-- **Hospital Categories**: `GET /api/hospital-categories/`
-- **Hospital Services**: `GET /api/hospital-services/` (e.g., ICU, Emergency, NICU, CCU)
+- **Hospital Categories**: `GET /api/v1/hospital-categories/`
+- **Hospital Services**: `GET /api/v1/hospital-services/` (e.g., ICU, Emergency, NICU, CCU)
 
 #### Diagnostic Centers & Services
-- **Diagnostic Centers**: `GET /api/diagnostic-centers/` | `POST /api/diagnostic-centers/` | `GET /api/diagnostic-centers/{slug_or_id}/`
+- **Diagnostic Centers**: `GET /api/v1/diagnostic-centers/` | `POST /api/v1/diagnostic-centers/` | `GET /api/v1/diagnostic-centers/{slug_or_id}/`
   - Filters: `category`, `testcat`, `district`, `division`, `area`, `search`
-- **Diagnostic Categories**: `GET /api/diagnostic-center-categories/`
-- **Diagnostic Services**: `GET /api/diagnostic-services/` (e.g., 3T MRI, Digital X-Ray, CT Scan)
+- **Diagnostic Categories**: `GET /api/v1/diagnostic-center-categories/`
+- **Diagnostic Services**: `GET /api/v1/diagnostic-services/` (e.g., 3T MRI, Digital X-Ray, CT Scan)
 
 #### Doctor Chambers
-- **Endpoint**: `GET /api/chambers/` | `POST /api/chambers/`
+- **Endpoint**: `GET /api/v1/chambers/` | `POST /api/v1/chambers/`
 
 ---
 
 ### 3.5. Diagnostic Tests (`Diagnostic Tests`)
 
 #### Test Categories
-- **Endpoint**: `GET /api/test-categories/` | `POST /api/test-categories/` (Super Admin)
+- **Endpoint**: `GET /api/v1/test-categories/` | `POST /api/v1/test-categories/` (Super Admin)
   - Categories: Pathology, Radiology & Imaging, Cardiology, Biochemistry, etc.
 
 #### Master Test Catalog
-- **Endpoint**: `GET /api/tests/` | `POST /api/tests/` (Super Admin)
+- **Endpoint**: `GET /api/v1/tests/` | `POST /api/v1/tests/` (Super Admin)
   - Fields: `name`, `code`, `sample_type`, `preparation_instructions`, `fasting_required`, `report_time_hours`
 
 #### Branch Test Offerings (`facility-tests`)
-- **Endpoint**: `GET /api/facility-tests/` | `POST /api/facility-tests/` | `PATCH /api/facility-tests/{id}/`
+- **Endpoint**: `GET /api/v1/facility-tests/` | `POST /api/v1/facility-tests/` | `PATCH /api/v1/facility-tests/{id}/`
 - **Description**: Specific price, discount, availability, and home sample collection flags for a test at a specific diagnostic center branch.
 
 ---
@@ -225,7 +227,7 @@ Authorization: Bearer <access_token>
 ### 3.6. Bookings (`Bookings`)
 
 #### Doctor Appointment Bookings
-- **Create**: `POST /api/bookings/doctor/` (Public / Authenticated)
+- **Create**: `POST /api/v1/bookings/doctor/` (Public / Authenticated)
   ```json
   {
     "affiliation": "uuid-doctor-affiliation",
@@ -237,12 +239,12 @@ Authorization: Bearer <access_token>
     "notes": "Follow up consultation"
   }
   ```
-- **List / Manage**: `GET /api/bookings/doctor/` | `PATCH /api/bookings/doctor/{id}/`
+- **List / Manage**: `GET /api/v1/bookings/doctor/` | `PATCH /api/v1/bookings/doctor/{id}/`
   - Scoped to Super Admin, Facility Admin (for their facility), or Doctor (for their consultations).
   - Statuses: `pending`, `confirmed`, `completed`, `cancelled`, `no_show`
 
 #### Lab Test Bookings
-- **Create**: `POST /api/bookings/lab/` (Public / Authenticated)
+- **Create**: `POST /api/v1/bookings/lab/` (Public / Authenticated)
   ```json
   {
     "facility_test": "uuid-facility-test",
@@ -253,20 +255,20 @@ Authorization: Bearer <access_token>
     "address": "Flat 4B, Road 12, Dhanmondi"
   }
   ```
-- **List / Manage**: `GET /api/bookings/lab/` | `PATCH /api/bookings/lab/{id}/`
+- **List / Manage**: `GET /api/v1/bookings/lab/` | `PATCH /api/v1/bookings/lab/{id}/`
 
 ---
 
 ### 3.7. Admin & Staff Management (`Admin & Staff Management`)
 
 #### Admin Dashboard Bootstrap
-- **Endpoint**: `GET /api/admin/dashboard-init/`
+- **Endpoint**: `GET /api/v1/admin/dashboard-init/`
 - **Headers**: `Authorization: Bearer <access_token>`
 - **Description**: Returns reference taxonomies along with all facilities, doctors, branch tests, and bookings scoped to the caller's role in a single optimized payload.
 
 #### Delegated Facility Staff Management
-- **List Facility Staff**: `GET /api/facilities/{location_id}/staff/`
-- **Add Facility Staff**: `POST /api/facilities/{location_id}/staff/`
+- **List Facility Staff**: `GET /api/v1/facilities/{location_id}/staff/`
+- **Add Facility Staff**: `POST /api/v1/facilities/{location_id}/staff/`
   ```json
   {
     "phone_number": "01722334455",
@@ -275,19 +277,19 @@ Authorization: Bearer <access_token>
     "last_name": "Ahmed"
   }
   ```
-- **Remove Staff**: `DELETE /api/facilities/{location_id}/staff/{user_id}/`
+- **Remove Staff**: `DELETE /api/v1/facilities/{location_id}/staff/{user_id}/`
 
 #### Super Admin Verification Queue
-- **Get Queue**: `GET /api/admin/verifications/`
+- **Get Queue**: `GET /api/v1/admin/verifications/`
   - Returns all pending facilities (`pending_facilities`) and doctors (`pending_doctors`).
-- **Approve / Reject**: `POST /api/admin/verifications/{entity_type}/{entity_id}/`
+- **Approve / Reject**: `POST /api/v1/admin/verifications/{entity_type}/{entity_id}/`
   - `entity_type`: `facility` or `doctor`
   - `entity_id`: UUID
   - Body: `{"action": "approve"}` or `{"action": "reject"}`
 
 #### Platform Super Admins
-- **List Platform Admins**: `GET /api/admin/platform-admins/`
-- **Create / Promote Super Admin**: `POST /api/admin/platform-admins/`
+- **List Platform Admins**: `GET /api/v1/admin/platform-admins/`
+- **Create / Promote Super Admin**: `POST /api/v1/admin/platform-admins/`
 
 ---
 
@@ -319,6 +321,6 @@ Validation errors return field-specific maps:
 | `401 Unauthorized` | Missing or expired JWT token |
 | `403 Forbidden` | Insufficient role or scope permissions |
 | `404 Not Found` | Requested resource does not exist |
+| `426 Upgrade Required` | App build below the supported minimum, or API version retired — update the app |
 | `429 Too Many Requests` | Throttling rate limit exceeded |
 | `500 Internal Server Error` | Server error |
-

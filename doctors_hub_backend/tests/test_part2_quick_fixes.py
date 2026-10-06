@@ -46,7 +46,7 @@ def test_location_search_fix(client, geo_data):
         thana=geo_data["thana_dhanmondi"],
         is_active=True,
     )
-    res = client.get('/api/locations/?search=dhan')
+    res = client.get('/api/v1/locations/?search=dhan')
     assert res.status_code == status.HTTP_200_OK
     results = res.data if isinstance(res.data, list) else res.data.get('results', [])
     loc_ids = [str(item['id']) for item in results]
@@ -67,7 +67,7 @@ def test_fee_max_ignored(client, geo_data):
     )
     DoctorAffiliation.objects.create(doctor=doc, location=loc, fee=1000)
 
-    res = client.get('/api/doctors/?fee_max=500')
+    res = client.get('/api/v1/doctors/?fee_max=500')
     assert res.status_code == status.HTTP_200_OK
     results = res.data.get('results', res.data)
     doc_ids = [str(d['id']) for d in results]
@@ -99,27 +99,27 @@ def test_day_exact_matching(client, geo_data):
     )
 
     # Invalid day -> 400
-    res_bad = client.get('/api/doctors/?day=t')
+    res_bad = client.get('/api/v1/doctors/?day=t')
     assert res_bad.status_code == status.HTTP_400_BAD_REQUEST
     assert 'day' in res_bad.data
 
-    res_bad2 = client.get('/api/doctors/?day=xyz')
+    res_bad2 = client.get('/api/v1/doctors/?day=xyz')
     assert res_bad2.status_code == status.HTTP_400_BAD_REQUEST
 
     # Valid abbreviation -> 200, matches
-    res_abbr = client.get('/api/doctors/?day=tue')
+    res_abbr = client.get('/api/v1/doctors/?day=tue')
     assert res_abbr.status_code == status.HTTP_200_OK
     docs = [str(d['id']) for d in res_abbr.data.get('results', res_abbr.data)]
     assert str(doc.id) in docs
 
     # Valid full day name -> 200, matches
-    res_full = client.get('/api/doctors/?day=Tuesday')
+    res_full = client.get('/api/v1/doctors/?day=Tuesday')
     assert res_full.status_code == status.HTTP_200_OK
     docs = [str(d['id']) for d in res_full.data.get('results', res_full.data)]
     assert str(doc.id) in docs
 
     # Different day -> 200, does not match
-    res_other = client.get('/api/doctors/?day=wed')
+    res_other = client.get('/api/v1/doctors/?day=wed')
     assert res_other.status_code == status.HTTP_200_OK
     docs = [str(d['id']) for d in res_other.data.get('results', res_other.data)]
     assert str(doc.id) not in docs
@@ -134,7 +134,7 @@ def test_specialties_list_endpoint(client):
     total_specs = DoctorSpecialty.objects.count()
     assert total_specs > 0
 
-    res = client.get('/api/specialties/')
+    res = client.get('/api/v1/specialties/')
     assert res.status_code == status.HTTP_200_OK
     data = res.data
 
@@ -147,11 +147,11 @@ def test_specialties_list_endpoint(client):
         assert 'doctor_count' in item
 
     # Verify canonical_only and all query params work and return same length
-    res_canon = client.get('/api/specialties/?canonical_only=true')
+    res_canon = client.get('/api/v1/specialties/?canonical_only=true')
     assert res_canon.status_code == status.HTTP_200_OK
     assert len(res_canon.data) == total_specs
 
-    res_all = client.get('/api/specialties/?all=true')
+    res_all = client.get('/api/v1/specialties/?all=true')
     assert res_all.status_code == status.HTTP_200_OK
     assert len(res_all.data) == total_specs
 
@@ -161,7 +161,8 @@ def test_specialty_ranking_regression(client):
     """
     Ranking regression for /doctors/?specialty=:
     Set up 1 primary match, 1 secondary match, 1 related sibling, 1 unrelated doctor.
-    Assert order is primary -> secondary -> sibling, and unrelated is excluded.
+    Assert order is primary -> secondary, and sibling + unrelated are excluded
+    (exact-only filter: the sibling logic is gone).
     Run with specialty slug, UUID, and verified alias text -> all three return same ordered list.
     """
     Doctor.objects.all().delete()
@@ -219,12 +220,12 @@ def test_specialty_ranking_regression(client):
 
     # Test with slug, UUID, and alias
     queries = [
-        f"/api/doctors/?specialty={cardio.slug}",
-        f"/api/doctors/?specialty={cardio.id}",
-        "/api/doctors/?specialty=Heart Specialist"
+        f"/api/v1/doctors/?specialty={cardio.slug}",
+        f"/api/v1/doctors/?specialty={cardio.id}",
+        "/api/v1/doctors/?specialty=Heart Specialist"
     ]
 
-    expected_ids = [str(doc_primary.id), str(doc_secondary.id), str(doc_sibling.id)]
+    expected_ids = [str(doc_primary.id), str(doc_secondary.id)]
 
     for q in queries:
         res = client.get(q)
@@ -232,20 +233,18 @@ def test_specialty_ranking_regression(client):
         results = res.data.get('results', res.data)
         doc_ids = [d['id'] for d in results]
 
-        # Verify exact membership & ordering
+        # Verify exact membership & ordering (related sibling no longer matches)
         assert doc_ids == expected_ids
+        assert str(doc_sibling.id) not in doc_ids
         assert str(doc_unrelated.id) not in doc_ids
 
         # Verify ranks
         d_p = results[0]
         d_s = results[1]
-        d_sib = results[2]
 
         assert d_p['match_rank'] == 1
 
         assert d_s['match_rank'] == 2
-
-        assert d_sib['match_rank'] == 3
 
 
 @pytest.mark.django_db
@@ -264,7 +263,7 @@ def test_specialty_suggest_alias(client):
         alias.is_verified = True
         alias.save(update_fields=['is_verified'])
 
-    res = client.get('/api/specialties/suggest/?q=heart specialist')
+    res = client.get('/api/v1/specialties/suggest/?q=heart specialist')
     assert res.status_code == status.HTTP_200_OK
     suggestions = res.data
     assert len(suggestions) > 0

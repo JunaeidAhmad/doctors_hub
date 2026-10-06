@@ -72,7 +72,7 @@ def test_grouping_by_test_id_not_name(client, base_geo):
     FacilityTest.objects.create(location=loc, test=test1, price=400)
     FacilityTest.objects.create(location=loc, test=test2, price=600)
 
-    res = client.get("/api/facility-tests/search/")
+    res = client.get("/api/v1/facility-tests/search/")
     assert res.status_code == 200
     results = res.data["results"]
     assert len(results) == 2
@@ -94,7 +94,7 @@ def test_two_branches_same_lab_both_appear(client, base_geo):
     FacilityTest.objects.create(location=loc_branch1, test=test, price=1500)
     FacilityTest.objects.create(location=loc_branch2, test=test, price=1600)
 
-    res = client.get("/api/facility-tests/search/")
+    res = client.get("/api/v1/facility-tests/search/")
     assert res.status_code == 200
     assert len(res.data["results"]) == 1
     test_group = res.data["results"][0]
@@ -115,22 +115,22 @@ def test_testcat_exact_and_near_miss(client, base_geo):
     FacilityTest.objects.create(location=loc, test=test, price=4000)
 
     # Near-miss slug 'ct' must return 0
-    res_near = client.get("/api/facility-tests/search/?testcat=ct")
+    res_near = client.get("/api/v1/facility-tests/search/?testcat=ct")
     assert res_near.status_code == 200
     assert len(res_near.data["results"]) == 0
 
     # Exact slug 'ct-scan' returns the test
-    res_exact_slug = client.get("/api/facility-tests/search/?testcat=ct-scan")
+    res_exact_slug = client.get("/api/v1/facility-tests/search/?testcat=ct-scan")
     assert res_exact_slug.status_code == 200
     assert len(res_exact_slug.data["results"]) == 1
 
     # Exact UUID returns the test
-    res_exact_uuid = client.get(f"/api/facility-tests/search/?testcat={cat.id}")
+    res_exact_uuid = client.get(f"/api/v1/facility-tests/search/?testcat={cat.id}")
     assert res_exact_uuid.status_code == 200
     assert len(res_exact_uuid.data["results"]) == 1
 
     # Alias 'category' param works identically
-    res_alias = client.get("/api/facility-tests/search/?category=ct-scan")
+    res_alias = client.get("/api/v1/facility-tests/search/?category=ct-scan")
     assert res_alias.status_code == 200
     assert len(res_alias.data["results"]) == 1
 
@@ -153,23 +153,23 @@ def test_geo_by_each_id_level(client, base_geo):
     FacilityTest.objects.create(location=loc2, test=t2, price=200)
 
     # Division ID
-    res_div = client.get(f"/api/facility-tests/search/?division_id={div.id}")
+    res_div = client.get(f"/api/v1/facility-tests/search/?division_id={div.id}")
     assert res_div.status_code == 200
     assert len(res_div.data["results"]) == 2
 
     # District ID
-    res_dist = client.get(f"/api/facility-tests/search/?district_id={dist.id}")
+    res_dist = client.get(f"/api/v1/facility-tests/search/?district_id={dist.id}")
     assert res_dist.status_code == 200
     assert len(res_dist.data["results"]) == 2
 
     # Thana ID
-    res_thana1 = client.get(f"/api/facility-tests/search/?thana_id={thana1.id}")
+    res_thana1 = client.get(f"/api/v1/facility-tests/search/?thana_id={thana1.id}")
     assert res_thana1.status_code == 200
     assert len(res_thana1.data["results"]) == 1
     assert res_thana1.data["results"][0]["id"] == str(t1.id)
 
     # Location ID
-    res_loc = client.get(f"/api/facility-tests/search/?location_id={loc2.id}")
+    res_loc = client.get(f"/api/v1/facility-tests/search/?location_id={loc2.id}")
     assert res_loc.status_code == 200
     assert len(res_loc.data["results"]) == 1
     assert res_loc.data["results"][0]["id"] == str(t2.id)
@@ -190,25 +190,25 @@ def test_fulfillment_and_ownership(client, base_geo):
     FacilityTest.objects.create(location=loc_gov, test=test, price=50, home_sample_collection=False)
 
     # Fulfillment: home
-    res_home = client.get("/api/facility-tests/search/?fulfillment=home")
+    res_home = client.get("/api/v1/facility-tests/search/?fulfillment=home")
     assert res_home.status_code == 200
     assert len(res_home.data["results"][0]["offerings"]) == 1
     assert res_home.data["results"][0]["offerings"][0]["home_sample_collection"] is True
 
     # Fulfillment: center
-    res_center = client.get("/api/facility-tests/search/?fulfillment=center")
+    res_center = client.get("/api/v1/facility-tests/search/?fulfillment=center")
     assert res_center.status_code == 200
     assert len(res_center.data["results"][0]["offerings"]) == 1
     assert res_center.data["results"][0]["offerings"][0]["home_sample_collection"] is False
 
     # Ownership: private
-    res_priv = client.get("/api/facility-tests/search/?ownership=private")
+    res_priv = client.get("/api/v1/facility-tests/search/?ownership=private")
     assert res_priv.status_code == 200
     assert len(res_priv.data["results"][0]["offerings"]) == 1
     assert res_priv.data["results"][0]["offerings"][0]["facility"]["ownership_type"] == "private"
 
     # Ownership: government
-    res_gov = client.get("/api/facility-tests/search/?ownership=government")
+    res_gov = client.get("/api/v1/facility-tests/search/?ownership=government")
     assert res_gov.status_code == 200
     assert len(res_gov.data["results"][0]["offerings"]) == 1
     assert res_gov.data["results"][0]["offerings"][0]["facility"]["ownership_type"] == "government"
@@ -239,7 +239,7 @@ def test_inactive_and_unavailable_excluded(client, base_geo):
     # Offering under inactive category
     FacilityTest.objects.create(location=loc_active, test=t_cat_inactive, price=100, is_available=True)
 
-    res = client.get("/api/facility-tests/search/")
+    res = client.get("/api/v1/facility-tests/search/")
     assert res.status_code == 200
     assert len(res.data["results"]) == 1
     # Only active, available offering at active location with active test & category is returned
@@ -248,7 +248,7 @@ def test_inactive_and_unavailable_excluded(client, base_geo):
     assert offerings[0]["id"] == str(ft1.id)
 
     # When include_unavailable=true
-    res_all = client.get("/api/facility-tests/search/?include_unavailable=true")
+    res_all = client.get("/api/v1/facility-tests/search/?include_unavailable=true")
     assert res_all.status_code == 200
     all_offerings = res_all.data["results"][0]["offerings"]
     assert len(all_offerings) == 2
@@ -275,25 +275,25 @@ def test_ordering_and_stable_tiebreak(client, base_geo):
     FacilityTest.objects.create(location=loc, test=t_c, price=300)
 
     # ordering=price (default)
-    res_price = client.get("/api/facility-tests/search/?ordering=price")
+    res_price = client.get("/api/v1/facility-tests/search/?ordering=price")
     assert res_price.status_code == 200
     ids = [r["id"] for r in res_price.data["results"]]
     assert ids == [str(t_a.id), str(t_b.id), str(t_c.id)]
 
     # ordering=-price
-    res_price_desc = client.get("/api/facility-tests/search/?ordering=-price")
+    res_price_desc = client.get("/api/v1/facility-tests/search/?ordering=-price")
     assert res_price_desc.status_code == 200
     ids_desc = [r["id"] for r in res_price_desc.data["results"]]
     assert ids_desc == [str(t_c.id), str(t_b.id), str(t_a.id)]
 
     # ordering=name
-    res_name = client.get("/api/facility-tests/search/?ordering=name")
+    res_name = client.get("/api/v1/facility-tests/search/?ordering=name")
     assert res_name.status_code == 200
     ids_name = [r["id"] for r in res_name.data["results"]]
     assert ids_name == [str(t_a.id), str(t_b.id), str(t_c.id)]
 
     # ordering=-name
-    res_name_desc = client.get("/api/facility-tests/search/?ordering=-name")
+    res_name_desc = client.get("/api/v1/facility-tests/search/?ordering=-name")
     assert res_name_desc.status_code == 200
     ids_name_desc = [r["id"] for r in res_name_desc.data["results"]]
     assert ids_name_desc == [str(t_c.id), str(t_b.id), str(t_a.id)]
@@ -310,7 +310,7 @@ def test_pagination_and_page_past_end(client, base_geo):
         FacilityTest.objects.create(location=loc, test=t, price=100 + i)
 
     # Page 1, page_size 4 -> 4 results, total_pages 3
-    res_p1 = client.get("/api/facility-tests/search/?page=1&page_size=4")
+    res_p1 = client.get("/api/v1/facility-tests/search/?page=1&page_size=4")
     assert res_p1.status_code == 200
     assert res_p1.data["count"] == 10
     assert res_p1.data["total_pages"] == 3
@@ -318,7 +318,7 @@ def test_pagination_and_page_past_end(client, base_geo):
     assert len(res_p1.data["results"]) == 4
 
     # Page 99 past end -> 200 OK, empty results, count preserved
-    res_past = client.get("/api/facility-tests/search/?page=99&page_size=4")
+    res_past = client.get("/api/v1/facility-tests/search/?page=99&page_size=4")
     assert res_past.status_code == 200
     assert res_past.data["count"] == 10
     assert res_past.data["total_pages"] == 3
@@ -345,7 +345,7 @@ def test_facets_exclude_own_dimension(client, base_geo):
     # Filter ownership=private:
     # Results only show private offerings (2 offerings at 2 locations).
     # Ownership facet must NOT exclude government (it must show private: 2, government: 1)!
-    res_priv = client.get("/api/facility-tests/search/?ownership=private")
+    res_priv = client.get("/api/v1/facility-tests/search/?ownership=private")
     assert res_priv.status_code == 200
     facets = res_priv.data["facets"]
     assert facets["ownership"]["private"] == 2
@@ -354,7 +354,7 @@ def test_facets_exclude_own_dimension(client, base_geo):
     # Filter fulfillment=home:
     # Results only show home offerings (1 offering at priv1).
     # Fulfillment facet must NOT exclude center (it must show home: 1, center: 2)!
-    res_home = client.get("/api/facility-tests/search/?fulfillment=home")
+    res_home = client.get("/api/v1/facility-tests/search/?fulfillment=home")
     assert res_home.status_code == 200
     facets_home = res_home.data["facets"]
     assert facets_home["fulfillment"]["home"] == 1
@@ -372,7 +372,7 @@ def test_offering_at_60th_location_is_reachable(client, base_geo):
         loc = Location.objects.create(name=f"Lab #{i:03d}", thana=thana, location_type="diagnostic_center")
         FacilityTest.objects.create(location=loc, test=t, price=100 + i)
 
-    res = client.get("/api/facility-tests/search/?page=1&page_size=10")
+    res = client.get("/api/v1/facility-tests/search/?page=1&page_size=10")
     assert res.status_code == 200
     assert res.data["count"] == 1
     test_result = res.data["results"][0]
@@ -394,6 +394,6 @@ def test_assert_num_queries_bounds(client, base_geo, django_assert_num_queries):
 
     # Assert queries for 1 page is <= 5 queries
     with django_assert_num_queries(5):
-        res = client.get("/api/facility-tests/search/?page_size=4")
+        res = client.get("/api/v1/facility-tests/search/?page_size=4")
         assert res.status_code == 200
         assert len(res.data["results"]) == 4

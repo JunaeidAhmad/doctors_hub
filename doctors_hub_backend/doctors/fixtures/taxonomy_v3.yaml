@@ -176,6 +176,11 @@ leaves:
   parents:
   - 1
   related: []
+  related_leaves:
+  - diabetologist
+  - cardiologist
+  - endocrinologist
+  - nephrologist
   provider_type: physician
   aliases_en:
   - Medicine
@@ -195,6 +200,10 @@ leaves:
   parents:
   - 1
   related: []
+  related_leaves:
+  - medicine-specialist
+  - child-specialist
+  - gynecologist-obstetrician
   provider_type: physician
   aliases_en:
   - General Physician
@@ -213,6 +222,10 @@ leaves:
   parents:
   - 1
   related: []
+  related_leaves:
+  - chest-specialist
+  - medicine-specialist
+  - hepatologist
   provider_type: physician
   aliases_en:
   - Tropical Medicine
@@ -228,6 +241,10 @@ leaves:
   parents:
   - 2
   related: []
+  related_leaves:
+  - interventional-cardiologist
+  - cardiac-surgeon
+  - chest-specialist
   provider_type: physician
   aliases_en:
   - Cardiology
@@ -247,6 +264,10 @@ leaves:
   parents:
   - 2
   related: []
+  related_leaves:
+  - cardiologist
+  - cardiac-surgeon
+  - vascular-surgeon
   provider_type: physician
   aliases_en:
   - Interventional Cardiology
@@ -261,6 +282,11 @@ leaves:
   parents:
   - 2
   related: []
+  related_leaves:
+  - cardiologist
+  - interventional-cardiologist
+  - thoracic-surgeon
+  - vascular-surgeon
   provider_type: physician
   aliases_en:
   - Cardiac Surgery
@@ -281,6 +307,10 @@ leaves:
   - 2
   related:
   - 16
+  related_leaves:
+  - cardiologist
+  - interventional-cardiologist
+  - general-surgeon
   provider_type: physician
   aliases_en:
   - Vascular Surgery
@@ -297,6 +327,10 @@ leaves:
   - 11
   - 2
   related: []
+  related_leaves:
+  - chest-specialist
+  - cardiac-surgeon
+  - general-surgeon
   provider_type: physician
   aliases_en:
   - Thoracic Surgery
@@ -313,6 +347,10 @@ leaves:
   - 7
   - 2
   related: []
+  related_leaves:
+  - child-specialist
+  - cardiologist
+  - cardiac-surgeon
   provider_type: physician
   aliases_en:
   - Pediatric Cardiology
@@ -328,6 +366,10 @@ leaves:
   parents:
   - 3
   related: []
+  related_leaves:
+  - cancer-surgeon
+  - hematologist
+  - pathologist
   provider_type: physician
   aliases_en:
   - Oncology
@@ -354,6 +396,10 @@ leaves:
   - 3
   - 16
   related: []
+  related_leaves:
+  - cancer-specialist
+  - general-surgeon
+  - plastic-surgeon
   provider_type: physician
   aliases_en:
   - Surgical Oncology
@@ -374,6 +420,10 @@ leaves:
   - 16
   related:
   - 6
+  related_leaves:
+  - breast-health-specialist
+  - cancer-specialist
+  - gynecologist-obstetrician
   provider_type: physician
   aliases_en:
   - Breast Surgery
@@ -392,6 +442,10 @@ leaves:
   - 3
   - 6
   related: []
+  related_leaves:
+  - breast-surgeon
+  - cancer-specialist
+  - gynecologist-obstetrician
   provider_type: physician
   aliases_en:
   - Breast Health
@@ -410,6 +464,10 @@ leaves:
   - 3
   - 6
   related: []
+  related_leaves:
+  - gynecologist-obstetrician
+  - cancer-specialist
+  - cancer-surgeon
   provider_type: physician
   aliases_en:
   - Gynecological Oncology
@@ -428,6 +486,10 @@ leaves:
   - 7
   - 18
   related: []
+  related_leaves:
+  - hematologist
+  - cancer-specialist
+  - child-specialist
   provider_type: physician
   aliases_en:
   - Pediatric Oncology
@@ -444,6 +506,10 @@ leaves:
   parents:
   - 4
   related: []
+  related_leaves:
+  - neurosurgeon
+  - interventional-neurologist
+  - physical-medicine-specialist
   provider_type: physician
   aliases_en:
   - Neurology
@@ -466,6 +532,10 @@ leaves:
   parents:
   - 4
   related: []
+  related_leaves:
+  - neurologist
+  - spine-surgeon
+  - interventional-neurologist
   provider_type: physician
   aliases_en:
   - Neurosurgery
@@ -483,6 +553,10 @@ leaves:
   - 4
   - 5
   related: []
+  related_leaves:
+  - neurosurgeon
+  - orthopedic-surgeon
+  - pain-specialist
   provider_type: physician
   aliases_en:
   - Spine Surgery
@@ -501,6 +575,9 @@ leaves:
   - 7
   - 4
   related: []
+  related_leaves:
+  - neurologist
+  - child-specialist
   provider_type: physician
   aliases_en:
   - Pediatric Neurology
@@ -519,6 +596,11 @@ leaves:
   parents:
   - 5
   related: []
+  related_leaves:
+  - rheumatologist
+  - spine-surgeon
+  - physical-medicine-specialist
+  - physiotherapist
   provider_type: physician
   aliases_en:
   - Orthopedics
@@ -553,6 +635,10 @@ leaves:
   - 5
   - 1
   related: []
+  related_leaves:
+  - orthopedic-surgeon
+  - medicine-specialist
+  - physical-medicine-specialist
   provider_type: physician
   aliases_en:
   - Rheumatology
@@ -572,6 +658,10 @@ leaves:
   parents:
   - 6
   related: []
+  related_leaves:
+  - infertility-specialist
+  - fetomaternal-medicine-specialist
+  - sonologist
   provider_type: physician
   aliases_en:
   - Gynecology
@@ -598,6 +688,10 @@ leaves:
   - 6
   related:
   - 8
+  related_leaves:
+  - gynecologist-obstetrician
+  - andrologist
+  - endocrinologist
   provider_type: physician
   aliases_en:
   - Infertility
@@ -616,6 +710,10 @@ leaves:
   parents:
   - 7
   related: []
+  related_leaves:
+  - neonatologist
+  - pediatric-pulmonologist
+  - pediatric-gastroenterologist
   provider_type: physician
   aliases_en:
   - Pediatrics
@@ -636,6 +734,10 @@ leaves:
   parents:
   - 7
   related: []
+  related_leaves:
+  - child-specialist
+  - pediatric-surgeon
+  - pediatric-cardiologist
   provider_type: physician
   aliases_en:
   - Neonatology
@@ -652,6 +754,10 @@ leaves:
   - 7
   - 16
   related: []
+  related_leaves:
+  - child-specialist
+  - neonatologist
+  - general-surgeon
   provider_type: physician
   aliases_en:
   - Pediatric Surgery
@@ -668,6 +774,10 @@ leaves:
   parents:
   - 8
   related: []
+  related_leaves:
+  - urologist
+  - diabetologist
+  - cardiologist
   provider_type: physician
   aliases_en:
   - Nephrology
@@ -689,6 +799,10 @@ leaves:
   parents:
   - 8
   related: []
+  related_leaves:
+  - nephrologist
+  - andrologist
+  - general-surgeon
   provider_type: physician
   aliases_en:
   - Urology
@@ -711,6 +825,10 @@ leaves:
   - 8
   - 14
   related: []
+  related_leaves:
+  - urologist
+  - sexologist
+  - infertility-specialist
   provider_type: physician
   aliases_en:
   - Andrology
@@ -726,6 +844,10 @@ leaves:
   parents:
   - 9
   related: []
+  related_leaves:
+  - hepatologist
+  - general-surgeon
+  - colorectal-surgeon
   provider_type: physician
   aliases_en:
   - Gastroenterology
@@ -744,6 +866,10 @@ leaves:
   parents:
   - 9
   related: []
+  related_leaves:
+  - gastroenterologist
+  - hepatobiliary-surgeon
+  - infectious-disease-specialist
   provider_type: physician
   aliases_en:
   - Hepatology
@@ -764,6 +890,10 @@ leaves:
   - 9
   - 16
   related: []
+  related_leaves:
+  - hepatologist
+  - gastroenterologist
+  - general-surgeon
   provider_type: physician
   aliases_en:
   - HPB Surgery
@@ -786,6 +916,10 @@ leaves:
   - 16
   - 9
   related: []
+  related_leaves:
+  - gastroenterologist
+  - general-surgeon
+  - cancer-specialist
   provider_type: physician
   aliases_en:
   - Colorectal Surgery
@@ -803,6 +937,11 @@ leaves:
   parents:
   - 10
   related: []
+  related_leaves:
+  - endocrinologist
+  - nephrologist
+  - cardiologist
+  - eye-specialist
   provider_type: physician
   aliases_en:
   - Diabetology
@@ -820,6 +959,10 @@ leaves:
   parents:
   - 10
   related: []
+  related_leaves:
+  - diabetologist
+  - medicine-specialist
+  - weight-management-specialist
   provider_type: physician
   aliases_en:
   - Endocrinology
@@ -840,6 +983,11 @@ leaves:
   parents:
   - 11
   related: []
+  related_leaves:
+  - infectious-disease-specialist
+  - allergy-immunologist
+  - thoracic-surgeon
+  - critical-care-specialist
   provider_type: physician
   aliases_en:
   - Pulmonology
@@ -866,6 +1014,9 @@ leaves:
   parents:
   - 12
   related: []
+  related_leaves:
+  - allergy-immunologist
+  - head-neck-surgeon
   provider_type: physician
   aliases_en:
   - ENT
@@ -885,6 +1036,10 @@ leaves:
   - 12
   - 3
   related: []
+  related_leaves:
+  - ent-specialist
+  - cancer-surgeon
+  - plastic-surgeon
   provider_type: physician
   aliases_en:
   - Head & Neck Surgery
@@ -904,6 +1059,8 @@ leaves:
   parents:
   - 13
   related: []
+  related_leaves:
+  - diabetologist
   provider_type: physician
   aliases_en:
   - Ophthalmology
@@ -921,6 +1078,9 @@ leaves:
   parents:
   - 14
   related: []
+  related_leaves:
+  - allergy-immunologist
+  - sexologist
   provider_type: physician
   aliases_en:
   - Dermatology
@@ -941,6 +1101,10 @@ leaves:
   - 14
   related:
   - 8
+  related_leaves:
+  - andrologist
+  - psychiatrist
+  - urologist
   provider_type: physician
   aliases_en:
   - Sexual Medicine
@@ -960,6 +1124,9 @@ leaves:
   parents:
   - 15
   related: []
+  related_leaves:
+  - psychologist
+  - neurologist
   provider_type: physician
   aliases_en:
   - Psychiatry
@@ -978,6 +1145,8 @@ leaves:
   parents:
   - 15
   related: []
+  related_leaves:
+  - psychiatrist
   provider_type: allied
   aliases_en:
   - Clinical Psychology
@@ -994,6 +1163,10 @@ leaves:
   parents:
   - 16
   related: []
+  related_leaves:
+  - laparoscopic-surgeon
+  - colorectal-surgeon
+  - cancer-surgeon
   provider_type: physician
   aliases_en:
   - General Surgery
@@ -1012,6 +1185,10 @@ leaves:
   parents:
   - 16
   related: []
+  related_leaves:
+  - general-surgeon
+  - gastroenterologist
+  - gynecologist-obstetrician
   provider_type: physician
   aliases_en:
   - Laparoscopic Surgery
@@ -1028,6 +1205,10 @@ leaves:
   parents:
   - 17
   related: []
+  related_leaves:
+  - general-surgeon
+  - cancer-surgeon
+  - dermatologist
   provider_type: physician
   aliases_en:
   - Plastic Surgery
@@ -1051,6 +1232,10 @@ leaves:
   parents:
   - 18
   related: []
+  related_leaves:
+  - cancer-specialist
+  - pediatric-oncologist
+  - pathologist
   provider_type: physician
   aliases_en:
   - Hematology
@@ -1069,6 +1254,10 @@ leaves:
   parents:
   - 19
   related: []
+  related_leaves:
+  - weight-management-specialist
+  - diabetologist
+  - gastroenterologist
   provider_type: allied
   aliases_en:
   - Dietetics
@@ -1090,6 +1279,10 @@ leaves:
   - 19
   related:
   - 10
+  related_leaves:
+  - nutritionist-dietitian
+  - endocrinologist
+  - diabetologist
   provider_type: physician
   aliases_en:
   - Weight Management
@@ -1106,6 +1299,10 @@ leaves:
   parents:
   - 20
   related: []
+  related_leaves:
+  - physiotherapist
+  - neurologist
+  - orthopedic-surgeon
   provider_type: physician
   aliases_en:
   - Physical Medicine
@@ -1126,6 +1323,10 @@ leaves:
   parents:
   - 20
   related: []
+  related_leaves:
+  - physical-medicine-specialist
+  - orthopedic-surgeon
+  - sports-medicine-specialist
   provider_type: allied
   aliases_en:
   - Physiotherapy
@@ -1141,6 +1342,10 @@ leaves:
   - 21
   related:
   - 20
+  related_leaves:
+  - spine-surgeon
+  - orthopedic-surgeon
+  - physical-medicine-specialist
   provider_type: physician
   aliases_en:
   - Pain Management
@@ -1158,6 +1363,7 @@ leaves:
   parents:
   - 21
   related: []
+  related_leaves: []
   provider_type: physician
   aliases_en:
   - Anesthesia
@@ -1175,6 +1381,10 @@ leaves:
   parents:
   - 21
   related: []
+  related_leaves:
+  - chest-specialist
+  - cardiologist
+  - nephrologist
   provider_type: physician
   aliases_en:
   - ICU
@@ -1193,6 +1403,8 @@ leaves:
   parents:
   - 22
   related: []
+  related_leaves:
+  - maxillofacial-surgeon
   provider_type: dental
   aliases_en:
   - Dental Surgery
@@ -1214,6 +1426,10 @@ leaves:
   parents:
   - 22
   related: []
+  related_leaves:
+  - dentist
+  - plastic-surgeon
+  - head-neck-surgeon
   provider_type: dental
   aliases_en:
   - Oral & Maxillofacial Surgery
@@ -1229,6 +1445,7 @@ leaves:
   parents:
   - 23
   related: []
+  related_leaves: []
   provider_type: physician
   aliases_en:
   - Radiology
@@ -1245,6 +1462,10 @@ leaves:
   parents:
   - 23
   related: []
+  related_leaves:
+  - radiologist
+  - gynecologist-obstetrician
+  - fetomaternal-medicine-specialist
   provider_type: physician
   aliases_en:
   - Ultrasonography
@@ -1262,6 +1483,9 @@ leaves:
   parents:
   - 23
   related: []
+  related_leaves:
+  - cancer-specialist
+  - hematologist
   provider_type: physician
   aliases_en:
   - Pathology
@@ -1277,6 +1501,7 @@ leaves:
   parents:
   - 24
   related: []
+  related_leaves: []
   provider_type: alternative
   aliases_en:
   - Homeopathy
@@ -1289,9 +1514,13 @@ leaves:
   formal_name: Allergy & Clinical Immunology
   slug: allergy-immunologist
   parents:
-  - 1
   - 14
   related: []
+  related_leaves:
+  - dermatologist
+  - chest-specialist
+  - ent-specialist
+  - pediatric-pulmonologist
   provider_type: physician
   aliases_en:
   - Allergy
@@ -1309,6 +1538,9 @@ leaves:
   parents:
   - 4
   related: []
+  related_leaves:
+  - neurologist
+  - neurosurgeon
   provider_type: physician
   aliases_en:
   - Interventional Neurology
@@ -1325,6 +1557,10 @@ leaves:
   - 7
   - 5
   related: []
+  related_leaves:
+  - child-specialist
+  - orthopedic-surgeon
+  - physiotherapist
   provider_type: physician
   aliases_en:
   - Pediatric Orthopedics
@@ -1341,6 +1577,10 @@ leaves:
   - 7
   - 9
   related: []
+  related_leaves:
+  - child-specialist
+  - gastroenterologist
+  - hepatologist
   provider_type: physician
   aliases_en:
   - Pediatric Gastroenterology
@@ -1356,6 +1596,10 @@ leaves:
   - 7
   - 11
   related: []
+  related_leaves:
+  - child-specialist
+  - chest-specialist
+  - allergy-immunologist
   provider_type: physician
   aliases_en:
   - Pediatric Pulmonology
@@ -1371,6 +1615,10 @@ leaves:
   parents:
   - 23
   related: []
+  related_leaves:
+  - cancer-specialist
+  - endocrinologist
+  - radiologist
   provider_type: physician
   aliases_en:
   - Nuclear Medicine
@@ -1385,6 +1633,9 @@ leaves:
   parents:
   - 6
   related: []
+  related_leaves:
+  - gynecologist-obstetrician
+  - sonologist
   provider_type: physician
   aliases_en:
   - Fetomaternal Medicine
@@ -1404,6 +1655,10 @@ leaves:
   - 7
   - 4
   related: []
+  related_leaves:
+  - pediatric-neurologist
+  - neurosurgeon
+  - child-specialist
   provider_type: physician
   aliases_en:
   - Pediatric Neurosurgery
@@ -1419,6 +1674,10 @@ leaves:
   - 7
   - 8
   related: []
+  related_leaves:
+  - child-specialist
+  - urologist
+  - pediatric-surgeon
   provider_type: physician
   aliases_en:
   - Pediatric Urology
@@ -1434,6 +1693,10 @@ leaves:
   - 5
   - 20
   related: []
+  related_leaves:
+  - orthopedic-surgeon
+  - physiotherapist
+  - physical-medicine-specialist
   provider_type: physician
   aliases_en:
   - Sports Medicine
@@ -1443,12 +1706,295 @@ leaves:
   display_order: 70
   is_popular: false
 legacy_map:
+  Cancer Care: medicine-specialist
+  cancer-care: medicine-specialist
+  01a0e6d5-f774-7e5c-9929-41c2fb4e625a: medicine-specialist
+  Brain, Spine & Nerves: medicine-specialist
+  brain-spine-nerves: medicine-specialist
+  01a0e6d5-f775-77de-815e-e891cdbfa0c2: medicine-specialist
+  Bone & Joint: medicine-specialist
+  bone-joint: medicine-specialist
+  01a0e6d5-f776-7058-a5a1-ce8431209b21: medicine-specialist
+  Women's Health & Pregnancy: medicine-specialist
+  womens-health-pregnancy: medicine-specialist
+  01a0e6d5-f776-7059-b221-adb8f7acb32d: medicine-specialist
+  Child Health: child-specialist
+  child-health: child-specialist
+  2d5f1a38-b3e8-4e6f-b041-9c218b6142eb: child-specialist
+  Kidney & Urinary: medicine-specialist
+  kidney-urinary: medicine-specialist
+  01a0e6d5-f77b-77d1-ae69-5d4da2f2e063: medicine-specialist
+  Digestive & Liver: medicine-specialist
+  digestive-liver: medicine-specialist
+  01a0e6d5-f77c-7216-b708-f0f70f4c9e28: medicine-specialist
+  Diabetes & Hormones: medicine-specialist
+  diabetes-hormones: medicine-specialist
+  01a0e6d5-f77c-7217-a24a-70ddca571cf6: medicine-specialist
+  Chest & Lungs: medicine-specialist
+  chest-lungs: medicine-specialist
+  01a0e6d5-f77d-7779-90fa-94893334368b: medicine-specialist
+  Ear, Nose & Throat: ent-specialist
+  ent: ent-specialist
+  67a1ea6e-7dc2-49fc-9f33-3a892d227b3b: ent-specialist
+  Eye Care: medicine-specialist
+  eye-care: medicine-specialist
+  01a0e6d5-f77f-7aa0-a805-03a885ce6160: medicine-specialist
+  Skin & Sexual Health: medicine-specialist
+  skin-sexual-health: medicine-specialist
+  01a0e6d5-f780-74fb-bc38-8c636ed54238: medicine-specialist
+  Mental Health: psychiatrist
+  mental-health: psychiatrist
+  825a5cfd-bb3a-4533-bb80-d003a4665b2d: psychiatrist
+  General & Laparoscopic Surgery: medicine-specialist
+  general-laparoscopic-surgery: medicine-specialist
+  01a0e6d5-f782-733c-b6b1-d0700236d34c: medicine-specialist
+  Plastic, Burn & Cosmetic Surgery: medicine-specialist
+  plastic-burn-surgery: medicine-specialist
+  01a0e6d5-f782-733d-b054-09d10d679f82: medicine-specialist
+  Blood Disorders: medicine-specialist
+  blood-disorders: medicine-specialist
+  01a0e6d5-f783-75d5-8679-1ab7bfddce98: medicine-specialist
+  Nutrition & Diet: medicine-specialist
+  nutrition-diet: medicine-specialist
+  01a0e6d5-f783-75d6-b8eb-8267f8049aba: medicine-specialist
+  Physical Medicine & Rehab: medicine-specialist
+  physical-medicine-rehab: medicine-specialist
+  01a0e6d5-f784-7a52-bd18-ca7ae7fa3564: medicine-specialist
+  Pain, Anesthesia & ICU: medicine-specialist
+  pain-anesthesia-icu: medicine-specialist
+  01a0e6d5-f785-78c1-9967-5e16b681bd5c: medicine-specialist
+  Dental & Oral Care: medicine-specialist
+  dental-oral: medicine-specialist
+  01a0e6d5-f786-72da-a220-2f273a8d2b67: medicine-specialist
+  Diagnostics & Imaging: medicine-specialist
+  diagnostics-imaging: medicine-specialist
+  01a0e6d5-f786-72db-bf73-2138378a749d: medicine-specialist
+  Alternative Medicine: medicine-specialist
+  alternative-medicine: medicine-specialist
+  01a0e6d5-f787-7492-8505-620527d814c6: medicine-specialist
+  Medicine Specialist: medicine-specialist
+  medicine-specialist: medicine-specialist
+  f1531138-6d67-45c5-abdc-faf5d3f98246: medicine-specialist
+  Family Physician / GP: family-physician-gp
+  family-physician-gp: family-physician-gp
+  10c072a3-7268-4d5c-a3ae-8a78848ffadc: family-physician-gp
+  Infectious Disease Specialist: infectious-disease-specialist
+  infectious-disease-specialist: infectious-disease-specialist
+  01a0e6d5-f78d-7320-953b-68c70219c21b: infectious-disease-specialist
+  Cardiologist: cardiologist
+  cardiologist: cardiologist
+  7780617c-e9be-5a08-b221-c474fe2dfa9a: cardiologist
+  Interventional Cardiologist: interventional-cardiologist
+  interventional-cardiologist: interventional-cardiologist
+  18e20a5d-af78-455d-b037-bb6e22ac8969: interventional-cardiologist
+  Cardiac Surgeon: cardiac-surgeon
+  cardiac-surgeon: cardiac-surgeon
+  62ad424f-a611-4396-8d77-940995225d45: cardiac-surgeon
+  Thoracic Surgeon: thoracic-surgeon
+  thoracic-surgeon: thoracic-surgeon
+  ed2a4a77-72c1-40e2-ada3-a9ecc24d21c7: thoracic-surgeon
+  Cancer Specialist: cancer-specialist
+  cancer-specialist: cancer-specialist
+  c2db1089-d1fb-46c9-93d6-4af6d4d715db: cancer-specialist
+  Cancer Surgeon: cancer-surgeon
+  cancer-surgeon: cancer-surgeon
+  6dccb9d1-2487-46d4-a17d-60076c956988: cancer-surgeon
+  Breast Surgeon: breast-surgeon
+  breast-surgeon: breast-surgeon
+  5cd56f67-568b-482e-b58d-2f96f45a766c: breast-surgeon
+  Breast Health Specialist: breast-health-specialist
+  breast-health-specialist: breast-health-specialist
+  81bc87aa-557b-4e12-8c59-4f6f7afedad1: breast-health-specialist
+  Gynecological Oncologist: gynecological-oncologist
+  gynecological-oncologist: gynecological-oncologist
+  e21cc25a-685f-4382-b2a7-a5f6f5727376: gynecological-oncologist
+  Pediatric Oncologist: pediatric-oncologist
+  pediatric-oncologist: pediatric-oncologist
+  01a0e6d5-f7a5-716e-8e49-f9b809a07c40: pediatric-oncologist
+  Gynecologist & Obstetrician: gynecologist-obstetrician
+  gynecologist-obstetrician: gynecologist-obstetrician
+  98748b8f-e077-48b5-b978-26635b19280d: gynecologist-obstetrician
+  Infertility Specialist: infertility-specialist
+  infertility-specialist: infertility-specialist
+  582a01ec-db02-427a-ab93-0717e41b4987: infertility-specialist
+  Neonatologist: neonatologist
+  neonatologist: neonatologist
+  6c1dc74b-5b53-4c52-a80e-4b54748adba0: neonatologist
+  Andrologist: andrologist
+  andrologist: andrologist
+  7c65aeac-7d16-4510-afbe-4a630d50c711: andrologist
+  Hepatobiliary Surgeon: hepatobiliary-surgeon
+  hepatobiliary-surgeon: hepatobiliary-surgeon
+  ea580458-f715-430a-8c9c-457ba14517ef: hepatobiliary-surgeon
+  Diabetologist: diabetologist
+  diabetologist: diabetologist
+  32a6faa4-3c00-4346-a94f-59c4305218e9: diabetologist
+  Endocrinologist: endocrinologist
+  endocrinologist: endocrinologist
+  9425ff1f-5c5e-4d4b-a82f-07aabef11d93: endocrinologist
+  Chest Specialist: chest-specialist
+  chest-specialist: chest-specialist
+  515dfc6d-8897-40a8-8632-71b8b2d13b4d: chest-specialist
+  ENT Specialist: ent-specialist
+  ent-specialist: ent-specialist
+  85b156a9-026b-4d74-a592-3d49fdb808eb: ent-specialist
+  Head & Neck Surgeon: head-neck-surgeon
+  head-neck-surgeon: head-neck-surgeon
+  134902e8-1877-44bd-9484-203c18c77996: head-neck-surgeon
+  Eye Specialist: eye-specialist
+  eye-specialist: eye-specialist
+  65fc0ad4-bacc-4e71-aa31-00a2103cad33: eye-specialist
+  Dermatologist: dermatologist
+  dermatologist: dermatologist
+  d177c4a7-4b1a-4e24-8265-2237af785659: dermatologist
+  Sexologist: sexologist
+  sexologist: sexologist
+  2b1a7cbc-d905-4c1a-a94f-3a80bdae790c: sexologist
+  Psychiatrist: psychiatrist
+  psychiatrist: psychiatrist
+  72a5a088-1134-4685-9ff1-1b68f2599453: psychiatrist
+  Psychologist: psychologist
+  psychologist: psychologist
+  01a0e6d5-f7d6-7fae-8d94-90caebcab738: psychologist
+  Laparoscopic Surgeon: laparoscopic-surgeon
+  laparoscopic-surgeon: laparoscopic-surgeon
+  c66af408-bca5-4ceb-8f4c-0383a6202bfd: laparoscopic-surgeon
+  Plastic Surgeon: plastic-surgeon
+  plastic-surgeon: plastic-surgeon
+  421941a1-8cfd-4a4d-9358-898947a0a9ee: plastic-surgeon
+  Hematologist: hematologist
+  hematologist: hematologist
+  e0695773-df48-4b50-9d31-d83eb109d945: hematologist
+  Nutritionist / Dietitian: nutritionist-dietitian
+  nutritionist-dietitian: nutritionist-dietitian
+  450cdf53-46a2-467c-90c1-285e1046ee2f: nutritionist-dietitian
+  Weight Management Specialist: weight-management-specialist
+  weight-management-specialist: weight-management-specialist
+  01a0e6d5-f7e0-7eb5-a4e9-66707a62b3c6: weight-management-specialist
+  Physical Medicine Specialist: physical-medicine-specialist
+  physical-medicine-specialist: physical-medicine-specialist
+  2cd1c033-9df2-4ace-9be2-0f1a5ba13210: physical-medicine-specialist
+  Physiotherapist: physiotherapist
+  physiotherapist: physiotherapist
+  01a0e6d5-f7e3-70ef-b8ae-fb375dce079c: physiotherapist
+  Pain Specialist: pain-specialist
+  pain-specialist: pain-specialist
+  b012a695-7840-4ef9-9f3f-8d3d3fa2f93c: pain-specialist
+  Anesthesiologist: anesthesiologist
+  anesthesiologist: anesthesiologist
+  9f201e91-bb07-460b-b2ce-9eb0c0ccc22c: anesthesiologist
+  Critical Care Specialist: critical-care-specialist
+  critical-care-specialist: critical-care-specialist
+  71705588-a26c-4f53-ae04-22ae3968839e: critical-care-specialist
+  Dentist: dentist
+  dentist: dentist
+  31360f8c-dc5a-4074-8ccc-d03b5dafffa4: dentist
+  Maxillofacial Surgeon: maxillofacial-surgeon
+  maxillofacial-surgeon: maxillofacial-surgeon
+  20ba8160-8fa8-440a-9600-9612535b64c3: maxillofacial-surgeon
+  Radiologist: radiologist
+  radiologist: radiologist
+  5c1fbab1-e875-43b2-bc9a-97dc3352f551: radiologist
+  Sonologist: sonologist
+  sonologist: sonologist
+  83d80407-53c6-41bf-bd43-b9c1325f21a1: sonologist
+  Pathologist: pathologist
+  pathologist: pathologist
+  4ee570fa-1ebd-44e4-a8b0-495f8fc0ddce: pathologist
+  Homeopathic Doctor: homeopathic-doctor
+  homeopathic-doctor: homeopathic-doctor
+  01a0e6d5-f7f1-79d9-82cb-4e1682e2eee8: homeopathic-doctor
+  Allergist & Immunologist: allergy-immunologist
+  allergy-immunologist: allergy-immunologist
+  ffef8b0e-c4d0-45c9-800a-eccc6d3e9c8f: allergy-immunologist
+  Interventional Neurologist: interventional-neurologist
+  interventional-neurologist: interventional-neurologist
+  01a0e6d5-f7f3-77c0-9aba-bf5828d7a29c: interventional-neurologist
+  Pediatric Orthopedic Surgeon: pediatric-orthopedic-surgeon
+  pediatric-orthopedic-surgeon: pediatric-orthopedic-surgeon
+  3718ea2e-bb42-43a8-a543-a6d82883d729: pediatric-orthopedic-surgeon
+  Pediatric Gastroenterologist: pediatric-gastroenterologist
+  pediatric-gastroenterologist: pediatric-gastroenterologist
+  942a5163-b6a5-4b3e-9ab6-455cee79143c: pediatric-gastroenterologist
+  Pediatric Pulmonologist: pediatric-pulmonologist
+  pediatric-pulmonologist: pediatric-pulmonologist
+  52da1ae6-60b9-4cdc-8763-2eb86ad6ca8a: pediatric-pulmonologist
+  Addiction Specialist: medicine-specialist
+  addiction-specialist: medicine-specialist
+  01a0e732-5436-7f8a-8f78-c580ff4109f8: medicine-specialist
+  Medicine & Primary Care: medicine-specialist
+  medicine-primary-care: medicine-specialist
+  01a0e6d5-f76f-7f72-9212-263353b44720: medicine-specialist
+  Heart & Vascular: medicine-specialist
+  heart-vascular: medicine-specialist
+  01a0e6d5-f773-7f4e-b027-4ad153239de8: medicine-specialist
+  Neurosurgeon: neurosurgeon
+  neurosurgeon: neurosurgeon
+  61b375d3-890b-4989-8188-14e3ff64a7da: neurosurgeon
+  Orthopedic Surgeon: orthopedic-surgeon
+  orthopedic-surgeon: orthopedic-surgeon
+  23fc39d4-ebae-4302-a2a6-c4f3d70fd200: orthopedic-surgeon
+  Nuclear Medicine Specialist: nuclear-medicine-specialist
+  nuclear-medicine-specialist: nuclear-medicine-specialist
+  1bd5532e-e66d-4a23-9aa2-5b8fd3fc1d1e: nuclear-medicine-specialist
+  Fetomaternal Medicine Specialist: fetomaternal-medicine-specialist
+  fetomaternal-medicine-specialist: fetomaternal-medicine-specialist
+  370d30fe-015a-4458-a30e-ad2788f5ea23: fetomaternal-medicine-specialist
+  Pediatric Neurosurgeon: pediatric-neurosurgeon
+  pediatric-neurosurgeon: pediatric-neurosurgeon
+  fd7bc6d0-fbc8-4005-b172-6f2ae8447e4c: pediatric-neurosurgeon
+  Pediatric Urologist: pediatric-urologist
+  pediatric-urologist: pediatric-urologist
+  18668f55-0465-450a-b9d2-5e97acd00b33: pediatric-urologist
+  Sports Medicine Specialist: sports-medicine-specialist
+  sports-medicine-specialist: sports-medicine-specialist
+  f21cf4c0-a18d-49c7-a18f-8571b443befa: sports-medicine-specialist
+  Vascular Surgeon: vascular-surgeon
+  vascular-surgeon: vascular-surgeon
+  433e46c8-6872-4b0d-8519-65cf367d1961: vascular-surgeon
+  Pediatric Cardiologist: pediatric-cardiologist
+  pediatric-cardiologist: pediatric-cardiologist
+  27852e2d-8242-4c85-8b07-1f634ae3cae0: pediatric-cardiologist
+  Neurologist: neurologist
+  neurologist: neurologist
+  6448b750-6150-4b97-b7f8-6c6fa8a089cc: neurologist
+  Spine Surgeon: spine-surgeon
+  spine-surgeon: spine-surgeon
+  ee0ee8d3-54b8-4656-9d05-8cf22da4aa3a: spine-surgeon
+  Rheumatologist: rheumatologist
+  rheumatologist: rheumatologist
+  836c1cf0-8db7-4cd6-bd47-07cb614288a5: rheumatologist
+  Child Specialist: child-specialist
+  child-specialist: child-specialist
+  53caa153-9d8a-48cd-81f1-48fecddbfe63: child-specialist
+  Nephrologist: nephrologist
+  nephrologist: nephrologist
+  72e70078-b9a9-404e-aff5-4acd1e5a1d1e: nephrologist
+  Urologist: urologist
+  urologist: urologist
+  1932fda0-2ee7-4b66-a1ef-26d388ea1ffd: urologist
+  Gastroenterologist: gastroenterologist
+  gastroenterologist: gastroenterologist
+  5df59891-3a5a-4167-9701-6a242f4a105c: gastroenterologist
+  Hepatologist: hepatologist
+  hepatologist: hepatologist
+  20ca2df1-cf81-424e-87ce-82c6be94140d: hepatologist
+  Colorectal Surgeon: colorectal-surgeon
+  colorectal-surgeon: colorectal-surgeon
+  3f2954d4-9084-4d50-8ec5-87055db38a6f: colorectal-surgeon
+  General Surgeon: general-surgeon
+  general-surgeon: general-surgeon
+  5a22d5f1-41ef-4597-88f5-2d31947ce2cf: general-surgeon
+  Pediatric Neurologist: pediatric-neurologist
+  pediatric-neurologist: pediatric-neurologist
+  1463ba00-ad6c-4ccf-8e07-03b620e3b0f1: pediatric-neurologist
+  Pediatric Surgeon: pediatric-surgeon
+  pediatric-surgeon: pediatric-surgeon
+  906c3f4a-86f2-43b6-bb9c-ad410b43e412: pediatric-surgeon
   Cardiology: cardiologist
   cardiology: cardiologist
-  7780617c-e9be-5a08-b221-c474fe2dfa9a: cardiologist
   Laparoscopic Surgery: laparoscopic-surgeon
   laparoscopic-surgery: laparoscopic-surgeon
-  c66af408-bca5-4ceb-8f4c-0383a6202bfd: laparoscopic-surgeon
   Laser Surgery: laparoscopic-surgeon
   laser-surgery: laparoscopic-surgeon
   67cfdebd-eaa8-40fc-801a-92111c34a7da: laparoscopic-surgeon
@@ -1456,29 +2002,20 @@ legacy_map:
   general-medicine: medicine-specialist
   cfb72696-1642-4fdb-ac01-09b8dc9164ec: medicine-specialist
   Ent: ent-specialist
-  ent: ent-specialist
-  67a1ea6e-7dc2-49fc-9f33-3a892d227b3b: ent-specialist
   Otolaryngology: ent-specialist
   otolaryngology: ent-specialist
-  85b156a9-026b-4d74-a592-3d49fdb808eb: ent-specialist
   Head And Neck Surgery: head-neck-surgeon
   head-and-neck-surgery: head-neck-surgeon
-  134902e8-1877-44bd-9484-203c18c77996: head-neck-surgeon
   Internal Medicine: medicine-specialist
   internal-medicine: medicine-specialist
-  f1531138-6d67-45c5-abdc-faf5d3f98246: medicine-specialist
   Dermatology: dermatologist
   dermatology: dermatologist
-  d177c4a7-4b1a-4e24-8265-2237af785659: dermatologist
   Venereology: sexologist
   venereology: sexologist
-  2b1a7cbc-d905-4c1a-a94f-3a80bdae790c: sexologist
   Allergy: allergy-immunologist
   allergy: allergy-immunologist
-  ffef8b0e-c4d0-45c9-800a-eccc6d3e9c8f: allergy-immunologist
   Gynecology: gynecologist-obstetrician
   gynecology: gynecologist-obstetrician
-  98748b8f-e077-48b5-b978-26635b19280d: gynecologist-obstetrician
   Female Urology: urologist
   female-urology: urologist
   7a8cc644-eaf1-42e1-aa22-28323290dfd9: urologist
@@ -1487,28 +2024,23 @@ legacy_map:
   e737363c-9fe6-441f-9059-90d0ee4bf36e: medicine-specialist
   Arthroscopy: orthopedic-surgeon
   arthroscopy: orthopedic-surgeon
-  23fc39d4-ebae-4302-a2a6-c4f3d70fd200: orthopedic-surgeon
   Arthroplasty: orthopedic-surgeon
   arthroplasty: orthopedic-surgeon
   147fa6cd-ee4f-4a66-801d-d8cd768e74fa: orthopedic-surgeon
   Endocrinology: endocrinologist
   endocrinology: endocrinologist
-  9425ff1f-5c5e-4d4b-a82f-07aabef11d93: endocrinologist
   Diabetology: diabetologist
   diabetology: diabetologist
-  32a6faa4-3c00-4346-a94f-59c4305218e9: diabetologist
   Diabetes: diabetologist
   diabetes: diabetologist
   f6af3a9d-e00c-4ef0-a61e-709a1107ac47: diabetologist
   Chest Diseases: chest-specialist
   chest-diseases: chest-specialist
-  515dfc6d-8897-40a8-8632-71b8b2d13b4d: chest-specialist
   Pulmonology: chest-specialist
   pulmonology: chest-specialist
   e184da4f-a956-48d5-b58a-f4df090ccfca: chest-specialist
   Fetomaternal Medicine: fetomaternal-medicine-specialist
   fetomaternal-medicine: fetomaternal-medicine-specialist
-  370d30fe-015a-4458-a30e-ad2788f5ea23: fetomaternal-medicine-specialist
   Physical Medicine: physical-medicine-specialist
   physical-medicine: physical-medicine-specialist
   d4982f9c-646a-49e2-a75c-24826c966d18: physical-medicine-specialist
@@ -1517,7 +2049,6 @@ legacy_map:
   c4f4bd89-58e9-4312-b3b6-d15cc441017d: physical-medicine-specialist
   Sports Medicine: sports-medicine-specialist
   sports-medicine: sports-medicine-specialist
-  f21cf4c0-a18d-49c7-a18f-8571b443befa: sports-medicine-specialist
   Gynecology & Obstetrics: medicine-specialist
   gynecology-obstetrics: medicine-specialist
   4d1a3cd2-4b16-504e-835b-b006bf5cae20: medicine-specialist
@@ -1529,10 +2060,8 @@ legacy_map:
   c7d07e16-efb8-40aa-b8b5-8f1263ac9849: endocrinologist
   Neurosurgery: neurosurgeon
   neurosurgery: neurosurgeon
-  61b375d3-890b-4989-8188-14e3ff64a7da: neurosurgeon
   Hepatobiliary Surgery: hepatobiliary-surgeon
   hepatobiliary-surgery: hepatobiliary-surgeon
-  ea580458-f715-430a-8c9c-457ba14517ef: hepatobiliary-surgeon
   ENT (Otolaryngology): ent-specialist
   ent-otolaryngology: ent-specialist
   662fa83b-95a6-4a5a-9036-f06d3170d2f0: ent-specialist
@@ -1547,37 +2076,28 @@ legacy_map:
   bca43b1d-7da9-4e4b-b72f-8b163368cf1d: dermatologist
   Ophthalmology: eye-specialist
   ophthalmology: eye-specialist
-  65fc0ad4-bacc-4e71-aa31-00a2103cad33: eye-specialist
   Surgical Oncology: cancer-surgeon
   surgical-oncology: cancer-surgeon
-  6dccb9d1-2487-46d4-a17d-60076c956988: cancer-surgeon
   Hematology: hematologist
   hematology: hematologist
-  e0695773-df48-4b50-9d31-d83eb109d945: hematologist
   Physical Medicine & Rehabilitation: physical-medicine-specialist
   physical-medicine-rehabilitation: physical-medicine-specialist
-  2cd1c033-9df2-4ace-9be2-0f1a5ba13210: physical-medicine-specialist
   Pain Management: pain-specialist
   pain-management: pain-specialist
   5ccd0dbb-6c54-4069-8e27-ad029747e532: pain-specialist
   Dentistry: dentist
   dentistry: dentist
-  31360f8c-dc5a-4074-8ccc-d03b5dafffa4: dentist
   Plastic & Cosmetic Surgery: medicine-specialist
   plastic-cosmetic-surgery: medicine-specialist
   8985ad6c-2ba8-4374-88c3-6a9a842e90aa: medicine-specialist
   Critical Care & ICU: critical-care-specialist
   critical-care-icu: critical-care-specialist
-  71705588-a26c-4f53-ae04-22ae3968839e: critical-care-specialist
   Infertility: infertility-specialist
   infertility: infertility-specialist
-  582a01ec-db02-427a-ab93-0717e41b4987: infertility-specialist
   Interventional Cardiology: interventional-cardiologist
   interventional-cardiology: interventional-cardiologist
-  18e20a5d-af78-455d-b037-bb6e22ac8969: interventional-cardiologist
   Psychiatry: psychiatrist
   psychiatry: psychiatrist
-  72a5a088-1134-4685-9ff1-1b68f2599453: psychiatrist
   Psychotherapy: psychiatrist
   psychotherapy: psychiatrist
   55ffed40-e309-429b-ba82-56d184ddf421: psychiatrist
@@ -1587,50 +2107,38 @@ legacy_map:
   Liver: hepatologist
   liver: hepatologist
   0bd97555-bc41-4564-a249-309e2bf28623: hepatologist
-  Mental Health: psychiatrist
-  mental-health: psychiatrist
-  825a5cfd-bb3a-4533-bb80-d003a4665b2d: psychiatrist
   Breast Surgery: breast-surgeon
   breast-surgery: breast-surgeon
-  5cd56f67-568b-482e-b58d-2f96f45a766c: breast-surgeon
   Plastic Surgery: plastic-surgeon
   plastic-surgery: plastic-surgeon
-  421941a1-8cfd-4a4d-9358-898947a0a9ee: plastic-surgeon
   Bone And Joint: orthopedic-surgeon
   bone-and-joint: orthopedic-surgeon
   3e144f52-3b67-40ee-b656-82dd5623f83d: orthopedic-surgeon
   Thoracic Surgery: thoracic-surgeon
   thoracic-surgery: thoracic-surgeon
-  ed2a4a77-72c1-40e2-ada3-a9ecc24d21c7: thoracic-surgeon
   Cardiovascular Surgery: cardiac-surgeon
   cardiovascular-surgery: cardiac-surgeon
   df4b1034-5938-4e92-abe2-0c14f49e932c: cardiac-surgeon
   Radiotherapy: cancer-specialist
   radiotherapy: cancer-specialist
-  c2db1089-d1fb-46c9-93d6-4af6d4d715db: cancer-specialist
   Anesthesiology: anesthesiologist
   anesthesiology: anesthesiologist
-  9f201e91-bb07-460b-b2ce-9eb0c0ccc22c: anesthesiologist
   Nutrition & Dietetics: medicine-specialist
   nutrition-dietetics: medicine-specialist
   06fb29a0-f066-4b5a-a56a-3e260fef5090: medicine-specialist
   Radiology & Imaging: radiologist
   radiology-imaging: radiologist
-  5c1fbab1-e875-43b2-bc9a-97dc3352f551: radiologist
   Allergy & Immunology: allergy-immunologist
   allergy-immunology: allergy-immunologist
   5e36da10-eaa3-40a5-8359-b321eb7e1b9a: allergy-immunologist
   Sonology: sonologist
   sonology: sonologist
-  83d80407-53c6-41bf-bd43-b9c1325f21a1: sonologist
   Medical Oncology: cancer-specialist
   medical-oncology: cancer-specialist
   a36ed105-1970-4d8a-bbd7-461c0df46970: cancer-specialist
   andrology: andrologist
-  7c65aeac-7d16-4510-afbe-4a630d50c711: andrologist
   Clinical Nutrition & Dietetics: nutritionist-dietitian
   clinical-nutrition-dietetics: nutritionist-dietitian
-  450cdf53-46a2-467c-90c1-285e1046ee2f: nutritionist-dietitian
   Dietetics: nutritionist-dietitian
   dietetics: nutritionist-dietitian
   106aa0b6-ca16-480a-bba8-3d86650fc82b: nutritionist-dietitian
@@ -1639,7 +2147,6 @@ legacy_map:
   f8c03f1a-5057-48be-a899-4b84639ced99: pediatric-surgeon
   Neonatology: neonatologist
   neonatology: neonatologist
-  6c1dc74b-5b53-4c52-a80e-4b54748adba0: neonatologist
   Kidney Transplant: nephrologist
   kidney-transplant: nephrologist
   db5806b9-1cae-4924-97e1-a1aa95aca8b7: nephrologist
@@ -1648,7 +2155,6 @@ legacy_map:
   b5ced757-cc50-403f-b903-acd2f3a4658c: orthopedic-surgeon
   Gynecological Oncology: gynecological-oncologist
   gynecological-oncology: gynecological-oncologist
-  e21cc25a-685f-4382-b2a7-a5f6f5727376: gynecological-oncologist
   Reproductive Endocrinology: infertility-specialist
   reproductive-endocrinology: infertility-specialist
   a0f33d91-2691-4f96-8e9e-0151a41a2177: infertility-specialist
@@ -1670,18 +2176,13 @@ legacy_map:
   Critical Care: critical-care-specialist
   critical-care: critical-care-specialist
   daee4874-ffce-4df3-9b49-05d052253256: critical-care-specialist
-  Child Health: child-specialist
-  child-health: child-specialist
-  2d5f1a38-b3e8-4e6f-b041-9c218b6142eb: child-specialist
   Neuromedicine: neurologist
   neuromedicine: neurologist
   2823669c-6ac8-42c0-9976-1724b20d6ba9: neurologist
   Pediatric Urology: pediatric-urologist
   pediatric-urology: pediatric-urologist
-  18668f55-0465-450a-b9d2-5e97acd00b33: pediatric-urologist
   Pediatric Neurosurgery: pediatric-neurosurgeon
   pediatric-neurosurgery: pediatric-neurosurgeon
-  fd7bc6d0-fbc8-4005-b172-6f2ae8447e4c: pediatric-neurosurgeon
   Thyroid: endocrinologist
   thyroid: endocrinologist
   97344c7a-fc09-4b88-aaab-274315fad73c: endocrinologist
@@ -1699,13 +2200,10 @@ legacy_map:
   419df016-60cf-464a-bf87-ff69f5176d66: endocrinologist
   Pain Medicine: pain-specialist
   pain-medicine: pain-specialist
-  b012a695-7840-4ef9-9f3f-8d3d3fa2f93c: pain-specialist
   Oral & Maxillofacial Surgery: maxillofacial-surgeon
   oral-maxillofacial-surgery: maxillofacial-surgeon
-  20ba8160-8fa8-440a-9600-9612535b64c3: maxillofacial-surgeon
   General Physician: family-physician-gp
   general-physician: family-physician-gp
-  10c072a3-7268-4d5c-a3ae-8a78848ffadc: family-physician-gp
   Cancer: cancer-specialist
   cancer: cancer-specialist
   294c5f76-f25e-4628-94c7-7e6e2750e15e: cancer-specialist
@@ -1735,13 +2233,11 @@ legacy_map:
   14326f11-1103-4717-8fc6-f76af5feee33: medicine-specialist
   Pediatric Gastroenterology: pediatric-gastroenterologist
   pediatric-gastroenterology: pediatric-gastroenterologist
-  942a5163-b6a5-4b3e-9ab6-455cee79143c: pediatric-gastroenterologist
   Nutrition: nutritionist-dietitian
   nutrition: nutritionist-dietitian
   45131e10-e260-4714-9265-e2ad164a2bbc: nutritionist-dietitian
   Cardiovascular & Thoracic Surgery: cardiac-surgeon
   cardiovascular-thoracic-surgery: cardiac-surgeon
-  62ad424f-a611-4396-8d77-940995225d45: cardiac-surgeon
   Hormone: endocrinologist
   hormone: endocrinologist
   79ef0e95-e939-4ef9-8908-28f8dbf55295: endocrinologist
@@ -1759,7 +2255,6 @@ legacy_map:
   581d980e-5e63-46a5-ab8e-d9dfac3a4572: sports-medicine-specialist
   Breast Cancer: breast-health-specialist
   breast-cancer: breast-health-specialist
-  81bc87aa-557b-4e12-8c59-4f6f7afedad1: breast-health-specialist
   Surgery: general-surgeon
   surgery: general-surgeon
   142da003-f169-497b-abe4-0ac4afdd2237: general-surgeon
@@ -1774,13 +2269,10 @@ legacy_map:
   5a529b9d-6faa-4cd7-87d4-f7b71782acea: orthopedic-surgeon
   Pediatric Orthopedics: pediatric-orthopedic-surgeon
   pediatric-orthopedics: pediatric-orthopedic-surgeon
-  3718ea2e-bb42-43a8-a543-a6d82883d729: pediatric-orthopedic-surgeon
   Pediatric Pulmonology: pediatric-pulmonologist
   pediatric-pulmonology: pediatric-pulmonologist
-  52da1ae6-60b9-4cdc-8763-2eb86ad6ca8a: pediatric-pulmonologist
   Nuclear Medicine: nuclear-medicine-specialist
   nuclear-medicine: nuclear-medicine-specialist
-  1bd5532e-e66d-4a23-9aa2-5b8fd3fc1d1e: nuclear-medicine-specialist
   Cardiac MRI: cardiac-surgeon
   cardiac-mri: cardiac-surgeon
   824e1507-b2f5-4a0d-b56f-a48ee10b3d1d: cardiac-surgeon
@@ -1798,61 +2290,46 @@ legacy_map:
   9f3cc5ab-289d-4f85-8e4c-955381681eff: rheumatologist
   Pathology: pathologist
   pathology: pathologist
-  4ee570fa-1ebd-44e4-a8b0-495f8fc0ddce: pathologist
   Obs & Gynae: gynecologist-obstetrician
   obs-gynae: gynecologist-obstetrician
   3977f07a-5d36-4e7b-a5bb-2300b32fe87f: gynecologist-obstetrician
   Vascular Surgery: vascular-surgeon
   vascular-surgery: vascular-surgeon
-  433e46c8-6872-4b0d-8519-65cf367d1961: vascular-surgeon
   Colorectal Surgery: colorectal-surgeon
   colorectal-surgery: colorectal-surgeon
-  3f2954d4-9084-4d50-8ec5-87055db38a6f: colorectal-surgeon
   Cardiac Surgery: cardiac-surgeon
   cardiac-surgery: cardiac-surgeon
   30501fd5-316e-47e8-b8ce-2001831492c0: cardiac-surgeon
   Nephrology: nephrologist
   nephrology: nephrologist
-  72e70078-b9a9-404e-aff5-4acd1e5a1d1e: nephrologist
   General Surgery: general-surgeon
   general-surgery: general-surgeon
-  5a22d5f1-41ef-4597-88f5-2d31947ce2cf: general-surgeon
   Neurology: neurologist
   neurology: neurologist
-  6448b750-6150-4b97-b7f8-6c6fa8a089cc: neurologist
   Orthopedics: orthopedic-surgeon
   orthopedics: orthopedic-surgeon
   e7931877-12e0-4099-a37f-4964998b57c2: orthopedic-surgeon
   Spine Surgery: spine-surgeon
   spine-surgery: spine-surgeon
-  ee0ee8d3-54b8-4656-9d05-8cf22da4aa3a: spine-surgeon
   Hepatology: hepatologist
   hepatology: hepatologist
-  20ca2df1-cf81-424e-87ce-82c6be94140d: hepatologist
   Respiratory Medicine: chest-specialist
   respiratory-medicine: chest-specialist
   e5085afe-d692-4c39-9ddd-fafb615cd18c: chest-specialist
   Pediatrics: child-specialist
   pediatrics: child-specialist
-  53caa153-9d8a-48cd-81f1-48fecddbfe63: child-specialist
   Pediatric Cardiology: pediatric-cardiologist
   pediatric-cardiology: pediatric-cardiologist
-  27852e2d-8242-4c85-8b07-1f634ae3cae0: pediatric-cardiologist
   Urology: urologist
   urology: urologist
-  1932fda0-2ee7-4b66-a1ef-26d388ea1ffd: urologist
   Gastroenterology: gastroenterologist
   gastroenterology: gastroenterologist
-  5df59891-3a5a-4167-9701-6a242f4a105c: gastroenterologist
   Oncology: cancer-specialist
   oncology: cancer-specialist
   550884a3-0ae1-478b-90aa-04ac45f0a0aa: cancer-specialist
   Rheumatology: rheumatologist
   rheumatology: rheumatologist
-  836c1cf0-8db7-4cd6-bd47-07cb614288a5: rheumatologist
   Pediatric Neurology: pediatric-neurologist
   pediatric-neurology: pediatric-neurologist
-  1463ba00-ad6c-4ccf-8e07-03b620e3b0f1: pediatric-neurologist
   Pediatric Surgery: pediatric-surgeon
   pediatric-surgery: pediatric-surgeon
-  906c3f4a-86f2-43b6-bb9c-ad410b43e412: pediatric-surgeon

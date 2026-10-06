@@ -47,7 +47,7 @@ class TestCategoryCounts:
         Hospital.objects.create(location=loc2, category=cat)
         Hospital.objects.create(location=loc_inactive, category=cat)
 
-        resp = anon_client.get("/api/hospital-categories/")
+        resp = anon_client.get("/api/v1/hospital-categories/")
         assert resp.status_code == 200
         data = resp.data.get("results", resp.data)
         cat_data = next(c for c in data if c["name"] == "P2 General")
@@ -61,7 +61,7 @@ class TestCategoryCounts:
         FacilityTestFactory.create(location=loc, test=t1, price=100)
         FacilityTestFactory.create(location=loc, test=t2, price=100)
 
-        resp = anon_client.get("/api/test-categories/")
+        resp = anon_client.get("/api/v1/test-categories/")
         assert resp.status_code == 200
         data = resp.data.get("results", resp.data)
         cat_data = next(c for c in data if c["name"] == "P2 Cat Count")
@@ -76,7 +76,7 @@ class TestCategoryCounts:
 @pytest.mark.django_db
 class TestSlimFacets:
     def test_facets_only_hospital_categories(self, anon_client, db):
-        resp = anon_client.get("/api/search-facets/")
+        resp = anon_client.get("/api/v1/search-facets/")
         assert resp.status_code == 200
         assert "hospital_categories" in resp.data
         # No other sections
@@ -86,7 +86,7 @@ class TestSlimFacets:
         assert "total_doctors" not in resp.data
 
     def test_facets_payload_under_10kb(self, anon_client, db):
-        resp = anon_client.get("/api/search-facets/")
+        resp = anon_client.get("/api/v1/search-facets/")
         assert resp.status_code == 200
         import json
         payload_size = len(json.dumps(resp.data))

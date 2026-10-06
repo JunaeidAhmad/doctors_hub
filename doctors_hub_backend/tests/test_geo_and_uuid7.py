@@ -135,21 +135,21 @@ class TestGeoAPIAndFilters:
     def test_geo_endpoints(self):
         client = APIClient()
 
-        res_div = client.get("/api/divisions/")
+        res_div = client.get("/api/v1/divisions/")
         assert res_div.status_code == 200
         div_data = res_div.data.get("results", res_div.data) if isinstance(res_div.data, dict) else res_div.data
         assert len(div_data) >= 8
 
-        res_dist = client.get("/api/districts/")
+        res_dist = client.get("/api/v1/districts/")
         assert res_dist.status_code == 200
         dist_data = res_dist.data.get("results", res_dist.data) if isinstance(res_dist.data, dict) else res_dist.data
         assert len(dist_data) >= 64
 
         dhaka_div = next(d for d in div_data if d["name"] == "Dhaka")
-        res_dist_filtered = client.get(f"/api/districts/?division={dhaka_div['id']}")
+        res_dist_filtered = client.get(f"/api/v1/districts/?division={dhaka_div['id']}")
         assert res_dist_filtered.status_code == 200
 
-        res_thana = client.get("/api/thanas/")
+        res_thana = client.get("/api/v1/thanas/")
         assert res_thana.status_code == 200
 
     def test_hospital_and_doctor_filters_by_district_and_alias(self):
@@ -166,7 +166,7 @@ class TestGeoAPIAndFilters:
         client = APIClient()
 
         # Filter by Dhaka district_id
-        res = client.get(f"/api/hospitals/?district_id={thana_dhan.district_id}")
+        res = client.get(f"/api/v1/hospitals/?district_id={thana_dhan.district_id}")
         assert res.status_code == 200
         data = res.data.get("results", res.data) if isinstance(res.data, dict) else res.data
         names = [h["name"] for h in data]
@@ -174,7 +174,7 @@ class TestGeoAPIAndFilters:
         assert "Ctg Care" not in names
 
         # Filter by Chattogram district_id
-        res_ctg = client.get(f"/api/hospitals/?district_id={thana_ctg.district_id}")
+        res_ctg = client.get(f"/api/v1/hospitals/?district_id={thana_ctg.district_id}")
         assert res_ctg.status_code == 200
         data_ctg = res_ctg.data.get("results", res_ctg.data) if isinstance(res_ctg.data, dict) else res_ctg.data
         names_ctg = [h["name"] for h in data_ctg]
@@ -182,7 +182,7 @@ class TestGeoAPIAndFilters:
         assert "Dhaka Care" not in names_ctg
 
         # Filter by thana_id
-        res_area = client.get(f"/api/hospitals/?thana_id={thana_dhan.id}")
+        res_area = client.get(f"/api/v1/hospitals/?thana_id={thana_dhan.id}")
         assert res_area.status_code == 200
         data_area = res_area.data.get("results", res_area.data) if isinstance(res_area.data, dict) else res_area.data
         names_area = [h["name"] for h in data_area]
@@ -192,7 +192,7 @@ class TestGeoAPIAndFilters:
         doc = Doctor.objects.create(name="Dr. Filter Test", qualification="MBBS")
         DoctorAffiliation.objects.create(doctor=doc, location=loc_dhaka, fee=1000)
 
-        res_doc = client.get(f"/api/doctors/?district_id={thana_dhan.district_id}")
+        res_doc = client.get(f"/api/v1/doctors/?district_id={thana_dhan.district_id}")
         assert res_doc.status_code == 200
         doc_data = res_doc.data.get("results", res_doc.data)
         doc_names = [d["name"] for d in doc_data]

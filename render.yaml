@@ -18,3 +18,27 @@ services:
         value: doctors-hub.onrender.com
       - key: CORS_ALLOWED_ORIGINS
         sync: false          # your Vercel domain(s), with scheme
+      - key: APP_ANDROID_MIN_BUILD
+        value: "0"           # 0 = no gate
+      - key: APP_ANDROID_LATEST_BUILD
+        value: "0"
+      - key: APP_ANDROID_STORE_URL
+        sync: false          # Play Store listing URL
+      - key: APP_IOS_MIN_BUILD
+        value: "0"
+      - key: APP_IOS_LATEST_BUILD
+        value: "0"
+      - key: APP_IOS_STORE_URL
+        sync: false          # App Store listing URL
+      - key: APP_UPDATE_MESSAGE_EN
+        sync: false
+      - key: APP_UPDATE_MESSAGE_BN
+        sync: false
+      - key: API_DEPRECATE_LEGACY
+        value: "False"
+      - key: API_DEPRECATIONS
+        sync: false          # e.g. legacy=2026-12-01,v1=2027-06-01
+      - key: API_SUNSETS
+        sync: false          # same keys, ISO dates
+      - key: API_USAGE_LOG
+        value: "True"

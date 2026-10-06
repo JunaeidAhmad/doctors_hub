@@ -174,6 +174,40 @@ export async function getDoctors({
   );
 }
 
+export async function getRelatedDoctors({
+  specialty = '',
+  division_id = null,
+  district_id = null,
+  thana_id = null,
+  hospital = '',
+  diagnostic_center = '',
+  facility = '',
+  gender = '',
+  day = '',
+  limit = 6,
+} = {}) {
+  const key = `docrel_${specialty}_${division_id || ''}_${district_id || ''}_${thana_id || ''}_${hospital || ''}_${diagnostic_center || ''}_${facility || ''}_${gender || ''}_${day || ''}_${limit}`;
+  return fetchWithDeduplicationAndCache(
+    key,
+    async () => {
+      const url = new URL(`${BASE_URL}/doctors/related/`);
+      if (specialty) url.searchParams.append('specialty', specialty);
+      if (division_id) url.searchParams.append('division_id', division_id);
+      if (district_id) url.searchParams.append('district_id', district_id);
+      if (thana_id) url.searchParams.append('thana_id', thana_id);
+      if (hospital) url.searchParams.append('hospital', hospital);
+      if (diagnostic_center) url.searchParams.append('diagnostic_center', diagnostic_center);
+      if (facility) url.searchParams.append('facility', facility);
+      if (gender && gender.toLowerCase() !== 'all') url.searchParams.append('gender', gender);
+      if (day && day !== 'All' && day !== 'All Days') url.searchParams.append('day', day);
+      if (limit) url.searchParams.append('limit', limit);
+      const res = await fetchWithTimeout(url, { headers: getHeaders() });
+      return handleResponse(res);
+    },
+    60000
+  );
+}
+
 export async function getDoctor(idOrSlug) {
   if (!idOrSlug) return null;
   return fetchWithDeduplicationAndCache(

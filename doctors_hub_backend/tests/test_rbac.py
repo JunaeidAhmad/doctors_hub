@@ -76,17 +76,17 @@ def other_doctor_profile():
 @pytest.mark.django_db
 def test_anonymous_can_read_public_catalog(api_client, managed_location, doctor_profile):
     # Public catalog endpoints must be readable without authentication
-    assert api_client.get("/api/locations/").status_code == status.HTTP_200_OK
-    assert api_client.get("/api/hospitals/").status_code == status.HTTP_200_OK
-    assert api_client.get("/api/doctors/").status_code == status.HTTP_200_OK
-    assert api_client.get("/api/tests/").status_code == status.HTTP_200_OK
-    assert api_client.get("/api/facility-tests/").status_code == status.HTTP_200_OK
+    assert api_client.get("/api/v1/locations/").status_code == status.HTTP_200_OK
+    assert api_client.get("/api/v1/hospitals/").status_code == status.HTTP_200_OK
+    assert api_client.get("/api/v1/doctors/").status_code == status.HTTP_200_OK
+    assert api_client.get("/api/v1/tests/").status_code == status.HTTP_200_OK
+    assert api_client.get("/api/v1/facility-tests/").status_code == status.HTTP_200_OK
 
 
 @pytest.mark.django_db
 def test_anonymous_cannot_write_catalog(api_client, managed_location):
     # Anonymous POST/PUT/DELETE to catalog must be denied (401)
-    res = api_client.post("/api/locations/", {
+    res = api_client.post("/api/v1/locations/", {
         "name": "Hacker Location",
         "location_type": "hospital",
         "address_line": "Dark Alley",
@@ -96,7 +96,7 @@ def test_anonymous_cannot_write_catalog(api_client, managed_location):
     assert res.status_code == status.HTTP_401_UNAUTHORIZED
 
     test_cat = TestCategoryFactory()
-    res = api_client.post("/api/tests/", {"name": "Fake Test", "category": str(test_cat.id)})
+    res = api_client.post("/api/v1/tests/", {"name": "Fake Test", "category": str(test_cat.id)})
     assert res.status_code == status.HTTP_401_UNAUTHORIZED
 
 
@@ -113,7 +113,7 @@ def test_anonymous_can_create_booking_publicly(api_client, managed_location, doc
     fac_test = FacilityTestFactory(location=managed_location, test=test_obj)
 
     # Doctor booking
-    doc_res = api_client.post("/api/bookings/doctor/", {
+    doc_res = api_client.post("/api/v1/bookings/doctor/", {
         "affiliation_id": str(affiliation.id),
         "patient_name": "Rahim Ahmed",
         "patient_phone": "01711999888",
@@ -125,7 +125,7 @@ def test_anonymous_can_create_booking_publicly(api_client, managed_location, doc
 
     # Lab booking
     lab_date = timezone.localtime().date() + datetime.timedelta(days=3)
-    lab_res = api_client.post("/api/bookings/lab/", {
+    lab_res = api_client.post("/api/v1/bookings/lab/", {
         "facility_test": str(fac_test.id),
         "patient_name": "Karim Mia",
         "patient_phone": "01811999777",
@@ -139,10 +139,10 @@ def test_anonymous_can_create_booking_publicly(api_client, managed_location, doc
 @pytest.mark.django_db
 def test_anonymous_cannot_enumerate_bookings(api_client):
     # Anonymous users cannot view bookings list
-    res_doc = api_client.get("/api/bookings/doctor/")
+    res_doc = api_client.get("/api/v1/bookings/doctor/")
     assert res_doc.status_code in (status.HTTP_401_UNAUTHORIZED, status.HTTP_403_FORBIDDEN)
 
-    res_lab = api_client.get("/api/bookings/lab/")
+    res_lab = api_client.get("/api/v1/bookings/lab/")
     assert res_lab.status_code in (status.HTTP_401_UNAUTHORIZED, status.HTTP_403_FORBIDDEN)
 
 
@@ -157,7 +157,7 @@ def test_facility_admin_can_manage_own_location_tests(api_client, facility_admin
     test_obj = TestFactory(name="Blood Sugar Fasting")
 
     # 1. Create facility test for managed location -> 201 Created
-    create_res = api_client.post("/api/facility-tests/", {
+    create_res = api_client.post("/api/v1/facility-tests/", {
         "location": str(managed_location.id),
         "test": str(test_obj.id),
         "price": "350.00",
@@ -167,7 +167,7 @@ def test_facility_admin_can_manage_own_location_tests(api_client, facility_admin
     fac_test_id = create_res.data["id"]
 
     # 2. Update own facility test price -> 200 OK
-    update_res = api_client.patch(f"/api/facility-tests/{fac_test_id}/", {
+    update_res = api_client.patch(f"/api/v1/facility-tests/{fac_test_id}/", {
         "price": "400.00"
     })
     assert update_res.status_code == status.HTTP_200_OK
@@ -180,7 +180,7 @@ def test_facility_admin_cannot_manage_other_location_tests(api_client, facility_
     test_obj = TestFactory(name="Lipid Profile")
 
     # 1. Create test on unmanaged location -> 403 Forbidden
-    create_res = api_client.post("/api/facility-tests/", {
+    create_res = api_client.post("/api/v1/facility-tests/", {
         "location": str(other_location.id),
         "test": str(test_obj.id),
         "price": "1200.00"
@@ -189,7 +189,7 @@ def test_facility_admin_cannot_manage_other_location_tests(api_client, facility_
 
     # 2. Update existing test on unmanaged location -> 403 Forbidden
     existing_other_test = FacilityTestFactory(location=other_location, test=test_obj, price=1000.00)
-    update_res = api_client.patch(f"/api/facility-tests/{existing_other_test.id}/", {
+    update_res = api_client.patch(f"/api/v1/facility-tests/{existing_other_test.id}/", {
         "price": "1500.00"
     })
     assert update_res.status_code == status.HTTP_403_FORBIDDEN
@@ -199,10 +199,10 @@ def test_facility_admin_cannot_manage_other_location_tests(api_client, facility_
 def test_facility_admin_cannot_edit_global_taxonomy(api_client, facility_admin_user):
     api_client.force_authenticate(user=facility_admin_user)
     # Global test categories and specialties are platform-owned
-    res1 = api_client.post("/api/test-categories/", {"name": "New Global Cat"})
+    res1 = api_client.post("/api/v1/test-categories/", {"name": "New Global Cat"})
     assert res1.status_code == status.HTTP_403_FORBIDDEN
 
-    res2 = api_client.post("/api/specialties/", {"name": "New Specialty"})
+    res2 = api_client.post("/api/v1/specialties/", {"name": "New Specialty"})
     assert res2.status_code == status.HTTP_403_FORBIDDEN
 
 
@@ -226,7 +226,7 @@ def test_facility_admin_sees_only_own_location_bookings(api_client, facility_adm
         date="2026-09-01", session_key="08:00-18:00", session_start="08:00:00", session_end="18:00:00", serial_number=1
     )
 
-    res = api_client.get("/api/bookings/doctor/")
+    res = api_client.get("/api/v1/bookings/doctor/")
     assert res.status_code == status.HTTP_200_OK
     booking_ids = [b["id"] for b in (res.data.get("results") if isinstance(res.data, dict) else res.data)]
     assert str(b_managed.id) in booking_ids
@@ -241,7 +241,7 @@ def test_facility_admin_sees_only_own_location_bookings(api_client, facility_adm
 def test_doctor_can_edit_own_profile(api_client, doctor_user, doctor_profile):
     api_client.force_authenticate(user=doctor_user)
 
-    res = api_client.patch(f"/api/doctors/{doctor_profile.id}/", {
+    res = api_client.patch(f"/api/v1/doctors/{doctor_profile.id}/", {
         "qualification": "MBBS, MD (Cardiology), FCPS"
     })
     assert res.status_code == status.HTTP_200_OK
@@ -252,7 +252,7 @@ def test_doctor_can_edit_own_profile(api_client, doctor_user, doctor_profile):
 def test_doctor_cannot_edit_other_doctor_profile(api_client, doctor_user, other_doctor_profile):
     api_client.force_authenticate(user=doctor_user)
 
-    res = api_client.patch(f"/api/doctors/{other_doctor_profile.id}/", {
+    res = api_client.patch(f"/api/v1/doctors/{other_doctor_profile.id}/", {
         "qualification": "Hacked Qualification"
     })
     assert res.status_code == status.HTTP_403_FORBIDDEN
@@ -266,7 +266,7 @@ def test_doctor_can_manage_own_affiliation_schedules(api_client, doctor_user, do
     schedule = AffiliationScheduleFactory(affiliation=aff, day_of_week="Monday")
 
     # Doctor updates own schedule -> 200 OK
-    res = api_client.patch(f"/api/schedules/{schedule.id}/", {
+    res = api_client.patch(f"/api/v1/schedules/{schedule.id}/", {
         "start_time": "14:00:00",
         "end_time": "18:00:00"
     })
@@ -281,7 +281,7 @@ def test_doctor_cannot_edit_other_doctor_schedules(api_client, doctor_user, othe
     aff_other = DoctorAffiliationFactory(doctor=other_doctor_profile, location=managed_location)
     schedule_other = AffiliationScheduleFactory(affiliation=aff_other, day_of_week="Tuesday")
 
-    res = api_client.patch(f"/api/schedules/{schedule_other.id}/", {
+    res = api_client.patch(f"/api/v1/schedules/{schedule_other.id}/", {
         "start_time": "15:00:00"
     })
     assert res.status_code == status.HTTP_403_FORBIDDEN
@@ -297,12 +297,12 @@ def test_super_admin_has_full_access(api_client, super_admin_user, other_locatio
     api_client.force_authenticate(user=super_admin_user)
 
     # Super admin can create global taxonomy
-    cat_res = api_client.post("/api/test-categories/", {"name": "Genomics"})
+    cat_res = api_client.post("/api/v1/test-categories/", {"name": "Genomics"})
     assert cat_res.status_code == status.HTTP_201_CREATED
 
     # Super admin can create test at any location
     test_obj = TestFactory()
-    fac_res = api_client.post("/api/facility-tests/", {
+    fac_res = api_client.post("/api/v1/facility-tests/", {
         "location": str(other_location.id),
         "test": str(test_obj.id),
         "price": "999.00"
@@ -310,7 +310,7 @@ def test_super_admin_has_full_access(api_client, super_admin_user, other_locatio
     assert fac_res.status_code == status.HTTP_201_CREATED
 
     # Super admin can access /api/admin/dashboard-init/
-    dash_res = api_client.get("/api/admin/dashboard-init/")
+    dash_res = api_client.get("/api/v1/admin/dashboard-init/")
     assert dash_res.status_code == status.HTTP_200_OK
 
 
@@ -325,7 +325,7 @@ def test_login_demo_bypass_removed(api_client):
     user.set_password("RealSecretPassword123!")
     user.save()
 
-    res = api_client.post("/api/auth/login/", {
+    res = api_client.post("/api/v1/auth/login/", {
         "phone_number": "01700000000",
         "password": "WrongPasswordAttempt"
     })
@@ -336,7 +336,7 @@ def test_login_demo_bypass_removed(api_client):
 def test_auth_me_returns_role_and_scope(api_client, facility_admin_user, managed_location, doctor_user, doctor_profile):
     # Facility Admin /auth/me/
     api_client.force_authenticate(user=facility_admin_user)
-    res_fac = api_client.get("/api/auth/me/")
+    res_fac = api_client.get("/api/v1/auth/me/")
     assert res_fac.status_code == status.HTTP_200_OK
     assert res_fac.data["role"] == "facility_admin"
     assert len(res_fac.data["managed_locations"]) == 1
@@ -344,7 +344,7 @@ def test_auth_me_returns_role_and_scope(api_client, facility_admin_user, managed
 
     # Doctor /auth/me/
     api_client.force_authenticate(user=doctor_user)
-    res_doc = api_client.get("/api/auth/me/")
+    res_doc = api_client.get("/api/v1/auth/me/")
     assert res_doc.status_code == status.HTTP_200_OK
     assert res_doc.data["role"] == "doctor"
     assert res_doc.data["doctor_id"] == str(doctor_profile.id)
@@ -361,13 +361,13 @@ def test_user_role_assignment_and_search(api_client, super_admin_user, managed_l
     )
 
     # 1. Search user
-    search_res = api_client.get("/api/user-roles/search-users/?q=0171234")
+    search_res = api_client.get("/api/v1/user-roles/search-users/?q=0171234")
     assert search_res.status_code == status.HTTP_200_OK
     results = search_res.data
     assert any(u["phone_number"] == "01712345678" for u in results)
 
     # 2. Assign role by phone number and facility
-    assign_res = api_client.post("/api/user-roles/", {
+    assign_res = api_client.post("/api/v1/user-roles/", {
         "phone_number": "01712345678",
         "role": str(role.id),
         "facility": str(managed_location.id)
@@ -379,11 +379,11 @@ def test_user_role_assignment_and_search(api_client, super_admin_user, managed_l
     assert assign_res.data["facility_details"]["name"] == managed_location.name
 
     # 3. Search user roles
-    list_res = api_client.get("/api/user-roles/?search=Rahim")
+    list_res = api_client.get("/api/v1/user-roles/?search=Rahim")
     assert list_res.status_code == status.HTTP_200_OK
     assert any(a["id"] == assignment_id for a in list_res.data)
 
     # 4. Revoke assignment
-    del_res = api_client.delete(f"/api/user-roles/{assignment_id}/")
+    del_res = api_client.delete(f"/api/v1/user-roles/{assignment_id}/")
     assert del_res.status_code == status.HTTP_204_NO_CONTENT
     assert not UserRole.objects.filter(id=assignment_id).exists()

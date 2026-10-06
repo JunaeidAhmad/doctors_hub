@@ -92,7 +92,7 @@ def hospital_service(db):
 class TestStatusReadonly:
     def test_status_ignored_on_doctor_create(self, anon_client, affiliation_with_schedule):
         affil, booking_date = affiliation_with_schedule
-        resp = anon_client.post("/api/bookings/doctor/", {
+        resp = anon_client.post("/api/v1/bookings/doctor/", {
             "affiliation_id": str(affil.pk),
             "date": booking_date.isoformat(),
             "session_key": _session_key(affil, booking_date),
@@ -106,7 +106,7 @@ class TestStatusReadonly:
 
     def test_status_ignored_on_doctor_patch(self, admin_client, affiliation_with_schedule):
         affil, booking_date = affiliation_with_schedule
-        resp = admin_client.post("/api/bookings/doctor/", {
+        resp = admin_client.post("/api/v1/bookings/doctor/", {
             "affiliation_id": str(affil.pk),
             "date": booking_date.isoformat(),
             "session_key": _session_key(affil, booking_date),
@@ -116,13 +116,13 @@ class TestStatusReadonly:
         })
         assert resp.status_code == http_status.HTTP_201_CREATED, resp.data
         rid = resp.data["id"]
-        patch_resp = admin_client.patch(f"/api/bookings/doctor/{rid}/", {"status": "completed"})
+        patch_resp = admin_client.patch(f"/api/v1/bookings/doctor/{rid}/", {"status": "completed"})
         assert patch_resp.status_code == 200
         booking = DoctorBooking.objects.get(pk=rid)
         assert booking.status == "pending"
 
     def test_status_ignored_on_test_booking(self, anon_client, facility_test):
-        resp = anon_client.post("/api/bookings/test/", {
+        resp = anon_client.post("/api/v1/bookings/test/", {
             "facility_test_id": str(facility_test.pk),
             "pickup_date": (timezone.localdate() + datetime.timedelta(days=1)).isoformat(),
             "patient_name": "Lab Status",
@@ -135,7 +135,7 @@ class TestStatusReadonly:
 
     def test_status_ignored_on_hospital_service(self, anon_client, hospital_service):
         hosp, svc = hospital_service
-        resp = anon_client.post("/api/bookings/hospital-service/", {
+        resp = anon_client.post("/api/v1/bookings/hospital-service/", {
             "hospital_id": str(hosp.pk),
             "service_id": str(svc.pk),
             "booking_date": (timezone.localdate() + datetime.timedelta(days=1)).isoformat(),
@@ -156,7 +156,7 @@ class TestStatusReadonly:
 class TestTransitions:
     def _make_doctor_booking(self, admin_client, affiliation_with_schedule):
         affil, booking_date = affiliation_with_schedule
-        resp = admin_client.post("/api/bookings/doctor/", {
+        resp = admin_client.post("/api/v1/bookings/doctor/", {
             "affiliation_id": str(affil.pk),
             "date": booking_date.isoformat(),
             "session_key": _session_key(affil, booking_date),
@@ -169,27 +169,27 @@ class TestTransitions:
 
     def test_pending_to_confirmed(self, admin_client, affiliation_with_schedule):
         rid = self._make_doctor_booking(admin_client, affiliation_with_schedule)
-        resp = admin_client.post(f"/api/bookings/doctor/{rid}/transition/", {"to": "confirmed"})
+        resp = admin_client.post(f"/api/v1/bookings/doctor/{rid}/transition/", {"to": "confirmed"})
         assert resp.status_code == 200
         assert resp.data["status"] == "confirmed"
 
     def test_confirmed_to_completed(self, admin_client, affiliation_with_schedule):
         rid = self._make_doctor_booking(admin_client, affiliation_with_schedule)
-        admin_client.post(f"/api/bookings/doctor/{rid}/transition/", {"to": "confirmed"})
-        resp = admin_client.post(f"/api/bookings/doctor/{rid}/transition/", {"to": "completed"})
+        admin_client.post(f"/api/v1/bookings/doctor/{rid}/transition/", {"to": "confirmed"})
+        resp = admin_client.post(f"/api/v1/bookings/doctor/{rid}/transition/", {"to": "completed"})
         assert resp.status_code == 200
         assert resp.data["status"] == "completed"
 
     def test_completed_to_pending_refused(self, admin_client, affiliation_with_schedule):
         rid = self._make_doctor_booking(admin_client, affiliation_with_schedule)
-        admin_client.post(f"/api/bookings/doctor/{rid}/transition/", {"to": "confirmed"})
-        admin_client.post(f"/api/bookings/doctor/{rid}/transition/", {"to": "completed"})
-        resp = admin_client.post(f"/api/bookings/doctor/{rid}/transition/", {"to": "pending"})
+        admin_client.post(f"/api/v1/bookings/doctor/{rid}/transition/", {"to": "confirmed"})
+        admin_client.post(f"/api/v1/bookings/doctor/{rid}/transition/", {"to": "completed"})
+        resp = admin_client.post(f"/api/v1/bookings/doctor/{rid}/transition/", {"to": "pending"})
         assert resp.status_code == 400
 
     def test_invalid_transition_from_pending(self, admin_client, affiliation_with_schedule):
         rid = self._make_doctor_booking(admin_client, affiliation_with_schedule)
-        resp = admin_client.post(f"/api/bookings/doctor/{rid}/transition/", {"to": "completed"})
+        resp = admin_client.post(f"/api/v1/bookings/doctor/{rid}/transition/", {"to": "completed"})
         assert resp.status_code == 400
         assert "allowed" in str(resp.data).lower() or "to" in resp.data
 
@@ -216,7 +216,7 @@ class TestTestBookingRules:
             "otp_code": "123",
         }
         payload.update(overrides)
-        return client.post("/api/bookings/test/", payload)
+        return client.post("/api/v1/bookings/test/", payload)
 
     def test_past_date_rejected(self, anon_client, facility_test):
         resp = self._post(anon_client, facility_test,
@@ -290,7 +290,7 @@ class TestHospitalServiceBookingRules:
         other = HospitalService.objects.create(name="P2B Other")
         hosp.services.add(other)
         hosp.services.remove(svc)
-        resp = anon_client.post("/api/bookings/hospital-service/", {
+        resp = anon_client.post("/api/v1/bookings/hospital-service/", {
             "hospital_id": str(hosp.pk),
             "service_id": str(svc.pk),
             "booking_date": (timezone.localdate() + datetime.timedelta(days=1)).isoformat(),
@@ -303,7 +303,7 @@ class TestHospitalServiceBookingRules:
     def test_past_date_rejected(self, anon_client, hospital_service):
         hosp, svc = hospital_service
         hosp.services.add(svc)
-        resp = anon_client.post("/api/bookings/hospital-service/", {
+        resp = anon_client.post("/api/v1/bookings/hospital-service/", {
             "hospital_id": str(hosp.pk),
             "service_id": str(svc.pk),
             "booking_date": (timezone.localdate() - datetime.timedelta(days=1)).isoformat(),
@@ -322,7 +322,7 @@ class TestHospitalServiceBookingRules:
 class TestPriceSnapshots:
     def test_fee_snapshot_unchanged_after_fee_edit(self, admin_client, affiliation_with_schedule):
         affil, booking_date = affiliation_with_schedule
-        resp = admin_client.post("/api/bookings/doctor/", {
+        resp = admin_client.post("/api/v1/bookings/doctor/", {
             "affiliation_id": str(affil.pk),
             "date": booking_date.isoformat(),
             "session_key": _session_key(affil, booking_date),
@@ -341,7 +341,7 @@ class TestPriceSnapshots:
         assert booking.fee_at_booking == Decimal("1000.00")
 
     def test_price_snapshot_unchanged_after_price_edit(self, anon_client, facility_test):
-        resp = anon_client.post("/api/bookings/test/", {
+        resp = anon_client.post("/api/v1/bookings/test/", {
             "facility_test_id": str(facility_test.pk),
             "pickup_date": (timezone.localdate() + datetime.timedelta(days=1)).isoformat(),
             "patient_name": "Price Snapshot",
@@ -363,7 +363,7 @@ class TestPriceSnapshots:
         facility_test.home_sample_charge = 50.00
         facility_test.save()
         thana = Thana.objects.first()
-        resp = anon_client.post("/api/bookings/test/", {
+        resp = anon_client.post("/api/v1/bookings/test/", {
             "facility_test_id": str(facility_test.pk),
             "pickup_date": (timezone.localdate() + datetime.timedelta(days=1)).isoformat(),
             "patient_name": "Home Charge",
@@ -381,7 +381,7 @@ class TestPriceSnapshots:
         facility_test.home_sample_collection = True
         facility_test.home_sample_charge = 50.00
         facility_test.save()
-        resp = anon_client.post("/api/bookings/test/", {
+        resp = anon_client.post("/api/v1/bookings/test/", {
             "facility_test_id": str(facility_test.pk),
             "pickup_date": (timezone.localdate() + datetime.timedelta(days=1)).isoformat(),
             "patient_name": "No Home Charge",
@@ -466,7 +466,7 @@ def test_monday_past_at_dhaka_tuesday(admin_client, db):
                                        tzinfo=timezone.get_current_timezone())
     with patch("django.utils.timezone.localtime", return_value=frozen):
         with patch("django.utils.timezone.localdate", return_value=tuesday):
-            resp = admin_client.post("/api/bookings/doctor/", {
+            resp = admin_client.post("/api/v1/bookings/doctor/", {
                 "affiliation_id": str(affil.pk),
                 "date": monday.isoformat(),
                 "session_key": f"s:{sched_mon.id}",
@@ -476,7 +476,7 @@ def test_monday_past_at_dhaka_tuesday(admin_client, db):
             })
             assert resp.status_code == 400
 
-            resp2 = admin_client.post("/api/bookings/doctor/", {
+            resp2 = admin_client.post("/api/v1/bookings/doctor/", {
                 "affiliation_id": str(affil.pk),
                 "date": tuesday.isoformat(),
                 "session_key": f"s:{sched_tue.id}",

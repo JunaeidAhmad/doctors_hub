@@ -44,35 +44,35 @@ def test_hospital_visibility(geo_thana, superadmin_user, facility_admin_a):
     client = APIClient()
 
     # Anonymous user: sees only active hospital, 404 on inactive
-    res = client.get("/api/hospitals/")
+    res = client.get("/api/v1/hospitals/")
     assert res.status_code == 200
     names = [h["name"] for h in res.data["results"]]
     assert "Hospital Active" in names
     assert "Hospital Alpha" not in names
     assert "Hospital Beta" not in names
 
-    assert client.get(f"/api/hospitals/{hosp_a.pk}/").status_code == 404
-    assert client.get(f"/api/hospitals/{hosp_active.pk}/").status_code == 200
+    assert client.get(f"/api/v1/hospitals/{hosp_a.pk}/").status_code == 404
+    assert client.get(f"/api/v1/hospitals/{hosp_active.pk}/").status_code == 200
 
     # Super admin: sees all hospitals, including inactive
     client.force_authenticate(user=superadmin_user)
-    res = client.get("/api/hospitals/")
+    res = client.get("/api/v1/hospitals/")
     names = [h["name"] for h in res.data["results"]]
     assert "Hospital Alpha" in names
     assert "Hospital Beta" in names
     assert "Hospital Active" in names
-    assert client.get(f"/api/hospitals/{hosp_a.pk}/").status_code == 200
-    assert client.get(f"/api/hospitals/{hosp_b.pk}/").status_code == 200
+    assert client.get(f"/api/v1/hospitals/{hosp_a.pk}/").status_code == 200
+    assert client.get(f"/api/v1/hospitals/{hosp_b.pk}/").status_code == 200
 
     # Facility Admin A: sees active + their own inactive hospital A; 404 on hospital B
     client.force_authenticate(user=user_a)
-    res = client.get("/api/hospitals/")
+    res = client.get("/api/v1/hospitals/")
     names = [h["name"] for h in res.data["results"]]
     assert "Hospital Active" in names
     assert "Hospital Alpha" in names
     assert "Hospital Beta" not in names
-    assert client.get(f"/api/hospitals/{hosp_a.pk}/").status_code == 200
-    assert client.get(f"/api/hospitals/{hosp_b.pk}/").status_code == 404
+    assert client.get(f"/api/v1/hospitals/{hosp_a.pk}/").status_code == 200
+    assert client.get(f"/api/v1/hospitals/{hosp_b.pk}/").status_code == 404
 
 
 @pytest.mark.django_db
@@ -89,22 +89,22 @@ def test_diagnostic_center_visibility(geo_thana, superadmin_user, facility_admin
     client = APIClient()
 
     # Anonymous user: sees only active, 404 on inactive
-    res = client.get("/api/diagnostic-centers/")
+    res = client.get("/api/v1/diagnostic-centers/")
     names = [d["name"] for d in res.data["results"]]
     assert "Diag Center Active" in names
     assert "Hospital Alpha" not in names
     assert "Diag Center Beta" not in names
-    assert client.get(f"/api/diagnostic-centers/{diag_a.pk}/").status_code == 404
+    assert client.get(f"/api/v1/diagnostic-centers/{diag_a.pk}/").status_code == 404
 
     # Super admin: sees all
     client.force_authenticate(user=superadmin_user)
-    assert client.get(f"/api/diagnostic-centers/{diag_a.pk}/").status_code == 200
-    assert client.get(f"/api/diagnostic-centers/{diag_b.pk}/").status_code == 200
+    assert client.get(f"/api/v1/diagnostic-centers/{diag_a.pk}/").status_code == 200
+    assert client.get(f"/api/v1/diagnostic-centers/{diag_b.pk}/").status_code == 200
 
     # Facility Admin A: sees active + diag_a; 404 on diag_b
     client.force_authenticate(user=user_a)
-    assert client.get(f"/api/diagnostic-centers/{diag_a.pk}/").status_code == 200
-    assert client.get(f"/api/diagnostic-centers/{diag_b.pk}/").status_code == 404
+    assert client.get(f"/api/v1/diagnostic-centers/{diag_a.pk}/").status_code == 200
+    assert client.get(f"/api/v1/diagnostic-centers/{diag_b.pk}/").status_code == 404
 
 
 @pytest.mark.django_db
@@ -116,22 +116,22 @@ def test_location_visibility(geo_thana, superadmin_user, facility_admin_a):
     client = APIClient()
 
     # Anonymous user:
-    res = client.get("/api/locations/")
+    res = client.get("/api/v1/locations/")
     names = [loc["name"] for loc in res.data.get("results", res.data)]
     assert "Loc Active" in names
     assert "Hospital Alpha" not in names
     assert "Loc Beta" not in names
-    assert client.get(f"/api/locations/{loc_a.id}/").status_code == 404
+    assert client.get(f"/api/v1/locations/{loc_a.id}/").status_code == 404
 
     # Super admin:
     client.force_authenticate(user=superadmin_user)
-    assert client.get(f"/api/locations/{loc_a.id}/").status_code == 200
-    assert client.get(f"/api/locations/{loc_b.id}/").status_code == 200
+    assert client.get(f"/api/v1/locations/{loc_a.id}/").status_code == 200
+    assert client.get(f"/api/v1/locations/{loc_b.id}/").status_code == 200
 
     # Facility admin:
     client.force_authenticate(user=user_a)
-    assert client.get(f"/api/locations/{loc_a.id}/").status_code == 200
-    assert client.get(f"/api/locations/{loc_b.id}/").status_code == 404
+    assert client.get(f"/api/v1/locations/{loc_a.id}/").status_code == 200
+    assert client.get(f"/api/v1/locations/{loc_b.id}/").status_code == 404
 
 
 @pytest.mark.django_db
@@ -147,30 +147,30 @@ def test_test_and_category_visibility(superadmin_user, facility_admin_a):
     client = APIClient()
 
     # Anonymous user:
-    res = client.get("/api/test-categories/")
+    res = client.get("/api/v1/test-categories/")
     cat_names = [c["name"] for c in res.data["results"]]
     assert "Biochemistry Active" in cat_names
     assert "Immunology Inactive" not in cat_names
-    assert client.get(f"/api/test-categories/{cat_inactive.id}/").status_code == 404
+    assert client.get(f"/api/v1/test-categories/{cat_inactive.id}/").status_code == 404
 
-    res = client.get("/api/tests/")
+    res = client.get("/api/v1/tests/")
     t_names = [t["name"] for t in res.data["results"]]
     assert "Blood Sugar Active" in t_names
     assert "Lipid Profile Inactive" not in t_names
     assert "Thyroid Active In Inactive Cat" not in t_names
-    assert client.get(f"/api/tests/{test_inactive_self.id}/").status_code == 404
-    assert client.get(f"/api/tests/{test_inactive_cat.id}/").status_code == 404
+    assert client.get(f"/api/v1/tests/{test_inactive_self.id}/").status_code == 404
+    assert client.get(f"/api/v1/tests/{test_inactive_cat.id}/").status_code == 404
 
     # Super admin:
     client.force_authenticate(user=superadmin_user)
-    assert client.get(f"/api/test-categories/{cat_inactive.id}/").status_code == 200
-    assert client.get(f"/api/tests/{test_inactive_self.id}/").status_code == 200
-    assert client.get(f"/api/tests/{test_inactive_cat.id}/").status_code == 200
+    assert client.get(f"/api/v1/test-categories/{cat_inactive.id}/").status_code == 200
+    assert client.get(f"/api/v1/tests/{test_inactive_self.id}/").status_code == 200
+    assert client.get(f"/api/v1/tests/{test_inactive_cat.id}/").status_code == 200
 
     # Facility admin: global tests/categories are not in facility scope, so inactive are 404
     client.force_authenticate(user=user_a)
-    assert client.get(f"/api/test-categories/{cat_inactive.id}/").status_code == 404
-    assert client.get(f"/api/tests/{test_inactive_self.id}/").status_code == 404
+    assert client.get(f"/api/v1/test-categories/{cat_inactive.id}/").status_code == 404
+    assert client.get(f"/api/v1/tests/{test_inactive_self.id}/").status_code == 404
 
 
 @pytest.mark.django_db
@@ -190,22 +190,22 @@ def test_facility_test_visibility(geo_thana, superadmin_user, facility_admin_a):
     client = APIClient()
 
     # Anonymous:
-    res = client.get("/api/facility-tests/")
+    res = client.get("/api/v1/facility-tests/")
     ids = [item["id"] for item in res.data["results"]]
     assert str(ft_act.id) in ids
     assert str(ft_a.id) not in ids
     assert str(ft_b.id) not in ids
-    assert client.get(f"/api/facility-tests/{ft_a.id}/").status_code == 404
+    assert client.get(f"/api/v1/facility-tests/{ft_a.id}/").status_code == 404
 
     # Super admin:
     client.force_authenticate(user=superadmin_user)
-    assert client.get(f"/api/facility-tests/{ft_a.id}/").status_code == 200
-    assert client.get(f"/api/facility-tests/{ft_b.id}/").status_code == 200
+    assert client.get(f"/api/v1/facility-tests/{ft_a.id}/").status_code == 200
+    assert client.get(f"/api/v1/facility-tests/{ft_b.id}/").status_code == 200
 
     # Facility Admin A: sees ft_a (their scope), but not ft_b
     client.force_authenticate(user=user_a)
-    assert client.get(f"/api/facility-tests/{ft_a.id}/").status_code == 200
-    assert client.get(f"/api/facility-tests/{ft_b.id}/").status_code == 404
+    assert client.get(f"/api/v1/facility-tests/{ft_a.id}/").status_code == 200
+    assert client.get(f"/api/v1/facility-tests/{ft_b.id}/").status_code == 404
 
 
 @pytest.mark.django_db
@@ -221,24 +221,24 @@ def test_doctor_affiliations_and_chambers_visibility(geo_thana, superadmin_user,
 
     # 1. DoctorAffiliationViewSet visibility:
     # Anonymous:
-    res = client.get("/api/affiliations/")
+    res = client.get("/api/v1/affiliations/")
     aff_ids = [a["id"] for a in res.data["results"]]
     assert str(aff_active.id) in aff_ids
     assert str(aff_inactive.id) not in aff_ids
-    assert client.get(f"/api/affiliations/{aff_inactive.id}/").status_code == 404
+    assert client.get(f"/api/v1/affiliations/{aff_inactive.id}/").status_code == 404
 
     # Super admin:
     client.force_authenticate(user=superadmin_user)
-    assert client.get(f"/api/affiliations/{aff_inactive.id}/").status_code == 200
+    assert client.get(f"/api/v1/affiliations/{aff_inactive.id}/").status_code == 200
 
     # Facility admin A: sees aff_inactive at loc_a
     client.force_authenticate(user=user_a)
-    assert client.get(f"/api/affiliations/{aff_inactive.id}/").status_code == 200
+    assert client.get(f"/api/v1/affiliations/{aff_inactive.id}/").status_code == 200
 
     # 2. DoctorViewSet nested prefetch:
     # A doctor with one chamber at an inactive location shows only the active chamber publicly.
     client.logout()
-    res = client.get(f"/api/doctors/{doc.id}/")
+    res = client.get(f"/api/v1/doctors/{doc.id}/")
     assert res.status_code == 200
     public_chambers = res.data["affiliations"]
     assert len(public_chambers) == 1

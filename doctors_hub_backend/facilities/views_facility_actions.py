@@ -18,7 +18,8 @@ from tests.search import (
     hydrate,
     build_facets,
 )
-from tests.serializers import FacilityTestSearchGroupSerializer
+from tests.serializers import FacilityTestSearchGroupSerializer, FacilityTestSearchResponseSerializer
+from .serializers_summary import FacilityDoctorListResponseSerializer
 
 
 class FacilityDetailActionsMixin:
@@ -57,10 +58,11 @@ class FacilityDetailActionsMixin:
             OpenApiParameter('search', OpenApiTypes.STR, OpenApiParameter.QUERY, description='Search by doctor name, qualification, or specialty'),
             OpenApiParameter('page', OpenApiTypes.INT, OpenApiParameter.QUERY, description='Page number'),
             OpenApiParameter('page_size', OpenApiTypes.INT, OpenApiParameter.QUERY, description='Page size (default 12)'),
-        ]
+        ],
+        responses={200: FacilityDoctorListResponseSerializer},
     )
     @action(detail=True, methods=['get'], url_path='doctors', permission_classes=[AllowAny])
-    def doctors(self, request, pk=None):
+    def doctors(self, request, pk=None, **kwargs):
         location = self._get_facility_location(pk or self.kwargs.get(self.lookup_field) or self.kwargs.get('pk'))
 
         base_aff_qs = DoctorAffiliation.objects.filter(
@@ -193,10 +195,11 @@ class FacilityDetailActionsMixin:
             OpenApiParameter('ordering', OpenApiTypes.STR, OpenApiParameter.QUERY, description='price | -price | name | -name'),
             OpenApiParameter('page', OpenApiTypes.INT, OpenApiParameter.QUERY, description='Page number'),
             OpenApiParameter('page_size', OpenApiTypes.INT, OpenApiParameter.QUERY, description='Page size'),
-        ]
+        ],
+        responses={200: FacilityTestSearchResponseSerializer},
     )
     @action(detail=True, methods=['get'], url_path='tests', permission_classes=[AllowAny])
-    def tests(self, request, pk=None):
+    def tests(self, request, pk=None, **kwargs):
         location = self._get_facility_location(pk or self.kwargs.get(self.lookup_field) or self.kwargs.get('pk'))
 
         raw_params = request.query_params.copy()

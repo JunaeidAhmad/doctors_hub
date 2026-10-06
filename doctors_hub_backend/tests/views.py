@@ -7,7 +7,7 @@ from drf_spectacular.utils import extend_schema, OpenApiParameter, OpenApiTypes
 from .models import TestCategory, Test, FacilityTest
 from .serializers import (
     TestCategorySerializer, TestSerializer, FacilityTestSerializer,
-    FacilityTestSearchGroupSerializer
+    FacilityTestSearchGroupSerializer, FacilityTestSearchResponseSerializer
 )
 from django.db.models import Q
 from core.permissions import ScopedFacilityOrReadOnly, IsSuperAdminOrReadOnly
@@ -151,9 +151,10 @@ class FacilityTestViewSet(PublicVisibilityMixin, RoleScopedQuerysetMixin, viewse
             OpenApiParameter('include_unavailable', OpenApiTypes.BOOL, OpenApiParameter.QUERY, description='Include unavailable tests'),
             OpenApiParameter('offering_limit', OpenApiTypes.INT, OpenApiParameter.QUERY, description='Limit offerings per test (0=all)'),
         ],
+        responses={200: FacilityTestSearchResponseSerializer},
     )
     @action(detail=False, methods=['get'], url_path='search', permission_classes=[AllowAny], filter_backends=[])
-    def search(self, request):
+    def search(self, request, **kwargs):
         try:
             params = parse_params(request.query_params)
         except ValueError as e:

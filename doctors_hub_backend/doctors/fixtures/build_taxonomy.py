@@ -154,7 +154,7 @@ LEAVES = [
     {"name": "Homeopathic Doctor", "bn_name": "হোমিওপ্যাথি ডাক্তার", "formal_name": "Homeopathic Medicine", "slug": "homeopathic-doctor", "parents": [24], "related": [], "provider_type": "alternative", "aliases_en": ["Homeopathy"], "aliases_bn": ["হোমিওপ্যাথি"]},
 
     # Approved AGENT_NODEs (>= 2 doctors in inventory, §6)
-    {"name": "Allergist & Immunologist", "bn_name": "এলার্জি ও ইমিউনোলজি বিশেষজ্ঞ", "formal_name": "Allergy & Clinical Immunology", "slug": "allergy-immunologist", "parents": [1, 14], "related": [], "provider_type": "physician", "aliases_en": ["Allergy", "Immunology", "Allergy & Immunology"], "aliases_bn": ["এলার্জি", "ইমিউনোলজি"]},
+    {"name": "Allergist & Immunologist", "bn_name": "এলার্জি ও ইমিউনোলজি বিশেষজ্ঞ", "formal_name": "Allergy & Clinical Immunology", "slug": "allergy-immunologist", "parents": [14], "related": [], "provider_type": "physician", "aliases_en": ["Allergy", "Immunology", "Allergy & Immunology"], "aliases_bn": ["এলার্জি", "ইমিউনোলজি"]},
     {"name": "Interventional Neurologist", "bn_name": "ইন্টারভেনশনাল নিউরোলজিস্ট", "formal_name": "Interventional Neurology", "slug": "interventional-neurologist", "parents": [4], "related": [], "provider_type": "physician", "aliases_en": ["Interventional Neurology"], "aliases_bn": ["ইন্টারভেনশনাল নিউরোলজি"]},
     {"name": "Pediatric Orthopedic Surgeon", "bn_name": "শিশু অর্থোপেডিক সার্জন", "formal_name": "Pediatric Orthopedics", "slug": "pediatric-orthopedic-surgeon", "parents": [7, 5], "related": [], "provider_type": "physician", "aliases_en": ["Pediatric Orthopedics", "Pediatric Orthopaedic Surgery"], "aliases_bn": ["শিশু অর্থোপেডিক"]},
     {"name": "Pediatric Gastroenterologist", "bn_name": "শিশু গ্যাস্ট্রোএন্টারোলজিস্ট", "formal_name": "Pediatric Gastroenterology", "slug": "pediatric-gastroenterologist", "parents": [7, 9], "related": [], "provider_type": "physician", "aliases_en": ["Pediatric Gastroenterology"], "aliases_bn": ["শিশু গ্যাস্ট্রো"]},
@@ -165,6 +165,81 @@ LEAVES = [
     {"name": "Pediatric Urologist", "bn_name": "শিশু ইউরোলজিস্ট", "formal_name": "Pediatric Urology", "slug": "pediatric-urologist", "parents": [7, 8], "related": [], "provider_type": "physician", "aliases_en": ["Pediatric Urology"], "aliases_bn": ["শিশু ইউরোলজি"]},
     {"name": "Sports Medicine Specialist", "bn_name": "স্পোর্টস মেডিসিন বিশেষজ্ঞ", "formal_name": "Sports Medicine", "slug": "sports-medicine-specialist", "parents": [5, 20], "related": [], "provider_type": "physician", "aliases_en": ["Sports Medicine", "Exercise Medicine"], "aliases_bn": ["স্পোর্টস মেডিসিন"]},
 ]
+
+# Curated leaf-to-leaf links (max 6 per leaf; must reference known leaf slugs).
+# These populate the DoctorSpecialty.related_leaves M2M via load_taxonomy/build.
+RELATED_LEAVES = {
+    "allergy-immunologist": ["dermatologist", "chest-specialist", "ent-specialist", "pediatric-pulmonologist"],
+    "pediatric-oncologist": ["hematologist", "cancer-specialist", "child-specialist"],
+    "pediatric-neurologist": ["neurologist", "child-specialist"],
+    "spine-surgeon": ["neurosurgeon", "orthopedic-surgeon", "pain-specialist"],
+    "rheumatologist": ["orthopedic-surgeon", "medicine-specialist", "physical-medicine-specialist"],
+    "andrologist": ["urologist", "sexologist", "infertility-specialist"],
+    "sexologist": ["andrologist", "psychiatrist", "urologist"],
+    "interventional-neurologist": ["neurologist", "neurosurgeon"],
+    "fetomaternal-medicine-specialist": ["gynecologist-obstetrician", "sonologist"],
+    "medicine-specialist": ["diabetologist", "cardiologist", "endocrinologist", "nephrologist"],
+    "family-physician-gp": ["medicine-specialist", "child-specialist", "gynecologist-obstetrician"],
+    "infectious-disease-specialist": ["chest-specialist", "medicine-specialist", "hepatologist"],
+    "cardiologist": ["interventional-cardiologist", "cardiac-surgeon", "chest-specialist"],
+    "interventional-cardiologist": ["cardiologist", "cardiac-surgeon", "vascular-surgeon"],
+    "cardiac-surgeon": ["cardiologist", "interventional-cardiologist", "thoracic-surgeon", "vascular-surgeon"],
+    "vascular-surgeon": ["cardiologist", "interventional-cardiologist", "general-surgeon"],
+    "thoracic-surgeon": ["chest-specialist", "cardiac-surgeon", "general-surgeon"],
+    "pediatric-cardiologist": ["child-specialist", "cardiologist", "cardiac-surgeon"],
+    "cancer-specialist": ["cancer-surgeon", "hematologist", "pathologist"],
+    "cancer-surgeon": ["cancer-specialist", "general-surgeon", "plastic-surgeon"],
+    "breast-surgeon": ["breast-health-specialist", "cancer-specialist", "gynecologist-obstetrician"],
+    "breast-health-specialist": ["breast-surgeon", "cancer-specialist", "gynecologist-obstetrician"],
+    "gynecological-oncologist": ["gynecologist-obstetrician", "cancer-specialist", "cancer-surgeon"],
+    "neurologist": ["neurosurgeon", "interventional-neurologist", "physical-medicine-specialist"],
+    "neurosurgeon": ["neurologist", "spine-surgeon", "interventional-neurologist"],
+    "pediatric-neurosurgeon": ["pediatric-neurologist", "neurosurgeon", "child-specialist"],
+    "orthopedic-surgeon": ["rheumatologist", "spine-surgeon", "physical-medicine-specialist", "physiotherapist"],
+    "pediatric-orthopedic-surgeon": ["child-specialist", "orthopedic-surgeon", "physiotherapist"],
+    "sports-medicine-specialist": ["orthopedic-surgeon", "physiotherapist", "physical-medicine-specialist"],
+    "gynecologist-obstetrician": ["infertility-specialist", "fetomaternal-medicine-specialist", "sonologist"],
+    "infertility-specialist": ["gynecologist-obstetrician", "andrologist", "endocrinologist"],
+    "child-specialist": ["neonatologist", "pediatric-pulmonologist", "pediatric-gastroenterologist"],
+    "neonatologist": ["child-specialist", "pediatric-surgeon", "pediatric-cardiologist"],
+    "pediatric-surgeon": ["child-specialist", "neonatologist", "general-surgeon"],
+    "pediatric-gastroenterologist": ["child-specialist", "gastroenterologist", "hepatologist"],
+    "pediatric-pulmonologist": ["child-specialist", "chest-specialist", "allergy-immunologist"],
+    "pediatric-urologist": ["child-specialist", "urologist", "pediatric-surgeon"],
+    "nephrologist": ["urologist", "diabetologist", "cardiologist"],
+    "urologist": ["nephrologist", "andrologist", "general-surgeon"],
+    "gastroenterologist": ["hepatologist", "general-surgeon", "colorectal-surgeon"],
+    "hepatologist": ["gastroenterologist", "hepatobiliary-surgeon", "infectious-disease-specialist"],
+    "hepatobiliary-surgeon": ["hepatologist", "gastroenterologist", "general-surgeon"],
+    "colorectal-surgeon": ["gastroenterologist", "general-surgeon", "cancer-specialist"],
+    "diabetologist": ["endocrinologist", "nephrologist", "cardiologist", "eye-specialist"],
+    "endocrinologist": ["diabetologist", "medicine-specialist", "weight-management-specialist"],
+    "chest-specialist": ["infectious-disease-specialist", "allergy-immunologist", "thoracic-surgeon", "critical-care-specialist"],
+    "ent-specialist": ["allergy-immunologist", "head-neck-surgeon"],
+    "head-neck-surgeon": ["ent-specialist", "cancer-surgeon", "plastic-surgeon"],
+    "eye-specialist": ["diabetologist"],
+    "dermatologist": ["allergy-immunologist", "sexologist"],
+    "psychiatrist": ["psychologist", "neurologist"],
+    "psychologist": ["psychiatrist"],
+    "general-surgeon": ["laparoscopic-surgeon", "colorectal-surgeon", "cancer-surgeon"],
+    "laparoscopic-surgeon": ["general-surgeon", "gastroenterologist", "gynecologist-obstetrician"],
+    "plastic-surgeon": ["general-surgeon", "cancer-surgeon", "dermatologist"],
+    "hematologist": ["cancer-specialist", "pediatric-oncologist", "pathologist"],
+    "nutritionist-dietitian": ["weight-management-specialist", "diabetologist", "gastroenterologist"],
+    "weight-management-specialist": ["nutritionist-dietitian", "endocrinologist", "diabetologist"],
+    "physical-medicine-specialist": ["physiotherapist", "neurologist", "orthopedic-surgeon"],
+    "physiotherapist": ["physical-medicine-specialist", "orthopedic-surgeon", "sports-medicine-specialist"],
+    "pain-specialist": ["spine-surgeon", "orthopedic-surgeon", "physical-medicine-specialist"],
+    "anesthesiologist": [],
+    "critical-care-specialist": ["chest-specialist", "cardiologist", "nephrologist"],
+    "dentist": ["maxillofacial-surgeon"],
+    "maxillofacial-surgeon": ["dentist", "plastic-surgeon", "head-neck-surgeon"],
+    "radiologist": [],
+    "sonologist": ["radiologist", "gynecologist-obstetrician", "fetomaternal-medicine-specialist"],
+    "pathologist": ["cancer-specialist", "hematologist"],
+    "nuclear-medicine-specialist": ["cancer-specialist", "endocrinologist", "radiologist"],
+    "homeopathic-doctor": [],
+}
 
 POPULAR_SLUGS = [
     "medicine-specialist", "gynecologist-obstetrician", "general-surgeon",
@@ -183,6 +258,21 @@ IGNORABLE = {
 
 def main():
     print("--- Building Taxonomy v3 YAML & Mapping Vocabulary ---")
+
+    # Keep alias lists and legacy_map entries accumulated in the existing YAML fixture
+    existing_fixture = {}
+    if FIXTURE_PATH.exists():
+        with open(FIXTURE_PATH, 'r', encoding='utf-8') as f:
+            existing_fixture = yaml.safe_load(f) or {}
+        existing_leaves = {l.get('slug'): l for l in existing_fixture.get('leaves', [])}
+        for leaf in LEAVES:
+            old = existing_leaves.get(leaf['slug']) or {}
+            for key in ('aliases_en', 'aliases_bn'):
+                merged = list(leaf.get(key) or [])
+                for a in old.get(key) or []:
+                    if a not in merged:
+                        merged.append(a)
+                leaf[key] = merged
 
     # Build leaf lookup maps
     alias_to_leaf = {}
@@ -205,6 +295,33 @@ def main():
         for a in leaf.get("aliases_bn", []):
             alias_to_leaf[normalize_text(a)] = leaf["slug"]
 
+    # Resolve related_leaves after all leaves exist
+    unknown_keys = sorted(set(RELATED_LEAVES) - set(leaf_by_slug))
+    if unknown_keys:
+        raise ValueError(f"RELATED_LEAVES references unknown leaves: {unknown_keys}")
+    for leaf in LEAVES:
+        rel = RELATED_LEAVES.get(leaf["slug"], [])
+        if len(rel) > 6:
+            raise ValueError(f"related_leaves for '{leaf['slug']}' has more than 6 items ({len(rel)})")
+        seen = set()
+        for slug in rel:
+            if slug == leaf["slug"]:
+                raise ValueError(f"related_leaves for '{leaf['slug']}' links to itself")
+            if slug not in leaf_by_slug:
+                raise ValueError(f"related_leaves for '{leaf['slug']}' references unknown slug '{slug}'")
+            if slug in seen:
+                raise ValueError(f"related_leaves for '{leaf['slug']}' lists '{slug}' twice")
+            seen.add(slug)
+        ordered = {}
+        for k, v in leaf.items():
+            ordered[k] = v
+            if k == "related":
+                ordered["related_leaves"] = list(rel)
+        if "related_leaves" not in ordered:
+            ordered["related_leaves"] = list(rel)
+        leaf.clear()
+        leaf.update(ordered)
+
     # Build legacy mapping for every existing DoctorSpecialty row
     legacy_map = {}
     db_specs = list(DoctorSpecialty.objects.all())
@@ -222,6 +339,10 @@ def main():
         legacy_map[s.name] = target
         legacy_map[s.slug] = target
         legacy_map[str(s.id)] = target
+
+    # Keep legacy_map entries accumulated in the existing YAML fixture
+    for k, v in (existing_fixture.get('legacy_map') or {}).items():
+        legacy_map.setdefault(k, v)
 
     # Map inventory fragments and compute coverage
     mapped_count = 0
@@ -290,6 +411,27 @@ def main():
         yaml.dump(taxonomy_data, f, sort_keys=False, allow_unicode=True)
 
     print(f"Taxonomy fixture written to {FIXTURE_PATH}.")
+
+    # Set parents and related_leaves on existing DB rows
+    db_by_slug = {s.slug: s for s in DoctorSpecialty.objects.all()}
+    synced = 0
+    for leaf in LEAVES:
+        obj = db_by_slug.get(leaf["slug"])
+        if obj is None:
+            continue
+        parents = [db_by_slug[u["slug"]] for u in UMBRELLAS
+                   if u["id"] in leaf.get("parents", []) and u["slug"] in db_by_slug]
+        obj.parent_categories.set(parents)
+        obj.related_leaves.set(
+            [db_by_slug[s] for s in leaf.get("related_leaves", []) if s in db_by_slug]
+        )
+        synced += 1
+    print(f"Synced parents & related_leaves for {synced} leaves in the database.")
+
+    # Clear the curated related cache after taxonomy changes
+    from doctors.services.specialty_relations import _cached_curated_related_ids, bump_taxonomy_version
+    _cached_curated_related_ids.cache_clear()
+    bump_taxonomy_version()
     print("--- Build Taxonomy Completed ---")
 
 if __name__ == '__main__':

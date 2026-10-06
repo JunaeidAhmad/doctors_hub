@@ -1,5 +1,7 @@
 from rest_framework import serializers
+from drf_spectacular.utils import extend_schema_field
 from .models import Location
+from core.schema_serializers import NextAvailableSerializer
 
 
 class FacilitySummarySerializer(serializers.ModelSerializer):
@@ -46,6 +48,7 @@ class FacilitySummarySerializer(serializers.ModelSerializer):
         )
         read_only_fields = fields
 
+    @extend_schema_field(serializers.URLField(allow_null=True))
     def get_logo(self, obj):
         if not obj or not getattr(obj, 'logo', None):
             return None
@@ -61,6 +64,7 @@ class FacilitySummarySerializer(serializers.ModelSerializer):
         except Exception:
             return val or None
 
+    @extend_schema_field(serializers.URLField(allow_null=True))
     def get_image(self, obj):
         if not obj or not getattr(obj, 'image', None):
             return None
@@ -87,3 +91,64 @@ class FacilityMiniSerializer(serializers.ModelSerializer):
         model = Location
         fields = ('id', 'slug', 'display_name', 'location_type', 'area', 'district', 'district_id')
         read_only_fields = fields
+
+
+class FacilityDoctorScheduleSerializer(serializers.Serializer):
+    id = serializers.CharField()
+    day_of_week = serializers.CharField()
+    start_time = serializers.CharField()
+    end_time = serializers.CharField()
+
+
+class FacilityDoctorSpecialtyRefSerializer(serializers.Serializer):
+    slug = serializers.CharField()
+    name = serializers.CharField()
+    bn_name = serializers.CharField()
+
+
+class FacilityDoctorRefSerializer(serializers.Serializer):
+    id = serializers.UUIDField()
+    slug = serializers.CharField()
+    name = serializers.CharField()
+    bn_name = serializers.CharField()
+    academic_title = serializers.CharField()
+    qualification = serializers.CharField()
+    image = serializers.URLField(allow_null=True)
+    gender = serializers.CharField()
+    bmdc_number = serializers.CharField(allow_null=True)
+    rating = serializers.CharField(allow_null=True)
+    review_count = serializers.IntegerField()
+    primary_specialty = FacilityDoctorSpecialtyRefSerializer(allow_null=True)
+
+
+class FacilityDoctorEntrySerializer(serializers.Serializer):
+    """One result row of GET /hospitals/{location}/doctors/."""
+    affiliation_id = serializers.UUIDField()
+    fee = serializers.CharField(allow_null=True)
+    chamber_type = serializers.CharField()
+    schedules = FacilityDoctorScheduleSerializer(many=True)
+    next_available = NextAvailableSerializer(allow_null=True)
+    doctor = FacilityDoctorRefSerializer()
+
+
+class FacilityDoctorFacetSerializer(serializers.Serializer):
+    slug = serializers.CharField()
+    name = serializers.CharField()
+    bn_name = serializers.CharField()
+    count = serializers.IntegerField()
+
+
+class FacilityDoctorFacetsSerializer(serializers.Serializer):
+    specialties = FacilityDoctorFacetSerializer(many=True)
+
+
+class FacilityDoctorListResponseSerializer(serializers.Serializer):
+    """Paginated envelope (SearchPagination.get_paginated_response) for facility doctors."""
+    count = serializers.IntegerField()
+    total_pages = serializers.IntegerField()
+    page = serializers.IntegerField()
+    page_size = serializers.IntegerField()
+    next = serializers.URLField(allow_null=True)
+    previous = serializers.URLField(allow_null=True)
+    facets = FacilityDoctorFacetsSerializer()
+    results = FacilityDoctorEntrySerializer(many=True)

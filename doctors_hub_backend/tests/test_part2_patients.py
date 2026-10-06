@@ -151,7 +151,7 @@ class TestGetOrCreatePatient:
 class TestBDPhoneFieldInSerializers:
     def test_otp_request_canonicalizes_phone(self, anon_client):
         """OTP send with +880 form normalizes the phone."""
-        resp = anon_client.post("/api/bookings/otp/send/", {
+        resp = anon_client.post("/api/v1/bookings/otp/send/", {
             "phone": "+8801711222333",
             "purpose": "booking"
         })
@@ -161,14 +161,14 @@ class TestBDPhoneFieldInSerializers:
     def test_otp_verify_canonicalizes_phone(self, anon_client):
         """OTP verify with +880 form normalizes the phone."""
         # First send OTP
-        resp = anon_client.post("/api/bookings/otp/send/", {
+        resp = anon_client.post("/api/v1/bookings/otp/send/", {
             "phone": "01711222333",
             "purpose": "booking"
         })
         otp_code = resp.data.get("otp", "123456")
 
         # Verify with +880 form
-        resp2 = anon_client.post("/api/bookings/otp/verify/", {
+        resp2 = anon_client.post("/api/v1/bookings/otp/verify/", {
             "phone": "+8801711222333",
             "otp_code": otp_code,
         })
@@ -177,7 +177,7 @@ class TestBDPhoneFieldInSerializers:
 
     def test_invalid_phone_in_otp_request(self, anon_client):
         """Invalid phone returns 400."""
-        resp = anon_client.post("/api/bookings/otp/send/", {
+        resp = anon_client.post("/api/v1/bookings/otp/send/", {
             "phone": "012345",
         })
         assert resp.status_code == http_status.HTTP_400_BAD_REQUEST
@@ -210,7 +210,7 @@ class TestBookingPatientSnapshot:
         assert len(sessions) > 0
         session_key = sessions[0].key
 
-        resp = anon_client.post("/api/bookings/doctor/", {
+        resp = anon_client.post("/api/v1/bookings/doctor/", {
             "affiliation_id": str(affil.pk),
             "date": date_str,
             "session_key": session_key,
@@ -242,7 +242,7 @@ class TestBookingPatientSnapshot:
         sessions = resolve_sessions(affil, booking_date, schedules, exceptions)
         session_key = sessions[0].key
 
-        resp = anon_client.post("/api/bookings/doctor/", {
+        resp = anon_client.post("/api/v1/bookings/doctor/", {
             "affiliation_id": str(affil.pk),
             "date": date_str,
             "session_key": session_key,
@@ -266,13 +266,13 @@ class TestBookingPatientSnapshot:
     def test_patient_lookup_with_plus880_form(self, anon_client, db):
         """Patient lookup canonicalizes the phone query param."""
         get_or_create_patient("01711777888", "Lookup Test")
-        resp = anon_client.get("/api/bookings/patients/lookup/?phone=%2B8801711777888")
+        resp = anon_client.get("/api/v1/bookings/patients/lookup/?phone=%2B8801711777888")
         assert resp.status_code == http_status.HTTP_200_OK
         assert resp.data["found"] is True
         assert resp.data["patient"]["name"] == "Lookup Test"
 
     def test_patient_lookup_invalid_phone(self, anon_client, db):
-        resp = anon_client.get("/api/bookings/patients/lookup/?phone=012345")
+        resp = anon_client.get("/api/v1/bookings/patients/lookup/?phone=012345")
         assert resp.status_code == http_status.HTTP_400_BAD_REQUEST
 
 

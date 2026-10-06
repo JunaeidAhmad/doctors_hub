@@ -1,7 +1,10 @@
 import React from 'react';
 import { Phone, Mail, Clock, ShieldCheck, LayoutDashboard } from 'lucide-react';
+import { useLang, toggleLang } from '../hooks/useLang';
+import { t } from '../data/strings';
 
 export default function TopUtilityStrip({ selectedLocation, setSelectedLocation, onNavigateAdmin }) {
+  const lang = useLang();
   return (
     <div className="bg-slate-900 text-slate-200 text-xs py-2 px-4 sm:px-8 border-b border-slate-800">
       <div className="max-w-7xl mx-auto flex flex-col sm:flex-row justify-between items-center gap-2">
@@ -49,10 +52,15 @@ export default function TopUtilityStrip({ selectedLocation, setSelectedLocation,
 
           <span className="text-slate-700 hidden sm:inline">•</span>
 
-          <div className="flex items-center gap-1 text-slate-400 hover:text-white cursor-pointer transition-colors">
+          <button
+            type="button"
+            onClick={toggleLang}
+            className="flex items-center gap-1 text-slate-400 hover:text-white cursor-pointer transition-colors"
+            title={lang === 'bn' ? t('switchToEnglish') : t('switchToBangla')}
+          >
             <span className="material-symbols-outlined text-[14px]">language</span>
-            <span className="font-medium">বাংলা</span>
-          </div>
+            <span className="font-medium">{lang === 'bn' ? t('switchToEnglish') : t('switchToBangla')}</span>
+          </button>
         </div>
       </div>
     </div>

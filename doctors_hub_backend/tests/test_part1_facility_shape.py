@@ -34,7 +34,7 @@ def test_hospital_list_and_detail_flat_shape(client, geo_data):
     hospital = Hospital.objects.create(location=loc)
 
     # List endpoint
-    res = client.get("/api/hospitals/")
+    res = client.get("/api/v1/hospitals/")
     assert res.status_code == 200
     results = res.data.get("results", res.data)
     hosp_data = next((h for h in results if str(h.get("id")) == str(loc.id)), None)
@@ -46,7 +46,7 @@ def test_hospital_list_and_detail_flat_shape(client, geo_data):
     assert hosp_data["address"] == "18/F West Panthapath"
 
     # Detail endpoint
-    res_detail = client.get(f"/api/hospitals/{loc.slug}/")
+    res_detail = client.get(f"/api/v1/hospitals/{loc.slug}/")
     assert res_detail.status_code == 200
     assert "location_details" not in res_detail.data
     assert res_detail.data["display_name"] == "Square Hospital (Panthapath)"
@@ -68,7 +68,7 @@ def test_doctor_affiliation_facility_shape(client, geo_data):
     aff = DoctorAffiliation.objects.create(doctor=doc, location=loc, fee=1200)
 
     # Fetch via doctor detail
-    res = client.get(f"/api/doctors/{doc.slug}/")
+    res = client.get(f"/api/v1/doctors/{doc.slug}/")
     assert res.status_code == 200
     affs = res.data.get("affiliations", [])
     assert len(affs) >= 1
@@ -94,7 +94,7 @@ def test_facility_test_facility_shape(client, geo_data):
     )
     ft = FacilityTest.objects.create(location=loc, test=test, price=1500)
 
-    res = client.get("/api/facility-tests/")
+    res = client.get("/api/v1/facility-tests/")
     assert res.status_code == 200
     results = res.data.get("results", res.data)
     ft_data = next((item for item in results if str(item.get("id")) == str(ft.id)), None)
@@ -145,7 +145,7 @@ def test_doctor_booking_facility_shape(client, geo_data):
         patient_phone=patient.phone,
     )
 
-    res = client.get(f"/api/bookings/doctor-bookings/{booking.id}/")
+    res = client.get(f"/api/v1/bookings/doctor-bookings/{booking.id}/")
     assert res.status_code == 200
     assert "facility_name" not in res.data
     assert "branch" not in res.data
@@ -191,10 +191,10 @@ def test_query_count_bounds(client, django_assert_num_queries, geo_data):
         DoctorAffiliation.objects.create(doctor=doc, location=loc, fee=500)
 
     with django_assert_num_queries(3):
-        res_h = client.get("/api/hospitals/?page_size=20")
+        res_h = client.get("/api/v1/hospitals/?page_size=20")
         assert res_h.status_code == 200
 
     # 7 queries base + 3 for batch_next_available = 10 (optimized prefetch)
     with django_assert_num_queries(10):
-        res_d = client.get("/api/doctors/?page_size=20")
+        res_d = client.get("/api/v1/doctors/?page_size=20")
         assert res_d.status_code == 200

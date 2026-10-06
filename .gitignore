@@ -21,3 +21,9 @@ dist-ssr/
 .idea/
 .vercel
 .agent/
+
+# Local backups (contain DB dumps / copies of sources)
+backups/
+doctors_hub_backend/backups/
+.part4-backup/
+db.json

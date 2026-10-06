@@ -1,4 +1,6 @@
 import React from 'react';
+import { useLang } from '../../../hooks/useLang';
+import { t, pluralizeSpecialty } from '../../../data/strings';
 
 export default function DoctorActiveFiltersBar({
   divisionName,
@@ -6,6 +8,7 @@ export default function DoctorActiveFiltersBar({
   thanaName,
   specialty,
   specialtyName,
+  specialtyBnName = '',
   facility,
   facilityName,
   selectedDay,
@@ -21,6 +24,7 @@ export default function DoctorActiveFiltersBar({
   onRemoveGender,
   onClearAll
 }) {
+  const lang = useLang();
   return (
     <section className="bg-surface-container-low border-b border-outline-variant">
       <div className="max-w-7xl mx-auto px-6 lg:px-12 py-3.5">
@@ -157,7 +161,20 @@ export default function DoctorActiveFiltersBar({
           {/* Results Counter */}
           <div className="flex items-center gap-4 ml-auto">
             <div className="text-body-sm text-on-surface font-body-sm">
-              Showing <strong className="font-title-md text-primary font-bold">{totalDoctors}</strong> Verified Doctors found
+              {specialty ? (
+                <>
+                  <strong className="font-title-md text-primary font-bold">{totalDoctors}</strong>{' '}
+                  {lang === 'bn'
+                    ? `${t('peopleCounter')} ${specialtyBnName || specialtyName}`
+                    : pluralizeSpecialty(specialtyName)}
+                </>
+              ) : (
+                <>
+                  {t('showingPrefix') ? <>{t('showingPrefix')}{' '}</> : null}
+                  <strong className="font-title-md text-primary font-bold">{totalDoctors}</strong>{' '}
+                  {t('verifiedDoctorsFound')}
+                </>
+              )}
             </div>
           </div>
         </div>

@@ -33,17 +33,17 @@ def client():
 
 @pytest.mark.django_db
 def test_suggest_anonymous_access_and_validation(client):
-    res_no_q = client.get("/api/specialties/suggest/")
+    res_no_q = client.get("/api/v1/specialties/suggest/")
     assert res_no_q.status_code == 400
     assert "error" in res_no_q.data
 
-    res_empty_q = client.get("/api/specialties/suggest/?q=   ")
+    res_empty_q = client.get("/api/v1/specialties/suggest/?q=   ")
     assert res_empty_q.status_code == 400
 
-    res_long_q = client.get(f"/api/specialties/suggest/?q={'a' * 101}")
+    res_long_q = client.get(f"/api/v1/specialties/suggest/?q={'a' * 101}")
     assert res_long_q.status_code == 400
 
-    res_valid = client.get("/api/specialties/suggest/?q=cardio")
+    res_valid = client.get("/api/v1/specialties/suggest/?q=cardio")
     assert res_valid.status_code == 200
     assert isinstance(res_valid.data, list)
 
@@ -76,7 +76,7 @@ def test_suggest_ranking_exact_prefix_contains(client):
     )
 
     # Alias exact match (rank 0) beats prefix (rank 1), which beats contains (rank 2)
-    res = client.get("/api/specialties/suggest/?q=cardio")
+    res = client.get("/api/v1/specialties/suggest/?q=cardio")
     assert res.status_code == 200
     items = res.data
     ids = [item["id"] for item in items]
@@ -110,7 +110,7 @@ def test_suggest_bangla_alias_match(client):
         is_verified=True
     )
 
-    res = client.get("/api/specialties/suggest/?q=মস্তিষ্ক বিশেষজ্ঞ")
+    res = client.get("/api/v1/specialties/suggest/?q=মস্তিষ্ক বিশেষজ্ঞ")
     assert res.status_code == 200
     assert len(res.data) >= 1
     match = res.data[0]
@@ -135,7 +135,7 @@ def test_suggest_deduplication(client):
         is_verified=True
     )
 
-    res = client.get("/api/specialties/suggest/?q=unique test specialty")
+    res = client.get("/api/v1/specialties/suggest/?q=unique test specialty")
     assert res.status_code == 200
     matches = [it for it in res.data if it["id"] == str(spec.id)]
     assert len(matches) == 1
@@ -156,13 +156,13 @@ def test_category_exact_match_by_slug_and_uuid(client, geo_setup):
     Hospital.objects.create(location=loc2, category=cat_spec)
 
     # By slug
-    res_slug = client.get("/api/hospitals/?category=general-hospital")
+    res_slug = client.get("/api/v1/hospitals/?category=general-hospital")
     assert res_slug.status_code == 200
     assert len(res_slug.data["results"]) == 1
     assert res_slug.data["results"][0]["id"] == str(loc1.id)
 
     # By UUID
-    res_uuid = client.get(f"/api/hospitals/?category={cat_gen.id}")
+    res_uuid = client.get(f"/api/v1/hospitals/?category={cat_gen.id}")
     assert res_uuid.status_code == 200
     assert len(res_uuid.data["results"]) == 1
     assert res_uuid.data["results"][0]["id"] == str(loc1.id)
@@ -177,12 +177,12 @@ def test_category_exact_match_by_slug_and_uuid(client, geo_setup):
     dloc2 = Location.objects.create(name="Lab Two", thana=thana, location_type="diagnostic_center")
     DiagnosticCenter.objects.create(location=dloc2, category=dcat2)
 
-    res_diag_slug = client.get("/api/diagnostic-centers/?category=pathology-lab")
+    res_diag_slug = client.get("/api/v1/diagnostic-centers/?category=pathology-lab")
     assert res_diag_slug.status_code == 200
     assert len(res_diag_slug.data["results"]) == 1
     assert res_diag_slug.data["results"][0]["id"] == str(dloc1.id)
 
-    res_diag_uuid = client.get(f"/api/diagnostic-centers/?category={dcat1.id}")
+    res_diag_uuid = client.get(f"/api/v1/diagnostic-centers/?category={dcat1.id}")
     assert res_diag_uuid.status_code == 200
     assert len(res_diag_uuid.data["results"]) == 1
     assert res_diag_uuid.data["results"][0]["id"] == str(dloc1.id)
@@ -194,12 +194,12 @@ def test_category_exact_match_by_slug_and_uuid(client, geo_setup):
     test_rad = Test.objects.create(name="X-Ray Chest", slug="x-ray-chest", category=tcat)
     test_hema = Test.objects.create(name="CBC", slug="cbc", category=tcat_other)
 
-    res_test_slug = client.get("/api/tests/?category=radiology")
+    res_test_slug = client.get("/api/v1/tests/?category=radiology")
     assert res_test_slug.status_code == 200
     assert len(res_test_slug.data["results"]) == 1
     assert res_test_slug.data["results"][0]["id"] == str(test_rad.id)
 
-    res_test_uuid = client.get(f"/api/tests/?category={tcat.id}")
+    res_test_uuid = client.get(f"/api/v1/tests/?category={tcat.id}")
     assert res_test_uuid.status_code == 200
     assert len(res_test_uuid.data["results"]) == 1
     assert res_test_uuid.data["results"][0]["id"] == str(test_rad.id)
@@ -207,7 +207,7 @@ def test_category_exact_match_by_slug_and_uuid(client, geo_setup):
     ft_rad = FacilityTest.objects.create(location=dloc1, test=test_rad, price=500)
     ft_hema = FacilityTest.objects.create(location=dloc1, test=test_hema, price=300)
 
-    res_ft_slug = client.get("/api/facility-tests/?category=radiology")
+    res_ft_slug = client.get("/api/v1/facility-tests/?category=radiology")
     assert res_ft_slug.status_code == 200
     assert len(res_ft_slug.data["results"]) == 1
     assert res_ft_slug.data["results"][0]["id"] == str(ft_rad.id)
@@ -226,16 +226,16 @@ def test_category_near_miss_slug_returns_zero(client, geo_setup):
     FacilityTest.objects.create(location=dloc, test=test_ct, price=3000)
 
     # Substring 'ct' must NOT match 'ct-scan'
-    res_near_miss_test = client.get("/api/tests/?category=ct")
+    res_near_miss_test = client.get("/api/v1/tests/?category=ct")
     assert res_near_miss_test.status_code == 200
     assert len(res_near_miss_test.data["results"]) == 0
 
-    res_near_miss_diag = client.get("/api/diagnostic-centers/?testcat=ct")
+    res_near_miss_diag = client.get("/api/v1/diagnostic-centers/?testcat=ct")
     assert res_near_miss_diag.status_code == 200
     assert len(res_near_miss_diag.data["results"]) == 0
 
     # Exact slug 'ct-scan' matches
-    res_exact_diag = client.get("/api/diagnostic-centers/?testcat=ct-scan")
+    res_exact_diag = client.get("/api/v1/diagnostic-centers/?testcat=ct-scan")
     assert res_exact_diag.status_code == 200
     assert len(res_exact_diag.data["results"]) == 1
     assert res_exact_diag.data["results"][0]["id"] == str(dloc.id)
@@ -259,7 +259,7 @@ def test_category_comma_separated_multi_value(client, geo_setup):
     Hospital.objects.create(location=loc3, category=cat3)
 
     # Multi-value filter
-    res_multi = client.get("/api/hospitals/?category=eye-hospital,dental-clinic")
+    res_multi = client.get("/api/v1/hospitals/?category=eye-hospital,dental-clinic")
     assert res_multi.status_code == 200
     res_ids = [h["id"] for h in res_multi.data["results"]]
     assert str(loc1.id) in res_ids
@@ -267,7 +267,7 @@ def test_category_comma_separated_multi_value(client, geo_setup):
     assert str(loc3.id) not in res_ids
 
     # Ignoring 'all' in multi-value
-    res_with_all = client.get("/api/hospitals/?category=eye-hospital,all")
+    res_with_all = client.get("/api/v1/hospitals/?category=eye-hospital,all")
     assert res_with_all.status_code == 200
     res_all_ids = [h["id"] for h in res_with_all.data["results"]]
     assert str(loc1.id) in res_all_ids
@@ -275,6 +275,6 @@ def test_category_comma_separated_multi_value(client, geo_setup):
     assert str(loc3.id) not in res_all_ids
 
     # Single 'all' returns all
-    res_only_all = client.get("/api/hospitals/?category=all")
+    res_only_all = client.get("/api/v1/hospitals/?category=all")
     assert res_only_all.status_code == 200
     assert len(res_only_all.data["results"]) == 3

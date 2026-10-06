@@ -11,8 +11,8 @@ class TestOpenAPIDocumentationEndpoints:
         content = response.content.decode('utf-8')
         assert 'openapi: 3.0' in content
         assert "Doctor's Hub API" in content
-        assert '/api/search-metadata/' in content
-        assert '/api/auth/login/' in content
+        assert '/api/v1/search-metadata/' in content
+        assert '/api/v1/auth/login/' in content
 
     def test_swagger_ui_endpoint_accessible(self, client):
         response = client.get('/api/docs/')

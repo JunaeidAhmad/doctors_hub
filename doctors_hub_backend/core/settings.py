@@ -72,6 +72,7 @@ MIDDLEWARE = [
     'whitenoise.middleware.WhiteNoiseMiddleware',
     'django.contrib.sessions.middleware.SessionMiddleware',
     'django.middleware.common.CommonMiddleware',
+    'core.middleware.ApiClientMiddleware',
     'django.middleware.csrf.CsrfViewMiddleware',
     'django.contrib.auth.middleware.AuthenticationMiddleware',
     'django.contrib.messages.middleware.MessageMiddleware',
@@ -172,6 +173,10 @@ AUTH_USER_MODEL = 'accounts.User'
 
 REST_FRAMEWORK = {
     'DEFAULT_SCHEMA_CLASS': 'drf_spectacular.openapi.AutoSchema',
+    'DEFAULT_VERSIONING_CLASS': 'rest_framework.versioning.URLPathVersioning',
+    'DEFAULT_VERSION': 'v1',
+    'ALLOWED_VERSIONS': ('v1',),
+    'VERSION_PARAM': 'version',
     'DEFAULT_AUTHENTICATION_CLASSES': (
         'rest_framework_simplejwt.authentication.JWTAuthentication',
     ),
@@ -189,6 +194,24 @@ REST_FRAMEWORK = {
     }
 }
 
+# API versioning policy (plan decisions D7 / Phase 7)
+API_FROZEN_VERSIONS = ()      # D7: becomes ('v1',) the day the first Flutter build ships
+API_RETIRED_VERSIONS = ()     # versions answered with 426 (Phase 7)
+
+# App config / client gating (plan V.6.1) — environment variables (decision D10)
+APP_ANDROID_MIN_BUILD = env.int('APP_ANDROID_MIN_BUILD', default=0)     # 0 = no gate
+APP_ANDROID_LATEST_BUILD = env.int('APP_ANDROID_LATEST_BUILD', default=0)
+APP_ANDROID_STORE_URL = env('APP_ANDROID_STORE_URL', default='')
+APP_IOS_MIN_BUILD = env.int('APP_IOS_MIN_BUILD', default=0)
+APP_IOS_LATEST_BUILD = env.int('APP_IOS_LATEST_BUILD', default=0)
+APP_IOS_STORE_URL = env('APP_IOS_STORE_URL', default='')
+APP_UPDATE_MESSAGE_EN = env('APP_UPDATE_MESSAGE_EN', default='')
+APP_UPDATE_MESSAGE_BN = env('APP_UPDATE_MESSAGE_BN', default='')
+API_DEPRECATE_LEGACY = env.bool('API_DEPRECATE_LEGACY', default=False)
+API_DEPRECATIONS = env.dict('API_DEPRECATIONS', default={})   # e.g. legacy=2026-12-01,v1=2027-06-01
+API_SUNSETS = env.dict('API_SUNSETS', default={})             # same keys, ISO dates
+API_USAGE_LOG = env.bool('API_USAGE_LOG', default=True)
+
 SPECTACULAR_SETTINGS = {
     'TITLE': "Doctor's Hub API",
     'DESCRIPTION': "Backend REST API for Doctor's Hub - A platform for searching doctors, hospital and diagnostic facilities, diagnostic tests, booking appointments, and role-based healthcare administration.",
@@ -198,7 +221,13 @@ SPECTACULAR_SETTINGS = {
     'SWAGGER_UI_FAVICON_HREF': 'SIDECAR',
     'REDOC_DIST': 'SIDECAR',
     'COMPONENT_SPLIT_REQUEST': True,
-    'SCHEMA_PATH_PREFIX': r'/api/',
+    'COMPONENT_NO_READ_ONLY_REQUIRED': True,
+    'SCHEMA_PATH_PREFIX': r'/api(?:/v\d+)?',
+    'PREPROCESSING_HOOKS': ['core.schema_hooks.only_versioned_paths'],
+    'ENUM_NAME_OVERRIDES': {
+        'DoctorGenderEnum': 'doctors.models.GENDER_CHOICES',
+        'PatientGenderEnum': 'bookings.models.Patient.Gender',
+    },
     'TAGS': [
         {'name': 'Authentication & Profile', 'description': 'User authentication, profile management, and self-registration'},
         {'name': 'Doctors', 'description': 'Doctor directory, specialties, affiliations, and schedules'},
@@ -241,6 +270,7 @@ else:
     }
 
 CORS_ALLOW_CREDENTIALS = True
+CORS_EXPOSE_HEADERS = ['Deprecation', 'Sunset', 'Link']
 CORS_ALLOW_ALL_ORIGINS = env.bool('CORS_ALLOW_ALL_ORIGINS', default=True)
 CORS_ALLOWED_ORIGINS = env.list('CORS_ALLOWED_ORIGINS', default=[
     "http://localhost:5173",
@@ -290,6 +320,11 @@ LOGGING = {
             'level': 'INFO',
             'propagate': False,
         },
+        'api.usage': {
+            'handlers': ['console'],
+            'level': 'INFO',
+            'propagate': False,
+        },
     },
 }
 
@@ -298,3 +333,6 @@ SMS_API_URL = env('SMS_API_URL', default='https://api.sms.net.bd/sendsms')
 SMS_API_KEY = env('SMS_API_KEY', default='wgVB8RM6vZ4h9W4F3Ba8u241z290PtJ2SYBc6hpY')
 SMS_SENDER_ID = env('SMS_SENDER_ID', default='')
 SMS_ASYNC = env.bool('SMS_ASYNC', default=True)
+
+# Register core system checks (core is not an installed app, so import explicitly)
+from core import checks as _core_checks  # noqa: E402,F401

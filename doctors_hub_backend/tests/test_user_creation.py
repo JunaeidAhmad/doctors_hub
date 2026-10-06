@@ -93,7 +93,7 @@ class TestUserCreationAPI:
             "is_superuser": False
         }
 
-        response = api_client.post("/api/users/", data=payload, format="json")
+        response = api_client.post("/api/v1/users/", data=payload, format="json")
         assert response.status_code == status.HTTP_201_CREATED
 
         data = response.data
@@ -124,7 +124,7 @@ class TestUserCreationAPI:
             "last_name": "Phone"
         }
 
-        response = api_client.post("/api/users/", data=payload, format="json")
+        response = api_client.post("/api/v1/users/", data=payload, format="json")
         assert response.status_code == status.HTTP_400_BAD_REQUEST
         assert "phone_number" in response.data
 
@@ -141,7 +141,7 @@ class TestUserCreationAPI:
             "last_name": "User"
         }
 
-        response = api_client.post("/api/users/", data=payload, format="json")
+        response = api_client.post("/api/v1/users/", data=payload, format="json")
         assert response.status_code == status.HTTP_400_BAD_REQUEST
         assert "phone_number" in response.data
 
@@ -157,7 +157,7 @@ class TestUserCreationAPI:
             "facility_id": str(managed_location.id)
         }
 
-        response = api_client.post("/api/users/", data=payload, format="json")
+        response = api_client.post("/api/v1/users/", data=payload, format="json")
         assert response.status_code == status.HTTP_201_CREATED
 
         user = User.objects.get(phone_number="01788776655")
@@ -175,7 +175,7 @@ class TestUserCreationAPI:
             "is_superuser": True
         }
 
-        response = api_client.post("/api/users/", data=payload, format="json")
+        response = api_client.post("/api/v1/users/", data=payload, format="json")
         assert response.status_code == status.HTTP_400_BAD_REQUEST
 
     def test_facility_admin_cannot_assign_unmanaged_facility(self, api_client, facility_admin_user, managed_location, other_location, facility_staff_role):
@@ -190,7 +190,7 @@ class TestUserCreationAPI:
             "facility_id": str(other_location.id)
         }
 
-        response = api_client.post("/api/users/", data=payload, format="json")
+        response = api_client.post("/api/v1/users/", data=payload, format="json")
         assert response.status_code == status.HTTP_400_BAD_REQUEST
         assert "facility_id" in response.data
 
@@ -205,5 +205,5 @@ class TestUserCreationAPI:
             "last_name": "User"
         }
 
-        response = api_client.post("/api/users/", data=payload, format="json")
+        response = api_client.post("/api/v1/users/", data=payload, format="json")
         assert response.status_code == status.HTTP_403_FORBIDDEN

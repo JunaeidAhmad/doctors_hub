@@ -53,11 +53,11 @@ def verify_otp_helper(phone, otp_code, purpose='booking'):
 class DoctorBookingSerializer(serializers.ModelSerializer):
     doctor_name = serializers.CharField(source='affiliation.doctor.name', read_only=True)
     facility = FacilitySummarySerializer(source='affiliation.location', read_only=True)
-    user = serializers.PrimaryKeyRelatedField(source='booked_by_user', read_only=True)
+    user = serializers.PrimaryKeyRelatedField(source='booked_by_user', read_only=True, allow_null=True)
     affiliation_id = serializers.PrimaryKeyRelatedField(
         queryset=DoctorAffiliation.objects.all(), write_only=True, source='affiliation'
     )
-    patient = PatientSerializer(read_only=True)
+    patient = PatientSerializer(read_only=True, allow_null=True)
     patient_id = serializers.PrimaryKeyRelatedField(
         queryset=Patient.objects.all(), write_only=True, source='patient', required=False, allow_null=True
     )
@@ -121,7 +121,7 @@ class TestBookingSerializer(serializers.ModelSerializer):
     facility = FacilitySummarySerializer(source='facility_test.location', read_only=True)
     price = serializers.DecimalField(source='price_at_booking', max_digits=10, decimal_places=2, read_only=True, allow_null=True)
     address = serializers.CharField(source='full_pickup_address', read_only=True)
-    user = serializers.PrimaryKeyRelatedField(source='booked_by_user', read_only=True)
+    user = serializers.PrimaryKeyRelatedField(source='booked_by_user', read_only=True, allow_null=True)
     facility_test_id = serializers.PrimaryKeyRelatedField(
         queryset=FacilityTest.objects.all(), write_only=True, source='facility_test'
     )
@@ -129,7 +129,7 @@ class TestBookingSerializer(serializers.ModelSerializer):
         queryset=Thana.objects.all(),
         source='pickup_thana', required=False, allow_null=True, write_only=True
     )
-    patient = PatientSerializer(read_only=True)
+    patient = PatientSerializer(read_only=True, allow_null=True)
     patient_id = serializers.PrimaryKeyRelatedField(
         queryset=Patient.objects.all(), write_only=True, source='patient', required=False, allow_null=True
     )
@@ -185,14 +185,14 @@ class TestBookingSerializer(serializers.ModelSerializer):
 class HospitalServiceBookingSerializer(serializers.ModelSerializer):
     facility = FacilitySummarySerializer(source='hospital.location', read_only=True)
     service_name = serializers.CharField(source='service.name', read_only=True)
-    user = serializers.PrimaryKeyRelatedField(source='booked_by_user', read_only=True)
+    user = serializers.PrimaryKeyRelatedField(source='booked_by_user', read_only=True, allow_null=True)
     hospital_id = serializers.PrimaryKeyRelatedField(
         queryset=Hospital.objects.all(), write_only=True, source='hospital'
     )
     service_id = serializers.PrimaryKeyRelatedField(
         queryset=HospitalService.objects.all(), write_only=True, source='service'
     )
-    patient = PatientSerializer(read_only=True)
+    patient = PatientSerializer(read_only=True, allow_null=True)
     patient_id = serializers.PrimaryKeyRelatedField(
         queryset=Patient.objects.all(), write_only=True, source='patient', required=False, allow_null=True
     )

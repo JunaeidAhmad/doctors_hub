@@ -8,8 +8,8 @@ from django.db import transaction
 from doctors.models import Doctor, DoctorSpecialty, SpecialtyAlias
 from doctors.services.taxonomy_rules import validate_node_parents
 from doctors.services.specialty_relations import (
-    expand, match_node_ids, related_node_ids, bump_taxonomy_version,
-    get_taxonomy_version, specialty_doctor_counts, _cached_match_node_ids, _cached_related_node_ids
+    expand, match_node_ids, curated_related_ids, bump_taxonomy_version,
+    get_taxonomy_version, specialty_doctor_counts, _cached_match_node_ids, _cached_curated_related_ids
 )
 from doctors.services.specialty_resolver import resolve_specialty_exact
 from doctors.serializers import DoctorSerializer, DoctorSpecialtySerializer
@@ -83,9 +83,9 @@ class TestSpecialtyRelations:
         direct = match_node_ids(leaf)
         assert leaf.id in direct
 
-        # Related
-        rel = related_node_ids(leaf)
-        assert leaf.id not in rel  # Related must not intersect with direct match
+        # Curated related leaves
+        rel = curated_related_ids(leaf)
+        assert leaf.id not in rel  # A leaf never relates to itself
 
         # Cache check
         info_match_before = _cached_match_node_ids.cache_info()
@@ -120,7 +120,7 @@ class TestMultiRankFiltering:
         doc_b = DoctorFactory(name="Dr. Brian Secondary Cardio", is_verified=True, primary_specialty=med, specialty_source="Medicine\nCardiologist")
         doc_b.specialties.set([cardio, med] if med else [cardio])
 
-        # Doctor C: Primary is pediatric-cardiologist (related to cardiologist) -> Rank 3
+        # Doctor C: Primary is pediatric-cardiologist (related, not a direct match) -> Excluded
         doc_c = DoctorFactory(name="Dr. Cathy Pediatric Cardio", is_verified=True, primary_specialty=ped_cardio, specialty_source="Pediatric Cardiologist")
         doc_c.specialties.set([ped_cardio])
 
@@ -129,39 +129,34 @@ class TestMultiRankFiltering:
         doc_d.specialties.set([derm])
 
         # Search for cardiologist
-        res = api_client.get(f"/api/doctors/?specialty={cardio.slug}")
+        res = api_client.get(f"/api/v1/doctors/?specialty={cardio.slug}")
         assert res.status_code == status.HTTP_200_OK
         data = res.data.get("results", res.data)
         doc_ids = [d["id"] for d in data]
 
-        # Verify membership
+        # Verify membership: only direct matches (exact-only filter)
         assert str(doc_a.id) in doc_ids
         assert str(doc_b.id) in doc_ids
-        assert str(doc_c.id) in doc_ids
+        assert str(doc_c.id) not in doc_ids
         assert str(doc_d.id) not in doc_ids
 
-        # Verify ordering: Rank 1 (A) < Rank 2 (B) < Rank 3 (C)
+        # Verify ordering: Rank 1 (A) before Rank 2 (B)
         idx_a = doc_ids.index(str(doc_a.id))
         idx_b = doc_ids.index(str(doc_b.id))
-        idx_c = doc_ids.index(str(doc_c.id))
-        assert idx_a < idx_b < idx_c
+        assert idx_a < idx_b
 
         # Verify ranks returned
         doc_a_data = next(d for d in data if d["id"] == str(doc_a.id))
         doc_b_data = next(d for d in data if d["id"] == str(doc_b.id))
-        doc_c_data = next(d for d in data if d["id"] == str(doc_c.id))
 
-        assert doc_a_data["match_rank"] in (1, 2, 3)
-        
-        assert doc_a_data["match_rank"] in (1, 2, 3)
-        assert doc_b_data["match_rank"] in (1, 2, 3)
-        assert doc_c_data["match_rank"] in (1, 2, 3)
+        assert doc_a_data["match_rank"] == 1
+        assert doc_b_data["match_rank"] == 2
 
         # Verify metadata
         meta = res.data["meta"]
         assert meta["primary_count"] >= 1
         assert meta["secondary_count"] >= 1
-        assert meta["related_count"] >= 1
+        assert meta["related_count"] == 0
         assert meta["match_count"] == meta["primary_count"] + meta["secondary_count"]
 
 
@@ -208,7 +203,7 @@ class TestRehanaBegumAcceptance:
             "nutritionist-dietitian", "weight-management-specialist"
         }.issubset(tag_slugs)
 
-        # Test queries for rank matching
+        # Test queries for rank matching (exact-only filter)
         spec_rank_expectations = [
             ("cancer-care", [1, 2]),
             ("cancer-specialist", [1]),
@@ -219,18 +214,25 @@ class TestRehanaBegumAcceptance:
             ("nutrition-diet", [1, 2]),
             ("weight-management-specialist", [2]),
             ("nutritionist-dietitian", [2]),
-            ("diabetes-hormones", [3]),
-            ("endocrinologist", [3]),
         ]
 
         for spec_param, expected_ranks in spec_rank_expectations:
-            res = api_client.get(f"/api/doctors/?specialty={spec_param}")
+            res = api_client.get(f"/api/v1/doctors/?specialty={spec_param}")
             assert res.status_code == status.HTTP_200_OK
             data = res.data.get("results", res.data)
             matching_doc = next((d for d in data if d["id"] == str(rehana.id)), None)
             assert matching_doc is not None, f"Dr. Rehana Begum not found for spec={spec_param}"
             assert matching_doc["match_rank"] in expected_ranks, (
                 f"spec={spec_param} expected rank in {expected_ranks}, got {matching_doc['match_rank']}"
+            )
+
+        # Related-only specialties no longer return her (rank-3 sibling logic removed)
+        for spec_param in ("diabetes-hormones", "endocrinologist"):
+            res = api_client.get(f"/api/v1/doctors/?specialty={spec_param}")
+            assert res.status_code == status.HTTP_200_OK
+            data = res.data.get("results", res.data)
+            assert all(d["id"] != str(rehana.id) for d in data), (
+                f"Dr. Rehana Begum must not match spec={spec_param} under exact-only filtering"
             )
 
         # Check gender and institution
@@ -282,7 +284,7 @@ class TestSerializersReadWrite:
 @pytest.mark.django_db
 class TestSearchMetadataAndFacets:
     def test_search_metadata_endpoint_contract(self, api_client):
-        res = api_client.get("/api/search/metadata/")
+        res = api_client.get("/api/v1/search/metadata/")
         assert res.status_code == status.HTTP_200_OK
 
         data = res.data
@@ -311,7 +313,7 @@ class TestSearchMetadataAndFacets:
             leaf = resolve_specialty_exact('geneticist') or resolve_specialty_exact('occupational-therapist')
 
         assert leaf is not None
-        res = api_client.get(f"/api/doctors/?specialty={leaf.slug}")
+        res = api_client.get(f"/api/v1/doctors/?specialty={leaf.slug}")
         assert res.status_code == status.HTTP_200_OK
         meta = res.data.get("meta", {})
         assert meta.get("primary_count") == 0

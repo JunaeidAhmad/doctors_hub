@@ -2,6 +2,7 @@ from rest_framework import serializers
 from .models import TestCategory, Test, FacilityTest
 from facilities.models import Location
 from facilities.serializers_summary import FacilitySummarySerializer
+from core.schema_serializers import SearchFacetsSerializer
 
 
 class TestCategorySerializer(serializers.ModelSerializer):
@@ -132,3 +133,15 @@ class TestOptionSerializer(serializers.ModelSerializer):
         model = Test
         fields = ('id', 'name', 'code', 'category_id', 'category_name', 'is_active')
         read_only_fields = fields
+
+
+class FacilityTestSearchResponseSerializer(serializers.Serializer):
+    """Paginated envelope (SearchPagination.get_paginated_response) for facility test search."""
+    count = serializers.IntegerField()
+    total_pages = serializers.IntegerField()
+    page = serializers.IntegerField()
+    page_size = serializers.IntegerField()
+    next = serializers.URLField(allow_null=True)
+    previous = serializers.URLField(allow_null=True)
+    facets = SearchFacetsSerializer()
+    results = FacilityTestSearchGroupSerializer(many=True)

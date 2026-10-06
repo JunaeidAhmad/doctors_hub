@@ -12,6 +12,9 @@ import DoctorCard from './components/DoctorCard';
 import DoctorPagination from './components/DoctorPagination';
 import DoctorTrustSeal from './components/DoctorTrustSeal';
 import DoctorProfileModal from './components/DoctorProfileModal';
+import RelatedSpecialists from './components/RelatedSpecialists';
+import { useLang } from '../../hooks/useLang';
+import { t, pluralizeSpecialty } from '../../data/strings';
 
 export default function DoctorSearchPage({
   initialSpecialty = '',
@@ -21,6 +24,7 @@ export default function DoctorSearchPage({
   onNavigateHome
 }) {
   const navigate = useNavigate();
+  const lang = useLang();
   const [searchParams, setSearchParams] = useSearchParams();
   const lastParamsRef = useRef(searchParams.toString());
 
@@ -231,6 +235,13 @@ export default function DoctorSearchPage({
     setCurrentPage(1);
   };
 
+  const handleClearLocation = () => {
+    setDivisionId(null);
+    setDistrictId(null);
+    setThanaId(null);
+    setCurrentPage(1);
+  };
+
   const specialtyDisplayName = useMemo(() => {
     if (!specialty) return '';
     if (searchMeta?.specialty) return searchMeta.specialty;
@@ -245,6 +256,11 @@ export default function DoctorSearchPage({
     }
     return specialty.replace(/-/g, ' ').replace(/\b\w/g, (l) => l.toUpperCase());
   }, [specialty, searchMeta, specialtyGroups, specialties]);
+
+  const specialtyBnName = searchMeta?.specialty_bn || '';
+  const specialtyPluralLabel = lang === 'bn'
+    ? `${t('peopleCounter')} ${specialtyBnName || specialtyDisplayName}`
+    : pluralizeSpecialty(specialtyDisplayName);
 
   return (
     <div className="bg-background text-on-surface min-h-screen flex flex-col selection:bg-primary selection:text-on-primary">
@@ -262,6 +278,7 @@ export default function DoctorSearchPage({
         thanaName={thanaName}
         specialty={specialty}
         specialtyName={specialtyDisplayName}
+        specialtyBnName={specialtyBnName}
         facility={facility}
         facilityName={(() => {
           const found = facilities.find(f => String(f.id) === String(facility) || String(f.slug) === String(facility) || String(f.name) === String(facility));
@@ -365,6 +382,13 @@ export default function DoctorSearchPage({
 
           {/* Right Content Area: Doctor Cards & Pagination */}
           <div className="flex-1 w-full space-y-6 min-w-0">
+            {specialty && !isLoading && (
+              <div className="text-body-sm text-on-surface font-body-sm">
+                <strong className="font-title-md text-primary font-bold">{totalCount}</strong>{' '}
+                {specialtyPluralLabel}
+              </div>
+            )}
+
             {isLoading ? (
               <div className="space-y-4">
                 {[1, 2, 3].map((i) => (
@@ -396,6 +420,9 @@ export default function DoctorSearchPage({
                     district: districtName,
                     area: thanaName
                   }}
+                  specialtyFilterActive={Boolean(specialty)}
+                  activeSpecialtyName={specialtyDisplayName}
+                  activeSpecialtyBnName={specialtyBnName}
                   onBookDoctorSlot={onBookDoctorSlot}
                   onViewProfile={(d) => {
                     navigate(`/doctor/${d.slug || d.id}`, { state: { doctor: d, chambers: d.chambers } });
@@ -409,14 +436,35 @@ export default function DoctorSearchPage({
                   }}
                 />
               ))
+            ) : specialty ? (
+              <div className="bg-surface-container-lowest rounded-xl border border-outline-variant p-12 text-center space-y-3">
+                <div className="w-14 h-14 mx-auto rounded-full bg-primary/10 flex items-center justify-center text-primary">
+                  <span className="material-symbols-outlined text-3xl">person_search</span>
+                </div>
+                <h3 className="text-lg font-bold text-on-surface">
+                  {t('zeroResultsSpecialty', {
+                    specialty: lang === 'bn'
+                      ? (specialtyBnName || specialtyDisplayName)
+                      : pluralizeSpecialty(specialtyDisplayName)
+                  })}
+                </h3>
+                <button
+                  type="button"
+                  onClick={handleClearLocation}
+                  className="px-4 py-2 bg-primary hover:bg-primary-container text-on-primary font-semibold text-xs rounded-lg transition-colors cursor-pointer inline-flex items-center gap-1.5"
+                >
+                  <span className="material-symbols-outlined text-[16px]">location_off</span>
+                  {t('clearLocationFilter')}
+                </button>
+              </div>
             ) : (
               <div className="bg-surface-container-lowest rounded-xl border border-outline-variant p-12 text-center space-y-3">
                 <div className="w-14 h-14 mx-auto rounded-full bg-primary/10 flex items-center justify-center text-primary">
                   <span className="material-symbols-outlined text-3xl">person_search</span>
                 </div>
-                <h3 className="text-lg font-bold text-on-surface">No Doctors Found</h3>
+                <h3 className="text-lg font-bold text-on-surface">{t('noDoctorsFound')}</h3>
                 <p className="text-xs sm:text-sm text-outline max-w-md mx-auto">
-                  We couldn't find any verified specialists matching your criteria. Try adjusting your specialty, location, or day filters.
+                  {t('noDoctorsFoundBody')}
                 </p>
                 <button
                   type="button"
@@ -424,9 +472,41 @@ export default function DoctorSearchPage({
                   className="px-4 py-2 bg-primary hover:bg-primary-container text-on-primary font-semibold text-xs rounded-lg transition-colors cursor-pointer inline-flex items-center gap-1.5"
                 >
                   <span className="material-symbols-outlined text-[16px]">restart_alt</span>
-                  Reset All Filters
+                  {t('resetAllFilters')}
                 </button>
               </div>
+            )}
+
+            {!isLoading && currentPage === 1 && specialty && searchMeta?.related_available && (
+              <RelatedSpecialists
+                specialty={specialty}
+                filters={{
+                  division_id: divisionId || undefined,
+                  district_id: districtId || undefined,
+                  thana_id: thanaId || undefined,
+                  facility: facility || undefined,
+                  gender: gender !== 'All' ? gender : undefined,
+                  day: selectedDay !== 'All' && selectedDay !== 'All Days' ? selectedDay : undefined
+                }}
+                limit={6}
+                filteredFacility={facility}
+                filteredLocation={{
+                  division: divisionName,
+                  district: districtName,
+                  area: thanaName
+                }}
+                onBookDoctorSlot={onBookDoctorSlot}
+                onViewProfile={(d) => {
+                  navigate(`/doctor/${d.slug || d.id}`, { state: { doctor: d, chambers: d.chambers } });
+                  window.scrollTo({ top: 0, behavior: 'smooth' });
+                }}
+                onSelectHospital={onSelectHospital}
+                onSelectSpecialty={(specSlug) => {
+                  setSpecialty(specSlug);
+                  setCurrentPage(1);
+                  window.scrollTo({ top: 0, behavior: 'smooth' });
+                }}
+              />
             )}
 
             {/* Pagination Controls */}

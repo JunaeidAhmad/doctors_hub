@@ -71,7 +71,7 @@ class TestSyncChambers:
                 }
             ]
         }
-        resp = admin_client.put(f"/api/doctors/{doc.pk}/chambers/", payload, format="json")
+        resp = admin_client.put(f"/api/v1/doctors/{doc.pk}/chambers/", payload, format="json")
         assert resp.status_code == 200, resp.data
         assert len(resp.data["chambers"]) == 2
         assert len(resp.data["deactivated"]) == 0
@@ -93,7 +93,7 @@ class TestSyncChambers:
                  ]},
             ]
         }
-        resp = admin_client.put(f"/api/doctors/{doc.pk}/chambers/", payload, format="json")
+        resp = admin_client.put(f"/api/v1/doctors/{doc.pk}/chambers/", payload, format="json")
         assert resp.status_code == 200, resp.data
         aff1.refresh_from_db()
         assert aff1.fee == Decimal("1500.00")
@@ -118,7 +118,7 @@ class TestSyncChambers:
                  ]},
             ]
         }
-        resp = admin_client.put(f"/api/doctors/{doc.pk}/chambers/", payload, format="json")
+        resp = admin_client.put(f"/api/v1/doctors/{doc.pk}/chambers/", payload, format="json")
         assert resp.status_code == 200, resp.data
         assert str(aff1.pk) in resp.data["deactivated"]
         aff1.refresh_from_db()
@@ -136,7 +136,7 @@ class TestSyncChambers:
                  ]},
             ]
         }
-        resp = admin_client.put(f"/api/doctors/{doc.pk}/chambers/", payload, format="json")
+        resp = admin_client.put(f"/api/v1/doctors/{doc.pk}/chambers/", payload, format="json")
         assert resp.status_code == 200, resp.data
         assert str(aff1.pk) in resp.data["deleted"]
         assert not DoctorAffiliation.objects.filter(pk=aff1.pk).exists()
@@ -153,14 +153,14 @@ class TestSyncChambers:
                  "schedules": [{"day_of_week": "Monday", "start_time": "10:00", "end_time": "13:00"}]},
             ]
         }
-        resp = admin_client.put(f"/api/doctors/{doc.pk}/chambers/", payload, format="json")
+        resp = admin_client.put(f"/api/v1/doctors/{doc.pk}/chambers/", payload, format="json")
         assert resp.status_code == 400
         assert DoctorAffiliation.objects.filter(doctor=doc).count() == 0
 
     def test_nested_affiliations_rejected(self, admin_client, db):
         doc = DoctorFactory.create(name="Dr. Nested")
         loc = LocationFactory.create(name="Nested Loc")
-        resp = admin_client.post("/api/doctors/", {
+        resp = admin_client.post("/api/v1/doctors/", {
             "name": "Dr. Nested Create",
             "qualification": "MBBS",
             "affiliations": [{"location_id": str(loc.pk), "fee": "500"}]
@@ -206,5 +206,5 @@ class TestSyncChambers:
                  ]},
             ]
         }
-        resp = admin_client.put(f"/api/doctors/{doc.pk}/chambers/", payload, format="json")
+        resp = admin_client.put(f"/api/v1/doctors/{doc.pk}/chambers/", payload, format="json")
         assert resp.status_code == 400

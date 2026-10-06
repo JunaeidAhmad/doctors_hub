@@ -1,0 +1,85 @@
+slug | exact_count | related_available | related_block_size
+-------------------------------------------------------------------------------
+addiction-specialist | 6 | False | 0
+allergy-immunologist | 18 | True | 6
+andrologist | 5 | True | 6
+anesthesiologist | 6 | False | 0
+breast-health-specialist | 2 | True | 6
+breast-surgeon | 24 | True | 6
+cancer-specialist | 27 | True | 6
+cancer-surgeon | 20 | True | 6
+cardiac-surgeon | 22 | True | 6
+cardiologist | 103 | True | 6
+chest-specialist | 58 | True | 6
+child-specialist | 85 | True | 2
+colorectal-surgeon | 67 | True | 6
+critical-care-specialist | 7 | True | 6
+dentist | 7 | True | 0
+dermatologist | 55 | True | 6
+diabetologist | 98 | True | 6
+endocrinologist | 67 | True | 6
+ent-specialist | 66 | True | 6
+eye-specialist | 7 | True | 6
+family-physician-gp | 70 | True | 6
+fetomaternal-medicine-specialist | 5 | True | 6
+gastroenterologist | 63 | True | 6
+general-surgeon | 151 | True | 6
+gynecological-oncologist | 9 | True | 6
+gynecologist-obstetrician | 185 | True | 6
+head-neck-surgeon | 37 | True | 6
+hematologist | 19 | True | 6
+hepatobiliary-surgeon | 14 | True | 6
+hepatologist | 54 | True | 6
+homeopathic-doctor | 0 | False | 0
+infectious-disease-specialist | 0 | True | 6
+infertility-specialist | 38 | True | 6
+interventional-cardiologist | 29 | True | 6
+interventional-neurologist | 3 | True | 6
+laparoscopic-surgeon | 82 | True | 6
+maxillofacial-surgeon | 5 | True | 6
+medicine-specialist | 314 | True | 6
+neonatologist | 15 | True | 6
+nephrologist | 52 | True | 6
+neurologist | 71 | True | 6
+neurosurgeon | 73 | True | 6
+nuclear-medicine-specialist | 2 | True | 6
+nutritionist-dietitian | 14 | True | 6
+orthopedic-surgeon | 113 | True | 6
+pain-specialist | 16 | True | 6
+pathologist | 1 | True | 6
+pediatric-cardiologist | 11 | True | 6
+pediatric-gastroenterologist | 3 | True | 6
+pediatric-neurologist | 17 | True | 6
+pediatric-neurosurgeon | 2 | True | 6
+pediatric-oncologist | 1 | True | 6
+pediatric-orthopedic-surgeon | 3 | True | 6
+pediatric-pulmonologist | 2 | True | 6
+pediatric-surgeon | 23 | True | 6
+pediatric-urologist | 1 | True | 6
+physical-medicine-specialist | 27 | True | 6
+physiotherapist | 2 | True | 6
+plastic-surgeon | 25 | True | 6
+psychiatrist | 30 | True | 6
+psychologist | 0 | True | 6
+radiologist | 42 | False | 0
+rheumatologist | 51 | True | 6
+sexologist | 45 | True | 6
+sonologist | 5 | True | 6
+spine-surgeon | 70 | True | 6
+sports-medicine-specialist | 4 | True | 6
+thoracic-surgeon | 17 | True | 6
+urologist | 53 | True | 6
+vascular-surgeon | 21 | True | 6
+weight-management-specialist | 2 | True | 6
+
+ZERO-COUNT LEAVES (exact count 0) — doctors whose stored specialty text looks similar
+===============================================================================
+
+## homeopathic-doctor (Homeopathic Doctor)
+   (no similar specialty text found in doctor records)
+
+## infectious-disease-specialist (Infectious Disease Specialist)
+   (no similar specialty text found in doctor records)
+
+## psychologist (Psychologist)
+   (no similar specialty text found in doctor records)

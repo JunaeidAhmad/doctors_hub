@@ -1,6 +1,9 @@
 import uuid
 import datetime
+import hashlib
+import json
 from django.utils import timezone
+from django.core.cache import cache
 from rest_framework import viewsets, filters, exceptions
 from rest_framework.permissions import AllowAny
 from rest_framework.response import Response
@@ -20,7 +23,7 @@ from core.visibility import PublicVisibilityMixin, is_admin_viewer
 from .models import (
     DoctorSpecialty, SpecialtyAlias, Doctor, DoctorAffiliation, AffiliationSchedule, ScheduleException
 )
-from .services.specialty_relations import match_node_ids, related_node_ids
+from .services.specialty_relations import match_node_ids, curated_related_ids, curated_related_nodes
 from .services.specialty_resolver import resolve_specialty_exact
 from .services.specialty_suggest import suggest_specialties
 from .services.availability import get_availability, batch_next_available
@@ -28,9 +31,12 @@ from .serializers import (
     DoctorSpecialtySerializer,
     SpecialtyAliasSerializer,
     DoctorSerializer,
+    DoctorListSerializer,
     DoctorAffiliationSerializer,
     AffiliationScheduleSerializer,
-    ScheduleExceptionSerializer
+    ScheduleExceptionSerializer,
+    SpecialtySuggestionSerializer,
+    AffiliationAvailabilitySerializer
 )
 
 
@@ -53,6 +59,11 @@ class DoctorSpecialtyViewSet(viewsets.ModelViewSet):
         context['doctor_counts'] = get_cached_specialty_doctor_counts()
         return context
 
+    @extend_schema(
+        responses={200: DoctorSpecialtySerializer(many=True)},
+        description='Returns a plain array when the `page` query parameter is omitted; '
+                    'a paginated envelope when `page` is provided.',
+    )
     def list(self, request, *args, **kwargs):
         qs = self.filter_queryset(self.get_queryset())
         page = self.paginate_queryset(qs) if 'page' in request.query_params else None
@@ -62,8 +73,17 @@ class DoctorSpecialtyViewSet(viewsets.ModelViewSet):
         serializer = self.get_serializer(qs, many=True)
         return Response(serializer.data)
 
+    @extend_schema(
+        tags=['Doctors'],
+        summary='Suggest specialties for a search query',
+        parameters=[
+            OpenApiParameter('q', OpenApiTypes.STR, OpenApiParameter.QUERY, description='Search query (1-100 chars)'),
+            OpenApiParameter('limit', OpenApiTypes.INT, OpenApiParameter.QUERY, description='Max suggestions (1-20, default 8)'),
+        ],
+        responses={200: SpecialtySuggestionSerializer(many=True)},
+    )
     @action(detail=False, methods=['get'], url_path='suggest', permission_classes=[AllowAny], pagination_class=None, filter_backends=[])
-    def suggest(self, request):
+    def suggest(self, request, **kwargs):
         q = request.query_params.get('q', '')
         q_stripped = q.strip() if q else ''
         if not q_stripped or len(q_stripped) > 100:
@@ -77,6 +97,16 @@ class DoctorSpecialtyViewSet(viewsets.ModelViewSet):
 
         data = suggest_specialties(q_stripped, limit=limit)
         return Response(data)
+
+
+# The custom list() above returns a plain array unless `page` is passed, so suppress
+# drf-spectacular's auto paginated envelope for that operation. Schema-time only:
+# method-level kwargs are not applied at runtime (only @action kwargs are).
+DoctorSpecialtyViewSet.list.kwargs['schema'] = type(
+    'UnpaginatedSpecialtyListSchema',
+    (DoctorSpecialtyViewSet.list.kwargs['schema'],),
+    {'_get_paginator': lambda self: None},
+)
 
 
 @extend_schema(tags=['Doctors'])
@@ -105,14 +135,14 @@ class SpecialtyAliasViewSet(viewsets.ModelViewSet):
         return Response(serializer.data)
 
     @action(detail=True, methods=['post'])
-    def verify(self, request, pk=None):
+    def verify(self, request, pk=None, **kwargs):
         alias = self.get_object()
         alias.is_verified = True
         alias.save(update_fields=['is_verified', 'updated_at'])
         return Response(self.get_serializer(alias).data)
 
     @action(detail=False, methods=['post'], url_path='batch-verify')
-    def batch_verify(self, request):
+    def batch_verify(self, request, **kwargs):
         alias_ids = request.data.get('alias_ids', [])
         if isinstance(alias_ids, str):
             alias_ids = [alias_ids]
@@ -130,7 +160,7 @@ class SpecialtyAliasViewSet(viewsets.ModelViewSet):
         return Response({'success': True, 'updated_count': updated})
 
     @action(detail=False, methods=['get'], url_path='counts')
-    def counts(self, request):
+    def counts(self, request, **kwargs):
         total = SpecialtyAlias.objects.count()
         verified = SpecialtyAlias.objects.filter(is_verified=True).count()
         unverified = total - verified
@@ -261,43 +291,12 @@ class DoctorFilter(django_filters.FilterSet):
         if not chosen:
             return queryset.none()
         direct = list(match_node_ids(chosen))
-        related = list(related_node_ids(chosen))
-        self.request._specialty_chosen = chosen
-        self.request._specialty_sets = (direct, related)
-
-        has_direct_specialty = Exists(
-            DoctorSpecialty.objects.filter(doctors=OuterRef('pk'), id__in=direct)
-        )
-
-        if related:
-            related_overlap_expr = Count('specialties', filter=Q(specialties__in=related), distinct=True)
-        else:
-            related_overlap_expr = Value(0, output_field=IntegerField())
-
-        from django.db import models
         return (queryset
-                .filter(models.Q(primary_specialty__in=direct) | models.Q(specialties__in=direct + related))
-                .annotate(
-                    is_primary_match=Case(
-                        When(primary_specialty__in=direct, then=Value(True)),
-                        default=Value(False),
-                        output_field=models.BooleanField()
-                    ),
-                    match_tier=Case(
-                        When(primary_specialty__in=direct, then=Value(1)),
-                        When(has_direct_specialty, then=Value(1)),
-                        default=Value(2),
-                        output_field=IntegerField()
-                    ),
-                    related_overlap=related_overlap_expr
-                )
+                .filter(Q(primary_specialty__in=direct) | Q(specialties__in=direct))
                 .annotate(match_rank=Case(
                     When(primary_specialty__in=direct, then=Value(1)),
-                    When(match_tier=1, then=Value(2)),
-                    default=Value(3),
-                    output_field=IntegerField()
-                ))
-                .order_by('match_rank', '-is_verified', '-related_overlap', 'name', 'id')
+                    default=Value(2), output_field=IntegerField()))
+                .order_by('match_rank', '-is_verified', 'name', 'id')
                 .distinct())
 
 
@@ -387,7 +386,6 @@ class DoctorViewSet(SlugOrPkLookupMixin, RoleScopedQuerysetMixin, viewsets.Model
                 )
                 primary_count = rank_counts.get(1, 0)
                 secondary_count = rank_counts.get(2, 0)
-                related_count = rank_counts.get(3, 0)
                 match_count = primary_count + secondary_count
                 response.data['meta'] = {
                     'specialty': chosen.name,
@@ -396,8 +394,9 @@ class DoctorViewSet(SlugOrPkLookupMixin, RoleScopedQuerysetMixin, viewsets.Model
                     'is_umbrella': chosen.is_umbrella,
                     'primary_count': primary_count,
                     'secondary_count': secondary_count,
-                    'related_count': related_count,
+                    'related_count': 0,
                     'match_count': match_count,
+                    'related_available': bool(curated_related_ids(chosen)),
                 }
         return response
 
@@ -433,11 +432,109 @@ class DoctorViewSet(SlugOrPkLookupMixin, RoleScopedQuerysetMixin, viewsets.Model
             raise exceptions.PermissionDenied("Only super admins, facility admins, and doctors can create doctor profiles.")
 
     @action(detail=True, methods=['put'], url_path='chambers')
-    def chambers(self, request, pk=None):
+    def chambers(self, request, pk=None, **kwargs):
         from doctors.services.chambers import sync_chambers
         doctor = self.get_object()
         result = sync_chambers(doctor, request.data, request.user)
         return Response(result)
+
+    @extend_schema(
+        tags=['Doctors'],
+        summary='Related specialists for a specialty',
+        description='Doctors whose primary or secondary specialty is one of the curated related '
+                    'leaves of the given specialty, excluding doctors who match it directly. '
+                    'Ordered by the curated related_leaves order, then -is_verified, then name. '
+                    'Accepts the same location / gender / day filters as the doctors list.',
+        parameters=[
+            OpenApiParameter('specialty', OpenApiTypes.STR, OpenApiParameter.QUERY,
+                             required=True, description='Specialty name or slug'),
+            OpenApiParameter('limit', OpenApiTypes.INT, OpenApiParameter.QUERY,
+                             description='Max results (1-12, default 6)'),
+        ],
+    )
+    @action(detail=False, methods=['get'], url_path='related', permission_classes=[AllowAny],
+            pagination_class=None, filter_backends=[])
+    def related(self, request, **kwargs):
+        spec_param = (request.query_params.get('specialty') or '').strip()
+        if not spec_param:
+            return Response({
+                'error': 'Query parameter "specialty" is required.',
+                'error_bn': 'কোয়েরি প্যারামিটার "specialty" আবশ্যক।',
+            }, status=400)
+        chosen = resolve_specialty_exact(spec_param)
+        if not chosen:
+            return Response({
+                'error': f'Unknown specialty: {spec_param}',
+                'error_bn': f'অজানা বিশেষজ্ঞতা: {spec_param}',
+            }, status=400)
+
+        raw_limit = request.query_params.get('limit', 6)
+        try:
+            limit = int(raw_limit)
+        except (TypeError, ValueError):
+            limit = 6
+        limit = max(1, min(limit, 12))
+
+        cache_params = {k: v for k, v in request.query_params.items() if k not in ('specialty', 'limit')}
+        cache_key = 'doctors:related:{}:{}:{}'.format(
+            chosen.id,
+            limit,
+            hashlib.md5(json.dumps(cache_params, sort_keys=True, default=str).encode()).hexdigest(),
+        )
+        cached = cache.get(cache_key)
+        if cached is not None:
+            return Response(cached)
+
+        related_nodes = curated_related_nodes(chosen)
+        if not related_nodes:
+            payload = {'specialty': chosen.slug, 'related': [], 'results': []}
+            cache.set(cache_key, payload, 600)
+            return Response(payload)
+
+        direct_ids = match_node_ids(chosen)
+        related_ids = [n.id for n in related_nodes]
+        qs = self.get_queryset().filter(
+            Q(primary_specialty__in=related_ids) | Q(specialties__in=related_ids)
+        ).exclude(
+            Q(primary_specialty__in=direct_ids) | Q(specialties__in=direct_ids)
+        )
+
+        filter_data = request.query_params.copy()
+        filter_data.pop('specialty', None)
+        filtered = DoctorFilter(data=filter_data, queryset=qs, request=request).qs
+
+        results = []
+        seen = set()
+        for node in related_nodes:
+            if len(results) >= limit:
+                break
+            node_qs = filtered.filter(
+                Q(primary_specialty=node) | Q(specialties=node)
+            ).order_by('-is_verified', 'name', 'id')
+            for doc in node_qs:
+                if len(results) >= limit:
+                    break
+                if doc.id in seen:
+                    continue
+                seen.add(doc.id)
+                results.append((doc, node))
+
+        affiliations = []
+        for doc, _ in results:
+            affiliations.extend(doc.affiliations.all())
+        context = self.get_serializer_context()
+        context['next_available_map'] = batch_next_available(affiliations, days=7)
+        serialized = DoctorListSerializer([d for d, _ in results], many=True, context=context).data
+        for item, (_, node) in zip(serialized, results):
+            item['related_via'] = {'slug': node.slug, 'name': node.name, 'bn_name': node.bn_name}
+
+        payload = {
+            'specialty': chosen.slug,
+            'related': [{'slug': n.slug, 'name': n.name, 'bn_name': n.bn_name} for n in related_nodes],
+            'results': serialized,
+        }
+        cache.set(cache_key, payload, 600)
+        return Response(payload)
 
 
 @extend_schema(tags=['Doctors'])
@@ -472,10 +569,11 @@ class DoctorAffiliationViewSet(PublicVisibilityMixin, RoleScopedQuerysetMixin, v
         parameters=[
             OpenApiParameter('from', OpenApiTypes.DATE, OpenApiParameter.QUERY, description='Start date (YYYY-MM-DD), defaults to today'),
             OpenApiParameter('days', OpenApiTypes.INT, OpenApiParameter.QUERY, description='Number of days (1-30), defaults to 7'),
-        ]
+        ],
+        responses={200: AffiliationAvailabilitySerializer},
     )
     @action(detail=True, methods=['get'], url_path='availability', permission_classes=[AllowAny])
-    def availability(self, request, pk=None):
+    def availability(self, request, pk=None, **kwargs):
         try:
             val_uuid = uuid.UUID(str(pk))
             affiliation = DoctorAffiliation.objects.select_related(

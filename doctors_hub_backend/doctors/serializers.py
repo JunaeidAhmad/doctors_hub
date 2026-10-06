@@ -1,9 +1,64 @@
 from rest_framework import serializers
+from drf_spectacular.utils import extend_schema_field
 from .models import (
     DoctorSpecialty, SpecialtyAlias, Doctor, DoctorAffiliation, AffiliationSchedule, ScheduleException
 )
 from facilities.models import Location
 from facilities.serializers_summary import FacilitySummarySerializer
+from core.schema_serializers import (
+    SpecialtyRefSerializer, SpecialtyParentRefSerializer, SpecialtyDisplaySerializer,
+    NextAvailableSerializer,
+)
+
+
+class SpecialtySuggestionSerializer(serializers.Serializer):
+    """One entry of GET /specialties/suggest/ (see doctors.services.specialty_suggest)."""
+    id = serializers.UUIDField()
+    slug = serializers.CharField()
+    name = serializers.CharField()
+    bn_name = serializers.CharField()
+    is_umbrella = serializers.BooleanField()
+    matched_term = serializers.CharField()
+    match_language = serializers.CharField()
+    doctor_count = serializers.IntegerField()
+
+
+class AvailabilitySessionSerializer(serializers.Serializer):
+    """One session inside GET /affiliations/{id}/availability/ dates[].sessions[]."""
+    session_key = serializers.CharField()
+    session_start = serializers.CharField()
+    start_time = serializers.CharField()
+    session_end = serializers.CharField()
+    end_time = serializers.CharField()
+    capacity = serializers.IntegerField()
+    booked = serializers.IntegerField()
+    remaining = serializers.IntegerField()
+    capacity_remaining = serializers.IntegerField()
+    next_serial = serializers.IntegerField()
+    estimated_time = serializers.CharField()
+    status = serializers.CharField()
+    note = serializers.CharField()
+
+
+class AvailabilityDateSerializer(serializers.Serializer):
+    date = serializers.CharField()
+    weekday = serializers.CharField()
+    has_schedule = serializers.BooleanField()
+    sessions_count = serializers.IntegerField()
+    capacity_remaining = serializers.IntegerField()
+    status = serializers.CharField()
+    sessions = AvailabilitySessionSerializer(many=True)
+
+
+class AffiliationAvailabilitySerializer(serializers.Serializer):
+    """Response of GET /affiliations/{id}/availability/ (see get_availability)."""
+    affiliation_id = serializers.CharField()
+    doctor_id = serializers.CharField()
+    facility = FacilitySummarySerializer()
+    fee = serializers.CharField()
+    timezone = serializers.CharField()
+    next_available = NextAvailableSerializer(allow_null=True)
+    dates = AvailabilityDateSerializer(many=True)
 
 
 class SpecialtyTagSerializer(serializers.ModelSerializer):
@@ -31,12 +86,14 @@ class DoctorSpecialtySerializer(serializers.ModelSerializer):
             'doctor_count', 'alias_count', 'parents', 'parent_ids', 'related_ids'
         )
 
+    @extend_schema_field(serializers.IntegerField())
     def get_doctor_count(self, obj):
         counts = self.context.get('doctor_counts')
         if counts is not None:
             return counts.get(obj.id, counts.get(str(obj.id), getattr(obj, 'doctor_count', 0)))
         return getattr(obj, 'doctor_count', 0)
 
+    @extend_schema_field(SpecialtyParentRefSerializer(many=True))
     def get_parents(self, obj):
         return [
             {"id": str(p.id), "slug": p.slug, "name": p.name}
@@ -244,6 +301,7 @@ class DoctorAffiliationSerializer(serializers.ModelSerializer):
                 raise serializers.ValidationError("This doctor is already affiliated with this facility.")
         return attrs
 
+    @extend_schema_field(NextAvailableSerializer(allow_null=True))
     def get_next_available(self, obj):
         next_available_map = self.context.get('next_available_map')
         if next_available_map is not None:
@@ -369,6 +427,7 @@ class DoctorSerializer(serializers.ModelSerializer):
         )
         read_only_fields = ('old_slugs',)
 
+    @extend_schema_field(SpecialtyDisplaySerializer())
     def get_specialty_display(self, obj):
         en_str = (obj.specialty_source or "").strip()
         bn_str = (obj.specialty_source_bn or "").strip()
@@ -383,12 +442,14 @@ class DoctorSerializer(serializers.ModelSerializer):
             "bn": bn_str or en_str
         }
 
+    @extend_schema_field(SpecialtyRefSerializer(allow_null=True))
     def get_primary_specialty(self, obj):
         ps = obj.primary_specialty
         if not ps:
             return None
         return {'id': str(ps.id), 'slug': ps.slug, 'name': ps.name, 'bn_name': ps.bn_name}
 
+    @extend_schema_field(SpecialtyRefSerializer(many=True))
     def get_specialties(self, obj):
         specs = list(obj.specialties.all())
         primary = obj.primary_specialty
@@ -401,12 +462,15 @@ class DoctorSerializer(serializers.ModelSerializer):
             for s in specs
         ]
 
+    @extend_schema_field(serializers.IntegerField(allow_null=True))
     def get_match_rank(self, obj):
         return getattr(obj, 'match_rank', None)
 
+    @extend_schema_field(serializers.IntegerField(allow_null=True))
     def get_match_tier(self, obj):
         return getattr(obj, 'match_tier', None)
 
+    @extend_schema_field(serializers.BooleanField(allow_null=True))
     def get_is_primary_match(self, obj):
         return getattr(obj, 'is_primary_match', None)
 
@@ -489,6 +553,7 @@ class ChamberLeanSerializer(serializers.ModelSerializer):
         fields = ('id', 'fee', 'chamber_type', 'is_active', 'facility', 'schedules', 'next_available')
         read_only_fields = fields
 
+    @extend_schema_field(NextAvailableSerializer(allow_null=True))
     def get_next_available(self, obj):
         next_available_map = self.context.get('next_available_map')
         if next_available_map is not None:
@@ -520,12 +585,14 @@ class DoctorListSerializer(serializers.ModelSerializer):
         )
         read_only_fields = fields
 
+    @extend_schema_field(SpecialtyRefSerializer(allow_null=True))
     def get_primary_specialty(self, obj):
         ps = obj.primary_specialty
         if not ps:
             return None
         return {'id': str(ps.id), 'slug': ps.slug, 'name': ps.name, 'bn_name': ps.bn_name}
 
+    @extend_schema_field(SpecialtyRefSerializer(many=True))
     def get_specialties(self, obj):
         specs = list(obj.specialties.all())
         primary = obj.primary_specialty
@@ -538,5 +605,6 @@ class DoctorListSerializer(serializers.ModelSerializer):
             for s in specs
         ]
 
+    @extend_schema_field(serializers.IntegerField(allow_null=True))
     def get_match_rank(self, obj):
         return getattr(obj, 'match_rank', None)

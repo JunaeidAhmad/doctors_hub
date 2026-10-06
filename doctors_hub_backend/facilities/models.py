@@ -1,6 +1,8 @@
 import uuid
 from django.db import models
 from django.utils.text import slugify
+from drf_spectacular.utils import extend_schema_field
+from rest_framework import serializers
 from core.uuid7 import uuid7
 
 
@@ -155,6 +157,7 @@ class Location(models.Model):
         return getattr(self, f"{self.location_type}_detail", None)
 
     @property
+    @extend_schema_field(serializers.CharField())
     def display_name(self):
         from core.text import format_facility_name
         return format_facility_name(self.name, self.branch)

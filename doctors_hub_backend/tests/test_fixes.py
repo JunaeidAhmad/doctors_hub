@@ -54,13 +54,13 @@ def test_doctor_slug_and_lookup_mixin():
 
     client = APIClient()
     # Test retrieving Doctor by UUID
-    response_by_id = client.get(f"/api/doctors/{doc.id}/")
+    response_by_id = client.get(f"/api/v1/doctors/{doc.id}/")
     assert response_by_id.status_code == 200
     assert response_by_id.data["id"] == str(doc.id)
     assert response_by_id.data["slug"] == "dr-alice-smith"
 
     # Test retrieving Doctor by slug using SlugOrPkLookupMixin
-    response_by_slug = client.get("/api/doctors/dr-alice-smith/")
+    response_by_slug = client.get("/api/v1/doctors/dr-alice-smith/")
     assert response_by_slug.status_code == 200
     assert response_by_slug.data["id"] == str(doc.id)
 
@@ -99,7 +99,7 @@ def test_filterset_fields_covers_district_and_division():
     assert hosp_ctg not in filter_division.qs
 
     client = APIClient()
-    res = client.get(f"/api/hospitals/?district_id={dist_ctg.id}")
+    res = client.get(f"/api/v1/hospitals/?district_id={dist_ctg.id}")
     assert res.status_code == 200
     results = res.data.get("results", res.data)
     assert len(results) == 1
@@ -113,18 +113,18 @@ def test_api_routes_work_without_aliases():
     client = APIClient()
     # Canonical endpoints return 200
     canonical_endpoints = [
-        "/api/locations/",
-        "/api/hospitals/",
-        "/api/hospital-categories/",
-        "/api/diagnostic-centers/",
-        "/api/diagnostic-center-categories/",
-        "/api/specialties/",
-        "/api/doctors/",
-        "/api/affiliations/",
-        "/api/schedules/",
-        "/api/tests/",
-        "/api/facility-tests/",
-        "/api/test-categories/",
+        "/api/v1/locations/",
+        "/api/v1/hospitals/",
+        "/api/v1/hospital-categories/",
+        "/api/v1/diagnostic-centers/",
+        "/api/v1/diagnostic-center-categories/",
+        "/api/v1/specialties/",
+        "/api/v1/doctors/",
+        "/api/v1/affiliations/",
+        "/api/v1/schedules/",
+        "/api/v1/tests/",
+        "/api/v1/facility-tests/",
+        "/api/v1/test-categories/",
     ]
     for endpoint in canonical_endpoints:
         res = client.get(endpoint)
@@ -132,17 +132,17 @@ def test_api_routes_work_without_aliases():
 
     # Legacy alias routes return 404
     legacy_alias_endpoints = [
-        "/api/branches/",
-        "/api/practice-locations/",
-        "/api/hospital-specialties/",
-        "/api/doctor-specialties/",
-        "/api/doctor-affiliations/",
-        "/api/affiliation-schedules/",
-        "/api/pathology-tests/",
-        "/api/diagnostic-center-tests/",
-        "/api/branch-tests/",
-        "/api/doctor-bookings/",
-        "/api/lab-bookings/",
+        "/api/v1/branches/",
+        "/api/v1/practice-locations/",
+        "/api/v1/hospital-specialties/",
+        "/api/v1/doctor-specialties/",
+        "/api/v1/doctor-affiliations/",
+        "/api/v1/affiliation-schedules/",
+        "/api/v1/pathology-tests/",
+        "/api/v1/diagnostic-center-tests/",
+        "/api/v1/branch-tests/",
+        "/api/v1/doctor-bookings/",
+        "/api/v1/lab-bookings/",
     ]
     for endpoint in legacy_alias_endpoints:
         res = client.get(endpoint)
@@ -229,7 +229,7 @@ def test_login_cookie_contract():
     user = User.objects.create_user(phone_number="01911111111", password="testpassword123")
     client = APIClient()
 
-    login_res = client.post("/api/auth/login/", {"phone_number": "01911111111", "password": "testpassword123"})
+    login_res = client.post("/api/v1/auth/login/", {"phone_number": "01911111111", "password": "testpassword123"})
     assert login_res.status_code == 200
     assert "access" in login_res.data
     assert "refresh" not in login_res.data
@@ -244,26 +244,26 @@ def test_refresh_from_cookie_and_body():
     client = APIClient()
 
     # Login to get cookie
-    login_res = client.post("/api/auth/login/", {"phone_number": "01911111111", "password": "testpassword123"})
+    login_res = client.post("/api/v1/auth/login/", {"phone_number": "01911111111", "password": "testpassword123"})
     assert login_res.status_code == 200
     refresh_token = login_res.cookies["refresh_token"].value
 
     # Refresh via cookie
     refresh_client = APIClient()
     refresh_client.cookies["refresh_token"] = refresh_token
-    refresh_res = refresh_client.post("/api/auth/refresh/", {})
+    refresh_res = refresh_client.post("/api/v1/auth/refresh/", {})
     assert refresh_res.status_code == 200
     assert "access" in refresh_res.data
 
     # Refresh via body fallback
     body_client = APIClient()
-    body_res = body_client.post("/api/auth/refresh/", {"refresh": refresh_token})
+    body_res = body_client.post("/api/v1/auth/refresh/", {"refresh": refresh_token})
     assert body_res.status_code == 200
     assert "access" in body_res.data
 
     # Refresh with no token -> 400
     fail_client = APIClient()
-    fail_res = fail_client.post("/api/auth/refresh/", {})
+    fail_res = fail_client.post("/api/v1/auth/refresh/", {})
     assert fail_res.status_code == 400
 
 
@@ -271,9 +271,9 @@ def test_refresh_from_cookie_and_body():
 def test_logout_deletes_cookie():
     user = User.objects.create_user(phone_number="01911111111", password="testpassword123")
     client = APIClient()
-    client.post("/api/auth/login/", {"phone_number": "01911111111", "password": "testpassword123"})
+    client.post("/api/v1/auth/login/", {"phone_number": "01911111111", "password": "testpassword123"})
 
-    logout_res = client.post("/api/auth/logout/")
+    logout_res = client.post("/api/v1/auth/logout/")
     assert logout_res.status_code == 200
     assert logout_res.cookies["refresh_token"].value == ""
 
@@ -291,7 +291,7 @@ def test_diagnostic_center_filter_location_no_field_error():
 
     client = APIClient()
     # Query with location filter string - must return 200 OK without FieldError on city
-    res = client.get("/api/diagnostic-centers/?location=Dhaka")
+    res = client.get("/api/v1/diagnostic-centers/?location=Dhaka")
     assert res.status_code == 200
 
 
@@ -313,7 +313,7 @@ def test_dashboard_init_bounding_and_counts():
         )
         Hospital.objects.create(location=loc)
 
-    res = client.get("/api/admin/dashboard-init/")
+    res = client.get("/api/v1/admin/dashboard-init/")
     assert res.status_code == 200
     data = res.data
 
@@ -344,7 +344,7 @@ def test_verification_invalidates_cache():
     assert cache.get('search_metadata_global') is not None
 
     # Approve facility
-    res = client.post(f"/api/admin/verifications/facility/{loc.id}/", {"action": "approve"})
+    res = client.post(f"/api/v1/admin/verifications/facility/{loc.id}/", {"action": "approve"})
     assert res.status_code == 200
     assert cache.get('search_metadata_global') is None
 

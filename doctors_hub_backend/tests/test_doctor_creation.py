@@ -38,7 +38,7 @@ class TestDoctorCreationAndDisplay:
             "specialty_ids": [str(self.specialty.id)],
         }
 
-        response = self.client.post("/api/doctors/", doc_payload, format="json")
+        response = self.client.post("/api/v1/doctors/", doc_payload, format="json")
         assert response.status_code == status.HTTP_201_CREATED, response.data
         doc_data = response.data
 
@@ -70,7 +70,7 @@ class TestDoctorCreationAndDisplay:
             "fee": "1500.00",
             "chamber_type": "Visiting Chamber"
         }
-        aff_res = self.client.post("/api/affiliations/", aff_payload, format="json")
+        aff_res = self.client.post("/api/v1/affiliations/", aff_payload, format="json")
         assert aff_res.status_code == status.HTTP_201_CREATED, aff_res.data
         aff_id = aff_res.data["id"]
         assert aff_res.data["chamber_type"] == "Visiting Chamber"
@@ -83,14 +83,14 @@ class TestDoctorCreationAndDisplay:
             "start_time": "17:00:00",
             "end_time": "21:00:00"
         }
-        sched_res = self.client.post("/api/schedules/", sched_payload, format="json")
+        sched_res = self.client.post("/api/v1/schedules/", sched_payload, format="json")
         assert sched_res.status_code == status.HTTP_201_CREATED, sched_res.data
 
         # 5. Public API Verification (Unauthenticated frontend user)
         self.client.force_authenticate(user=None)
 
         # GET /api/doctors/
-        list_res = self.client.get("/api/doctors/")
+        list_res = self.client.get("/api/v1/doctors/")
         assert list_res.status_code == status.HTTP_200_OK
         results = list_res.data.get("results", list_res.data) if isinstance(list_res.data, dict) else list_res.data
         matching = [d for d in results if d["id"] == doctor_id]
@@ -120,13 +120,13 @@ class TestDoctorCreationAndDisplay:
         assert aff["schedules"][0]["end_time"] == "21:00:00"
 
         # GET by ID
-        detail_res = self.client.get(f"/api/doctors/{doctor_id}/")
+        detail_res = self.client.get(f"/api/v1/doctors/{doctor_id}/")
         assert detail_res.status_code == status.HTTP_200_OK
         assert detail_res.data["name"] == "Tanvir Ahmed"
         assert detail_res.data["slug"] == doctor_slug
 
         # GET by Slug
-        slug_res = self.client.get(f"/api/doctors/{doctor_slug}/")
+        slug_res = self.client.get(f"/api/v1/doctors/{doctor_slug}/")
         assert slug_res.status_code == status.HTTP_200_OK
         assert slug_res.data["id"] == doctor_id
 
@@ -134,7 +134,7 @@ class TestDoctorCreationAndDisplay:
         self.client.force_authenticate(user=self.super_admin)
 
         # Create doctor 1 with empty BMDC string
-        doc1 = self.client.post("/api/doctors/", {
+        doc1 = self.client.post("/api/v1/doctors/", {
             "name": "Dr. First Doctor",
             "qualification": "MBBS",
             "bmdc_number": "",
@@ -143,7 +143,7 @@ class TestDoctorCreationAndDisplay:
         assert doc1.status_code == status.HTTP_201_CREATED, doc1.data
 
         # Create doctor 2 also with empty BMDC string
-        doc2 = self.client.post("/api/doctors/", {
+        doc2 = self.client.post("/api/v1/doctors/", {
             "name": "Dr. Second Doctor",
             "qualification": "MBBS, FCPS",
             "bmdc_number": "   ",

@@ -5,6 +5,9 @@ from core.uuid7 import uuid7
 from facilities.models import Location
 from django.utils.text import slugify
 
+# Addressable by drf-spectacular ENUM_NAME_OVERRIDES (plan V.4.4)
+GENDER_CHOICES = [('Male', 'Male'), ('Female', 'Female'), ('Other', 'Other'), ('', 'Unspecified')]
+
 
 class DoctorSpecialty(models.Model):
     id = models.UUIDField(primary_key=True, default=uuid7, editable=False)
@@ -23,6 +26,7 @@ class DoctorSpecialty(models.Model):
         blank=True
     )
     related = models.ManyToManyField('self', symmetrical=True, blank=True)
+    related_leaves = models.ManyToManyField('self', symmetrical=False, blank=True, related_name='related_from')
     is_popular = models.BooleanField(default=False)
     display_order = models.PositiveSmallIntegerField(default=0)
 
@@ -107,7 +111,7 @@ class Doctor(models.Model):
     image = models.ImageField(upload_to="doctors/images/", blank=True, null=True)
     gender = models.CharField(
         max_length=20,
-        choices=[('Male', 'Male'), ('Female', 'Female'), ('Other', 'Other'), ('', 'Unspecified')],
+        choices=GENDER_CHOICES,
         default='',
         blank=True
     )

@@ -52,7 +52,7 @@ def test_create_facility_no_thana_fails(client, super_admin):
     Creating a facility with no thana returns 400.
     """
     client.force_authenticate(user=super_admin)
-    res = client.post('/api/locations/', {
+    res = client.post('/api/v1/locations/', {
         "name": "No Thana Clinic",
         "location_type": "hospital",
         "address_line": "123 Test St",
@@ -75,7 +75,7 @@ def test_create_facility_nonexistent_thana_fails(client, super_admin):
     Creating a facility with a nonexistent thana ID returns 400.
     """
     client.force_authenticate(user=super_admin)
-    res = client.post('/api/locations/', {
+    res = client.post('/api/v1/locations/', {
         "name": "Invalid Thana Clinic",
         "location_type": "hospital",
         "address_line": "123 Test St",
@@ -102,7 +102,7 @@ def test_create_facility_valid_thana_succeeds_and_counts_unchanged(client, super
         "address_line": "Road 32",
         "thana": geo_data["thana_dhanmondi"].id,
     }
-    res = client.post('/api/locations/', payload)
+    res = client.post('/api/v1/locations/', payload)
     assert res.status_code == status.HTTP_201_CREATED
 
     data = res.data
