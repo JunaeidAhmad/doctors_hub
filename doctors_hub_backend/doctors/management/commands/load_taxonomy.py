@@ -3,7 +3,7 @@ import csv
 import yaml
 from pathlib import Path
 from django.core.management.base import BaseCommand, CommandError
-from django.db import transaction
+from django.db import connection, transaction
 from django.utils.text import slugify
 
 from doctors.models import DoctorSpecialty, SpecialtyAlias
@@ -286,6 +286,15 @@ class Command(BaseCommand):
 
         # 4. Set Parents and Related links
         self.stdout.write("Setting parents and related links...")
+        # The related_leaves M2M table does not exist yet when this command runs
+        # inside the 0021 data migration (before 0025 creates it); skip it there.
+        # Migration 0026 populates related_leaves once the table exists.
+        related_leaves_supported = (
+            DoctorSpecialty.related_leaves.through._meta.db_table
+            in connection.introspection.table_names()
+        )
+        if not related_leaves_supported:
+            self.stdout.write("Skipping related_leaves (M2M table not created yet); migration 0026 fills them in.")
         for l in leaves_data:
             leaf_obj = node_objects[l['slug']]
             parent_objs = [umbrella_map[pid] for pid in l.get('parents', []) if pid in umbrella_map]
@@ -317,7 +326,8 @@ class Command(BaseCommand):
                 raise CommandError(
                     f"Leaf '{leaf_obj.name}' ({leaf_obj.slug}) has more than 6 related_leaves!"
                 )
-            leaf_obj.related_leaves.set(rel_leaf_nodes)
+            if related_leaves_supported:
+                leaf_obj.related_leaves.set(rel_leaf_nodes)
 
             # Validate constraints
             validate_node_parents(leaf_obj)

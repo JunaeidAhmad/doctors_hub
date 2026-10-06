@@ -55,7 +55,7 @@ def backfill_specialty_data(apps, schema_editor):
 class Migration(migrations.Migration):
 
     dependencies = [
-        ('doctors', '0025_doctorspecialty_related_leaves'),
+        ('doctors', '0020_streamline_specialties'),
     ]
 
     operations = [
